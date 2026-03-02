@@ -1,13 +1,19 @@
 """Sphinx configuration for lsis-afs documentation."""
 
 import sys
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as get_version
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
 project = "lsis-afs"
 author = "LSIS"
-release = "0.1.0"
+
+try:
+    release = get_version("lsis-afs")
+except PackageNotFoundError:
+    release = "unknown"
 
 extensions = [
     "sphinx.ext.autodoc",

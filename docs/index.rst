@@ -7,4 +7,6 @@ LSIS AFS Python package with C++ extensions via pybind11.
    :maxdepth: 2
    :caption: Contents:
 
+   tech_stack
+   versioning
    api

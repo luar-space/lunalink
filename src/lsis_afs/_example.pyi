@@ -1,6 +1,5 @@
 """Type stubs for the _example C++ extension module."""
 
-
 def add(a: int, b: int) -> int:
     """Add two integers.
 
