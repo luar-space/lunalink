@@ -29,6 +29,7 @@ tasks:
       GENERATOR:
         sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
     cmds:
+      - rm -rf build/cpp-tests
       - cmake -B build/cpp-tests -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug
       - cmake --build build/cpp-tests --parallel
       - ctest --test-dir build/cpp-tests --output-on-failure --parallel
