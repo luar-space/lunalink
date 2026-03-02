@@ -40,6 +40,7 @@ fallback_version = "0.0.0.dev0"
 minimum-version = "0.9"
 wheel.packages = ["src/lsis_afs"]
 metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
+ninja.make-fallback = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

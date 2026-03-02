@@ -16,18 +16,22 @@ tasks:
       - echo "Git hooks installed. Pre-commit checks will run automatically."
 
   test:
-    desc: Run tests and generate a coverage report.
+    desc: Rebuild C++ extension, then run C++ and Python tests.
     cmds:
-      - task: install
+      - task: build
+      - task: test-cpp
       - uv run pytest
     silent: false
 
   test-cpp:
-    desc: Build and run C++ unit tests with CTest.
+    desc: Build and run C++ unit tests with CTest (uses Ninja if available).
+    vars:
+      GENERATOR:
+        sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
     cmds:
-      - cmake -B build/cpp-tests -S . -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug
-      - cmake --build build/cpp-tests
-      - ctest --test-dir build/cpp-tests --output-on-failure
+      - cmake -B build/cpp-tests -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug
+      - cmake --build build/cpp-tests --parallel
+      - ctest --test-dir build/cpp-tests --output-on-failure --parallel
     silent: false
 
   lint:
