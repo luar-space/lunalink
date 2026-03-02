@@ -22,6 +22,14 @@ tasks:
       - uv run pytest
     silent: false
 
+  test-cpp:
+    desc: Build and run C++ unit tests with CTest.
+    cmds:
+      - cmake -B build/cpp-tests -S . -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug
+      - cmake --build build/cpp-tests
+      - ctest --test-dir build/cpp-tests --output-on-failure
+    silent: false
+
   lint:
     desc: Run all static analysis tools (type checking, linting, formatting).
     cmds:
@@ -52,7 +60,7 @@ tasks:
     desc: Build the HTML documentation with Sphinx.
     cmds:
       - task: install
-      - uv run sphinx-build -b html docs/ docs/_build/html
+      - uv run sphinx-build -b html docs/ docs/_build/html -W
     silent: false
 
   docs-serve:
@@ -63,7 +71,7 @@ tasks:
     silent: false
 
   default:
-    desc: Run all quality checks (lint and test).
+    desc: Run all quality checks (lint, test, docs).
     cmds:
       - task: lint
       - task: test

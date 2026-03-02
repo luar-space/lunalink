@@ -9,8 +9,19 @@ set -e
 echo "Running pre-commit checks..."
 echo ""
 
-echo "Lint..."
-if ! task lint; then
+echo "Syncing dependencies..."
+uv sync --group dev
+echo ""
+
+echo "Type checking..."
+if ! uv run ty check src/; then
+  echo ""
+  echo "Type checking failed. Run 'task ty' to see the errors."
+  exit 1
+fi
+
+echo "Formatting and linting..."
+if ! uv run ruff format . || ! uv run ruff check . --fix; then
   echo ""
   echo "Lint failed. Run 'task lint' to see the errors."
   exit 1
@@ -19,7 +30,7 @@ echo "Lint passed."
 echo ""
 
 echo "Tests..."
-if ! task test; then
+if ! uv run pytest; then
   echo ""
   echo "Tests failed. Run 'task test' to see the failures."
   exit 1
@@ -28,7 +39,7 @@ echo "Tests passed."
 echo ""
 
 echo "Docs..."
-if ! task docs-build; then
+if ! uv run sphinx-build -b html docs/ docs/_build/html -W; then
   echo ""
   echo "Documentation build failed. Run 'task docs-build' to see the errors."
   exit 1

@@ -371,7 +371,7 @@ dev = [
     { name = "ruff", specifier = ">=0.9" },
     { name = "sphinx", specifier = ">=7.0" },
     { name = "sphinx-autobuild", specifier = ">=2024.0.0" },
-    { name = "ty", specifier = ">=0.0.1a4" },
+    { name = "ty", specifier = "==0.0.20" },
 ]
 
 [[package]]
