@@ -1,0 +1,39 @@
+#!/bin/bash
+#
+# Pre-commit hook for lsis-afs
+# Runs lint, tests, and documentation build before allowing a commit.
+#
+
+set -e
+
+echo "Running pre-commit checks..."
+echo ""
+
+echo "Lint..."
+if ! task lint; then
+  echo ""
+  echo "Lint failed. Run 'task lint' to see the errors."
+  exit 1
+fi
+echo "Lint passed."
+echo ""
+
+echo "Tests..."
+if ! task test; then
+  echo ""
+  echo "Tests failed. Run 'task test' to see the failures."
+  exit 1
+fi
+echo "Tests passed."
+echo ""
+
+echo "Docs..."
+if ! task docs-build; then
+  echo ""
+  echo "Documentation build failed. Run 'task docs-build' to see the errors."
+  exit 1
+fi
+echo "Docs built."
+echo ""
+
+echo "All pre-commit checks passed."

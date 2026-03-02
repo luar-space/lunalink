@@ -1,0 +1,71 @@
+version: '3'
+
+tasks:
+  install:
+    desc: Install or update project dependencies.
+    cmd: uv sync --group dev
+
+  build:
+    desc: Force recompile the C++ extension.
+    cmd: uv sync --group dev --reinstall-package lsis-afs
+
+  install-hooks:
+    desc: Install git hooks for pre-commit checks.
+    cmds:
+      - git config core.hooksPath .githooks
+      - echo "Git hooks installed. Pre-commit checks will run automatically."
+
+  test:
+    desc: Run tests and generate a coverage report.
+    cmds:
+      - task: install
+      - uv run pytest
+    silent: false
+
+  lint:
+    desc: Run all static analysis tools (type checking, linting, formatting).
+    cmds:
+      - task: install
+      - task: ty
+      - task: ruff-fix
+    silent: false
+
+  ty:
+    desc: Run type checking with ty.
+    cmd: uv run ty check src/
+
+  ruff-fix:
+    desc: Run ruff to format and lint with auto-fix.
+    cmds:
+      - uv run ruff format .
+      - uv run ruff check . --fix
+    silent: false
+
+  metrics:
+    desc: Run radon to report cyclomatic complexity and maintainability index.
+    cmds:
+      - uv run radon cc src/ -s
+      - uv run radon mi src/ -s
+    silent: false
+
+  docs-build:
+    desc: Build the HTML documentation with Sphinx.
+    cmds:
+      - task: install
+      - uv run sphinx-build -b html docs/ docs/_build/html
+    silent: false
+
+  docs-serve:
+    desc: Serve the documentation locally with auto-reload.
+    cmds:
+      - task: install
+      - uv run sphinx-autobuild docs/ docs/_build/html
+    silent: false
+
+  default:
+    desc: Run all quality checks (lint and test).
+    cmds:
+      - task: lint
+      - task: test
+      - task: docs-build
+    silent: false

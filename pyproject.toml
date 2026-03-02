@@ -1,0 +1,66 @@
+[build-system]
+requires = ["scikit-build-core>=0.9", "pybind11>=2.13"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "lsis-afs"
+version = "0.1.0"
+description = "LSIS AFS"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "radon>=6.0",
+    "ruff>=0.9",
+    "sphinx>=7.0",
+    "furo>=2024.1.29",
+    "sphinx-autobuild>=2024.0.0",
+    "ty>=0.0.1a4",
+]
+
+[tool.scikit-build]
+minimum-version = "0.9"
+wheel.packages = ["src/lsis_afs"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=lsis_afs --cov-report=term-missing"
+
+[tool.coverage.run]
+source = ["lsis_afs"]
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "D",   # pydocstyle
+    "UP",  # pyupgrade
+    "C90", # mccabe complexity
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.ty.environment]
+python-version = "3.12"
