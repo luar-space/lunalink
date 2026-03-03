@@ -3,6 +3,8 @@
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _get_version
 
+__all__ = ["__version__"]
+
 try:
     __version__: str = _get_version("lsis-afs")
 except PackageNotFoundError:  # pragma: no cover

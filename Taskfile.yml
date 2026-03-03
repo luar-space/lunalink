@@ -28,17 +28,17 @@ tasks:
     vars:
       GENERATOR:
         sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
+      BUILD_DIR:
+        sh: which ninja >/dev/null 2>&1 && echo "build/cpp-tests-ninja" || echo "build/cpp-tests-make"
     cmds:
-      - rm -rf build/cpp-tests
-      - cmake -B build/cpp-tests -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug
-      - cmake --build build/cpp-tests --parallel
-      - ctest --test-dir build/cpp-tests --output-on-failure --parallel
+      - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug
+      - cmake --build {{.BUILD_DIR}} --parallel
+      - ctest --test-dir {{.BUILD_DIR}} --output-on-failure --parallel
     silent: false
 
   lint:
     desc: Run all static analysis tools (type checking, linting, formatting).
     cmds:
-      - task: install
       - task: ty
       - task: ruff-fix
     silent: false
@@ -54,6 +54,27 @@ tasks:
       - uv run ruff check . --fix
     silent: false
 
+  sanitize:
+    desc: Build and run C++ tests with AddressSanitizer and UBSan.
+    vars:
+      GENERATOR:
+        sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
+    cmds:
+      - cmake -B build/sanitize -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=ON
+      - cmake --build build/sanitize --parallel
+      - ctest --test-dir build/sanitize --output-on-failure --parallel
+    silent: false
+
+  tidy:
+    desc: Run clang-tidy static analysis on C++ core (requires clang-tidy).
+    vars:
+      GENERATOR:
+        sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
+    cmds:
+      - cmake -B build/tidy -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+      - clang-tidy -p build/tidy cpp/example_core.cpp cpp/tests/test_example.cpp
+    silent: false
+
   metrics:
     desc: Run radon to report cyclomatic complexity and maintainability index.
     cmds:
@@ -64,20 +85,25 @@ tasks:
   docs-build:
     desc: Build the HTML documentation with Sphinx.
     cmds:
-      - task: install
       - uv run sphinx-build -b html docs/ docs/_build/html -W
     silent: false
 
   docs-serve:
     desc: Serve the documentation locally with auto-reload.
     cmds:
-      - task: install
       - uv run sphinx-autobuild docs/ docs/_build/html
+    silent: false
+
+  clean:
+    desc: Remove build artefacts (build/, docs/_build/).
+    cmds:
+      - rm -rf build/ docs/_build/
     silent: false
 
   default:
     desc: Run all quality checks (lint, test, docs).
     cmds:
+      - task: install
       - task: lint
       - task: test
       - task: docs-build

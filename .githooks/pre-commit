@@ -9,8 +9,8 @@ set -e
 echo "Running pre-commit checks..."
 echo ""
 
-echo "Syncing dependencies..."
-uv sync --group dev
+echo "Syncing dependencies and rebuilding C++ extension..."
+uv sync --group dev --reinstall-package lsis-afs
 echo ""
 
 echo "Type checking..."
@@ -21,15 +21,35 @@ if ! uv run ty check src/; then
 fi
 
 echo "Formatting and linting..."
-if ! uv run ruff format . || ! uv run ruff check . --fix; then
+if ! uv run ruff format --check . || ! uv run ruff check .; then
   echo ""
-  echo "Lint failed. Run 'task lint' to see the errors."
+  echo "Lint failed. Run 'task lint' to auto-fix, then re-stage the changes."
   exit 1
 fi
 echo "Lint passed."
 echo ""
 
-echo "Tests..."
+echo "C++ tests..."
+if command -v ninja >/dev/null 2>&1; then
+  CPP_GENERATOR="Ninja"
+  CPP_BUILD_DIR="build/cpp-tests-ninja"
+else
+  CPP_GENERATOR="Unix Makefiles"
+  CPP_BUILD_DIR="build/cpp-tests-make"
+fi
+if ! cmake -B "$CPP_BUILD_DIR" -S . -G "$CPP_GENERATOR" \
+      -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON \
+      -DCMAKE_BUILD_TYPE=Debug \
+    || ! cmake --build "$CPP_BUILD_DIR" --parallel \
+    || ! ctest --test-dir "$CPP_BUILD_DIR" --output-on-failure --parallel; then
+  echo ""
+  echo "C++ tests failed. Run 'task test-cpp' to see the failures."
+  exit 1
+fi
+echo "C++ tests passed."
+echo ""
+
+echo "Python tests..."
 if ! uv run pytest; then
   echo ""
   echo "Tests failed. Run 'task test' to see the failures."

@@ -15,6 +15,8 @@ try:
 except PackageNotFoundError:
     release = "unknown"
 
+version = release
+
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
@@ -34,5 +36,7 @@ autodoc_default_options = {
     "undoc-members": False,
     "show-inheritance": True,
 }
+
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 html_theme = "furo"

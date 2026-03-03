@@ -1,0 +1,47 @@
+# .clang-tidy — Safety-focused static analysis for space-grade C++.
+#
+# Applied to: cpp/example_core.cpp, cpp/tests/test_example.cpp, cpp/include/
+# Excluded:   cpp/example.cpp (pybind11 templates generate unavoidable noise)
+#
+# Run locally:  task tidy
+# Run in CI:    tidy job in .github/workflows/ci.yml
+
+---
+Checks: >-
+  bugprone-*,
+  cert-dcl50-cpp,
+  cert-dcl58-cpp,
+  cert-err33-c,
+  cert-err52-cpp,
+  cert-err58-cpp,
+  cert-err60-cpp,
+  cert-flp30-c,
+  cert-mem57-cpp,
+  cert-msc50-cpp,
+  cert-msc51-cpp,
+  cert-oop57-cpp,
+  cert-oop58-cpp,
+  cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  cppcoreguidelines-pro-bounds-constant-array-index,
+  cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  cppcoreguidelines-pro-type-const-cast,
+  cppcoreguidelines-pro-type-cstyle-cast,
+  cppcoreguidelines-pro-type-reinterpret-cast,
+  cppcoreguidelines-pro-type-static-cast-downcast,
+  cppcoreguidelines-pro-type-vararg,
+  cppcoreguidelines-slicing,
+  -bugprone-easily-swappable-parameters
+
+# All triggered checks are errors — CI cannot pass with outstanding diagnostics.
+WarningsAsErrors: "*"
+
+# Only report diagnostics from our own headers, not system or third-party ones.
+HeaderFilterRegex: "cpp/include/.*"
+
+FormatStyle: file
+
+CheckOptions:
+  - key:   bugprone-narrowing-conversions.WarnOnIntegerNarrowingConversion
+    value: "true"
+  - key:   bugprone-narrowing-conversions.WarnOnFloatingPointNarrowingConversion
+    value: "true"

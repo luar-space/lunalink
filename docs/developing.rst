@@ -153,9 +153,10 @@ The hook in ``.githooks/pre-commit`` runs automatically on every
 
 1. ``uv sync`` — ensure the environment is up to date
 2. ``ty check`` — type checking
-3. ``ruff format`` + ``ruff check --fix`` — formatting and linting
-4. ``pytest`` — Python tests with coverage
-5. ``sphinx-build -W`` — documentation build (warnings are errors)
+3. ``ruff format --check`` + ``ruff check`` — formatting and linting (check-only; run ``task lint`` to auto-fix)
+4. C++ Catch2 tests via CMake + CTest
+5. ``pytest`` — Python tests with coverage
+6. ``sphinx-build -W`` — documentation build (warnings are errors)
 
 The commit is blocked if any step fails. To skip the hook in an emergency
 (not recommended)::
@@ -173,7 +174,7 @@ CI Pipeline
 
 The GitHub Actions workflow (``.github/workflows/ci.yml``) runs on every
 push to ``main``, on every tag matching ``v*``, and on all pull requests.
-It runs four independent jobs in parallel:
+It runs nine jobs in parallel:
 
 .. list-table::
    :header-rows: 1
@@ -182,11 +183,17 @@ It runs four independent jobs in parallel:
    * - Job
      - Steps
    * - **Lint**
-     - ``ruff format --check``, ``ruff check``, ``ty check``
-   * - **Test**
-     - ``pytest`` with coverage (≥ 90% required)
+     - ``ruff format --check``, ``ruff check``, ``ty check`` (Python 3.12)
+   * - **Test × 3**
+     - ``pytest`` with coverage (≥ 90% required), run on Python 3.12, 3.13, and 3.14
    * - **C++ Tests**
      - CMake + Ninja configure, build, CTest
+   * - **Sanitizers**
+     - C++ tests recompiled with ``-fsanitize=address,undefined``; any memory error or UB aborts with a diagnostic
+   * - **clang-tidy**
+     - Static analysis of ``example_core.cpp`` and tests; ``bugprone-*``, ``cert-*``, ``cppcoreguidelines-pro-*`` checks
+   * - **C++ Coverage**
+     - gcov instrumentation, lcov report; ≥ 90% line coverage enforced
    * - **Docs**
      - ``sphinx-build -W`` (warnings treated as errors)
 

@@ -25,6 +25,15 @@ Tech Stack
    * - `pybind11 <https://pybind11.readthedocs.io/>`_
      - ≥ 2.13
      - C++/Python bindings
+   * - `Catch2 <https://github.com/catchorg/Catch2>`_
+     - v3.6.0
+     - C++ unit testing framework (fetched automatically by CMake)
+   * - `clang-tidy <https://clang.llvm.org/extra/clang-tidy/>`_
+     - system (≥ 14)
+     - C++ static analysis: ``bugprone-*``, ``cert-*``, ``cppcoreguidelines-pro-*``
+   * - `lcov <https://github.com/linux-test-project/lcov>`_
+     - system
+     - C++ line coverage report and threshold enforcement (≥ 90%)
    * - `pytest <https://docs.pytest.org/>`_
      - ≥ 8.0
      - Unit testing framework
@@ -35,7 +44,7 @@ Tech Stack
      - ≥ 0.9
      - Linting (PEP 8, naming, docstrings, complexity) and formatting
    * - `ty <https://docs.astral.sh/ty/>`_
-     - ≥ 0.0.1a4
+     - == 0.0.20
      - Static type checking
    * - `radon <https://radon.readthedocs.io/>`_
      - ≥ 6.0
@@ -77,9 +86,6 @@ Project Structure
 **Implementation:** Source code lives under ``src/lsis_afs/``. A
 ``pyproject.toml`` and ``README.md`` are present at the project root.
 
-.. note::
-   A ``LICENSE`` file has not yet been added. This is a required deliverable
-   under the ESA guidelines and must be included before any formal submission.
 
 Dependency Management
 ~~~~~~~~~~~~~~~~~~~~~
@@ -132,9 +138,9 @@ Testing
 achievable via white-box unit testing (ECSS-E-ST-40C §5.8.3.5).
 
 **Implementation:** ``pytest`` is used for unit testing. ``pytest-cov``
-measures and reports statement coverage after every test run. The current
-baseline is 100% statement coverage. Coverage thresholds can be enforced
-via ``--cov-fail-under`` in ``pyproject.toml`` if required by contract.
+measures and reports both statement and branch coverage after every test run.
+A minimum of 90% coverage is enforced via ``--cov-fail-under=90`` in
+``pyproject.toml``.
 
 Cyclomatic Complexity
 ~~~~~~~~~~~~~~~~~~~~~
@@ -165,7 +171,8 @@ CI/CD
 -----
 
 A GitHub Actions workflow (``.github/workflows/ci.yml``) runs on every push
-and pull request to ``main``. It executes three independent jobs:
+and pull request to ``main`` and on all version tags (``v*``). It executes
+nine independent jobs in parallel:
 
 .. list-table::
    :header-rows: 1
@@ -175,8 +182,16 @@ and pull request to ``main``. It executes three independent jobs:
      - Steps
    * - **Lint**
      - ``ruff format --check``, ``ruff check``, ``ty check``
-   * - **Test**
-     - ``pytest`` with coverage
+   * - **Test × 3**
+     - ``pytest`` with statement + branch coverage (≥ 90% required), on Python 3.12, 3.13, and 3.14
+   * - **C++ Tests**
+     - CMake + Ninja, CTest
+   * - **Sanitizers**
+     - C++ tests with ``-fsanitize=address,undefined``; detects memory errors and UB at runtime
+   * - **clang-tidy**
+     - Static analysis of C++ core and tests; all findings treated as errors
+   * - **C++ Coverage**
+     - gcov + lcov; ≥ 90% C++ line coverage enforced
    * - **Docs**
      - ``sphinx-build -W`` (warnings treated as errors)
 
