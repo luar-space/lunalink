@@ -3,13 +3,13 @@ requires = ["scikit-build-core>=0.9", "pybind11>=2.13", "setuptools-scm"]
 build-backend = "scikit_build_core.build"
 
 [project]
-name = "lsis-afs"
+name = "lunalink"
 dynamic = ["version"]
-description = "LSIS AFS"
+description = "LunaLink — AFS reference implementation for lunar navigation"
 readme = "README.md"
 requires-python = ">=3.12"
 license = {text = "Apache-2.0"}
-authors = [{name = "LSIS"}]
+authors = [{name = "LunaLink"}]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
@@ -34,7 +34,7 @@ dev = [
     "sphinx>=7.0",
     "furo>=2024.1.29",
     "sphinx-autobuild>=2024.0.0",
-    "ty==0.0.20",
+    "pyright>=1.1",
 ]
 
 [tool.setuptools_scm]
@@ -42,16 +42,16 @@ fallback_version = "0.0.0.dev0"
 
 [tool.scikit-build]
 minimum-version = "0.9"
-wheel.packages = ["src/lsis_afs"]
+wheel.packages = ["src/lunalink"]
 metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
 ninja.make-fallback = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov=lsis_afs --cov-report=term-missing --cov-fail-under=90"
+addopts = "--cov=lunalink --cov-report=term-missing --cov-fail-under=90"
 
 [tool.coverage.run]
-source = ["lsis_afs"]
+source = ["lunalink"]
 branch = true
 
 [tool.coverage.report]
@@ -84,5 +84,7 @@ convention = "numpy"
 quote-style = "double"
 indent-style = "space"
 
-[tool.ty.environment]
-python-version = "3.12"
+[tool.pyright]
+pythonVersion = "3.12"
+typeCheckingMode = "standard"
+reportMissingModuleSource = "none"

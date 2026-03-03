@@ -1,16 +1,23 @@
 API Reference
 =============
 
-lsis_afs
+lunalink
 --------
 
-.. automodule:: lsis_afs
+.. automodule:: lunalink
    :members:
    :show-inheritance:
 
-example
--------
+lunalink.afs
+------------
 
-.. automodule:: lsis_afs.example
+.. automodule:: lunalink.afs
+   :members:
+   :show-inheritance:
+
+lunalink.afs.example
+--------------------
+
+.. automodule:: lunalink.afs.example
    :members:
    :show-inheritance:

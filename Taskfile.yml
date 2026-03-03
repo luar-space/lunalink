@@ -7,7 +7,7 @@ tasks:
 
   build:
     desc: Force recompile the C++ extension.
-    cmd: uv sync --group dev --reinstall-package lsis-afs
+    cmd: uv sync --group dev --reinstall-package lunalink
 
   install-hooks:
     desc: Install git hooks for pre-commit checks.
@@ -39,13 +39,13 @@ tasks:
   lint:
     desc: Run all static analysis tools (type checking, linting, formatting).
     cmds:
-      - task: ty
+      - task: pyright
       - task: ruff-fix
     silent: false
 
-  ty:
-    desc: Run type checking with ty.
-    cmd: uv run ty check src/
+  pyright:
+    desc: Run type checking with pyright.
+    cmd: uv run pyright src/
 
   ruff-fix:
     desc: Run ruff to format and lint with auto-fix.

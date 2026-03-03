@@ -10,13 +10,13 @@ echo "Running pre-commit checks..."
 echo ""
 
 echo "Syncing dependencies and rebuilding C++ extension..."
-uv sync --group dev --reinstall-package lsis-afs
+uv sync --group dev --reinstall-package lunalink
 echo ""
 
 echo "Type checking..."
-if ! uv run ty check src/; then
+if ! uv run pyright src/; then
   echo ""
-  echo "Type checking failed. Run 'task ty' to see the errors."
+  echo "Type checking failed. Run 'task pyright' to see the errors."
   exit 1
 fi
 

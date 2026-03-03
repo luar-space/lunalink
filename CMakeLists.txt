@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(lsis_afs LANGUAGES CXX)
+project(lunalink LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -61,14 +61,14 @@ if(BUILD_PYTHON_BINDINGS)
     find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
     find_package(pybind11 CONFIG REQUIRED)
 
-    pybind11_add_module(_example cpp/example.cpp)
-    target_link_libraries(_example PRIVATE lsis_afs_core)
+    pybind11_add_module(_afs cpp/example.cpp)
+    target_link_libraries(_afs PRIVATE lsis_afs_core)
     # pybind11 headers trigger some of the stricter warnings; use the baseline set.
-    target_compile_options(_example PRIVATE
+    target_compile_options(_afs PRIVATE
         $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic -Werror>
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
     )
-    install(TARGETS _example DESTINATION lsis_afs)
+    install(TARGETS _afs DESTINATION lunalink/afs)
 endif()
 
 # C++ unit tests

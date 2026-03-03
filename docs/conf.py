@@ -7,11 +7,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-project = "lsis-afs"
-author = "LSIS"
+project = "lunalink"
+author = "LunaLink"
 
 try:
-    release = get_version("lsis-afs")
+    release = get_version("lunalink")
 except PackageNotFoundError:
     release = "unknown"
 
