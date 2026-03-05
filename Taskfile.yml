@@ -118,7 +118,7 @@ tasks:
           echo "clang-tidy not found; skipping tidy. Install LLVM (for example: brew install llvm) to enable this task."
           exit 0
         fi
-        find cpp/ -name '*.cpp' ! -path '*/bindings/*' ! -path 'cpp/tests/*' -print0 | xargs -0 -n 1 -P "{{.TIDY_JOBS}}" "{{.CLANG_TIDY}}" -p build/tidy -quiet
+        find cpp/ -name '*.cpp' ! -path '*/bindings/*' ! -path 'cpp/tests/*' -print0 | xargs -0 -n 1 -P "{{.TIDY_JOBS}}" "{{.CLANG_TIDY}}" -p build/tidy -quiet --extra-arg=-Wno-unknown-warning-option --extra-arg=-Wno-error=unknown-warning-option
     silent: false
 
   metrics:
