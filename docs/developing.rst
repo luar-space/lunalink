@@ -64,8 +64,10 @@ Run ``task --list`` to see all tasks. The most common ones are:
      - Rebuild the C++ extension, run Catch2 tests, then run pytest.
    * - ``task test-cpp``
      - Build and run only the C++ Catch2 tests via CTest.
+   * - ``task coverage-cpp``
+     - Build and run C++ tests with gcov, then generate HTML report via gcovr.
    * - ``task lint``
-     - Run ``ty`` (type checking) and ``ruff`` (formatting + linting).
+     - Run ``pyright`` (type checking) and ``ruff`` (formatting + linting).
    * - ``task metrics``
      - Report cyclomatic complexity and maintainability index via radon.
    * - ``task docs-build``
@@ -152,7 +154,7 @@ The hook in ``.githooks/pre-commit`` runs automatically on every
 ``git commit``. It executes, in order:
 
 1. ``uv sync`` — ensure the environment is up to date
-2. ``ty check`` — type checking
+2. ``pyright src/`` — type checking
 3. ``ruff format --check`` + ``ruff check`` — formatting and linting (check-only; run ``task lint`` to auto-fix)
 4. C++ Catch2 tests via CMake + CTest
 5. ``pytest`` — Python tests with coverage
@@ -183,7 +185,7 @@ It runs nine jobs in parallel:
    * - Job
      - Steps
    * - **Lint**
-     - ``ruff format --check``, ``ruff check``, ``ty check`` (Python 3.12)
+     - ``ruff format --check``, ``ruff check``, ``pyright src/`` (Python 3.12)
    * - **Test × 3**
      - ``pytest`` with coverage (≥ 90% required), run on Python 3.12, 3.13, and 3.14
    * - **C++ Tests**
@@ -191,7 +193,7 @@ It runs nine jobs in parallel:
    * - **Sanitizers**
      - C++ tests recompiled with ``-fsanitize=address,undefined``; any memory error or UB aborts with a diagnostic
    * - **clang-tidy**
-     - Static analysis of ``example_core.cpp`` and tests; ``bugprone-*``, ``cert-*``, ``cppcoreguidelines-pro-*`` checks
+     - Static analysis of ``example_core.cpp`` and tests; ``bugprone-*``, ``cert-*``, ``cppcoreguidelines-*``, ``hicpp-*``, ``fuchsia-*`` checks
    * - **C++ Coverage**
      - gcov instrumentation, lcov report; ≥ 90% line coverage enforced
    * - **Docs**

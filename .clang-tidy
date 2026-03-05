@@ -30,6 +30,12 @@ Checks: >-
   cppcoreguidelines-pro-type-static-cast-downcast,
   cppcoreguidelines-pro-type-vararg,
   cppcoreguidelines-slicing,
+  cppcoreguidelines-no-malloc,
+  cppcoreguidelines-owning-memory,
+  fuchsia-*,
+  -fuchsia-default-arguments-calls,
+  -fuchsia-default-arguments-declarations,
+  hicpp-*,
   -bugprone-easily-swappable-parameters
 
 # All triggered checks are errors — CI cannot pass with outstanding diagnostics.

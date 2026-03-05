@@ -1,6 +1,6 @@
-# lsis-afs
+# LunaLink
 
-LSIS AFS Python package with C++ extensions via pybind11.
+LunaLink AFS Python package with C++ extensions via pybind11.
 
 ## Prerequisites
 
@@ -26,7 +26,7 @@ task install-hooks  # register the pre-commit hook
 ```bash
 task           # full quality pipeline: lint → test → docs
 task test      # rebuild C++ extension, run C++ tests, run pytest
-task lint      # type check (ty) + format + lint (ruff)
+task lint      # type check (pyright) + format + lint (ruff)
 task build     # force-recompile the C++ extension
 task test-cpp  # build and run C++ Catch2 tests only
 task metrics   # cyclomatic complexity and maintainability index (radon)

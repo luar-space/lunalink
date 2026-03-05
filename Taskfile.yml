@@ -54,6 +54,18 @@ tasks:
       - uv run ruff check . --fix
     silent: false
 
+  coverage-cpp:
+    desc: Build and run C++ tests with coverage, then generate HTML report.
+    vars:
+      GENERATOR:
+        sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
+    cmds:
+      - cmake -B build/coverage -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON
+      - cmake --build build/coverage --parallel
+      - ctest --test-dir build/coverage --output-on-failure --parallel
+      - gcovr -r . build/coverage --html-details build/coverage/coverage.html --print-summary
+    silent: false
+
   sanitize:
     desc: Build and run C++ tests with AddressSanitizer and UBSan.
     vars:
@@ -67,12 +79,15 @@ tasks:
 
   tidy:
     desc: Run clang-tidy static analysis on C++ core (requires clang-tidy).
+    env:
+      SDKROOT:
+        sh: xcrun --show-sdk-path
     vars:
       GENERATOR:
         sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
     cmds:
       - cmake -B build/tidy -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-      - clang-tidy -p build/tidy cpp/example_core.cpp cpp/tests/test_example.cpp
+      - clang-tidy -p build/tidy cpp/example_core.cpp
     silent: false
 
   metrics:

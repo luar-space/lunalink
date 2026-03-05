@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.15)
 project(lunalink LANGUAGES CXX)
 
+if(MSVC)
+    message(FATAL_ERROR "MSVC is not supported for space flight determinism.")
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -46,8 +50,14 @@ set(LSIS_WARNING_FLAGS
         -Wundef
         -Wcast-align
         -Wformat=2
+        -Wold-style-cast
+        -Wimplicit-fallthrough
     >
-    $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+    $<$<CXX_COMPILER_ID:GNU>:
+        -Wlogical-op
+        -Wduplicated-cond
+        -Wduplicated-branches
+    >
 )
 
 # Core C++ library — no Python dependency, linked by both bindings and tests.
@@ -55,6 +65,9 @@ add_library(lsis_afs_core STATIC cpp/example_core.cpp)
 target_include_directories(lsis_afs_core PUBLIC cpp/include)
 set_target_properties(lsis_afs_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_options(lsis_afs_core PRIVATE ${LSIS_WARNING_FLAGS})
+target_compile_options(lsis_afs_core PRIVATE
+    $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-fno-exceptions -fno-rtti -fno-fast-math>
+)
 
 # Python extension
 if(BUILD_PYTHON_BINDINGS)
@@ -66,7 +79,6 @@ if(BUILD_PYTHON_BINDINGS)
     # pybind11 headers trigger some of the stricter warnings; use the baseline set.
     target_compile_options(_afs PRIVATE
         $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic -Werror>
-        $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
     )
     install(TARGETS _afs DESTINATION lunalink/afs)
 endif()

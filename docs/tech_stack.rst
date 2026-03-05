@@ -30,10 +30,10 @@ Tech Stack
      - C++ unit testing framework (fetched automatically by CMake)
    * - `clang-tidy <https://clang.llvm.org/extra/clang-tidy/>`_
      - system (≥ 14)
-     - C++ static analysis: ``bugprone-*``, ``cert-*``, ``cppcoreguidelines-pro-*``
-   * - `lcov <https://github.com/linux-test-project/lcov>`_
-     - system
-     - C++ line coverage report and threshold enforcement (≥ 90%)
+     - C++ static analysis: ``bugprone-*``, ``cert-*``, ``cppcoreguidelines-*``, ``hicpp-*``, ``fuchsia-*``
+   * - `gcovr <https://gcovr.com/>`_
+     - ≥ 7.0
+     - C++ line coverage HTML report generation and threshold enforcement (≥ 90%)
    * - `pytest <https://docs.pytest.org/>`_
      - ≥ 8.0
      - Unit testing framework
@@ -43,8 +43,8 @@ Tech Stack
    * - `ruff <https://docs.astral.sh/ruff/>`_
      - ≥ 0.9
      - Linting (PEP 8, naming, docstrings, complexity) and formatting
-   * - `ty <https://docs.astral.sh/ty/>`_
-     - == 0.0.20
+   * - `pyright <https://microsoft.github.io/pyright/>`_
+     - ≥ 1.1
      - Static type checking
    * - `radon <https://radon.readthedocs.io/>`_
      - ≥ 6.0
@@ -117,7 +117,7 @@ Type Annotations
 **Requirement:** Type hints (PEP 484) are recommended for all public interfaces.
 
 **Implementation:** Type hints are required on all public function signatures.
-``ty`` performs static type analysis and is run as part of ``task lint`` and
+``pyright`` performs static type analysis and is run as part of ``task lint`` and
 the CI pipeline. Type stubs (``.pyi`` files) are provided for compiled C++
 extension modules.
 
@@ -181,7 +181,7 @@ nine independent jobs in parallel:
    * - Job
      - Steps
    * - **Lint**
-     - ``ruff format --check``, ``ruff check``, ``ty check``
+     - ``ruff format --check``, ``ruff check``, ``pyright src/``
    * - **Test × 3**
      - ``pytest`` with statement + branch coverage (≥ 90% required), on Python 3.12, 3.13, and 3.14
    * - **C++ Tests**
@@ -191,7 +191,7 @@ nine independent jobs in parallel:
    * - **clang-tidy**
      - Static analysis of C++ core and tests; all findings treated as errors
    * - **C++ Coverage**
-     - gcov + lcov; ≥ 90% C++ line coverage enforced
+     - gcov + gcovr HTML report; ≥ 90% C++ line coverage enforced
    * - **Docs**
      - ``sphinx-build -W`` (warnings treated as errors)
 
