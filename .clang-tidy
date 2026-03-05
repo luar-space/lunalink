@@ -1,7 +1,7 @@
 # .clang-tidy — Safety-focused static analysis for space-grade C++.
 #
-# Applied to: cpp/example_core.cpp, cpp/tests/test_example.cpp, cpp/include/
-# Excluded:   cpp/example.cpp (pybind11 templates generate unavoidable noise)
+# Applied to: cpp/signal/, cpp/tests/, cpp/include/
+# Excluded:   cpp/bindings/ (pybind11 templates generate unavoidable noise)
 #
 # Run locally:  task tidy
 # Run in CI:    tidy job in .github/workflows/ci.yml

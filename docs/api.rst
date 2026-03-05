@@ -15,9 +15,9 @@ lunalink.afs
    :members:
    :show-inheritance:
 
-lunalink.afs.example
---------------------
+lunalink.afs.signal
+-------------------
 
-.. automodule:: lunalink.afs.example
+.. automodule:: lunalink.afs.signal
    :members:
    :show-inheritance:

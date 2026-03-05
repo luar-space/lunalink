@@ -87,7 +87,7 @@ tasks:
         sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
     cmds:
       - cmake -B build/tidy -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-      - clang-tidy -p build/tidy cpp/example_core.cpp
+      - find cpp/ -name '*.cpp' ! -path '*/bindings/*' | xargs clang-tidy -p build/tidy
     silent: false
 
   metrics:

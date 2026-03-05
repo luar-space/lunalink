@@ -36,7 +36,7 @@ endif()
 
 # Safety-focused warning set used on all first-party targets.
 # Warnings are treated as errors (-Werror) so CI cannot pass with new diagnostics.
-set(LSIS_WARNING_FLAGS
+set(LUNALINK_WARNING_FLAGS
     $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:
         -Wall
         -Wextra
@@ -61,11 +61,15 @@ set(LSIS_WARNING_FLAGS
 )
 
 # Core C++ library — no Python dependency, linked by both bindings and tests.
-add_library(lsis_afs_core STATIC cpp/example_core.cpp)
-target_include_directories(lsis_afs_core PUBLIC cpp/include)
-set_target_properties(lsis_afs_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_compile_options(lsis_afs_core PRIVATE ${LSIS_WARNING_FLAGS})
-target_compile_options(lsis_afs_core PRIVATE
+add_library(lunalink_core STATIC
+    cpp/signal/prn_table.cpp
+    cpp/signal/prn.cpp
+    cpp/signal/modulator.cpp
+)
+target_include_directories(lunalink_core PUBLIC cpp/include)
+set_target_properties(lunalink_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_compile_options(lunalink_core PRIVATE ${LUNALINK_WARNING_FLAGS})
+target_compile_options(lunalink_core PRIVATE
     $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-fno-exceptions -fno-rtti -fno-fast-math>
 )
 
@@ -74,8 +78,8 @@ if(BUILD_PYTHON_BINDINGS)
     find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
     find_package(pybind11 CONFIG REQUIRED)
 
-    pybind11_add_module(_afs cpp/example.cpp)
-    target_link_libraries(_afs PRIVATE lsis_afs_core)
+    pybind11_add_module(_afs cpp/bindings/afs_module.cpp)
+    target_link_libraries(_afs PRIVATE lunalink_core)
     # pybind11 headers trigger some of the stricter warnings; use the baseline set.
     target_compile_options(_afs PRIVATE
         $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic -Werror>
@@ -95,11 +99,14 @@ if(BUILD_TESTING)
     )
     FetchContent_MakeAvailable(Catch2)
 
-    add_executable(test_example cpp/tests/test_example.cpp)
-    target_link_libraries(test_example PRIVATE lsis_afs_core Catch2::Catch2WithMain)
-    target_compile_options(test_example PRIVATE ${LSIS_WARNING_FLAGS})
+    add_executable(test_lunalink
+        cpp/tests/test_prn.cpp
+        cpp/tests/test_modulator.cpp
+    )
+    target_link_libraries(test_lunalink PRIVATE lunalink_core Catch2::Catch2WithMain)
+    target_compile_options(test_lunalink PRIVATE ${LUNALINK_WARNING_FLAGS})
 
     list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
     include(Catch)
-    catch_discover_tests(test_example)
+    catch_discover_tests(test_lunalink)
 endif()
