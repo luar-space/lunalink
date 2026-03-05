@@ -91,13 +91,18 @@ endif()
 if(BUILD_TESTING)
     enable_testing()
 
-    include(FetchContent)
-    FetchContent_Declare(
-        Catch2
-        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-        GIT_TAG        4e8d92bf02f7d1c8006a0e7a5ecabd8e62d98502  # v3.6.0
-    )
-    FetchContent_MakeAvailable(Catch2)
+    # Prefer a locally installed Catch2 package to avoid network fetches.
+    find_package(Catch2 3 QUIET CONFIG)
+    if(NOT Catch2_FOUND)
+        include(FetchContent)
+        FetchContent_Declare(
+            Catch2
+            URL https://github.com/catchorg/Catch2/archive/refs/tags/v3.6.0.tar.gz
+            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        )
+        FetchContent_MakeAvailable(Catch2)
+        list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
+    endif()
 
     add_executable(test_lunalink
         cpp/tests/test_prn.cpp
@@ -106,7 +111,10 @@ if(BUILD_TESTING)
     target_link_libraries(test_lunalink PRIVATE lunalink_core Catch2::Catch2WithMain)
     target_compile_options(test_lunalink PRIVATE ${LUNALINK_WARNING_FLAGS})
 
-    list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
-    include(Catch)
-    catch_discover_tests(test_lunalink)
+    include(Catch OPTIONAL RESULT_VARIABLE CATCH_MODULE_FOUND)
+    if(CATCH_MODULE_FOUND)
+        catch_discover_tests(test_lunalink)
+    else()
+        add_test(NAME test_lunalink COMMAND test_lunalink)
+    endif()
 endif()
