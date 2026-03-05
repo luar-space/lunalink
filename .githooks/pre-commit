@@ -1,79 +1,19 @@
 #!/bin/bash
 #
-# Pre-commit hook for lsis-afs
-# Runs lint, tests, and documentation build before allowing a commit.
+# Pre-commit hook for lunalink.
+# Source of truth for checks is Taskfile.yml.
 #
 
 set -e
 
-echo "Running pre-commit checks..."
+echo "Running pre-commit checks via Taskfile..."
 echo ""
 
-echo "Syncing dependencies and rebuilding C++ extension..."
-uv sync --group dev --reinstall-package lunalink
-echo ""
-
-echo "Type checking..."
-if ! uv run pyright src/; then
+if ! task ci-checks; then
   echo ""
-  echo "Type checking failed. Run 'task pyright' to see the errors."
+  echo "Pre-commit checks failed. Run 'task ci-checks' to reproduce."
   exit 1
 fi
 
-echo "Formatting and linting..."
-if ! uv run ruff format --check . || ! uv run ruff check .; then
-  echo ""
-  echo "Lint failed. Run 'task lint' to auto-fix, then re-stage the changes."
-  exit 1
-fi
-echo "Lint passed."
 echo ""
-
-echo "C++ tests..."
-if command -v ninja >/dev/null 2>&1; then
-  CPP_GENERATOR="Ninja"
-  CPP_BUILD_DIR="build/cpp-tests-ninja"
-else
-  CPP_GENERATOR="Unix Makefiles"
-  CPP_BUILD_DIR="build/cpp-tests-make"
-fi
-if ! cmake -B "$CPP_BUILD_DIR" -S . -G "$CPP_GENERATOR" \
-      -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON \
-      -DCMAKE_BUILD_TYPE=Debug \
-    || ! cmake --build "$CPP_BUILD_DIR" --parallel \
-    || ! ctest --test-dir "$CPP_BUILD_DIR" --output-on-failure --parallel; then
-  echo ""
-  echo "C++ tests failed. Run 'task test-cpp' to see the failures."
-  exit 1
-fi
-echo "C++ tests passed."
-echo ""
-
-echo "Clang-tidy static analysis..."
-if ! task tidy; then
-  echo ""
-  echo "Clang-tidy failed. Run 'task tidy' to see the violations."
-  exit 1
-fi
-echo "Clang-tidy passed."
-echo ""
-
-echo "Python tests..."
-if ! uv run python -m pytest; then
-  echo ""
-  echo "Tests failed. Run 'task test' to see the failures."
-  exit 1
-fi
-echo "Tests passed."
-echo ""
-
-echo "Docs..."
-if ! uv run python -m sphinx -b html docs/ docs/_build/html -W; then
-  echo ""
-  echo "Documentation build failed. Run 'task docs-build' to see the errors."
-  exit 1
-fi
-echo "Docs built."
-echo ""
-
 echo "All pre-commit checks passed."
