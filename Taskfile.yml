@@ -85,6 +85,15 @@ tasks:
     vars:
       GENERATOR:
         sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
+      TIDY_JOBS:
+        sh: |
+          if command -v sysctl >/dev/null 2>&1 && [ -n "$(sysctl -n hw.ncpu 2>/dev/null)" ]; then
+            sysctl -n hw.ncpu 2>/dev/null
+          elif command -v nproc >/dev/null 2>&1; then
+            nproc
+          else
+            echo 4
+          fi
       CLANG_TIDY:
         sh: |
           if command -v clang-tidy >/dev/null 2>&1; then
@@ -109,7 +118,7 @@ tasks:
           echo "clang-tidy not found; skipping tidy. Install LLVM (for example: brew install llvm) to enable this task."
           exit 0
         fi
-        find cpp/ -name '*.cpp' ! -path '*/bindings/*' ! -path 'cpp/tests/*' | xargs "{{.CLANG_TIDY}}" -p build/tidy
+        find cpp/ -name '*.cpp' ! -path '*/bindings/*' ! -path 'cpp/tests/*' -print0 | xargs -0 -n 1 -P "{{.TIDY_JOBS}}" "{{.CLANG_TIDY}}" -p build/tidy -quiet
     silent: false
 
   metrics:
