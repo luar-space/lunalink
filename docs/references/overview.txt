@@ -1,0 +1,26 @@
+1. Signal Definition & Characteristics
+
+ - Specifies the modulation schemes, signal structure, frequencies (e.g., 2483.5–2500 MHz band), and waveform architecture for the AFS broadcast.
+ - Ensures that multiple LunaNet Service Providers (LNSPs) broadcasting AFS signals in proximity can be interoperable.
+ - Supports both data and pilot channels for robust navigation and timing reception.
+
+2. Navigation Message Specification
+
+ - Defines how navigation data (e.g., satellite ephemeris, clock information) is formatted within the AFS.
+ - Requires message structures that support users in computing position and time solutions.
+ - Includes provisions for optional future extensions (e.g., improvements to ephemeris or timing formats).
+
+3. Interoperability & Compliance
+
+- Adopting this recommended standard is voluntary in principle, but any provider claiming compliance must fully conform to the defined specifications.
+- Ensures consistent behaviour across different provider implementations in a multi-node lunar network.
+
+4. Scalability and Evolution
+
+ - Designed to support diverse lunar architectures (different orbits, surface assets).
+ - Allows flexibility for service providers to implement mission-specific features, provided interoperability is maintained.
+
+5. PNT Functionality
+
+ - Enables a GNSS-like PNT service tailored for lunar operational environments (e.g., orbiters, surface rovers, astronauts).
+ - Guarantees baseline PNT performance and network participation for compliant nodes.
