@@ -1,8 +1,12 @@
+# OS
+.DS_Store
+
 # Build artifacts
 build/
 dist/
 *.egg-info/
 _skbuild/
+Testing/
 
 # Python cache
 __pycache__/
