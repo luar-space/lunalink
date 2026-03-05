@@ -10,6 +10,7 @@ LSIS AFS Python package with C++ extensions via pybind11.
    developing
    tech_stack
    safety
+   signal/signal_chain
    test_vectors
    versioning
    api

@@ -3,8 +3,9 @@
 
 namespace lunalink::signal {
 
-const uint8_t* gold_prn(uint8_t prn_id) noexcept {
-    return kGoldPrns[prn_id - 1u];
+const std::array<uint8_t, kGoldChipLength> &gold_prn(uint8_t prn_id) noexcept {
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+  return kGoldPrns[static_cast<size_t>(prn_id) - 1U];
 }
 
 } // namespace lunalink::signal

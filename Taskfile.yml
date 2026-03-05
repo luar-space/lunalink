@@ -87,7 +87,7 @@ tasks:
         sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
     cmds:
       - cmake -B build/tidy -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-      - find cpp/ -name '*.cpp' ! -path '*/bindings/*' | xargs clang-tidy -p build/tidy
+      - find cpp/ -name '*.cpp' ! -path '*/bindings/*' ! -path 'cpp/tests/*' | xargs clang-tidy -p build/tidy
     silent: false
 
   metrics:
@@ -100,7 +100,7 @@ tasks:
   docs-build:
     desc: Build the HTML documentation with Sphinx.
     cmds:
-      - uv run sphinx-build -b html docs/ docs/_build/html -W
+      - uv run python -m sphinx -b html docs/ docs/_build/html -W
     silent: false
 
   docs-serve:

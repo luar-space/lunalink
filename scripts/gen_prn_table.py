@@ -52,10 +52,12 @@ def write_hpp(path: Path) -> None:
     path.write_text(
         "// GENERATED — do not edit. Re-run scripts/gen_prn_table.py to regenerate.\n"
         "#pragma once\n"
+        "#include <array>\n"
         "#include <cstdint>\n"
         "\n"
         "namespace lunalink::signal {\n"
-        f"extern const uint8_t kGoldPrns[{PRN_COUNT}][{CHIP_LENGTH}];\n"
+        f"extern const std::array<std::array<uint8_t, {CHIP_LENGTH}>, "
+        f"{PRN_COUNT}> kGoldPrns;\n"
         "} // namespace lunalink::signal\n"
     )
 
@@ -71,17 +73,17 @@ def write_cpp(path: Path, all_chips: list[list[int]]) -> None:
     lines.append("")
     lines.append("namespace lunalink::signal {")
     lines.append("")
-    lines.append(f"const uint8_t kGoldPrns[{PRN_COUNT}][{CHIP_LENGTH}] = {{")
+    lines.append(
+        "constexpr std::array<std::array<uint8_t, "
+        + str(CHIP_LENGTH)
+        + ">, "
+        + str(PRN_COUNT)
+        + "> kGoldPrns = {{"
+    )
     for prn_idx, chips in enumerate(all_chips):
-        # Format as rows of 78 chips for readability
-        row_parts: list[str] = []
-        for i in range(0, CHIP_LENGTH, 78):
-            chunk = chips[i : i + 78]
-            row_parts.append("".join(str(c) for c in chunk))
         chip_str = ",".join(str(c) for c in chips)
-        lines.append(f"    // PRN {prn_idx + 1}")
-        lines.append(f"    {{{chip_str}}},")
-    lines.append("};")
+        lines.append("    {{" + chip_str + "}},")
+    lines.append("}};")
     lines.append("")
     lines.append("} // namespace lunalink::signal")
     lines.append("")

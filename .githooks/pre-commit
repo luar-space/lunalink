@@ -49,8 +49,17 @@ fi
 echo "C++ tests passed."
 echo ""
 
+echo "Clang-tidy static analysis..."
+if ! task tidy; then
+  echo ""
+  echo "Clang-tidy failed. Run 'task tidy' to see the violations."
+  exit 1
+fi
+echo "Clang-tidy passed."
+echo ""
+
 echo "Python tests..."
-if ! uv run pytest; then
+if ! uv run python -m pytest; then
   echo ""
   echo "Tests failed. Run 'task test' to see the failures."
   exit 1
@@ -59,7 +68,7 @@ echo "Tests passed."
 echo ""
 
 echo "Docs..."
-if ! uv run sphinx-build -b html docs/ docs/_build/html -W; then
+if ! uv run python -m sphinx -b html docs/ docs/_build/html -W; then
   echo ""
   echo "Documentation build failed. Run 'task docs-build' to see the errors."
   exit 1
