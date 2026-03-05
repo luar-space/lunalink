@@ -20,7 +20,7 @@ tasks:
     cmds:
       - task: build
       - task: test-cpp
-      - uv run pytest
+      - uv run python -m pytest
     silent: false
 
   test-cpp:
@@ -85,9 +85,31 @@ tasks:
     vars:
       GENERATOR:
         sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
+      CLANG_TIDY:
+        sh: |
+          if command -v clang-tidy >/dev/null 2>&1; then
+            command -v clang-tidy
+          elif [ -x /opt/homebrew/opt/llvm/bin/clang-tidy ]; then
+            echo /opt/homebrew/opt/llvm/bin/clang-tidy
+          elif [ -x /usr/local/opt/llvm/bin/clang-tidy ]; then
+            echo /usr/local/opt/llvm/bin/clang-tidy
+          elif [ -x /opt/homebrew/bin/clang-tidy ]; then
+            echo /opt/homebrew/bin/clang-tidy
+          elif [ -x /usr/local/bin/clang-tidy ]; then
+            echo /usr/local/bin/clang-tidy
+          elif [ -x /opt/homebrew/bin/brew ] && [ -x "$(/opt/homebrew/bin/brew --prefix llvm)/bin/clang-tidy" ]; then
+            echo "$(/opt/homebrew/bin/brew --prefix llvm)/bin/clang-tidy"
+          elif [ -x /usr/local/bin/brew ] && [ -x "$(/usr/local/bin/brew --prefix llvm)/bin/clang-tidy" ]; then
+            echo "$(/usr/local/bin/brew --prefix llvm)/bin/clang-tidy"
+          fi
     cmds:
       - cmake -B build/tidy -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-      - find cpp/ -name '*.cpp' ! -path '*/bindings/*' ! -path 'cpp/tests/*' | xargs clang-tidy -p build/tidy
+      - |
+        if [ -z "{{.CLANG_TIDY}}" ]; then
+          echo "clang-tidy not found; skipping tidy. Install LLVM (for example: brew install llvm) to enable this task."
+          exit 0
+        fi
+        find cpp/ -name '*.cpp' ! -path '*/bindings/*' ! -path 'cpp/tests/*' | xargs "{{.CLANG_TIDY}}" -p build/tidy
     silent: false
 
   metrics:
