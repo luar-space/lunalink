@@ -27,8 +27,15 @@ TEST_CASE("modulate_bpsk_i chip mapping with -1 symbol") {
 }
 
 TEST_CASE("modulate_bpsk_i full PRN 1 all values in {-1, +1}") {
+  // Unpack Gold PRN 1 chips from packed format
+  const auto *packed = gold_prn_packed(1);
+  std::array<uint8_t, kGoldChipLength> chips{};
+  for (uint16_t i = 0; i < kGoldChipLength; ++i)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+    chips[i] = unpack_chip(packed, i);
+
   std::array<int8_t, kGoldChipLength> out{};
-  modulate_bpsk_i(gold_prn(1).data(), kGoldChipLength, 1, out.data());
+  modulate_bpsk_i(chips.data(), kGoldChipLength, 1, out.data());
   for (auto v : out)
     REQUIRE((v == -1 || v == 1));
 }

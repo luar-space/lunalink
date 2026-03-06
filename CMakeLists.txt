@@ -63,6 +63,8 @@ set(LUNALINK_WARNING_FLAGS
 # Core C++ library — no Python dependency, linked by both bindings and tests.
 add_library(lunalink_core STATIC
     cpp/signal/prn_table.cpp
+    cpp/signal/prn_table_weil10230.cpp
+    cpp/signal/prn_table_weil1500.cpp
     cpp/signal/prn.cpp
     cpp/signal/modulator.cpp
 )

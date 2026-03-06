@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from lunalink.afs import modulate_i, prn_code
+from lunalink.afs import modulate_i, prn_code, weil1500_code, weil10230_code
 
 
 class TestPrnCode:
@@ -35,6 +35,68 @@ class TestPrnCode:
             prn_code(0)
         with pytest.raises((ValueError, Exception)):
             prn_code(211)
+
+
+class TestWeil10230Code:
+    """Tests for Weil-10230 PRN code loader (C1, AFS-Q primary)."""
+
+    def test_shape_and_dtype(self):
+        """Weil-10230 code returns correct shape and dtype."""
+        chips = weil10230_code(1)
+        assert chips.shape == (10230,)
+        assert chips.dtype == np.uint8
+
+    def test_chips_binary(self):
+        """All chip values are 0 or 1."""
+        chips = weil10230_code(1)
+        assert set(chips.tolist()).issubset({0, 1})
+
+    def test_all_210_prns_load(self):
+        """All 210 PRNs load successfully with correct shape."""
+        for prn_id in range(1, 211):
+            assert weil10230_code(prn_id).shape == (10230,)
+
+    def test_prns_are_distinct(self):
+        """Different PRN IDs produce different sequences."""
+        assert not np.array_equal(weil10230_code(1), weil10230_code(2))
+
+    def test_out_of_range_raises(self):
+        """Out-of-range PRN IDs raise ValueError."""
+        with pytest.raises((ValueError, Exception)):
+            weil10230_code(0)
+        with pytest.raises((ValueError, Exception)):
+            weil10230_code(211)
+
+
+class TestWeil1500Code:
+    """Tests for Weil-1500 PRN code loader (C1, AFS-Q tertiary)."""
+
+    def test_shape_and_dtype(self):
+        """Weil-1500 code returns correct shape and dtype."""
+        chips = weil1500_code(1)
+        assert chips.shape == (1500,)
+        assert chips.dtype == np.uint8
+
+    def test_chips_binary(self):
+        """All chip values are 0 or 1."""
+        chips = weil1500_code(1)
+        assert set(chips.tolist()).issubset({0, 1})
+
+    def test_all_210_prns_load(self):
+        """All 210 PRNs load successfully with correct shape."""
+        for prn_id in range(1, 211):
+            assert weil1500_code(prn_id).shape == (1500,)
+
+    def test_prns_are_distinct(self):
+        """Different PRN IDs produce different sequences."""
+        assert not np.array_equal(weil1500_code(1), weil1500_code(2))
+
+    def test_out_of_range_raises(self):
+        """Out-of-range PRN IDs raise ValueError."""
+        with pytest.raises((ValueError, Exception)):
+            weil1500_code(0)
+        with pytest.raises((ValueError, Exception)):
+            weil1500_code(211)
 
 
 class TestModulateI:
