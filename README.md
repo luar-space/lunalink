@@ -1,5 +1,18 @@
 # LunaLink
 
+[![CI](https://github.com/fiskio/lunalink/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/fiskio/lunalink/actions/workflows/ci.yml)
+[![Docs Deploy](https://github.com/fiskio/lunalink/actions/workflows/docs-pages.yml/badge.svg?branch=main)](https://github.com/fiskio/lunalink/actions/workflows/docs-pages.yml)
+[![Docs Site](https://img.shields.io/badge/docs-github%20pages-blue)](https://fiskio.github.io/lunalink/)
+[![C++ Tests](https://github.com/fiskio/lunalink/actions/workflows/ci.yml/badge.svg?branch=main&job=C%2B%2B%20Tests)](https://github.com/fiskio/lunalink/actions/workflows/ci.yml)
+[![Sanitizers](https://github.com/fiskio/lunalink/actions/workflows/ci.yml/badge.svg?branch=main&job=Sanitizers%20(ASan%20%2B%20UBSan))](https://github.com/fiskio/lunalink/actions/workflows/ci.yml)
+[![clang-tidy](https://github.com/fiskio/lunalink/actions/workflows/ci.yml/badge.svg?branch=main&job=clang-tidy)](https://github.com/fiskio/lunalink/actions/workflows/ci.yml)
+[![C++ Coverage](https://github.com/fiskio/lunalink/actions/workflows/ci.yml/badge.svg?branch=main&job=C%2B%2B%20Coverage)](https://github.com/fiskio/lunalink/actions/workflows/ci.yml)
+[![Last Commit](https://img.shields.io/github/last-commit/fiskio/lunalink/main)](https://github.com/fiskio/lunalink/commits/main)
+[![Python](https://img.shields.io/badge/python-3.12%20%7C%203.13%20%7C%203.14-blue.svg)](https://github.com/fiskio/lunalink/blob/main/.github/workflows/ci.yml#L24)
+[![Style: ruff](https://img.shields.io/badge/style-ruff-D7FF64?logo=ruff)](https://github.com/astral-sh/ruff)
+[![Type checked: pyright](https://img.shields.io/badge/type%20checked-pyright-2A6DB2)](https://github.com/microsoft/pyright)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green.svg)](https://github.com/fiskio/lunalink/blob/main/LICENSE)
+
 LunaLink AFS Python package with C++ extensions via pybind11.
 
 ## Prerequisites
