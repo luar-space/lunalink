@@ -1,9 +1,10 @@
-"""Tests for AFS signal generation (C1–C4)."""
+"""Tests for AFS signal generation (C1–C5)."""
 
 import numpy as np
 import pytest
 
 from lunalink.afs import (
+    BCH_CODEWORD_LENGTH,
     EPOCHS_PER_FRAME,
     INTERIM_ASSIGNMENT_MAX_PRN,
     IQ_SAMPLES_PER_EPOCH,
@@ -11,6 +12,7 @@ from lunalink.afs import (
     SECONDARY_CODE_COUNT,
     SECONDARY_CODE_LENGTH,
     TERTIARY_CODE_LENGTH,
+    bch_encode,
     modulate_i,
     modulate_q,
     multiplex_iq,
@@ -310,3 +312,115 @@ class TestMultiplexIq:
         """Wrong Q sample length raises ValueError."""
         with pytest.raises((ValueError, Exception)):
             multiplex_iq(np.ones(2046, dtype=np.int8), np.ones(100, dtype=np.int8))
+
+
+class TestBchEncode:
+    """Tests for BCH(51,8) encoder (C5)."""
+
+    def test_shape_and_dtype(self):
+        """Output has correct shape and dtype."""
+        out = bch_encode(0, 69)
+        assert out.shape == (52,)
+        assert out.dtype == np.uint8
+
+    def test_spec_test_vector(self):
+        """Matches LSIS V1.0 Figure 8: SB1=0x045, encoded=0x229f61dbb84a0."""
+        expected = np.array(
+            [
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                1,
+                0,
+                1,
+                0,
+                0,
+                1,
+                1,
+                1,
+                1,
+                1,
+                0,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                1,
+                1,
+                0,
+                1,
+                1,
+                0,
+                1,
+                1,
+                1,
+                0,
+                1,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                1,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+            ],
+            dtype=np.uint8,
+        )
+        np.testing.assert_array_equal(bch_encode(0, 69), expected)
+
+    def test_output_binary(self):
+        """All output values are 0 or 1."""
+        out = bch_encode(1, 50)
+        assert set(out.tolist()).issubset({0, 1})
+
+    def test_constant(self):
+        """BCH_CODEWORD_LENGTH is 52."""
+        assert BCH_CODEWORD_LENGTH == 52
+
+    def test_different_inputs_differ(self):
+        """Different FID/TOI produce different codewords."""
+        assert not np.array_equal(bch_encode(0, 1), bch_encode(0, 2))
+
+    def test_all_fid_values(self):
+        """All four FID values produce valid distinct codewords."""
+        cws = [bch_encode(fid, 42) for fid in range(4)]
+        for i, cw in enumerate(cws):
+            assert set(cw.tolist()).issubset({0, 1})
+            assert cw[0] == (i >> 1)  # bit0 = FID MSB
+        # All must be distinct.
+        for i in range(4):
+            for j in range(i + 1, 4):
+                assert not np.array_equal(cws[i], cws[j])
+
+    def test_bit0_xor_property(self):
+        """FID=2 (bit0=1) flips all 51 LFSR outputs vs FID=0 (bit0=0)."""
+        a = bch_encode(0, 69)
+        b = bch_encode(2, 69)
+        assert a[0] == 0 and b[0] == 1
+        np.testing.assert_array_equal(b[1:], 1 - a[1:])
+
+    def test_invalid_fid_raises(self):
+        """FID > 3 raises ValueError."""
+        with pytest.raises((ValueError, Exception)):
+            bch_encode(4, 0)
+
+    def test_invalid_toi_raises(self):
+        """TOI > 99 raises ValueError."""
+        with pytest.raises((ValueError, Exception)):
+            bch_encode(0, 100)

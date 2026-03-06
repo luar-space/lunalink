@@ -1,3 +1,4 @@
+#include "lunalink/signal/bch.hpp"
 #include "lunalink/signal/iq_mux.hpp"
 #include "lunalink/signal/modulator.hpp"
 #include "lunalink/signal/prn.hpp"
@@ -212,4 +213,25 @@ PYBIND11_MODULE(_afs, m) {
   m.attr("TERTIARY_CODE_LENGTH") = kWeil1500ChipLength;
   m.attr("IQ_UPSAMPLE_FACTOR") = kIqUpsampleFactor;
   m.attr("IQ_SAMPLES_PER_EPOCH") = kIqSamplesPerEpoch;
+
+  m.def(
+      "bch_encode",
+      [](int fid, int toi) -> py::array_t<uint8_t> {
+        if (fid < 0 || fid > 3)
+          throw py::value_error("fid must be in [0, 3]");
+        if (toi < 0 || toi > 99)
+          throw py::value_error("toi must be in [0, 99]");
+        auto out = py::array_t<uint8_t>(kBchCodewordLength);
+        const auto status = bch_encode(static_cast<uint8_t>(fid),
+                                       static_cast<uint8_t>(toi),
+                                       out.mutable_data(),
+                                       kBchCodewordLength);
+        if (status != BchStatus::kOk)
+          throw py::value_error("bch_encode failed");
+        return out;
+      },
+      py::arg("fid"), py::arg("toi"),
+      "Encode SB1 (FID + TOI) using BCH(51,8). Returns 52 symbols.");
+
+  m.attr("BCH_CODEWORD_LENGTH") = kBchCodewordLength;
 }

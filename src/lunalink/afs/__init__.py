@@ -1,6 +1,7 @@
 """LunaLink AFS subpackage — Augmented Forward Signal implementation."""
 
 from lunalink.afs.signal import (
+    BCH_CODEWORD_LENGTH,
     EPOCHS_PER_FRAME,
     INTERIM_ASSIGNMENT_MAX_PRN,
     IQ_SAMPLES_PER_EPOCH,
@@ -8,6 +9,7 @@ from lunalink.afs.signal import (
     SECONDARY_CODE_COUNT,
     SECONDARY_CODE_LENGTH,
     TERTIARY_CODE_LENGTH,
+    bch_encode,
     modulate_i,
     modulate_q,
     multiplex_iq,
@@ -19,6 +21,8 @@ from lunalink.afs.signal import (
 )
 
 __all__ = [
+    "bch_encode",
+    "BCH_CODEWORD_LENGTH",
     "prn_code",
     "weil10230_code",
     "weil1500_code",

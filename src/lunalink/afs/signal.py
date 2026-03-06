@@ -5,6 +5,7 @@ from __future__ import annotations
 import numpy as np
 from numpy.typing import NDArray
 
+from lunalink.afs._afs import BCH_CODEWORD_LENGTH as BCH_CODEWORD_LENGTH
 from lunalink.afs._afs import EPOCHS_PER_FRAME as EPOCHS_PER_FRAME
 from lunalink.afs._afs import INTERIM_ASSIGNMENT_MAX_PRN as INTERIM_ASSIGNMENT_MAX_PRN
 from lunalink.afs._afs import IQ_SAMPLES_PER_EPOCH as IQ_SAMPLES_PER_EPOCH
@@ -12,6 +13,7 @@ from lunalink.afs._afs import IQ_UPSAMPLE_FACTOR as IQ_UPSAMPLE_FACTOR
 from lunalink.afs._afs import SECONDARY_CODE_COUNT as SECONDARY_CODE_COUNT
 from lunalink.afs._afs import SECONDARY_CODE_LENGTH as SECONDARY_CODE_LENGTH
 from lunalink.afs._afs import TERTIARY_CODE_LENGTH as TERTIARY_CODE_LENGTH
+from lunalink.afs._afs import bch_encode as _bch_encode
 from lunalink.afs._afs import modulate_i as _modulate_i
 from lunalink.afs._afs import modulate_q as _modulate_q
 from lunalink.afs._afs import multiplex_iq as _multiplex_iq
@@ -22,6 +24,8 @@ from lunalink.afs._afs import weil1500_code as _weil1500_code
 from lunalink.afs._afs import weil10230_code as _weil10230_code
 
 __all__ = [
+    "bch_encode",
+    "BCH_CODEWORD_LENGTH",
     "prn_code",
     "weil10230_code",
     "weil1500_code",
@@ -38,6 +42,32 @@ __all__ = [
     "IQ_UPSAMPLE_FACTOR",
     "IQ_SAMPLES_PER_EPOCH",
 ]
+
+
+def bch_encode(fid: int, toi: int) -> NDArray[np.uint8]:
+    """Encode SB1 header using BCH(51,8).
+
+    Per LSIS V1.0 §2.4.2: the 9-bit SB1 field (FID + TOI) is encoded into
+    52 symbols using an 8-stage LFSR with the MSB prepended raw.
+
+    Parameters
+    ----------
+    fid : int
+        Frame Identifier, in [0, 3].
+    toi : int
+        Time of Interval, in [0, 99].
+
+    Returns
+    -------
+    numpy.ndarray
+        Shape (52,), dtype uint8, values in {0, 1}.
+
+    Raises
+    ------
+    ValueError
+        If fid or toi is out of range.
+    """
+    return _bch_encode(fid, toi)
 
 
 def prn_code(prn_id: int) -> NDArray[np.uint8]:

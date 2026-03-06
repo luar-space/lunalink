@@ -47,6 +47,11 @@ def multiplex_iq(
     """Multiplex AFS-I and AFS-Q into baseband IQ at 5.115 MSPS."""
     ...
 
+def bch_encode(fid: int, toi: int) -> NDArray[np.uint8]:
+    """Encode SB1 (FID + TOI) using BCH(51,8). Returns 52 symbols."""
+    ...
+
+BCH_CODEWORD_LENGTH: int
 EPOCHS_PER_FRAME: int
 SECONDARY_CODE_LENGTH: int
 SECONDARY_CODE_COUNT: int
