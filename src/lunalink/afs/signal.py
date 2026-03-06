@@ -5,12 +5,29 @@ from __future__ import annotations
 import numpy as np
 from numpy.typing import NDArray
 
+from lunalink.afs._afs import EPOCHS_PER_FRAME as EPOCHS_PER_FRAME
+from lunalink.afs._afs import SECONDARY_CODE_COUNT as SECONDARY_CODE_COUNT
+from lunalink.afs._afs import SECONDARY_CODE_LENGTH as SECONDARY_CODE_LENGTH
+from lunalink.afs._afs import TERTIARY_CODE_LENGTH as TERTIARY_CODE_LENGTH
 from lunalink.afs._afs import modulate_i as _modulate_i
 from lunalink.afs._afs import prn_code as _prn_code
+from lunalink.afs._afs import tiered_code_epoch as _tiered_code_epoch
+from lunalink.afs._afs import tiered_code_epoch_assigned as _tiered_code_epoch_assigned
 from lunalink.afs._afs import weil1500_code as _weil1500_code
 from lunalink.afs._afs import weil10230_code as _weil10230_code
 
-__all__ = ["prn_code", "weil10230_code", "weil1500_code", "modulate_i"]
+__all__ = [
+    "prn_code",
+    "weil10230_code",
+    "weil1500_code",
+    "modulate_i",
+    "tiered_code_epoch",
+    "tiered_code_epoch_assigned",
+    "EPOCHS_PER_FRAME",
+    "SECONDARY_CODE_LENGTH",
+    "SECONDARY_CODE_COUNT",
+    "TERTIARY_CODE_LENGTH",
+]
 
 
 def prn_code(prn_id: int) -> NDArray[np.uint8]:
@@ -105,3 +122,50 @@ def weil1500_code(prn_id: int) -> NDArray[np.uint8]:
         If prn_id is not in [1, 210].
     """
     return _weil1500_code(prn_id)
+
+
+def tiered_code_epoch(prn_id: int, epoch_idx: int) -> NDArray[np.uint8]:
+    """Return one primary epoch of the tiered AFS-Q code.
+
+    Combines primary (Weil-10230) XOR secondary (4-bit) XOR tertiary
+    (Weil-1500) codes per LSIS V1.0 section 2.3.5.2.
+
+    Parameters
+    ----------
+    prn_id : int
+        LNSP node identifier in [1, 210].
+    epoch_idx : int
+        Primary code epoch index within the 12 s frame, in [0, 5999].
+
+    Returns
+    -------
+    numpy.ndarray
+        Shape (10230,), dtype uint8, values in {0, 1}.
+
+    Raises
+    ------
+    ValueError
+        If prn_id or epoch_idx is out of range.
+    """
+    return _tiered_code_epoch(prn_id, epoch_idx)
+
+
+def tiered_code_epoch_assigned(
+    primary_prn: int,
+    secondary_code_idx: int,
+    tertiary_prn: int,
+    tertiary_phase_offset: int,
+    epoch_idx: int,
+) -> NDArray[np.uint8]:
+    """Return one primary epoch of the tiered AFS-Q code with explicit assignment.
+
+    This API supports configurable mapping between LNSP node IDs and
+    primary/secondary/tertiary code components, including tertiary phase offset.
+    """
+    return _tiered_code_epoch_assigned(
+        primary_prn,
+        secondary_code_idx,
+        tertiary_prn,
+        tertiary_phase_offset,
+        epoch_idx,
+    )

@@ -153,14 +153,14 @@ Implementation Status
      - Description
      - Status
    * - C1
-     - Code loader (Gold-2046)
-     - V1 complete
+     - Code loader (Gold-2046, Weil-10230, Weil-1500)
+     - Complete
    * - C2
      - BPSK modulator (AFS-I only)
      - V1 partial (AFS-I); AFS-Q in V2
    * - C3
-     - Tiered code combiner
-     - V2
+     - Tiered code combiner (interim mapping + explicit assignment API)
+     - Complete
    * - C4
      - IQ multiplexer
      - V2

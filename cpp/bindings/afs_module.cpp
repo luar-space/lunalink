@@ -1,5 +1,6 @@
 #include "lunalink/signal/modulator.hpp"
 #include "lunalink/signal/prn.hpp"
+#include "lunalink/signal/tiered_code.hpp"
 #include <cstdint>
 #include <limits>
 #include <pybind11/numpy.h>
@@ -76,4 +77,61 @@ PYBIND11_MODULE(_afs, m) {
       },
       py::arg("prn"), py::arg("data_symbol"),
       "Modulate a chip sequence with a BPSK data symbol (AFS-I channel).");
+
+  m.def(
+      "tiered_code_epoch",
+      [](int prn_id, int epoch_idx) -> py::array_t<uint8_t> {
+        if (prn_id < 1 || prn_id > kPrnCount)
+          throw py::value_error("prn_id must be in [1, 210]");
+        if (epoch_idx < 0 || epoch_idx >= kEpochsPerFrame)
+          throw py::value_error("epoch_idx must be in [0, 5999]");
+        auto out = py::array_t<uint8_t>(kWeil10230ChipLength);
+        const bool ok = tiered_code_epoch_checked(
+            default_tiered_assignment(static_cast<uint8_t>(prn_id)),
+            static_cast<uint16_t>(epoch_idx), out.mutable_data());
+        if (!ok)
+          throw py::value_error("invalid tiered code assignment");
+        return out;
+      },
+      py::arg("prn_id"), py::arg("epoch_idx"),
+      "Return one primary epoch (10230 chips) of the tiered AFS-Q code.");
+
+  m.def(
+      "tiered_code_epoch_assigned",
+      [](int primary_prn,
+         int secondary_code_idx,
+         int tertiary_prn,
+         int tertiary_phase_offset,
+         int epoch_idx) -> py::array_t<uint8_t> {
+        if (epoch_idx < 0 || epoch_idx >= kEpochsPerFrame)
+          throw py::value_error("epoch_idx must be in [0, 5999]");
+        if (primary_prn < 1 || primary_prn > kPrnCount || tertiary_prn < 1 ||
+            tertiary_prn > kPrnCount || secondary_code_idx < 0 ||
+            secondary_code_idx >= kSecondaryCodeCount || tertiary_phase_offset < 0 ||
+            tertiary_phase_offset >= kWeil1500ChipLength) {
+          throw py::value_error(
+              "assignment invalid: primary/tertiary PRN in [1,210], secondary in "
+              "[0,3], tertiary_phase_offset in [0,1499]");
+        }
+        TieredCodeAssignment a{};
+        a.primary_prn = static_cast<uint8_t>(primary_prn);
+        a.secondary_code_idx = static_cast<uint8_t>(secondary_code_idx);
+        a.tertiary_prn = static_cast<uint8_t>(tertiary_prn);
+        a.tertiary_phase_offset = static_cast<uint16_t>(tertiary_phase_offset);
+        auto out = py::array_t<uint8_t>(kWeil10230ChipLength);
+        const bool ok = tiered_code_epoch_checked(
+            a, static_cast<uint16_t>(epoch_idx), out.mutable_data());
+        if (!ok)
+          throw py::value_error("invalid tiered code assignment");
+        return out;
+      },
+      py::arg("primary_prn"), py::arg("secondary_code_idx"),
+      py::arg("tertiary_prn"), py::arg("tertiary_phase_offset"),
+      py::arg("epoch_idx"),
+      "Return one primary epoch using explicit AFS-Q code assignments.");
+
+  m.attr("EPOCHS_PER_FRAME") = kEpochsPerFrame;
+  m.attr("SECONDARY_CODE_LENGTH") = kSecondaryCodeLength;
+  m.attr("SECONDARY_CODE_COUNT") = kSecondaryCodeCount;
+  m.attr("TERTIARY_CODE_LENGTH") = kWeil1500ChipLength;
 }

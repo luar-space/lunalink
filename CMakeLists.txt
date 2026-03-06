@@ -67,6 +67,7 @@ add_library(lunalink_core STATIC
     cpp/signal/prn_table_weil1500.cpp
     cpp/signal/prn.cpp
     cpp/signal/modulator.cpp
+    cpp/signal/tiered_code.cpp
 )
 target_include_directories(lunalink_core PUBLIC cpp/include)
 set_target_properties(lunalink_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -109,6 +110,7 @@ if(BUILD_TESTING)
     add_executable(test_lunalink
         cpp/tests/test_prn.cpp
         cpp/tests/test_modulator.cpp
+        cpp/tests/test_tiered_code.cpp
     )
     target_link_libraries(test_lunalink PRIVATE lunalink_core Catch2::Catch2WithMain)
     target_compile_options(test_lunalink PRIVATE ${LUNALINK_WARNING_FLAGS})
