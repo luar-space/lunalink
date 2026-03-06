@@ -45,7 +45,7 @@ Cutting a Release
 3. Rebuild the package to confirm the version resolves correctly::
 
       task build
-      uv run python -c "import lsis_afs; print(lsis_afs.__version__)"
+      uv run python -c "import lunalink; print(lunalink.__version__)"
 
 The version is now ``1.2.3`` everywhere: the installed package metadata,
 the Sphinx documentation, and any wheel built for distribution.
@@ -79,6 +79,6 @@ metadata at build time::
    from importlib.metadata import version as get_version
 
    try:
-       release = get_version("lsis-afs")
+       release = get_version("lunalink")
    except PackageNotFoundError:
        release = "unknown"

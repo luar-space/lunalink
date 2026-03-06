@@ -1,14 +1,19 @@
-"""Tests for AFS signal generation (C1 PRN codes, C2 BPSK modulator, C3 tiered code)."""
+"""Tests for AFS signal generation (C1–C4)."""
 
 import numpy as np
 import pytest
 
 from lunalink.afs import (
     EPOCHS_PER_FRAME,
+    INTERIM_ASSIGNMENT_MAX_PRN,
+    IQ_SAMPLES_PER_EPOCH,
+    IQ_UPSAMPLE_FACTOR,
     SECONDARY_CODE_COUNT,
     SECONDARY_CODE_LENGTH,
     TERTIARY_CODE_LENGTH,
     modulate_i,
+    modulate_q,
+    multiplex_iq,
     prn_code,
     tiered_code_epoch,
     tiered_code_epoch_assigned,
@@ -182,6 +187,7 @@ class TestTieredCodeEpoch:
         assert EPOCHS_PER_FRAME == 6000
         assert SECONDARY_CODE_LENGTH == 4
         assert SECONDARY_CODE_COUNT == 4
+        assert INTERIM_ASSIGNMENT_MAX_PRN == 12
         assert TERTIARY_CODE_LENGTH == 1500
 
     def test_out_of_range_raises(self):
@@ -192,6 +198,8 @@ class TestTieredCodeEpoch:
             tiered_code_epoch(1, 6000)
         with pytest.raises((ValueError, Exception)):
             tiered_code_epoch(1, -1)
+        with pytest.raises((ValueError, Exception)):
+            tiered_code_epoch(13, 0)
 
     def test_assigned_matches_default_interim_mapping(self):
         """Explicit interim assignment matches tiered_code_epoch output."""
@@ -221,3 +229,84 @@ class TestTieredCodeEpoch:
             tiered_code_epoch_assigned(1, 4, 1, 0, 0)
         with pytest.raises((ValueError, Exception)):
             tiered_code_epoch_assigned(1, 0, 1, 1500, 0)
+
+
+class TestModulateQ:
+    """Tests for AFS-Q BPSK(5) pilot modulator (C2-Q)."""
+
+    def test_shape_and_dtype(self):
+        """Modulated output has correct shape and dtype."""
+        chips = tiered_code_epoch(1, 0)
+        out = modulate_q(chips)
+        assert out.shape == (10230,)
+        assert out.dtype == np.int8
+
+    def test_values_bipolar(self):
+        """All modulated values are -1 or +1."""
+        out = modulate_q(tiered_code_epoch(1, 0))
+        assert set(out.tolist()).issubset({-1, 1})
+
+    def test_chip_mapping(self):
+        """Chip mapping: logic 0 -> +1, logic 1 -> -1 (spec Table 8)."""
+        chips = np.array([0, 1, 0, 1], dtype=np.uint8)
+        out = modulate_q(chips)
+        np.testing.assert_array_equal(out, [1, -1, 1, -1])
+
+    def test_equals_modulate_i_with_symbol_plus1(self):
+        """Q modulation equals I modulation with data_symbol=+1."""
+        chips = tiered_code_epoch(1, 0)
+        np.testing.assert_array_equal(modulate_q(chips), modulate_i(chips, 1))
+
+
+class TestMultiplexIq:
+    """Tests for IQ multiplexer (C4)."""
+
+    def test_shape_and_dtype(self):
+        """Output has correct shape and dtype."""
+        i_samples = modulate_i(prn_code(1), 1)
+        q_samples = modulate_q(tiered_code_epoch(1, 0))
+        iq = multiplex_iq(i_samples, q_samples)
+        assert iq.shape == (10230, 2)
+        assert iq.dtype == np.int16
+
+    def test_i_upsampled_5x(self):
+        """AFS-I samples are repeated 5x to match Q rate."""
+        i_samples = modulate_i(prn_code(1), 1)
+        q_samples = modulate_q(tiered_code_epoch(1, 0))
+        iq = multiplex_iq(i_samples, q_samples)
+        i_out = iq[:, 0]
+        # Each I chip should be repeated 5 times
+        for chip_idx in range(10):
+            block = i_out[chip_idx * 5 : (chip_idx + 1) * 5]
+            assert np.all(block == i_samples[chip_idx])
+
+    def test_q_passthrough(self):
+        """AFS-Q samples pass through at native chip rate."""
+        i_samples = modulate_i(prn_code(1), 1)
+        q_samples = modulate_q(tiered_code_epoch(1, 0))
+        iq = multiplex_iq(i_samples, q_samples)
+        np.testing.assert_array_equal(iq[:, 1], q_samples.astype(np.int16))
+
+    def test_equal_power(self):
+        """Both channels have equal mean-square power (50/50 per LSIS-103)."""
+        i_samples = modulate_i(prn_code(1), 1)
+        q_samples = modulate_q(tiered_code_epoch(1, 0))
+        iq = multiplex_iq(i_samples, q_samples)
+        power_i = np.mean(iq[:, 0].astype(np.float64) ** 2)
+        power_q = np.mean(iq[:, 1].astype(np.float64) ** 2)
+        assert power_i == pytest.approx(power_q)
+
+    def test_constants(self):
+        """IQ constants match spec chip rates."""
+        assert IQ_UPSAMPLE_FACTOR == 5
+        assert IQ_SAMPLES_PER_EPOCH == 10230
+
+    def test_wrong_i_length_raises(self):
+        """Wrong I sample length raises ValueError."""
+        with pytest.raises((ValueError, Exception)):
+            multiplex_iq(np.ones(100, dtype=np.int8), np.ones(10230, dtype=np.int8))
+
+    def test_wrong_q_length_raises(self):
+        """Wrong Q sample length raises ValueError."""
+        with pytest.raises((ValueError, Exception)):
+            multiplex_iq(np.ones(2046, dtype=np.int8), np.ones(100, dtype=np.int8))

@@ -83,7 +83,7 @@ Project Structure
 **Requirement:** The ``src`` layout is mandated. Projects must include a
 ``pyproject.toml``, a ``README``, and a ``LICENSE``.
 
-**Implementation:** Source code lives under ``src/lsis_afs/``. A
+**Implementation:** Source code lives under ``src/lunalink/``. A
 ``pyproject.toml`` and ``README.md`` are present at the project root.
 
 

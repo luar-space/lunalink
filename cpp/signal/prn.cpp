@@ -1,4 +1,3 @@
-#include <cassert>
 #include <cstddef>
 
 #include "lunalink/signal/prn.hpp"
@@ -8,22 +7,42 @@
 
 namespace lunalink::signal {
 
-const uint8_t* gold_prn_packed(uint8_t prn_id) noexcept {
-  assert(prn_id >= 1 && prn_id <= kPrnCount);
+PrnStatus gold_prn_packed(uint8_t prn_id, const uint8_t **out_packed) noexcept {
+  if (out_packed == nullptr) {
+    return PrnStatus::kNullOutput;
+  }
+  if (prn_id < 1U || prn_id > kPrnCount) {
+    return PrnStatus::kInvalidPrn;
+  }
   // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index,cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
-  return kGoldPrnsPacked[static_cast<size_t>(prn_id) - 1U];
+  *out_packed = kGoldPrnsPacked[static_cast<size_t>(prn_id) - 1U];
+  return PrnStatus::kOk;
 }
 
-const uint8_t* weil10230_prn_packed(uint8_t prn_id) noexcept {
-  assert(prn_id >= 1 && prn_id <= kPrnCount);
+PrnStatus weil10230_prn_packed(uint8_t prn_id,
+                               const uint8_t **out_packed) noexcept {
+  if (out_packed == nullptr) {
+    return PrnStatus::kNullOutput;
+  }
+  if (prn_id < 1U || prn_id > kPrnCount) {
+    return PrnStatus::kInvalidPrn;
+  }
   // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index,cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
-  return kWeil10230PrnsPacked[static_cast<size_t>(prn_id) - 1U];
+  *out_packed = kWeil10230PrnsPacked[static_cast<size_t>(prn_id) - 1U];
+  return PrnStatus::kOk;
 }
 
-const uint8_t* weil1500_prn_packed(uint8_t prn_id) noexcept {
-  assert(prn_id >= 1 && prn_id <= kPrnCount);
+PrnStatus weil1500_prn_packed(uint8_t prn_id,
+                              const uint8_t **out_packed) noexcept {
+  if (out_packed == nullptr) {
+    return PrnStatus::kNullOutput;
+  }
+  if (prn_id < 1U || prn_id > kPrnCount) {
+    return PrnStatus::kInvalidPrn;
+  }
   // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index,cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
-  return kWeil1500PrnsPacked[static_cast<size_t>(prn_id) - 1U];
+  *out_packed = kWeil1500PrnsPacked[static_cast<size_t>(prn_id) - 1U];
+  return PrnStatus::kOk;
 }
 
 } // namespace lunalink::signal

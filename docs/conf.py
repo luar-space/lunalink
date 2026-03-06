@@ -1,4 +1,4 @@
-"""Sphinx configuration for lsis-afs documentation."""
+"""Sphinx configuration for lunalink documentation."""
 
 import sys
 from importlib.metadata import PackageNotFoundError

@@ -96,10 +96,13 @@ Block Diagram
                     │  C4 IQ          │
                     │  Multiplexer    │
                     │                 │
-                    │  50/50 power    │
-                    │  I + jQ         │
+                    │  equal normalized│
+                    │  amplitude       │
+                    │  [I,Q] pairs     │
                     │                 │
-                    │  ≥10.23 MSPS    │
+                    │  5.115 MSPS/ch  │
+                    │  (10.23 Msps    │
+                    │   total values) │
                     │  int16_t        │
                     └────────┬────────┘
                AFS-Q ────────┘
@@ -108,7 +111,7 @@ Block Diagram
                         │
                         ▼
                   Baseband IQ
-                  (complex)
+                  (interleaved I,Q)
 
 Data Types Through the Chain
 ----------------------------
@@ -139,8 +142,8 @@ Data Types Through the Chain
      - 5.115 Mcps
    * - Baseband IQ
      - C4
-     - ``int16_t`` (I+Q composite)
-     - ≥10.23 MSPS
+     - ``int16_t`` interleaved IQ pair stream
+     - 5.115 MSPS/channel (10.23 Msamples/s total values)
 
 Implementation Status
 ---------------------
@@ -156,11 +159,11 @@ Implementation Status
      - Code loader (Gold-2046, Weil-10230, Weil-1500)
      - Complete
    * - C2
-     - BPSK modulator (AFS-I only)
-     - V1 partial (AFS-I); AFS-Q in V2
+     - BPSK modulator (AFS-I BPSK(1) + AFS-Q BPSK(5))
+     - Complete
    * - C3
      - Tiered code combiner (interim mapping + explicit assignment API)
      - Complete
    * - C4
-     - IQ multiplexer
-     - V2
+     - IQ multiplexer (5.115 MSPS, normalized-amplitude baseband)
+     - Complete

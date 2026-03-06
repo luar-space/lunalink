@@ -38,7 +38,7 @@ Getting Started
 Clone the repository and run the one-time setup::
 
     git clone <repo-url>
-    cd lsis-afs
+    cd lunalink
     task install        # create .venv and install all dependencies
     task install-hooks  # register the pre-commit hook
 
@@ -85,7 +85,7 @@ Daily Workflow
 No rebuild is needed. Changes to ``src/`` are picked up immediately since
 the package is installed in editable mode::
 
-    # edit src/lsis_afs/...
+    # edit src/lunalink/...
     task test    # runs build (no-op if C++ unchanged), then all tests
     task lint    # type check + format + lint
 
@@ -116,17 +116,15 @@ Project Structure
 
 .. code-block:: text
 
-    lsis-afs/
+    lunalink/
     ├── cpp/
-    │   ├── include/          # C++ headers
-    │   ├── example_core.cpp  # C++ implementation (no Python dependency)
-    │   ├── example.cpp       # pybind11 bindings
+    │   ├── include/lunalink/signal/  # C++ public headers
+    │   ├── signal/                   # C++ implementation (no Python dependency)
+    │   ├── bindings/afs_module.cpp   # pybind11 bindings
     │   └── tests/            # Catch2 unit tests
-    ├── src/lsis_afs/         # Python package (src layout)
+    ├── src/lunalink/         # Python package (src layout)
     │   ├── __init__.py       # exposes __version__
-    │   ├── _example.pyi      # type stubs for the compiled extension
-    │   ├── example.py        # Python wrapper for C++ bindings
-    │   └── py.typed          # PEP 561 marker
+    │   └── afs/              # AFS Python API + extension stubs
     ├── tests/                # pytest tests
     ├── docs/                 # Sphinx documentation source
     ├── .githooks/            # pre-commit hook
@@ -138,12 +136,13 @@ Project Structure
 Adding a New C++ Function
 --------------------------
 
-1. Declare the function in ``cpp/include/example.hpp``.
-2. Implement it in ``cpp/example_core.cpp`` (or a new ``_core.cpp`` file,
-   added to ``CMakeLists.txt`` as a source for ``lsis_afs_core``).
-3. Expose it via pybind11 in ``cpp/example.cpp``.
-4. Add the corresponding entry to ``src/lsis_afs/_example.pyi`` (type stub).
-5. Re-export from ``src/lsis_afs/example.py`` and update ``__all__``.
+1. Declare the function in an appropriate header under ``cpp/include/lunalink/``.
+2. Implement it in a corresponding source file under ``cpp/signal/`` (or other
+   module directory), and ensure it is included in ``lunalink_core`` sources in
+   ``CMakeLists.txt``.
+3. Expose it via pybind11 in ``cpp/bindings/afs_module.cpp``.
+4. Add/update the corresponding type stub in ``src/lunalink/afs/_afs.pyi``.
+5. Re-export from ``src/lunalink/afs/signal.py`` and update ``__all__``.
 6. Write Catch2 tests in ``cpp/tests/`` and pytest tests in ``tests/``.
 7. Run ``task test`` to verify everything passes.
 
@@ -151,14 +150,17 @@ Pre-commit Hook
 ---------------
 
 The hook in ``.githooks/pre-commit`` runs automatically on every
-``git commit``. It executes, in order:
+``git commit``. It delegates to ``task ci-checks`` (source of truth), which
+currently runs:
 
-1. ``uv sync`` — ensure the environment is up to date
-2. ``pyright src/`` — type checking
-3. ``ruff format --check`` + ``ruff check`` — formatting and linting (check-only; run ``task lint`` to auto-fix)
-4. C++ Catch2 tests via CMake + CTest
-5. ``pytest`` — Python tests with coverage
-6. ``sphinx-build -W`` — documentation build (warnings are errors)
+1. build
+2. lint-check
+3. test-cpp
+4. coverage-cpp
+5. tidy
+6. test-py
+7. sanitize
+8. docs-build
 
 The commit is blocked if any step fails. To skip the hook in an emergency
 (not recommended)::
@@ -193,7 +195,7 @@ It runs nine jobs in parallel:
    * - **Sanitizers**
      - C++ tests recompiled with ``-fsanitize=address,undefined``; any memory error or UB aborts with a diagnostic
    * - **clang-tidy**
-     - Static analysis of ``example_core.cpp`` and tests; ``bugprone-*``, ``cert-*``, ``cppcoreguidelines-*``, ``hicpp-*``, ``fuchsia-*`` checks
+     - Static analysis of C++ core sources under ``cpp/`` (excluding bindings and tests); ``bugprone-*``, ``cert-*``, ``cppcoreguidelines-*``, ``hicpp-*``, ``fuchsia-*`` checks
    * - **C++ Coverage**
      - gcov instrumentation, lcov report; ≥ 90% line coverage enforced
    * - **Docs**

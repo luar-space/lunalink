@@ -1,7 +1,7 @@
-lsis-afs
+lunalink
 ========
 
-LSIS AFS Python package with C++ extensions via pybind11.
+LunaLink AFS reference implementation with C++ core and pybind11 bindings.
 
 .. toctree::
    :maxdepth: 2
