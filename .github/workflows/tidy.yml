@@ -1,0 +1,21 @@
+name: Clang Tidy
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+jobs:
+  tidy:
+    name: clang-tidy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install tools
+        run: sudo apt-get install -y ninja-build clang clang-tidy
+      - uses: arduino/setup-task@v2
+      - run: clang-tidy --version
+      - run: CC=clang CXX=clang++ task tidy
