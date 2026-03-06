@@ -2,6 +2,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 
 namespace lunalink::signal {
 
@@ -32,7 +33,6 @@ inline constexpr uint8_t kInterleaverCols = 98;
 
 enum class FrameStatus : uint8_t {
   kOk = 0,
-  kNullOutput,
   kOutputTooSmall,
   kInvalidFid,
   kInvalidToi,
@@ -41,22 +41,32 @@ enum class FrameStatus : uint8_t {
 
 /// The 68-symbol sync pattern as individual {0, 1} values.
 /// Source: hex CC63F74536F49E04A (LSIS V1.0 §2.4.1, Table 12).
-extern const std::array<uint8_t, kSyncLength> kSyncPattern;
+extern constinit const std::array<uint8_t, kSyncLength> kSyncPattern;
 
 /// Build a partial AFS navigation frame (V2 stub).
 ///
 /// Layout: 68-symbol sync + 52-symbol BCH-encoded SB1 + 5880 zero-padded
 /// symbols (placeholder for LDPC-encoded, interleaved SB2–SB4).
 ///
-/// @param fid      Frame Identifier (0–3)
-/// @param toi      Time of Interval (0–99)
-/// @param out      Caller-allocated buffer, length >= 6000, values in {0, 1}
-/// @param out_len  Number of bytes available at @p out
+/// @pre fid <= 3
+/// @pre toi <= 99
+/// @pre out.size() == kFrameLength (6000)
+/// @post out is populated with valid partial frame symbols in {0, 1}
+/// @complexity O(kFrameLength)
 [[nodiscard]] FrameStatus frame_build_partial(
-    uint8_t     fid,
-    uint8_t     toi,
-    uint8_t*    out,
-    std::size_t out_len
-) noexcept;
+    uint8_t            fid,
+    uint8_t            toi,
+    std::span<uint8_t> out) noexcept;
+
+/**
+ * @brief Ergonomic overload for frame_build_partial that deduces from arrays/fixed-spans.
+ */
+template <typename T>
+[[nodiscard]] inline FrameStatus frame_build_partial(
+    uint8_t fid,
+    uint8_t toi,
+    T&&     out) noexcept {
+  return frame_build_partial(fid, toi, std::span<uint8_t>(out));
+}
 
 } // namespace lunalink::signal

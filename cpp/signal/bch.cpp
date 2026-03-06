@@ -1,76 +1,55 @@
 #include "lunalink/signal/bch.hpp"
 
-#include <array>
+#include <bit>
 
 namespace lunalink::signal {
 
 BchStatus bch_encode(
-    uint8_t     fid,
-    uint8_t     toi,
-    uint8_t*    out,
-    std::size_t out_len
-) noexcept {
-  if (out == nullptr) {
-    return BchStatus::kNullOutput;
-  }
-  if (out_len < kBchCodewordLength) {
+    uint8_t            fid,
+    uint8_t            toi,
+    std::span<uint8_t> out) noexcept {
+  if (out.size() < kBchCodewordLength) [[unlikely]] {
     return BchStatus::kOutputTooSmall;
   }
-  if (fid > 3U) {
+  if (fid > kBchFidMax) [[unlikely]] {
     return BchStatus::kInvalidFid;
   }
-  if (toi > 99U) {
+  if (toi > kBchToiMax) [[unlikely]] {
     return BchStatus::kInvalidToi;
   }
 
-  // SB1 = 9 bits: FID (2 MSBs) | TOI (7 LSBs), bit 0 is MSB.
-  const auto fid32 = static_cast<uint32_t>(fid);
-  const auto toi32 = static_cast<uint32_t>(toi);
-  // Ensure we use unsigned logic throughout to satisfy HICPP 4.2.1.
-  const auto sb1 = (fid32 << 7U) | toi32;
-  const auto bit0 = static_cast<uint8_t>((sb1 >> 8U) & 1U);
+  // SB1 = 9 bits: [FID(1:0), TOI(6:0)]
+  // Bit 0 is the raw MSB (FID bit 1).
+  // Bits 1-8 are fed into the LFSR (FID bit 0 and TOI bits 6-0).
+  // NOLINTNEXTLINE(hicpp-signed-bitwise)
+  const auto bit0 = static_cast<uint8_t>((static_cast<uint32_t>(fid) >> 1U) & 1U);
+  // NOLINTNEXTLINE(hicpp-signed-bitwise)
+  auto state = static_cast<uint8_t>(((static_cast<uint32_t>(fid) & 1U) << 7U) | (static_cast<uint32_t>(toi) & 0x7FU));
 
-  // Extract 8 data bits (bits 1-8, MSB first).
-  std::array<uint8_t, kBchInfoBits> data{};
-  for (uint32_t i = 0; i < kBchInfoBits; ++i) {
-    // Bounds check handled by loop condition; NOLINT used for strict Core Guidelines compliance.
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-    data[i] = static_cast<uint8_t>((sb1 >> (7U - i)) & 1U);
-  }
-
-  // Load LFSR: bit1 -> stage 8, bit8 -> stage 1.
-  // s[0] = stage 1 = data[7], s[7] = stage 8 = data[0].
-  std::array<uint8_t, kBchInfoBits> s{};
-  for (uint32_t i = 0; i < kBchInfoBits; ++i) {
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-    s[i] = data[7U - i];
-  }
-
-  // Fibonacci LFSR with polynomial 1+X^3+X^4+X^5+X^6+X^7+X^8.
-  // Taps (g0..g7): 1,0,0,1,1,1,1,1
-  // Feedback = XOR of stages where tap=1: s[0], s[3], s[4], s[5], s[6], s[7].
+  // Tap mask: bits 0, 3, 4, 5, 6, 7 (indices match Fig 7 registers).
+  // In our uint8_t 'state', bit 0 is Stage 1, bit 7 is Stage 8.
+  // Polynomial: 1 + X^3 + X^4 + X^5 + X^6 + X^7 + X^8
+  // Stages:      1   2   3   4   5   6   7   8
+  // Indices:     0   1   2   3   4   5   6   7
+  // Taps:        1   0   0   1   1   1   1   1
+  constexpr uint8_t kFeedbackMask = 0b11111001U;
   constexpr uint32_t kLfsrLength = 51;
 
-  // Prepend bit 0 (raw).
-  // Pointer arithmetic is necessary here as we interface with a raw buffer.
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+  // Prepend bit 0 (raw MSB).
   out[0] = bit0;
 
   for (uint32_t k = 0; k < kLfsrLength; ++k) {
-    const uint8_t output = s[7];
-
+    // Stage 8 output (bit 7).
     // NOLINTNEXTLINE(hicpp-signed-bitwise)
-    const auto fb = static_cast<uint8_t>(s[0] ^ s[3] ^ s[4] ^ s[5] ^ s[6] ^ s[7]);
+    const auto output = static_cast<uint8_t>((static_cast<uint32_t>(state) >> 7U) & 1U);
 
-    // Shift stages right: s[7]<-s[6], ..., s[1]<-s[0].
-    for (uint32_t i = 7; i > 0; --i) {
-      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-      s[i] = s[i - 1U];
-    }
-    s[0] = fb;
+    // XOR of tapped stages (popcount % 2 is an efficient parity XOR).
+    const auto fb = static_cast<uint8_t>(static_cast<uint32_t>(std::popcount(static_cast<uint32_t>(state & kFeedbackMask))) % 2U);
 
-    // XOR output with bit 0 and store.
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    // Shift registers (bits 0-6 move to 1-7; Stage 1 catches feedback).
+    state = static_cast<uint8_t>((static_cast<uint32_t>(state) << 1U) | fb);
+
+    // XOR output with bit 0 and store into codeword symbols.
     out[k + 1U] = static_cast<uint8_t>(output ^ bit0);
   }
 
