@@ -29,14 +29,15 @@ TieredCodeStatus tiered_code_epoch_checked(const TieredCodeAssignment &assignmen
   }
 
   // Secondary chip for this epoch (one secondary chip per primary epoch).
+  const auto sec_idx = static_cast<uint32_t>(assignment.secondary_code_idx);
+  const auto ep_idx  = static_cast<uint32_t>(epoch_idx);
   // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-  const uint8_t sec_chip = kSecondaryCodes[assignment.secondary_code_idx]
-                                          [epoch_idx % kSecondaryCodeLength];
+  const uint8_t sec_chip = kSecondaryCodes[sec_idx][ep_idx % kSecondaryCodeLength];
 
   // Tertiary chip (one tertiary chip per Ns=4 primary epochs).
   const auto tert_idx = static_cast<uint16_t>(
-      (static_cast<uint16_t>(assignment.tertiary_phase_offset) +
-       static_cast<uint16_t>(epoch_idx / kSecondaryCodeLength)) %
+      (static_cast<uint32_t>(assignment.tertiary_phase_offset) +
+       static_cast<uint32_t>(epoch_idx / kSecondaryCodeLength)) %
       kWeil1500ChipLength);
   uint8_t tert_chip = 0;
   if (unpack_chip(tertiary_packed, tert_idx, kWeil1500ChipLength, &tert_chip) !=

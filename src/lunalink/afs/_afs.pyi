@@ -1,7 +1,17 @@
 """Type stubs for the _afs C++ extension module."""
 
+from enum import IntEnum
+
 import numpy as np
 from numpy.typing import NDArray
+
+class FrameStatus(IntEnum):
+    OK = 0
+    NULL_OUTPUT = 1
+    OUTPUT_TOO_SMALL = 2
+    INVALID_FID = 3
+    INVALID_TOI = 4
+    BCH_FAILED = 5
 
 def prn_code(prn_id: int) -> NDArray[np.uint8]:
     """Return the Gold-2046 chip sequence for PRN prn_id (1-indexed)."""
@@ -48,10 +58,23 @@ def multiplex_iq(
     ...
 
 def bch_encode(fid: int, toi: int) -> NDArray[np.uint8]:
-    """Encode SB1 (FID + TOI) using BCH(51,8). Returns 52 symbols."""
+    """Encode SB1 (FID + TOI) using BCH(51,8) (§2.4.2.1). Returns 52 symbols."""
+    ...
+
+def frame_build_partial(fid: int, toi: int) -> NDArray[np.uint8]:
+    """Build a partial AFS navigation frame (§2.4).
+
+    sync + BCH SB1 + zero-padded SB2-SB4. Returns 6000 symbols.
+    """
     ...
 
 BCH_CODEWORD_LENGTH: int
+FRAME_LENGTH: int
+SYNC_LENGTH: int
+SB1_LENGTH: int
+PAYLOAD_LENGTH: int
+SYMBOL_RATE: int
+FRAME_DURATION_S: int
 EPOCHS_PER_FRAME: int
 SECONDARY_CODE_LENGTH: int
 SECONDARY_CODE_COUNT: int

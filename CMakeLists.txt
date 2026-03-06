@@ -70,6 +70,7 @@ add_library(lunalink_core STATIC
     cpp/signal/tiered_code.cpp
     cpp/signal/iq_mux.cpp
     cpp/signal/bch.cpp
+    cpp/signal/frame.cpp
 )
 target_include_directories(lunalink_core PUBLIC cpp/include)
 set_target_properties(lunalink_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -115,6 +116,7 @@ if(BUILD_TESTING)
         cpp/tests/test_tiered_code.cpp
         cpp/tests/test_iq_mux.cpp
         cpp/tests/test_bch.cpp
+        cpp/tests/test_frame.cpp
     )
     target_link_libraries(test_lunalink PRIVATE lunalink_core Catch2::Catch2WithMain)
     target_compile_options(test_lunalink PRIVATE ${LUNALINK_WARNING_FLAGS})

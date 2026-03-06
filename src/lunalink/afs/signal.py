@@ -7,13 +7,21 @@ from numpy.typing import NDArray
 
 from lunalink.afs._afs import BCH_CODEWORD_LENGTH as BCH_CODEWORD_LENGTH
 from lunalink.afs._afs import EPOCHS_PER_FRAME as EPOCHS_PER_FRAME
+from lunalink.afs._afs import FRAME_DURATION_S as FRAME_DURATION_S
+from lunalink.afs._afs import FRAME_LENGTH as FRAME_LENGTH
 from lunalink.afs._afs import INTERIM_ASSIGNMENT_MAX_PRN as INTERIM_ASSIGNMENT_MAX_PRN
 from lunalink.afs._afs import IQ_SAMPLES_PER_EPOCH as IQ_SAMPLES_PER_EPOCH
 from lunalink.afs._afs import IQ_UPSAMPLE_FACTOR as IQ_UPSAMPLE_FACTOR
+from lunalink.afs._afs import PAYLOAD_LENGTH as PAYLOAD_LENGTH
+from lunalink.afs._afs import SB1_LENGTH as SB1_LENGTH
 from lunalink.afs._afs import SECONDARY_CODE_COUNT as SECONDARY_CODE_COUNT
 from lunalink.afs._afs import SECONDARY_CODE_LENGTH as SECONDARY_CODE_LENGTH
+from lunalink.afs._afs import SYMBOL_RATE as SYMBOL_RATE
+from lunalink.afs._afs import SYNC_LENGTH as SYNC_LENGTH
 from lunalink.afs._afs import TERTIARY_CODE_LENGTH as TERTIARY_CODE_LENGTH
+from lunalink.afs._afs import FrameStatus as FrameStatus
 from lunalink.afs._afs import bch_encode as _bch_encode
+from lunalink.afs._afs import frame_build_partial as _frame_build_partial
 from lunalink.afs._afs import modulate_i as _modulate_i
 from lunalink.afs._afs import modulate_q as _modulate_q
 from lunalink.afs._afs import multiplex_iq as _multiplex_iq
@@ -25,7 +33,14 @@ from lunalink.afs._afs import weil10230_code as _weil10230_code
 
 __all__ = [
     "bch_encode",
+    "frame_build_partial",
     "BCH_CODEWORD_LENGTH",
+    "FRAME_LENGTH",
+    "SYNC_LENGTH",
+    "SB1_LENGTH",
+    "PAYLOAD_LENGTH",
+    "SYMBOL_RATE",
+    "FRAME_DURATION_S",
     "prn_code",
     "weil10230_code",
     "weil1500_code",
@@ -41,6 +56,7 @@ __all__ = [
     "TERTIARY_CODE_LENGTH",
     "IQ_UPSAMPLE_FACTOR",
     "IQ_SAMPLES_PER_EPOCH",
+    "FrameStatus",
 ]
 
 
@@ -68,6 +84,25 @@ def bch_encode(fid: int, toi: int) -> NDArray[np.uint8]:
         If fid or toi is out of range.
     """
     return _bch_encode(fid, toi)
+
+
+def frame_build_partial(fid: int, toi: int) -> NDArray[np.uint8]:
+    """Build a partial AFS navigation frame (§2.4).
+
+    Layout: 68-symbol sync + 52-symbol BCH-encoded SB1 + 5880 zero-padded
+    symbols (placeholder for LDPC-encoded, interleaved SB2–SB4).
+
+    Returns 6000 symbols as a uint8 array of {0, 1}.
+
+    Args:
+        fid: Frame Identifier (0–3)
+        toi: Time of Interval (0–99)
+
+    Returns
+    -------
+        NDArray[np.uint8]: The 6000-symbol frame.
+    """
+    return _frame_build_partial(fid, toi)
 
 
 def prn_code(prn_id: int) -> NDArray[np.uint8]:
