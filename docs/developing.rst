@@ -176,30 +176,32 @@ To re-run the checks manually without committing::
 CI Pipeline
 -----------
 
-The GitHub Actions workflow (``.github/workflows/ci.yml``) runs on every
-push to ``main``, on every tag matching ``v*``, and on all pull requests.
-It runs nine jobs in parallel:
+GitHub Actions workflows run on every push to ``main``, on every tag 
+matching ``v*``, and on all pull requests. The pipeline is split into 
+independent workflows for granular status reporting:
 
 .. list-table::
    :header-rows: 1
-   :widths: 20 80
+   :widths: 25 75
 
-   * - Job
-     - Steps
+   * - Workflow
+     - Description
+   * - **Python Tests**
+     - ``pytest`` run on Python 3.12, 3.13, and 3.14 with coverage enforcement (≥ 100%).
    * - **Lint**
-     - ``ruff format --check``, ``ruff check``, ``pyright src/`` (Python 3.12)
-   * - **Test × 3**
-     - ``pytest`` with coverage (≥ 90% required), run on Python 3.12, 3.13, and 3.14
+     - ``ruff format --check``, ``ruff check``, and ``pyright`` type checking.
    * - **C++ Tests**
-     - CMake + Ninja configure, build, CTest
+     - CMake + Ninja build and execution of Catch2 unit tests.
    * - **Sanitizers**
-     - C++ tests recompiled with ``-fsanitize=address,undefined``; any memory error or UB aborts with a diagnostic
+     - C++ tests recompiled with ``-fsanitize=address,undefined`` to catch UB at runtime.
    * - **clang-tidy**
-     - Static analysis of C++ core sources under ``cpp/`` (excluding bindings and tests); ``bugprone-*``, ``cert-*``, ``cppcoreguidelines-*``, ``hicpp-*``, ``fuchsia-*`` checks
+     - Static analysis of C++ core sources for MISRA/High-Integrity compliance.
    * - **C++ Coverage**
-     - gcov instrumentation, lcov report; ≥ 90% line coverage enforced
-   * - **Docs**
-     - ``sphinx-build -W`` (warnings treated as errors)
+     - gcov instrumentation and reporting; ≥ 90% line coverage enforced.
+   * - **Docs Check**
+     - Verification of Sphinx documentation build (warnings as errors).
+   * - **Docs Deploy**
+     - Automatic deployment of documentation to GitHub Pages upon merge to ``main``.
 
 Ninja is installed on all CI runners so both the Python extension build
 (via scikit-build-core) and the C++ test build use it automatically.

@@ -16,8 +16,8 @@ Core Design Decisions
 3.  **Static Table Storage**: Spreading codes (Gold, Weil) are stored as packed
     bitstreams in static storage (``prn_table_*.cpp``) to minimize startup time
     and memory footprint.
-4.  **Bitwise Performance**: Critical paths like the BCH(51,8) LFSR and Tiered
-    Code combiners are implemented using bitwise logic and modern C++20 features
+4.  **Bitwise Performance**: Critical paths like the BCH(51,8) LFSR and Matched-Code
+    combiners are implemented using bitwise logic and modern C++20 features
     (e.g., ``std::popcount``) for aerospace-grade performance.
 
 Module Layout
@@ -33,12 +33,12 @@ Module Layout
      - Code generation and lookup for Gold-2046, Weil-10230, and Weil-1500.
    * - ``modulator``
      - BPSK mapping for I (1.023 Mcps) and Q (5.115 Mcps) channels.
-   * - ``tiered_code``
+   * - ``matched_code``
      - AFS-Q composite code generation via XORing tiered components.
    * - ``iq_mux``
      - 50/50 power multiplexing and sample-and-hold upsampling (1x I → 5x Q).
    * - ``bch``
-     - BCH(51,8) encoding for the SB1 frame header.
+     - BCH(51,8) encoding and ML correlation-based decoding for SB1.
    * - ``frame``
      - Navigation frame construction, including sync pattern insertion.
 

@@ -28,12 +28,14 @@ from lunalink.afs._afs import bch_codebook_checksum as _bch_codebook_checksum
 from lunalink.afs._afs import bch_decode as _bch_decode
 from lunalink.afs._afs import bch_encode as _bch_encode
 from lunalink.afs._afs import frame_build_partial as _frame_build_partial
+from lunalink.afs._afs import matched_code_epoch as _matched_code_epoch
+from lunalink.afs._afs import (
+    matched_code_epoch_assigned as _matched_code_epoch_assigned,
+)
 from lunalink.afs._afs import modulate_i as _modulate_i
 from lunalink.afs._afs import modulate_q as _modulate_q
 from lunalink.afs._afs import multiplex_iq as _multiplex_iq
 from lunalink.afs._afs import prn_code as _prn_code
-from lunalink.afs._afs import tiered_code_epoch as _tiered_code_epoch
-from lunalink.afs._afs import tiered_code_epoch_assigned as _tiered_code_epoch_assigned
 from lunalink.afs._afs import weil1500_code as _weil1500_code
 from lunalink.afs._afs import weil10230_code as _weil10230_code
 
@@ -50,8 +52,8 @@ __all__ = [
     "modulate_q",
     "multiplex_iq",
     "prn_code",
-    "tiered_code_epoch",
-    "tiered_code_epoch_assigned",
+    "matched_code_epoch",
+    "matched_code_epoch_assigned",
     "weil10230_code",
     "weil1500_code",
     "BCH_CODEWORD_LENGTH",
@@ -104,12 +106,27 @@ def multiplex_iq(
     return _multiplex_iq(i_samples, q_samples)
 
 
-def tiered_code_epoch(prn_id: int, epoch_idx: int) -> NDArray[np.uint8]:
-    """Return one primary epoch (10230 chips) of the tiered AFS-Q code."""
-    return _tiered_code_epoch(prn_id, epoch_idx)
+def matched_code_epoch(prn_id: int, epoch_idx: int) -> NDArray[np.uint8]:
+    """Return one primary epoch (10230 chips) of the matched AFS-Q code.
+
+    Uses the default interim mapping for node IDs 1-12.
+
+    Parameters
+    ----------
+    prn_id : int
+        Node ID (1-12).
+    epoch_idx : int
+        Index of the 2ms epoch within the 12s frame (0-5999).
+
+    Returns
+    -------
+    numpy.ndarray
+        The 10230 binary chips.
+    """
+    return _matched_code_epoch(prn_id, epoch_idx)
 
 
-def tiered_code_epoch_assigned(
+def matched_code_epoch_assigned(
     primary_prn: int,
     secondary_code_idx: int,
     tertiary_prn: int,
@@ -117,7 +134,7 @@ def tiered_code_epoch_assigned(
     epoch_idx: int,
 ) -> NDArray[np.uint8]:
     """Return one primary epoch using explicit AFS-Q code assignments."""
-    return _tiered_code_epoch_assigned(
+    return _matched_code_epoch_assigned(
         primary_prn, secondary_code_idx, tertiary_prn, tertiary_phase_offset, epoch_idx
     )
 

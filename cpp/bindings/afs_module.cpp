@@ -3,7 +3,7 @@
 #include "lunalink/signal/iq_mux.hpp"
 #include "lunalink/signal/modulator.hpp"
 #include "lunalink/signal/prn.hpp"
-#include "lunalink/signal/tiered_code.hpp"
+#include "lunalink/signal/matched_code.hpp"
 #include <cstdint>
 #include <span>
 #include <pybind11/numpy.h>
@@ -97,7 +97,7 @@ PYBIND11_MODULE(_afs, m) {
   m.def("modulate_i", [](py::array_t<uint8_t> prn, int data) {
     auto r = prn.request();
     auto out = py::array_t<int8_t>(r.size);
-    if (modulate_bpsk_i(std::span<const uint8_t>(static_cast<const uint8_t*>(r.ptr), r.size), static_cast<int8_t>(data), std::span<int8_t>(out.mutable_data(), r.size)) != ModulationStatus::kOk)
+    if (modulate_bpsk_i(std::span<const uint8_t>(static_cast<const uint8_t*>(r.ptr), static_cast<size_t>(r.size)), static_cast<int8_t>(data), std::span<int8_t>(out.mutable_data(), static_cast<size_t>(r.size))) != ModulationStatus::kOk)
       throw py::value_error("Modulation failed");
     return out;
   });
@@ -105,7 +105,7 @@ PYBIND11_MODULE(_afs, m) {
   m.def("modulate_q", [](py::array_t<uint8_t> chips) {
     auto r = chips.request();
     auto out = py::array_t<int8_t>(r.size);
-    if (modulate_bpsk_q(std::span<const uint8_t>(static_cast<const uint8_t*>(r.ptr), r.size), std::span<int8_t>(out.mutable_data(), r.size)) != ModulationStatus::kOk)
+    if (modulate_bpsk_q(std::span<const uint8_t>(static_cast<const uint8_t*>(r.ptr), static_cast<size_t>(r.size)), std::span<int8_t>(out.mutable_data(), static_cast<size_t>(r.size))) != ModulationStatus::kOk)
       throw py::value_error("Modulation failed");
     return out;
   });
@@ -129,22 +129,22 @@ PYBIND11_MODULE(_afs, m) {
     return unpack_prn(p);
   });
 
-  m.def("tiered_code_epoch", [](int id, int epoch) {
+  m.def("matched_code_epoch", [](int id, int epoch) {
     auto out = py::array_t<uint8_t>(10230);
-    TieredCodeAssignment a;
-    if (default_tiered_assignment_checked(PrnId{static_cast<uint8_t>(id)}, &a) != TieredCodeStatus::kOk) throw py::value_error("Bad ID");
-    if (tiered_code_epoch_checked(a, static_cast<uint16_t>(epoch), std::span<uint8_t>(out.mutable_data(), 10230)) != TieredCodeStatus::kOk) throw py::value_error("Bad epoch");
+    MatchedCodeAssignment a;
+    if (default_matched_assignment_checked(PrnId{static_cast<uint8_t>(id)}, &a) != MatchedCodeStatus::kOk) throw py::value_error("Bad ID");
+    if (matched_code_epoch_checked(a, static_cast<uint16_t>(epoch), std::span<uint8_t>(out.mutable_data(), 10230)) != MatchedCodeStatus::kOk) throw py::value_error("Bad epoch");
     return out;
   });
 
-  m.def("tiered_code_epoch_assigned", [](int primary_prn, int secondary_code_idx, int tertiary_prn, int tertiary_phase_offset, int epoch_idx) {
-    TieredCodeAssignment a;
+  m.def("matched_code_epoch_assigned", [](int primary_prn, int secondary_code_idx, int tertiary_prn, int tertiary_phase_offset, int epoch_idx) {
+    MatchedCodeAssignment a;
     a.primary_prn = PrnId{static_cast<uint8_t>(primary_prn)};
     a.secondary_code_idx = static_cast<uint8_t>(secondary_code_idx);
     a.tertiary_prn = PrnId{static_cast<uint8_t>(tertiary_prn)};
     a.tertiary_phase_offset = static_cast<uint16_t>(tertiary_phase_offset);
     auto out = py::array_t<uint8_t>(10230);
-    if (tiered_code_epoch_checked(a, static_cast<uint16_t>(epoch_idx), std::span<uint8_t>(out.mutable_data(), 10230)) != TieredCodeStatus::kOk) throw py::value_error("Bad assignment");
+    if (matched_code_epoch_checked(a, static_cast<uint16_t>(epoch_idx), std::span<uint8_t>(out.mutable_data(), 10230)) != MatchedCodeStatus::kOk) throw py::value_error("Bad assignment");
     return out;
   });
 

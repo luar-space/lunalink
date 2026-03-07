@@ -1,4 +1,4 @@
-#include "lunalink/signal/tiered_code.hpp"
+#include "lunalink/signal/matched_code.hpp"
 
 #include "lunalink/signal/prn.hpp"
 #include <algorithm> // for std::fill
@@ -14,8 +14,8 @@ static_assert(kWeil10230FullBytes * 8U + kWeil10230TrailingChips == kWeil10230Ch
               "Weil-10230 byte-optimization constants are incorrect.");
 } // namespace
 
-TieredCodeStatus tiered_code_epoch_checked(
-    const TieredCodeAssignment& assignment,
+MatchedCodeStatus matched_code_epoch_checked(
+    const MatchedCodeAssignment& assignment,
     uint16_t                    epoch_idx,
     std::span<uint8_t>          out) noexcept {
   
@@ -26,31 +26,33 @@ TieredCodeStatus tiered_code_epoch_checked(
   }
 
   if (out.size() < kWeil10230ChipLength) [[unlikely]] {
-    return TieredCodeStatus::kOutputTooSmall;
+    return MatchedCodeStatus::kOutputTooSmall;
   }
   if (epoch_idx >= kEpochsPerFrame) [[unlikely]] {
-    return TieredCodeStatus::kInvalidEpoch;
+    return MatchedCodeStatus::kInvalidEpoch;
   }
-  if (!valid_tiered_assignment(assignment)) [[unlikely]] {
-    return TieredCodeStatus::kInvalidAssignment;
+  if (!valid_matched_assignment(assignment)) [[unlikely]] {
+    return MatchedCodeStatus::kInvalidAssignment;
   }
 
   PrnCode primary_code;
   if (weil10230_prn_packed(assignment.primary_prn, primary_code) !=
       PrnStatus::kOk) [[unlikely]] {
-    return TieredCodeStatus::kInvalidAssignment;
+    return MatchedCodeStatus::kInvalidAssignment;
   }
   PrnCode tertiary_code;
   if (weil1500_prn_packed(assignment.tertiary_prn, tertiary_code) !=
       PrnStatus::kOk) [[unlikely]] {
-    return TieredCodeStatus::kInvalidAssignment;
+    return MatchedCodeStatus::kInvalidAssignment;
   }
 
   // Secondary chip for this epoch (one secondary chip per primary epoch).
   const auto sec_idx = static_cast<uint32_t>(assignment.secondary_code_idx);
   const auto ep_idx  = static_cast<uint32_t>(epoch_idx);
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-  const uint8_t sec_chip = kSecondaryCodes[sec_idx][ep_idx % kSecondaryCodeLength];
+  
+  // Clang-Tidy safe access via .at() or just rely on our pre-validation.
+  // Since we are in a performance critical path, but want to satisfy Tidy:
+  const uint8_t sec_chip = kSecondaryCodes.at(sec_idx).at(ep_idx % kSecondaryCodeLength);
 
   // Tertiary chip (one tertiary chip per Ns=4 primary epochs).
   const auto tert_idx = static_cast<uint16_t>(
@@ -60,7 +62,7 @@ TieredCodeStatus tiered_code_epoch_checked(
   uint8_t tert_chip = 0;
   if (unpack_chip(tertiary_code, tert_idx, &tert_chip) !=
       PrnStatus::kOk) [[unlikely]] {
-    return TieredCodeStatus::kInvalidAssignment;
+    return MatchedCodeStatus::kInvalidAssignment;
   }
 
   // For the entire epoch, sec_chip and tert_chip are constant, so the
@@ -95,25 +97,25 @@ TieredCodeStatus tiered_code_epoch_checked(
   }
   // NOLINTEND(hicpp-signed-bitwise)
 
-  return TieredCodeStatus::kOk;
+  return MatchedCodeStatus::kOk;
 }
 
-TieredCodeStatus tiered_code_epoch(
+MatchedCodeStatus matched_code_epoch(
     PrnId              prn_id,
     uint16_t           epoch_idx,
     std::span<uint8_t> out) noexcept {
-  TieredCodeAssignment assignment{};
-  const auto assignment_status = default_tiered_assignment_checked(
+  MatchedCodeAssignment assignment{};
+  const auto assignment_status = default_matched_assignment_checked(
       prn_id,
       &assignment);
-  if (assignment_status != TieredCodeStatus::kOk) [[unlikely]] {
+  if (assignment_status != MatchedCodeStatus::kOk) [[unlikely]] {
     // ESA/JAXA Policy: Ensure output is zeroed on failure.
     if (!out.empty()) {
         std::fill(out.begin(), out.end(), 0U);
     }
     return assignment_status;
   }
-  return tiered_code_epoch_checked(assignment, epoch_idx, out);
+  return matched_code_epoch_checked(assignment, epoch_idx, out);
 }
 
 } // namespace lunalink::signal

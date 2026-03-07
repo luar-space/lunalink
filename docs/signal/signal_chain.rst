@@ -1,152 +1,102 @@
-Signal Chain — Transmitter
-==========================
+Signal Chain (C1–C4)
+====================
 
-This diagram shows the AFS transmit signal chain from PRN tables to baseband
-IQ output. Part labels (C1–C4) correspond to the implementation parts defined
-in the shaping document.
+The LunaLink signal generation pipeline follows the LSIS V1.0 Augmented Forward Signal (AFS) specification. It is composed of modular, stateless components that transform navigation data into baseband I/Q samples.
 
 Block Diagram
 -------------
 
 .. code-block:: text
 
-                                   AFS-I (Data Channel)
-                                   ────────────────────
-
-    ┌─────────────────┐     ┌──────────────────────┐
-    │ PRN Hex Tables   │     │  Navigation Message   │
-    │ (Gold-2046)      │     │  (SB1–SB4 symbols)    │
-    └────────┬────────┘     └──────────┬───────────┘
-             │                          │
-             ▼                          ▼
-    ┌─────────────────┐     ┌──────────────────────┐
-    │  C1 Code Loader  │     │  Data symbol (±1)     │
-    │  gold_prn(id)    │     │  from frame builder   │
-    │                  │     │                       │
-    │  uint8 chips     │     │  int8_t               │
-    │  {0, 1}          │     │  {−1, +1}             │
-    └────────┬────────┘     └──────────┬───────────┘
-             │                          │
-             └──────────┬───────────────┘
-                        │
-                        ▼
-               ┌─────────────────┐
-               │  C2 BPSK(1)     │
-               │  Modulator      │
-               │                 │
-               │  chip mapping:  │
-               │  0 → +1         │
-               │  1 → −1         │
-               │  × data symbol  │
-               │                 │
-               │  1.023 Mcps     │
-               │  int8_t {−1,+1} │
-               └────────┬────────┘
-                        │
-                        ▼
-
-                                   AFS-Q (Pilot Channel)
-                                   ─────────────────────
-
     ┌─────────────────┐     ┌──────────────────────┐
     │ PRN Hex Tables   │     │  Secondary Codes      │
-    │ (Weil-10230)     │     │  S0–S3 (4-bit)        │
+    │ (Gold-2046)      │     │  S0–S3 (4-bit)        │
     └────────┬────────┘     └──────────┬───────────┘
              │                          │
              ▼                          ▼
     ┌─────────────────┐     ┌──────────────────────┐
     │  C1 Code Loader  │     │  Tertiary Code         │
-    │  (Weil-10230 +   │     │  (Weil-1500)           │
-    │   Weil-1500)     │     └──────────┬───────────┘
-    └────────┬────────┘                │
+    │  (Gold-2046)     │     │  (Weil-1500)           │
+    └────────┬────────┘     └──────────┬───────────┘
              │                          │
-             └──────────┬───────────────┘
-                        │
-                        ▼
-               ┌─────────────────┐
-               │  C3 Tiered Code │
-               │  Combiner       │
-               │                 │
-               │  primary ⊕      │
-               │  secondary ⊕    │
-               │  tertiary       │
-               │                 │
-               │  5.115 Mcps     │
-               │  uint8 {0, 1}   │
-               └────────┬────────┘
-                        │
-                        ▼
-               ┌─────────────────┐
-               │  C2 BPSK(5)     │
-               │  Modulator      │
-               │                 │
-               │  5.115 Mcps     │
-               │  int8_t {−1,+1} │
-               └────────┬────────┘
-                        │
-                        ▼
+             │                          │
+             ▼                          │
+    ┌─────────────────┐                 │
+    │  C2 BPSK(1)     │                 │
+    │  Modulator      │                 │
+    │                 │                 │
+    │  1.023 Mcps     │                 │
+    │  int8 {-1, +1}  │                 │
+    └────────┬────────┘                 │
+             │                          │
+             │                          │
+             │                          ▼
+             │                ┌─────────────────┐
+             │                │  C3 Matched-Code│
+             │                │  Combiner       │
+             │                │                 │
+             │                │  primary ⊕      │
+             │                │  secondary ⊕    │
+             │                │  tertiary       │
+             │                │                 │
+             │                │  5.115 Mcps     │
+             │                │  uint8 {0, 1}   │
+             │                └────────┬────────┘
+             │                         │
+             │                         ▼
+             │                ┌─────────────────┐
+             │                │  C2 BPSK(5)     │
+             │                │  Modulator      │
+             │                │                 │
+             │                │  5.115 Mcps     │
+             │                │  int8 {-1, +1}  │
+             │                └────────┬────────┘
+             │                         │
+             │                         │
+             ▼                         ▼
+    ┌──────────────────────────────────────────────┐
+    │                                              │
+    │              C4 IQ Multiplexer               │
+    │                                              │
+    │  AFS-I (I channel)      AFS-Q (Q channel)    │
+    │  Upsampled 5x           Pass-through         │
+    │                                              │
+    └──────────────────────┬───────────────────────┘
+                           │
+                           ▼
+                  Baseband I/Q Output
+                  (5.115 MSPS, int16)
 
-                                   IQ Combination
-                                   ──────────────
+Data Flow
+---------
 
-               AFS-I ────────┐
-               (1.023 Mcps)  │
-                             ▼
-                    ┌─────────────────┐
-                    │  C4 IQ          │
-                    │  Multiplexer    │
-                    │                 │
-                    │  equal normalized│
-                    │  amplitude       │
-                    │  [I,Q] pairs     │
-                    │                 │
-                    │  5.115 MSPS/ch  │
-                    │  (10.23 Msps    │
-                    │   total values) │
-                    │  int16_t        │
-                    └────────┬────────┘
-               AFS-Q ────────┘
-               (5.115 Mcps)
+1.  **Code Loading (C1)**:
+    Static tables (``prn_table_*.cpp``) are queried to retrieve the full chip sequences for the Primary (Gold-2046, Weil-10230) and Tertiary (Weil-1500) codes. This avoids runtime LFSR generation.
 
-                        │
-                        ▼
-                  Baseband IQ
-                  (interleaved I,Q)
+2.  **Matched-Code Combination (C3)**:
+    For the AFS-Q pilot channel, three components are XORed together to form the final ranging code:
+    
+    *   **Primary**: Weil-10230 code (10230 chips, 2 ms epoch).
+    *   **Secondary**: 4-bit fixed sequence (S0–S3), repeating every 4 primary epochs.
+    *   **Tertiary**: Weil-1500 code, 1 chip per 4 primary epochs (20 ms duration).
+    
+    The combiner handles the phasing logic (``LSIS-TBD-2001`` interim assumption: phase 0) and outputs a binary chip stream.
 
-Data Types Through the Chain
-----------------------------
+3.  **Modulation (C2)**:
+    Binary chips ``{0, 1}`` are mapped to bipolar baseband samples ``{+1, -1}``.
+    
+    *   **AFS-I**: Modulated with navigation data (currently fixed +1 data symbol for C1-C4 tests).
+    *   **AFS-Q**: Pilot channel, no data modulation (data symbol always +1).
 
-.. list-table::
-   :header-rows: 1
-   :widths: 25 25 25 25
+4.  **IQ Multiplexing (C4)**:
+    The two channels are combined into a single complex baseband stream at the higher chip rate (5.115 Mcps).
+    
+    *   **AFS-I (1.023 Mcps)**: Upsampled by 5x (sample-and-hold) to match the output rate.
+    *   **AFS-Q (5.115 Mcps)**: Passed through directly.
+    *   **Output**: Interleaved ``int16`` array ``[I0, Q0, I1, Q1, ...]``.
 
-   * - Stage
-     - Part
-     - Data Type
-     - Rate
-   * - PRN chips
-     - C1
-     - ``uint8_t`` {0, 1}
-     - —
-   * - AFS-I samples
-     - C2
-     - ``int8_t`` {−1, +1}
-     - 1.023 Mcps
-   * - AFS-Q composite chips
-     - C3
-     - ``uint8_t`` {0, 1}
-     - 5.115 Mcps
-   * - AFS-Q samples
-     - C2
-     - ``int8_t`` {−1, +1}
-     - 5.115 Mcps
-   * - Baseband IQ
-     - C4
-     - ``int16_t`` interleaved IQ pair stream
-     - 5.115 MSPS/channel (10.23 Msamples/s total values)
-
-Implementation Status
----------------------
+Component Status
+----------------
 
 .. list-table::
    :header-rows: 1
@@ -162,7 +112,7 @@ Implementation Status
      - BPSK modulator (AFS-I BPSK(1) + AFS-Q BPSK(5))
      - Complete
    * - C3
-     - Tiered code combiner (interim mapping + explicit assignment API)
+     - Matched-code combiner (interim mapping + explicit assignment API)
      - Complete
    * - C4
      - IQ multiplexer (5.115 MSPS, normalized-amplitude baseband)

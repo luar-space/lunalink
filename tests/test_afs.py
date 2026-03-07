@@ -13,12 +13,12 @@ from lunalink.afs import (
     bch_decode,
     bch_encode,
     frame_build_partial,
+    matched_code_epoch,
+    matched_code_epoch_assigned,
     modulate_i,
     modulate_q,
     multiplex_iq,
     prn_code,
-    tiered_code_epoch,
-    tiered_code_epoch_assigned,
     weil1500_code,
     weil10230_code,
 )
@@ -148,29 +148,29 @@ class TestModulateI:
             modulate_i(prn_code(1), 0)
 
 
-class TestTieredCodeEpoch:
-    """Tests for AFS-Q tiered code combiner (C3)."""
+class TestMatchedCodeEpoch:
+    """Tests for AFS-Q matched code combiner (C3)."""
 
     def test_shape_and_dtype(self):
-        """Tiered code epoch returns correct shape and dtype."""
-        chips = tiered_code_epoch(1, 0)
+        """Matched code epoch returns correct shape and dtype."""
+        chips = matched_code_epoch(1, 0)
         assert chips.shape == (10230,)
         assert chips.dtype == np.uint8
 
     def test_chips_binary(self):
         """All chip values are 0 or 1."""
-        chips = tiered_code_epoch(1, 0)
+        chips = matched_code_epoch(1, 0)
         assert set(chips.tolist()).issubset({0, 1})
 
     def test_xor_identity(self):
-        """Tiered code equals primary XOR secondary XOR tertiary."""
+        """Matched code equals primary XOR secondary XOR tertiary."""
         primary = weil10230_code(1)
         tertiary = weil1500_code(1)
         # PRN 1 -> S0 = [1,1,1,0]; epoch 0 -> sec chip = 1, tert chip idx 0
         sec_chip = 1  # S0[0]
         tert_chip = int(tertiary[0])
         expected = (primary ^ sec_chip ^ tert_chip).astype(np.uint8)
-        actual = tiered_code_epoch(1, 0)
+        actual = matched_code_epoch(1, 0)
         np.testing.assert_array_equal(actual, expected)
 
     def test_epochs_per_frame_constant(self):
@@ -184,22 +184,22 @@ class TestTieredCodeEpoch:
     def test_out_of_range_raises(self):
         """Out-of-range inputs raise ValueError."""
         with pytest.raises((ValueError, Exception)):
-            tiered_code_epoch(0, 0)
+            matched_code_epoch(0, 0)
         with pytest.raises((ValueError, Exception)):
-            tiered_code_epoch(1, 6000)
+            matched_code_epoch(1, 6000)
 
     def test_assigned_out_of_range_raises(self):
         """Invalid explicit assignment values raise ValueError."""
         with pytest.raises((ValueError, Exception)):
-            tiered_code_epoch_assigned(0, 0, 1, 0, 0)
+            matched_code_epoch_assigned(0, 0, 1, 0, 0)
         with pytest.raises((ValueError, Exception)):
-            tiered_code_epoch_assigned(1, 4, 1, 0, 0)
+            matched_code_epoch_assigned(1, 4, 1, 0, 0)
         with pytest.raises((ValueError, Exception)):
-            tiered_code_epoch_assigned(1, 0, 1, 1500, 0)
+            matched_code_epoch_assigned(1, 0, 1, 1500, 0)
 
-    def test_tiered_code_epoch_assigned_execution(self):
-        """Execute tiered_code_epoch_assigned to verify binding."""
-        chips = tiered_code_epoch_assigned(1, 0, 1, 0, 0)
+    def test_matched_code_epoch_assigned_execution(self):
+        """Execute matched_code_epoch_assigned to verify binding."""
+        chips = matched_code_epoch_assigned(1, 0, 1, 0, 0)
         assert chips.shape == (10230,)
         assert chips.dtype == np.uint8
 
@@ -209,14 +209,14 @@ class TestModulateQ:
 
     def test_shape_and_dtype(self):
         """Modulated output has correct shape and dtype."""
-        chips = tiered_code_epoch(1, 0)
+        chips = matched_code_epoch(1, 0)
         out = modulate_q(chips)
         assert out.shape == (10230,)
         assert out.dtype == np.int8
 
     def test_values_bipolar(self):
         """All modulated values are -1 or +1."""
-        out = modulate_q(tiered_code_epoch(1, 0))
+        out = modulate_q(matched_code_epoch(1, 0))
         assert set(out.tolist()).issubset({-1, 1})
 
     def test_chip_mapping(self):
@@ -232,7 +232,7 @@ class TestMultiplexIq:
     def test_shape_and_dtype(self):
         """Output has correct shape and dtype."""
         i_samples = modulate_i(prn_code(1), 1)
-        q_samples = modulate_q(tiered_code_epoch(1, 0))
+        q_samples = modulate_q(matched_code_epoch(1, 0))
         iq = multiplex_iq(i_samples, q_samples)
         assert iq.shape == (10230, 2)
         assert iq.dtype == np.int16
@@ -240,7 +240,7 @@ class TestMultiplexIq:
     def test_i_upsampled_5x(self):
         """AFS-I samples are repeated 5x to match Q rate."""
         i_samples = modulate_i(prn_code(1), 1)
-        q_samples = modulate_q(tiered_code_epoch(1, 0))
+        q_samples = modulate_q(matched_code_epoch(1, 0))
         iq = multiplex_iq(i_samples, q_samples)
         i_out = iq[:, 0]
         # Each I chip should be repeated 5 times
@@ -251,7 +251,7 @@ class TestMultiplexIq:
     def test_equal_power(self):
         """Both channels have equal mean-square power (50/50 per LSIS-103)."""
         i_samples = modulate_i(prn_code(1), 1)
-        q_samples = modulate_q(tiered_code_epoch(1, 0))
+        q_samples = modulate_q(matched_code_epoch(1, 0))
         iq = multiplex_iq(i_samples, q_samples)
         power_i = np.mean(iq[:, 0].astype(np.float64) ** 2)
         power_q = np.mean(iq[:, 1].astype(np.float64) ** 2)

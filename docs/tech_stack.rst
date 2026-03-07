@@ -2,8 +2,8 @@ Tech Stack and ESA Compliance
 ==============================
 
 This document describes the tools chosen for this project and maps each one
-to the relevant requirements from the ESA Python coding guidelines
-(PE-RS-ESA-GS-0871) and the ESA guidelines for Python development
+to the relevant requirements from the `ESA Python coding guidelines <https://github.com/fiskio/lunalink/blob/main/docs/references/esa_python_guidelines.pdf>`_
+(PE-RS-ESA-GS-0871) and the ESA guidelines for Python development 
 (PE-TN-ESA-GS-0872).
 
 Tech Stack

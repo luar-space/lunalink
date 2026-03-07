@@ -2,7 +2,8 @@ Compliance Matrix
 =================
 
 This document tracks the compliance of the LunaLink implementation with the 
-Lunar Net Signal-In-Space (LSIS) Recommended Standard (Vol-A, Jan 29, 2025).
+`Lunar Net Signal-In-Space (LSIS) Recommended Standard <https://github.com/fiskio/lunalink/blob/main/docs/references/lunanet-signal-in-space-recommended-standard-augmented-forward-signal-vol-a.pdf>`_ 
+(Vol-A, Jan 29, 2025). See :doc:`../references` for more context.
 
 Status Legend:
   * ✅ **Compliant**: Fully implemented and verified.
@@ -46,17 +47,17 @@ Signal Structure (Section 2.3)
      - ✅
      - Packed storage in ``prn_table_weil1500.cpp``
    * - LSIS-140
-     - Tiered Code Combination (Primary XOR Secondary XOR Tertiary)
+     - Matched-Code Combination (Primary XOR Secondary XOR Tertiary)
      - ✅
-     - Implemented in ``tiered_code.cpp``
+     - Implemented in ``matched_code.cpp``
    * - LSIS-150
      - Secondary Code S0=1110, S1=0111, S2=1011, S3=1101
      - ✅
-     - Implemented in ``tiered_code.cpp``
+     - Implemented in ``matched_code.cpp``
    * - LSIS-260
      - Default Interim Code Assignment (Node 1-12)
      - ✅
-     - Implemented in ``tiered_code.cpp``
+     - Implemented in ``matched_code.cpp``
 
 Navigation Message (Section 2.4)
 --------------------------------
@@ -81,6 +82,10 @@ Navigation Message (Section 2.4)
      - BCH(51,8) SB1 Encoding
      - ✅
      - Implemented in ``bch.cpp``
+   * - LSIS-311
+     - BCH(51,8) SB1 Decoding (ML Correlation)
+     - ✅
+     - Flight-hardened implementation in ``bch.cpp``
    * - LSIS-320
      - LDPC(1200,600) for SB2-SB4 (SF2, SF3, SF4)
      - ❌
