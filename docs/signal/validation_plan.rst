@@ -15,7 +15,7 @@ We follow a five-level validation hierarchy to ensure quality at every stage of 
 *   **Level 5: Interoperability Tests** — Cross-decoding of standardized test vectors with independent implementations.
 
 Reference-Grade Edge Case Validation (G2, G3, G6)
-------------------------------------------------
+-------------------------------------------------
 
 To ensure the implementation is robust for flight-like scenarios, we validate the following temporal and numerical edge cases:
 
@@ -43,7 +43,7 @@ To ensure the implementation is robust for flight-like scenarios, we validate th
      - G2 (Integrity)
 
 Signal Impairment & Robustness (G4, G5)
---------------------------------------
+---------------------------------------
 
 The baseband signal generator (G4) includes a "Reference Channel Model" to test the receiver's (G5) robustness against realistic lunar orbit impairments.
 

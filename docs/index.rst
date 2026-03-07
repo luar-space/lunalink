@@ -17,7 +17,8 @@ LunaLink AFS reference implementation with C++ core and pybind11 bindings.
 
    assurance/mission_assurance
    signal/compliance_matrix
-   signal/spec_observations
+   signal/spec_findings_report
+   signal/validation_plan
 
 .. toctree::
    :maxdepth: 2
