@@ -58,6 +58,8 @@ add_library(lunalink_core
     cpp/signal/bch.cpp
     cpp/signal/bch_table.cpp
     cpp/signal/frame.cpp
+    cpp/signal/ldpc.cpp
+    cpp/signal/ldpc_tables.cpp
 )
 target_include_directories(lunalink_core PUBLIC cpp/include)
 set_target_properties(lunalink_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -103,6 +105,7 @@ if(BUILD_TESTING)
         cpp/tests/test_frame.cpp
         cpp/tests/test_coverage_gap.cpp
         cpp/tests/test_safety.cpp
+        cpp/tests/test_ldpc.cpp
     )
     target_link_libraries(test_lunalink PRIVATE lunalink_core Catch2::Catch2WithMain)
     target_compile_options(test_lunalink PRIVATE ${LUNALINK_WARNING_FLAGS})
