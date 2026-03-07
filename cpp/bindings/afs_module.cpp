@@ -5,7 +5,6 @@
 #include "lunalink/signal/prn.hpp"
 #include "lunalink/signal/tiered_code.hpp"
 #include <cstdint>
-#include <limits>
 #include <span>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -15,13 +14,11 @@ using namespace lunalink::signal;
 
 namespace {
 
-/// Unpack a packed PRN into a numpy uint8 array of {0, 1} chip values.
 py::array_t<uint8_t> unpack_prn(const PrnCode& code) {
   auto out = py::array_t<uint8_t>(code.chip_length);
   auto *dst = out.mutable_data();
   for (uint32_t i = 0; i < code.chip_length; ++i) {
-    const auto status = unpack_chip(code, static_cast<uint16_t>(i), &dst[i]);
-    if (status != PrnStatus::kOk) {
+    if (unpack_chip(code, static_cast<uint16_t>(i), &dst[i]) != PrnStatus::kOk) {
       throw py::value_error("unpack_chip failed");
     }
   }
@@ -33,210 +30,27 @@ py::array_t<uint8_t> unpack_prn(const PrnCode& code) {
 PYBIND11_MODULE(_afs, m) {
   m.doc() = "LunaLink AFS C++ extension module.";
 
-  m.def(
-      "prn_code",
-      [](int prn_id) -> py::array_t<uint8_t> {
-        const PrnId id{static_cast<uint8_t>(prn_id)};
-        if (!id.valid())
-          throw py::value_error("prn_id must be in [1, 210]");
-        PrnCode packed;
-        const auto status = gold_prn_packed(id, packed);
-        if (status != PrnStatus::kOk) {
-            throw py::value_error("gold_prn_packed failed");
-        }
-        return unpack_prn(packed);
-      },
-      py::arg("prn_id"),
-      "Return the Gold-2046 chip sequence for PRN prn_id (1-indexed).");
+  py::enum_<Fid>(m, "Fid")
+      .value("NODE1", Fid::kNode1)
+      .value("NODE2", Fid::kNode2)
+      .value("NODE3", Fid::kNode3)
+      .value("NODE4", Fid::kNode4)
+      .export_values();
 
-  m.def(
-      "weil10230_code",
-      [](int prn_id) -> py::array_t<uint8_t> {
-        const PrnId id{static_cast<uint8_t>(prn_id)};
-        if (!id.valid())
-          throw py::value_error("prn_id must be in [1, 210]");
-        PrnCode packed;
-        const auto status = weil10230_prn_packed(id, packed);
-        if (status != PrnStatus::kOk) {
-            throw py::value_error("weil10230_prn_packed failed");
-        }
-        return unpack_prn(packed);
-      },
-      py::arg("prn_id"),
-      "Return the Weil-10230 chip sequence for PRN prn_id (1-indexed).");
+  py::class_<Toi>(m, "Toi")
+      .def(py::init<uint8_t>())
+      .def_readwrite("value", &Toi::value);
 
-  m.def(
-      "weil1500_code",
-      [](int prn_id) -> py::array_t<uint8_t> {
-        const PrnId id{static_cast<uint8_t>(prn_id)};
-        if (!id.valid())
-          throw py::value_error("prn_id must be in [1, 210]");
-        PrnCode packed;
-        const auto status = weil1500_prn_packed(id, packed);
-        if (status != PrnStatus::kOk) {
-            throw py::value_error("weil1500_prn_packed failed");
-        }
-        return unpack_prn(packed);
-      },
-      py::arg("prn_id"),
-      "Return the Weil-1500 chip sequence for PRN prn_id (1-indexed).");
-
-  m.def(
-      "modulate_i",
-      [](py::array_t<uint8_t, py::array::c_style> prn,
-         int data_symbol) -> py::array_t<int8_t> {
-        if (data_symbol != 1 && data_symbol != -1)
-          throw py::value_error("data_symbol must be +1 or -1");
-        auto r = prn.request();
-        if (r.ndim != 1)
-          throw py::value_error("prn must be a 1-D array");
-        auto out = py::array_t<int8_t>(r.shape[0]);
-        const auto status = modulate_bpsk_i(
-            std::span<const uint8_t>(static_cast<const uint8_t *>(r.ptr), static_cast<size_t>(r.shape[0])),
-            static_cast<int8_t>(data_symbol),
-            std::span<int8_t>(out.mutable_data(), static_cast<size_t>(r.shape[0])));
-        if (status != ModulationStatus::kOk)
-          throw py::value_error("modulate_bpsk_i failed");
-        return out;
-      },
-      py::arg("prn"), py::arg("data_symbol"),
-      "Modulate a chip sequence with a BPSK data symbol (AFS-I channel).");
-
-  m.def(
-      "tiered_code_epoch",
-      [](int prn_id, int epoch_idx) -> py::array_t<uint8_t> {
-        const PrnId id{static_cast<uint8_t>(prn_id)};
-        if (!is_interim_prn(id)) {
-          throw py::value_error(
-              "prn_id must be in [1, 12] for default interim mapping; "
-              "use tiered_code_epoch_assigned for other PRNs");
-        }
-        if (epoch_idx < 0 || epoch_idx >= kEpochsPerFrame)
-          throw py::value_error("epoch_idx must be in [0, 5999]");
-        auto out = py::array_t<uint8_t>(kWeil10230ChipLength);
-        TieredCodeAssignment assignment{};
-        const auto assignment_status = default_tiered_assignment_checked(
-            id,
-            &assignment);
-        if (assignment_status != TieredCodeStatus::kOk) {
-          throw py::value_error("invalid tiered code assignment");
-        }
-        const auto status = tiered_code_epoch_checked(
-            assignment,
-            static_cast<uint16_t>(epoch_idx),
-            std::span<uint8_t>(out.mutable_data(), kWeil10230ChipLength));
-        if (status != TieredCodeStatus::kOk)
-          throw py::value_error("invalid tiered code assignment");
-        return out;
-      },
-      py::arg("prn_id"), py::arg("epoch_idx"),
-      "Return one primary epoch (10230 chips) of the tiered AFS-Q code.");
-
-  m.def(
-      "tiered_code_epoch_assigned",
-      [](int primary_prn,
-         int secondary_code_idx,
-         int tertiary_prn,
-         int tertiary_phase_offset,
-         int epoch_idx) -> py::array_t<uint8_t> {
-        if (epoch_idx < 0 || epoch_idx >= kEpochsPerFrame)
-          throw py::value_error("epoch_idx must be in [0, 5999]");
-        const PrnId pid{static_cast<uint8_t>(primary_prn)};
-        const PrnId tid{static_cast<uint8_t>(tertiary_prn)};
-        if (!pid.valid() || !tid.valid() || secondary_code_idx < 0 ||
-            secondary_code_idx >= kSecondaryCodeCount || tertiary_phase_offset < 0 ||
-            tertiary_phase_offset >= kWeil1500ChipLength) {
-          throw py::value_error(
-              "assignment invalid: primary/tertiary PRN in [1,210], secondary in "
-              "[0,3], tertiary_phase_offset in [0,1499]");
-        }
-        TieredCodeAssignment a{};
-        a.primary_prn = pid;
-        a.secondary_code_idx = static_cast<uint8_t>(secondary_code_idx);
-        a.tertiary_prn = tid;
-        a.tertiary_phase_offset = static_cast<uint16_t>(tertiary_phase_offset);
-        auto out = py::array_t<uint8_t>(kWeil10230ChipLength);
-        const auto status = tiered_code_epoch_checked(
-            a, static_cast<uint16_t>(epoch_idx),
-            std::span<uint8_t>(out.mutable_data(), kWeil10230ChipLength));
-        if (status != TieredCodeStatus::kOk)
-          throw py::value_error("invalid tiered code assignment");
-        return out;
-      },
-      py::arg("primary_prn"), py::arg("secondary_code_idx"),
-      py::arg("tertiary_prn"), py::arg("tertiary_phase_offset"),
-      py::arg("epoch_idx"),
-      "Return one primary epoch using explicit AFS-Q code assignments.");
-
-  m.def(
-      "modulate_q",
-      [](py::array_t<uint8_t, py::array::c_style> chips) -> py::array_t<int8_t> {
-        auto r = chips.request();
-        if (r.ndim != 1)
-          throw py::value_error("chips must be a 1-D array");
-        auto out = py::array_t<int8_t>(r.shape[0]);
-        const auto status = modulate_bpsk_q(
-            std::span<const uint8_t>(static_cast<const uint8_t *>(r.ptr), static_cast<size_t>(r.shape[0])),
-            std::span<int8_t>(out.mutable_data(), static_cast<size_t>(r.shape[0])));
-        if (status != ModulationStatus::kOk)
-          throw py::value_error("modulate_bpsk_q failed");
-        return out;
-      },
-      py::arg("chips"),
-      "Modulate a chip sequence for AFS-Q pilot channel (BPSK(5), no data).");
-
-  m.def(
-      "multiplex_iq",
-      [](py::array_t<int8_t, py::array::c_style> i_samples,
-         py::array_t<int8_t, py::array::c_style> q_samples)
-          -> py::array_t<int16_t> {
-        auto ri = i_samples.request();
-        auto rq = q_samples.request();
-        if (ri.ndim != 1 || rq.ndim != 1)
-          throw py::value_error("i_samples and q_samples must be 1-D arrays");
-        if (ri.shape[0] != kGoldChipLength)
-          throw py::value_error("i_samples must have length 2046");
-        if (rq.shape[0] != kWeil10230ChipLength)
-          throw py::value_error("q_samples must have length 10230");
-        auto out = py::array_t<int16_t>(2 * kIqSamplesPerEpoch);
-        const auto status = multiplex_iq(
-            std::span<const int8_t>(static_cast<const int8_t *>(ri.ptr), kGoldChipLength),
-            std::span<const int8_t>(static_cast<const int8_t *>(rq.ptr), kWeil10230ChipLength),
-            std::span<int16_t>(out.mutable_data(), 2 * kIqSamplesPerEpoch));
-        if (status != IqMuxStatus::kOk)
-          throw py::value_error("multiplex_iq failed");
-        return out.reshape({static_cast<py::ssize_t>(kIqSamplesPerEpoch),
-                            static_cast<py::ssize_t>(2)});
-      },
-      py::arg("i_samples"), py::arg("q_samples"),
-      "Multiplex AFS-I and AFS-Q into baseband IQ at 5.115 MSPS.\n\n"
-      "Returns shape (10230, 2) int16 array with columns [I, Q].");
-
-  m.attr("EPOCHS_PER_FRAME") = kEpochsPerFrame;
-  m.attr("SECONDARY_CODE_LENGTH") = kSecondaryCodeLength;
-  m.attr("SECONDARY_CODE_COUNT") = kSecondaryCodeCount;
-  m.attr("INTERIM_ASSIGNMENT_MAX_PRN") = kInterimAssignmentMaxPrn;
-  m.attr("TERTIARY_CODE_LENGTH") = kWeil1500ChipLength;
-  m.attr("IQ_UPSAMPLE_FACTOR") = kIqUpsampleFactor;
-  m.attr("IQ_SAMPLES_PER_EPOCH") = kIqSamplesPerEpoch;
-
-  m.def(
-      "bch_encode",
-      [](int fid, int toi) -> py::array_t<uint8_t> {
-        if (fid < 0 || fid > 3)
-          throw py::value_error("fid must be in [0, 3]");
-        if (toi < 0 || toi > 99)
-          throw py::value_error("toi must be in [0, 99]");
-        auto out = py::array_t<uint8_t>(kBchCodewordLength);
-        const auto status = bch_encode(static_cast<uint8_t>(fid),
-                                       static_cast<uint8_t>(toi),
-                                       std::span<uint8_t>(out.mutable_data(), kBchCodewordLength));
-        if (status != BchStatus::kOk)
-          throw py::value_error("bch_encode failed");
-        return out;
-      },
-      py::arg("fid"), py::arg("toi"),
-      "Encode SB1 (FID + TOI) using BCH(51,8) (§2.4.2.1). Returns 52 symbols.");
+  py::enum_<BchStatus>(m, "BchStatus")
+      .value("OK", BchStatus::kOk)
+      .value("OUTPUT_TOO_SMALL", BchStatus::kOutputTooSmall)
+      .value("INVALID_FID", BchStatus::kInvalidFid)
+      .value("INVALID_TOI", BchStatus::kInvalidToi)
+      .value("NULL_OUTPUT", BchStatus::kNullOutput)
+      .value("INVALID_INPUT", BchStatus::kInvalidInput)
+      .value("AMBIGUOUS_MATCH", BchStatus::kAmbiguousMatch)
+      .value("FAULT_DETECTED", BchStatus::kFaultDetected)
+      .export_values();
 
   py::enum_<FrameStatus>(m, "FrameStatus")
       .value("OK", FrameStatus::kOk)
@@ -246,30 +60,106 @@ PYBIND11_MODULE(_afs, m) {
       .value("BCH_FAILED", FrameStatus::kBchFailed)
       .export_values();
 
-  m.def(
-      "frame_build_partial",
-      [](int fid, int toi) -> py::array_t<uint8_t> {
-        if (fid < 0 || fid > 3)
-          throw py::value_error("fid must be in [0, 3]");
-        if (toi < 0 || toi > 99)
-          throw py::value_error("toi must be in [0, 99]");
-        auto out = py::array_t<uint8_t>(kFrameLength);
-        const auto status = frame_build_partial(static_cast<uint8_t>(fid),
-                                                 static_cast<uint8_t>(toi),
-                                                 std::span<uint8_t>(out.mutable_data(), kFrameLength));
-        if (status != FrameStatus::kOk)
-          throw py::value_error("frame_build_partial failed");
-        return out;
-      },
-      py::arg("fid"), py::arg("toi"),
-      "Build a partial AFS navigation frame (sync + BCH SB1 + zero-padded "
-      "SB2-SB4) as defined in §2.4. Returns 6000 symbols.");
+  py::class_<BchResult>(m, "BchResult")
+      .def_readonly("status", &BchResult::status)
+      .def_readonly("fid", &BchResult::fid)
+      .def_readonly("toi", &BchResult::toi)
+      .def_readonly("hamming_distance", &BchResult::hamming_distance);
 
-  m.attr("BCH_CODEWORD_LENGTH") = kBchCodewordLength;
+  m.def("bch_encode", [](uint8_t fid, uint8_t toi) {
+    auto codeword = py::array_t<uint8_t>(52);
+    if (bch_encode(static_cast<Fid>(fid), Toi(toi), std::span<uint8_t, 52>(codeword.mutable_data(), 52)) != BchStatus::kOk)
+      throw py::value_error("Invalid BCH params");
+    return codeword;
+  });
+
+  m.def("bch_decode", [](py::array_t<uint8_t> codeword) {
+    if (codeword.size() != 52) throw py::value_error("Must be 52 symbols");
+    return bch_decode(std::span<const uint8_t, 52>(codeword.data(), 52));
+  });
+
+  m.def("bch_codebook_checksum", &bch_codebook_checksum);
+
+  m.def("frame_build_partial", [](uint8_t fid, uint8_t toi) {
+    auto out = py::array_t<uint8_t>(6000);
+    if (frame_build_partial(static_cast<Fid>(fid), Toi(toi), std::span<uint8_t, 6000>(out.mutable_data(), 6000)) != FrameStatus::kOk)
+      throw py::value_error("Frame build failed");
+    return out;
+  });
+
+  m.def("prn_code", [](int prn_id) {
+    const PrnId id{static_cast<uint8_t>(prn_id)};
+    PrnCode p;
+    if (!id.valid() || gold_prn_packed(id, p) != PrnStatus::kOk) throw py::value_error("Invalid PRN");
+    return unpack_prn(p);
+  });
+
+  m.def("modulate_i", [](py::array_t<uint8_t> prn, int data) {
+    auto r = prn.request();
+    auto out = py::array_t<int8_t>(r.size);
+    if (modulate_bpsk_i(std::span<const uint8_t>(static_cast<const uint8_t*>(r.ptr), r.size), static_cast<int8_t>(data), std::span<int8_t>(out.mutable_data(), r.size)) != ModulationStatus::kOk)
+      throw py::value_error("Modulation failed");
+    return out;
+  });
+
+  m.def("modulate_q", [](py::array_t<uint8_t> chips) {
+    auto r = chips.request();
+    auto out = py::array_t<int8_t>(r.size);
+    if (modulate_bpsk_q(std::span<const uint8_t>(static_cast<const uint8_t*>(r.ptr), r.size), std::span<int8_t>(out.mutable_data(), r.size)) != ModulationStatus::kOk)
+      throw py::value_error("Modulation failed");
+    return out;
+  });
+
+  m.def("multiplex_iq", [](py::array_t<int8_t> i, py::array_t<int8_t> q) {
+    auto out = py::array_t<int16_t>(20460);
+    if (multiplex_iq(std::span<const int8_t>(static_cast<const int8_t*>(i.data()), 2046), std::span<const int8_t>(static_cast<const int8_t*>(q.data()), 10230), std::span<int16_t>(out.mutable_data(), 20460)) != IqMuxStatus::kOk)
+      throw py::value_error("Mux failed");
+    return out.reshape({10230, 2});
+  });
+
+  m.def("weil10230_code", [](int id) { 
+    PrnCode p; 
+    if (weil10230_prn_packed(PrnId{static_cast<uint8_t>(id)}, p) != PrnStatus::kOk) throw py::value_error("Bad ID");
+    return unpack_prn(p);
+  });
+  
+  m.def("weil1500_code", [](int id) { 
+    PrnCode p; 
+    if (weil1500_prn_packed(PrnId{static_cast<uint8_t>(id)}, p) != PrnStatus::kOk) throw py::value_error("Bad ID");
+    return unpack_prn(p);
+  });
+
+  m.def("tiered_code_epoch", [](int id, int epoch) {
+    auto out = py::array_t<uint8_t>(10230);
+    TieredCodeAssignment a;
+    if (default_tiered_assignment_checked(PrnId{static_cast<uint8_t>(id)}, &a) != TieredCodeStatus::kOk) throw py::value_error("Bad ID");
+    if (tiered_code_epoch_checked(a, static_cast<uint16_t>(epoch), std::span<uint8_t>(out.mutable_data(), 10230)) != TieredCodeStatus::kOk) throw py::value_error("Bad epoch");
+    return out;
+  });
+
+  m.def("tiered_code_epoch_assigned", [](int primary_prn, int secondary_code_idx, int tertiary_prn, int tertiary_phase_offset, int epoch_idx) {
+    TieredCodeAssignment a;
+    a.primary_prn = PrnId{static_cast<uint8_t>(primary_prn)};
+    a.secondary_code_idx = static_cast<uint8_t>(secondary_code_idx);
+    a.tertiary_prn = PrnId{static_cast<uint8_t>(tertiary_prn)};
+    a.tertiary_phase_offset = static_cast<uint16_t>(tertiary_phase_offset);
+    auto out = py::array_t<uint8_t>(10230);
+    if (tiered_code_epoch_checked(a, static_cast<uint16_t>(epoch_idx), std::span<uint8_t>(out.mutable_data(), 10230)) != TieredCodeStatus::kOk) throw py::value_error("Bad assignment");
+    return out;
+  });
+
+  m.attr("EPOCHS_PER_FRAME") = kEpochsPerFrame;
+  m.attr("SECONDARY_CODE_LENGTH") = kSecondaryCodeLength;
+  m.attr("SECONDARY_CODE_COUNT") = kSecondaryCodeCount;
+  m.attr("INTERIM_ASSIGNMENT_MAX_PRN") = kInterimAssignmentMaxPrn;
+  m.attr("TERTIARY_CODE_LENGTH") = kWeil1500ChipLength;
+  m.attr("IQ_UPSAMPLE_FACTOR") = kIqUpsampleFactor;
+  m.attr("IQ_SAMPLES_PER_EPOCH") = kIqSamplesPerEpoch;
   m.attr("FRAME_LENGTH") = kFrameLength;
   m.attr("SYNC_LENGTH") = kSyncLength;
   m.attr("SB1_LENGTH") = kSb1Length;
   m.attr("PAYLOAD_LENGTH") = kPayloadLength;
+  m.attr("BCH_CODEWORD_LENGTH") = 52;
   m.attr("SYMBOL_RATE") = kSymbolRate;
   m.attr("FRAME_DURATION_S") = kFrameDurationS;
 }

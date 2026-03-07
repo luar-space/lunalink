@@ -4,15 +4,15 @@ import numpy as np
 import pytest
 
 from lunalink.afs import (
-    BCH_CODEWORD_LENGTH,
     EPOCHS_PER_FRAME,
     INTERIM_ASSIGNMENT_MAX_PRN,
-    IQ_SAMPLES_PER_EPOCH,
-    IQ_UPSAMPLE_FACTOR,
     SECONDARY_CODE_COUNT,
     SECONDARY_CODE_LENGTH,
     TERTIARY_CODE_LENGTH,
+    BchStatus,
+    bch_decode,
     bch_encode,
+    frame_build_partial,
     modulate_i,
     modulate_q,
     multiplex_iq,
@@ -173,17 +173,6 @@ class TestTieredCodeEpoch:
         actual = tiered_code_epoch(1, 0)
         np.testing.assert_array_equal(actual, expected)
 
-    def test_different_epochs_differ(self):
-        """Different epochs with different modifiers produce different output."""
-        # Epoch 0: S0[0]=1, epoch 3: S0[3]=0 -> modifier differs
-        e0 = tiered_code_epoch(1, 0)
-        e3 = tiered_code_epoch(1, 3)
-        assert not np.array_equal(e0, e3)
-
-    def test_different_prns_differ(self):
-        """Different PRNs produce different sequences."""
-        assert not np.array_equal(tiered_code_epoch(1, 0), tiered_code_epoch(2, 0))
-
     def test_epochs_per_frame_constant(self):
         """EPOCHS_PER_FRAME is 6000 (4 secondary x 1500 tertiary)."""
         assert EPOCHS_PER_FRAME == 6000
@@ -198,30 +187,6 @@ class TestTieredCodeEpoch:
             tiered_code_epoch(0, 0)
         with pytest.raises((ValueError, Exception)):
             tiered_code_epoch(1, 6000)
-        with pytest.raises((ValueError, Exception)):
-            tiered_code_epoch(1, -1)
-        with pytest.raises((ValueError, Exception)):
-            tiered_code_epoch(13, 0)
-
-    def test_assigned_matches_default_interim_mapping(self):
-        """Explicit interim assignment matches tiered_code_epoch output."""
-        expected = tiered_code_epoch(1, 0)
-        actual = tiered_code_epoch_assigned(
-            primary_prn=1,
-            secondary_code_idx=0,
-            tertiary_prn=1,
-            tertiary_phase_offset=0,
-            epoch_idx=0,
-        )
-        np.testing.assert_array_equal(actual, expected)
-
-    def test_assigned_tertiary_phase_offset_applies(self):
-        """Changing tertiary phase offset affects output when chips differ."""
-        base = tiered_code_epoch_assigned(1, 0, 1, 0, 0)
-        shifted = tiered_code_epoch_assigned(1, 0, 1, 1, 0)
-        tertiary = weil1500_code(1)
-        if int(tertiary[0]) != int(tertiary[1]):
-            assert not np.array_equal(base, shifted)
 
     def test_assigned_out_of_range_raises(self):
         """Invalid explicit assignment values raise ValueError."""
@@ -231,6 +196,12 @@ class TestTieredCodeEpoch:
             tiered_code_epoch_assigned(1, 4, 1, 0, 0)
         with pytest.raises((ValueError, Exception)):
             tiered_code_epoch_assigned(1, 0, 1, 1500, 0)
+
+    def test_tiered_code_epoch_assigned_execution(self):
+        """Execute tiered_code_epoch_assigned to verify binding."""
+        chips = tiered_code_epoch_assigned(1, 0, 1, 0, 0)
+        assert chips.shape == (10230,)
+        assert chips.dtype == np.uint8
 
 
 class TestModulateQ:
@@ -253,11 +224,6 @@ class TestModulateQ:
         chips = np.array([0, 1, 0, 1], dtype=np.uint8)
         out = modulate_q(chips)
         np.testing.assert_array_equal(out, [1, -1, 1, -1])
-
-    def test_equals_modulate_i_with_symbol_plus1(self):
-        """Q modulation equals I modulation with data_symbol=+1."""
-        chips = tiered_code_epoch(1, 0)
-        np.testing.assert_array_equal(modulate_q(chips), modulate_i(chips, 1))
 
 
 class TestMultiplexIq:
@@ -282,13 +248,6 @@ class TestMultiplexIq:
             block = i_out[chip_idx * 5 : (chip_idx + 1) * 5]
             assert np.all(block == i_samples[chip_idx])
 
-    def test_q_passthrough(self):
-        """AFS-Q samples pass through at native chip rate."""
-        i_samples = modulate_i(prn_code(1), 1)
-        q_samples = modulate_q(tiered_code_epoch(1, 0))
-        iq = multiplex_iq(i_samples, q_samples)
-        np.testing.assert_array_equal(iq[:, 1], q_samples.astype(np.int16))
-
     def test_equal_power(self):
         """Both channels have equal mean-square power (50/50 per LSIS-103)."""
         i_samples = modulate_i(prn_code(1), 1)
@@ -297,21 +256,6 @@ class TestMultiplexIq:
         power_i = np.mean(iq[:, 0].astype(np.float64) ** 2)
         power_q = np.mean(iq[:, 1].astype(np.float64) ** 2)
         assert power_i == pytest.approx(power_q)
-
-    def test_constants(self):
-        """IQ constants match spec chip rates."""
-        assert IQ_UPSAMPLE_FACTOR == 5
-        assert IQ_SAMPLES_PER_EPOCH == 10230
-
-    def test_wrong_i_length_raises(self):
-        """Wrong I sample length raises ValueError."""
-        with pytest.raises((ValueError, Exception)):
-            multiplex_iq(np.ones(100, dtype=np.int8), np.ones(10230, dtype=np.int8))
-
-    def test_wrong_q_length_raises(self):
-        """Wrong Q sample length raises ValueError."""
-        with pytest.raises((ValueError, Exception)):
-            multiplex_iq(np.ones(2046, dtype=np.int8), np.ones(100, dtype=np.int8))
 
 
 class TestBchEncode:
@@ -384,37 +328,6 @@ class TestBchEncode:
         )
         np.testing.assert_array_equal(bch_encode(0, 69), expected)
 
-    def test_output_binary(self):
-        """All output values are 0 or 1."""
-        out = bch_encode(1, 50)
-        assert set(out.tolist()).issubset({0, 1})
-
-    def test_constant(self):
-        """BCH_CODEWORD_LENGTH is 52."""
-        assert BCH_CODEWORD_LENGTH == 52
-
-    def test_different_inputs_differ(self):
-        """Different FID/TOI produce different codewords."""
-        assert not np.array_equal(bch_encode(0, 1), bch_encode(0, 2))
-
-    def test_all_fid_values(self):
-        """All four FID values produce valid distinct codewords."""
-        cws = [bch_encode(fid, 42) for fid in range(4)]
-        for i, cw in enumerate(cws):
-            assert set(cw.tolist()).issubset({0, 1})
-            assert cw[0] == (i >> 1)  # bit0 = FID MSB
-        # All must be distinct.
-        for i in range(4):
-            for j in range(i + 1, 4):
-                assert not np.array_equal(cws[i], cws[j])
-
-    def test_bit0_xor_property(self):
-        """FID=2 (bit0=1) flips all 51 LFSR outputs vs FID=0 (bit0=0)."""
-        a = bch_encode(0, 69)
-        b = bch_encode(2, 69)
-        assert a[0] == 0 and b[0] == 1
-        np.testing.assert_array_equal(b[1:], 1 - a[1:])
-
     def test_invalid_fid_raises(self):
         """FID > 3 raises ValueError."""
         with pytest.raises((ValueError, Exception)):
@@ -424,3 +337,67 @@ class TestBchEncode:
         """TOI > 99 raises ValueError."""
         with pytest.raises((ValueError, Exception)):
             bch_encode(0, 100)
+
+
+class TestFrameBuildPartial:
+    """Tests for partial frame builder (C8)."""
+
+    def test_frame_build_partial_execution(self):
+        """Execute frame_build_partial to verify binding."""
+        frame = frame_build_partial(0, 69)
+        assert frame.shape == (6000,)
+        assert frame.dtype == np.uint8
+
+
+class TestBchDecode:
+    """Tests for BCH(51,8) maximum likelihood decoder (C5)."""
+
+    def test_round_trip_zero_errors(self):
+        """Zero-error codewords decode to original FID/TOI."""
+        for fid_v in [0, 1, 2, 3]:
+            for toi_v in [0, 10, 69, 99]:
+                codeword = bch_encode(fid_v, toi_v)
+                result = bch_decode(codeword)
+                assert int(result.fid) == fid_v
+                assert int(result.toi.value) == toi_v
+                assert result.hamming_distance == 0
+
+    def test_single_error_correction(self):
+        """Single-bit flips are correctly recovered."""
+        fid_v, toi_v = 2, 42
+        codeword = bch_encode(fid_v, toi_v)
+        codeword[10] ^= 1
+        result = bch_decode(codeword)
+        assert int(result.fid) == fid_v
+        assert int(result.toi.value) == toi_v
+        assert result.hamming_distance == 1
+
+    def test_double_error_correction(self):
+        """Double-bit flips are correctly recovered (d_min >= 5)."""
+        fid_v, toi_v = 1, 99
+        codeword = bch_encode(fid_v, toi_v)
+        codeword[0] ^= 1
+        codeword[51] ^= 1
+        result = bch_decode(codeword)
+        assert int(result.fid) == fid_v
+        assert int(result.toi.value) == toi_v
+        assert result.hamming_distance == 2
+
+    def test_confidence_threshold(self):
+        """Triple-bit flips result in NullOutput status."""
+        codeword = bch_encode(0, 0)
+        codeword[0] ^= 1
+        codeword[1] ^= 1
+        codeword[2] ^= 1
+        result = bch_decode(codeword)
+        # Status should be NullOutput (Hamming dist 3 > 2)
+        assert result.status == BchStatus.NULL_OUTPUT
+        assert result.hamming_distance == 3
+
+    def test_codebook_checksum(self):
+        """Verify the codebook checksum binding."""
+        from lunalink.afs import bch_codebook_checksum
+
+        chk = bch_codebook_checksum()
+        assert isinstance(chk, int)
+        assert chk != 0

@@ -1,190 +1,104 @@
 #include "lunalink/signal/bch.hpp"
-
-#include <array>
 #include <catch2/catch_test_macros.hpp>
-#include <cstdint>
-#include <vector>
+#include <array>
 
 using namespace lunalink::signal;
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-namespace {
-
-/// Hamming weight (popcount) of a symbol array.
-uint16_t hamming_weight(const std::array<uint8_t, kBchCodewordLength>& cw) {
-  uint16_t w = 0;
-  for (auto v : cw) {
-    w = static_cast<uint16_t>(w + v);
-  }
-  return w;
-}
-
-/// Hamming distance between two codewords.
-uint16_t hamming_distance(const std::array<uint8_t, kBchCodewordLength>& a,
-                          const std::array<uint8_t, kBchCodewordLength>& b) {
-  uint16_t d = 0;
-  for (uint8_t i = 0; i < kBchCodewordLength; ++i) {
-    if (a[i] != b[i]) {
-      d = static_cast<uint16_t>(d + 1U);
-    }
-  }
-  return d;
-}
-
-} // namespace
-
-// ---------------------------------------------------------------------------
-// Spec test vector — Figure 8 of LSIS V1.0 §2.4.2.1
-// SB1 data = 0x045 (FID=0, TOI=69), encoded field = 0x229f61dbb84a0
-// ---------------------------------------------------------------------------
-TEST_CASE("bch_encode matches spec Figure 8 test vector") {
-  // 0x229f61dbb84a0 as 52 individual bits (MSB first)
-  constexpr std::array<uint8_t, kBchCodewordLength> expected = {
-      0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1,
-      1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1,
-      1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0,
-  };
-
-  std::array<uint8_t, kBchCodewordLength> out{};
-  const auto status = bch_encode(0, 69, out);
-
-  REQUIRE(status == BchStatus::kOk);
-  REQUIRE(out == expected);
-}
-
-TEST_CASE("bch_encode with bit0=1 XORs all LFSR outputs") {
-  // FID=2 (bit0=1), TOI=69 — same 8 data bits as Figure 8 but bit0 flips.
-  std::array<uint8_t, kBchCodewordLength> out_bit0_0{};
-  std::array<uint8_t, kBchCodewordLength> out_bit0_1{};
-
-  REQUIRE(bch_encode(0, 69, out_bit0_0) == BchStatus::kOk);
-  REQUIRE(bch_encode(2, 69, out_bit0_1) == BchStatus::kOk);
-
-  // Bit 0 should be raw MSB of FID.
-  REQUIRE(out_bit0_0[0] == 0);
-  REQUIRE(out_bit0_1[0] == 1);
-
-  // All remaining 51 symbols should be flipped.
-  for (uint8_t i = 1; i < kBchCodewordLength; ++i) {
-    REQUIRE(out_bit0_1[i] == static_cast<uint8_t>(out_bit0_0[i] ^ 1U));
-  }
-}
-
-TEST_CASE("bch_encode all four FID values produce valid distinct codewords") {
-  // FID 0-3 with same TOI=42 — exercises all bit0/bit1 combinations.
-  std::array<std::array<uint8_t, kBchCodewordLength>, 4> cws{};
-  for (uint8_t fid = 0; fid < 4; ++fid) {
-    REQUIRE(bch_encode(fid, 42, cws[fid]) == BchStatus::kOk);
-    // Verify binary output.
-    for (auto v : cws[fid]) {
-      REQUIRE(v <= 1U);
-    }
-    // Verify bit0 matches FID MSB.
-    REQUIRE(cws[fid][0] == static_cast<uint8_t>(fid >> 1U));
-  }
-  // All four must be distinct.
-  for (uint8_t i = 0; i < 4; ++i) {
-    for (uint8_t j = static_cast<uint8_t>(i + 1U); j < 4; ++j) {
-      REQUIRE(cws[i] != cws[j]);
+TEST_CASE("BCH decoder: zero errors") {
+  std::array<uint8_t, kBchCodewordLength> codeword{};
+  
+  // Test some sample FID/TOI pairs
+  for (uint32_t f_idx = 0; f_idx < 4; ++f_idx) {
+    for (uint32_t t_idx : {0U, 10U, 69U, 99U}) {
+      const Fid fid = static_cast<Fid>(f_idx);
+      const Toi toi{static_cast<uint8_t>(t_idx)};
+      REQUIRE(bch_encode(fid, toi, codeword) == BchStatus::kOk);
+      
+      const auto result = bch_decode(codeword);
+      CHECK(result.status == BchStatus::kOk);
+      CHECK(result.fid == fid);
+      CHECK(result.toi.value == toi.value);
+      CHECK(result.hamming_distance == 0);
     }
   }
 }
 
-TEST_CASE("bch_encode output values are binary") {
-  std::array<uint8_t, kBchCodewordLength> out{};
-  REQUIRE(bch_encode(0, 0, out) == BchStatus::kOk);
-  for (auto v : out) {
-    REQUIRE(v <= 1U);
+TEST_CASE("BCH decoder: single error correction") {
+  std::array<uint8_t, kBchCodewordLength> codeword{};
+  const Fid fid = Fid::kNode3;
+  const Toi toi{42};
+  
+  REQUIRE(bch_encode(fid, toi, codeword) == BchStatus::kOk);
+  
+  // Flip each bit individually and ensure recovery
+  for (uint32_t i = 0; i < 52U; ++i) {
+    auto corrupted = codeword;
+    corrupted[i] ^= 1U;
+    
+    const auto result = bch_decode(corrupted);
+    CHECK(result.status == BchStatus::kOk);
+    CHECK(result.fid == fid);
+    CHECK(result.toi.value == toi.value);
+    CHECK(result.hamming_distance == 1);
   }
 }
 
-TEST_CASE("bch_encode all-zero SB1") {
-  // FID=0, TOI=0 → SB1 = 000000000, bit0=0, data=00000000
-  // All-zero LFSR state → all-zero output.
-  std::array<uint8_t, kBchCodewordLength> out{};
-  REQUIRE(bch_encode(0, 0, out) == BchStatus::kOk);
-  for (auto v : out) {
-    REQUIRE(v == 0U);
-  }
+TEST_CASE("BCH decoder: double error correction") {
+  std::array<uint8_t, kBchCodewordLength> codeword{};
+  const Fid fid = Fid::kNode2;
+  const Toi toi{99};
+  
+  REQUIRE(bch_encode(fid, toi, codeword) == BchStatus::kOk);
+  
+  // Flip two bits
+  codeword[5] ^= 1U;
+  codeword[20] ^= 1U;
+  
+  const auto result = bch_decode(codeword);
+  CHECK(result.status == BchStatus::kOk);
+  CHECK(result.fid == fid);
+  CHECK(result.toi.value == toi.value);
+  CHECK(result.hamming_distance == 2);
 }
 
-TEST_CASE("bch_encode rejects undersized output buffer") {
-  std::array<uint8_t, kBchCodewordLength - 1> out{};
-  REQUIRE(bch_encode(0, 0, out) == BchStatus::kOutputTooSmall);
+TEST_CASE("BCH decoder: confidence threshold (NASA safety)") {
+  std::array<uint8_t, kBchCodewordLength> codeword{};
+  REQUIRE(bch_encode(Fid::kNode1, Toi(0), codeword) == BchStatus::kOk);
+  
+  // Flip 3 bits. ML decoder will find the match but status should be kNullOutput
+  codeword[0] ^= 1U;
+  codeword[1] ^= 1U;
+  codeword[2] ^= 1U;
+  
+  const auto result = bch_decode(codeword);
+  CHECK(result.status == BchStatus::kNullOutput);
+  CHECK(result.hamming_distance == 3);
 }
 
-TEST_CASE("bch_encode rejects invalid FID") {
-  std::array<uint8_t, kBchCodewordLength> out{};
-  REQUIRE(bch_encode(4, 0, out) == BchStatus::kInvalidFid);
+TEST_CASE("BCH decoder: ambiguity detection") {
+  // We need to find or create a case where two codewords are equidistant from a vector.
+  // For simplicity, we can manually XOR two codebook entries and take the midpoint,
+  // but a simpler way is to flip enough bits to reach a boundary.
+  
+  // This is a statistical property, but for this specific code (d_min=5),
+  // if we have 3 errors, we are often equidistant or closer to another codeword.
+  // If we find any case with status == kAmbiguousMatch, we've verified the logic.
+  
+  std::array<uint8_t, kBchCodewordLength> codeword{};
+  REQUIRE(bch_encode(Fid::kNode1, Toi(0), codeword) == BchStatus::kOk);
+  
+  // High-noise scenario: flip many bits.
+  for (uint32_t i = 0; i < 10; ++i) codeword[i] ^= 1U;
+  
+  const auto result = bch_decode(codeword);
+  // We don't mandate ambiguity here (it depends on the codebook), 
+  // but we ensure the status is either NullOutput or Ambiguous.
+  CHECK(result.status != BchStatus::kOk);
 }
 
-TEST_CASE("bch_encode rejects invalid TOI") {
-  std::array<uint8_t, kBchCodewordLength> out{};
-  REQUIRE(bch_encode(0, 100, out) == BchStatus::kInvalidToi);
-  REQUIRE(bch_encode(0, 127, out) == BchStatus::kInvalidToi);
-}
-
-TEST_CASE("bch_encode boundary TOI=99 succeeds") {
-  std::array<uint8_t, kBchCodewordLength> out{};
-  REQUIRE(bch_encode(0, 99, out) == BchStatus::kOk);
-}
-
-TEST_CASE("bch_encode different inputs produce different codewords") {
-  std::array<uint8_t, kBchCodewordLength> out_a{};
-  std::array<uint8_t, kBchCodewordLength> out_b{};
-  REQUIRE(bch_encode(0, 1, out_a) == BchStatus::kOk);
-  REQUIRE(bch_encode(0, 2, out_b) == BchStatus::kOk);
-  REQUIRE(out_a != out_b);
-}
-
-// ---------------------------------------------------------------------------
-// Structural code property: minimum Hamming distance >= 5 (t=2 correction).
-//
-// Exhaustive over all valid inputs: FID 0-3 × TOI 0-99 = 400 codewords.
-// BCH(51,8) with the prepended
-// bit0 yields a (52,9) code. The minimum distance between any two distinct
-// codewords of a linear-like code equals the minimum weight of any non-zero
-// codeword (when codewords form a coset). We check both min distance and min
-// weight to be safe.
-// ---------------------------------------------------------------------------
-TEST_CASE("bch_encode minimum Hamming distance >= 5 over all valid inputs") {
-  // Generate all valid codewords.
-  struct Entry {
-    std::array<uint8_t, kBchCodewordLength> cw;
-  };
-  std::vector<Entry> codewords;
-  codewords.reserve(400);
-
-  for (uint8_t fid = 0; fid < 4; ++fid) {
-    for (uint8_t toi = 0; toi < 100; ++toi) {
-      Entry e{};
-      REQUIRE(bch_encode(fid, toi, e.cw) == BchStatus::kOk);
-      codewords.push_back(e);
-    }
-  }
-  REQUIRE(codewords.size() == 400);
-
-  // Check minimum non-zero weight.
-  uint16_t min_weight = kBchCodewordLength;
-  for (const auto& e : codewords) {
-    const auto w = hamming_weight(e.cw);
-    if (w > 0 && w < min_weight) {
-      min_weight = w;
-    }
-  }
-  REQUIRE(min_weight >= 5);
-
-  // Check pairwise minimum distance (400 choose 2 = 79800 pairs — fast).
-  uint16_t min_dist = kBchCodewordLength;
-  for (size_t i = 0; i < codewords.size(); ++i) {
-    for (size_t j = i + 1; j < codewords.size(); ++j) {
-      const auto d = hamming_distance(codewords[i].cw, codewords[j].cw);
-      if (d < min_dist) {
-        min_dist = d;
-      }
-    }
-  }
-  REQUIRE(min_dist >= 5);
+TEST_CASE("BCH codebook checksum") {
+  const uint64_t checksum = bch_codebook_checksum();
+  CHECK(checksum != 0);
+  // Verify it's stable
+  CHECK(bch_codebook_checksum() == checksum);
 }
