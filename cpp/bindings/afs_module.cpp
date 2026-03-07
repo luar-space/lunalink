@@ -41,7 +41,8 @@ PYBIND11_MODULE(_afs, m) {
 
   py::class_<Toi>(m, "Toi")
       .def(py::init<uint8_t>())
-      .def_readwrite("value", &Toi::value);
+      .def_property("value", &Toi::value, [](Toi& self, uint8_t v) { self = Toi(v); })
+      .def("__int__", [](const Toi& t) { return static_cast<uint8_t>(t); });
 
   py::enum_<BchStatus>(m, "BchStatus")
       .value("OK", BchStatus::kOk)

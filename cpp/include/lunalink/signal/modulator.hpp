@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include "lunalink/signal/prn.hpp"
+#include "lunalink/signal/safety.hpp"
 #include <span>
 #include <algorithm> // for std::fill
 #include <cassert>
@@ -32,7 +33,7 @@ enum class ModulationStatus : uint8_t {
 
   // ESA/JAXA Safety Policy: Pre-initialise buffer.
   if (!out.empty()) {
-    std::fill(out.begin(), out.end(), static_cast<int8_t>(0));
+    secure_scrub(out);
   }
 
   if (data_symbol != 1 && data_symbol != -1) [[unlikely]] {
@@ -57,6 +58,7 @@ enum class ModulationStatus : uint8_t {
       // Branchless mapping: 0 -> +1, 1 -> -1
       out[i] = static_cast<int8_t>((1 - 2 * static_cast<int>(chip)) * static_cast<int>(data_symbol));
       loop_count++;
+      wip_tick();
     }
 
     // CFI: Terminal count verification.
@@ -66,7 +68,7 @@ enum class ModulationStatus : uint8_t {
 
     if (status != ModulationStatus::kOk) [[unlikely]] {
       // Re-clear on error to prevent partial modulation leakage.
-      std::fill(out.begin(), out.end(), static_cast<int8_t>(0));
+      secure_scrub(out);
     }
   }
   return status;

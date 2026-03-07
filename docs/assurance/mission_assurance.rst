@@ -101,6 +101,34 @@ ensure corrupted indices remain within safe buffer bounds. Logic uses
 **Saturating Arithmetic** rather than wrapping to prevent catastrophic 
 index overflows.
 
+3. Active TMR Repair (NASA/ESA)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Passive majority voting is insufficient for long-duration missions. LunaLink implements **Active Repair (Scrubbing)**.
+
+*   **Implementation**: When a `TmrValue` vote detects a mismatch (e.g., 2-of-3), the software immediately overwrites the corrupted copy in RAM with the correct majority value.
+*   **Benefit**: Prevents the accumulation of Single-Event Upsets (SEUs) over time, which would otherwise lead to a catastrophic Multi-Bit Upset (MBU) if a second bit flips in the same triplet.
+
+4. Anti-Optimization (Secure Scrubbing)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Standard memory clearing (e.g., `std::fill` or `memset`) is vulnerable to **Dead Store Elimination (DSE)** by optimizing compilers.
+
+*   **Mandate**: All "Stack Scrubbing" operations must utilize a `volatile`-qualified store or a memory barrier to ensure the operation is not optimized out of the final flight binary.
+*   **Benefit**: Guarantees that sensitive signal data and intermediate parity bits are physically erased from RAM before a function returns.
+
+5. Memory Section Pinning (JPL/Goddard)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Mission-critical Look-Up Tables (LUTs) must not be left to the default placement of the linker.
+
+*   **Implementation**: Large tables (BCH codebook, LDPC matrices) are tagged with specific section attributes (e.g., `[[gnu::section(".lunalink_lut")]]`).
+*   **Benefit**: Allows the Mission Linker Script to explicitly map these tables to the most radiation-hardened physical memory banks available on the spacecraft (e.g., MRAM or PROM).
+
+6. Temporal WIP Signaling (Watchdog Feed)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Long-running DSP loops must provide "proof of progress" to the system watchdog.
+
+*   **Implementation**: Safety-critical loops increment a **Work-In-Progress (WIP)** counter.
+*   **Benefit**: Ensures that the hardware watchdog can detect if the CPU is stuck in a radiation-induced infinite loop, even if the loop body contains "valid" looking instructions.
+
 Time-Deterministic Execution (NASA/JAXA)
 ----------------------------------------
 

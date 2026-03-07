@@ -1,9 +1,11 @@
-// GENERATED — do not edit. Re-run scripts/gen_prn_table.py to regenerate.
+// GENERATED - do not edit.
 #pragma once
 #include <cstdint>
+#include <array>
 
 namespace lunalink::signal {
+
 // 2046 chips packed MSB-first into 256 bytes per PRN.
-// NOLINTNEXTLINE(hicpp-avoid-c-arrays)
-alignas(64) extern const uint8_t kGoldPrnsPacked[210][256];
+extern const std::array<std::array<uint8_t, 256>, 210> kGoldPrnsPacked;
+
 } // namespace lunalink::signal

@@ -17,7 +17,7 @@ TEST_CASE("BCH decoder: zero errors") {
       const auto result = bch_decode(codeword);
       CHECK(result.status == BchStatus::kOk);
       CHECK(result.fid == fid);
-      CHECK(result.toi.value == toi.value);
+      CHECK(result.toi.value() == toi.value());
       CHECK(result.hamming_distance == 0);
     }
   }
@@ -38,7 +38,7 @@ TEST_CASE("BCH decoder: single error correction") {
     const auto result = bch_decode(corrupted);
     CHECK(result.status == BchStatus::kOk);
     CHECK(result.fid == fid);
-    CHECK(result.toi.value == toi.value);
+    CHECK(result.toi.value() == toi.value());
     CHECK(result.hamming_distance == 1);
   }
 }
@@ -57,7 +57,7 @@ TEST_CASE("BCH decoder: double error correction") {
   const auto result = bch_decode(codeword);
   CHECK(result.status == BchStatus::kOk);
   CHECK(result.fid == fid);
-  CHECK(result.toi.value == toi.value);
+  CHECK(result.toi.value() == toi.value());
   CHECK(result.hamming_distance == 2);
 }
 
@@ -76,24 +76,31 @@ TEST_CASE("BCH decoder: confidence threshold (NASA safety)") {
 }
 
 TEST_CASE("BCH decoder: ambiguity detection") {
-  // We need to find or create a case where two codewords are equidistant from a vector.
-  // For simplicity, we can manually XOR two codebook entries and take the midpoint,
-  // but a simpler way is to flip enough bits to reach a boundary.
-  
-  // This is a statistical property, but for this specific code (d_min=5),
-  // if we have 3 errors, we are often equidistant or closer to another codeword.
-  // If we find any case with status == kAmbiguousMatch, we've verified the logic.
-  
   std::array<uint8_t, kBchCodewordLength> codeword{};
   REQUIRE(bch_encode(Fid::kNode1(), Toi(0), codeword) == BchStatus::kOk);
-  
+
   // High-noise scenario: flip many bits.
   for (uint32_t i = 0; i < 10; ++i) codeword[i] ^= 1U;
-  
+
   const auto result = bch_decode(codeword);
-  // We don't mandate ambiguity here (it depends on the codebook), 
-  // but we ensure the status is either NullOutput or Ambiguous.
   CHECK(result.status != BchStatus::kOk);
+}
+
+TEST_CASE("BCH codebook exhaustive check") {
+  std::array<uint8_t, kBchCodewordLength> codeword{};
+  for (uint32_t f_idx = 0; f_idx < 4; ++f_idx) {
+    for (uint32_t t_idx = 0; t_idx < 100; ++t_idx) {
+      const Fid fid = static_cast<Fid>(static_cast<uint8_t>(f_idx));
+      const Toi toi{static_cast<uint8_t>(t_idx)};
+      REQUIRE(bch_encode(fid, toi, codeword) == BchStatus::kOk);
+
+      const auto result = bch_decode(codeword);
+      CHECK(result.status == BchStatus::kOk);
+      CHECK(result.fid == fid);
+      CHECK(result.toi.value() == toi.value());
+      CHECK(result.hamming_distance == 0);
+    }
+  }
 }
 
 TEST_CASE("BCH codebook checksum") {

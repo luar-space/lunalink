@@ -8,7 +8,7 @@ namespace lunalink::signal {
 
 // Sync pattern: CC63F74536F49E04A (hex), 68 bits MSB-first.
 // LSIS V1.0 §2.4.1, Table 12.
-constinit const std::array<uint8_t, kSyncLength> kSyncPattern = {
+alignas(64) LUNALINK_LUT_SECTION constinit const std::array<uint8_t, kSyncLength> kSyncPattern = {
     1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1,
     1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1,
     0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0,
@@ -33,7 +33,7 @@ FrameStatus frame_build_partial(
   const auto bch_status = bch_encode(fid, toi, out.subspan<kSyncLength, 52ULL>());
   
   if (bch_status != BchStatus::kOk) [[unlikely]] {
-    std::ranges::fill(out, 0U);
+    secure_scrub(out);
     switch (bch_status) {
       case BchStatus::kInvalidFid:     status = FrameStatus::kInvalidFid; break;
       case BchStatus::kInvalidToi:     status = FrameStatus::kInvalidToi; break;

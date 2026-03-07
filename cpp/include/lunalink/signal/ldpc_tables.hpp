@@ -14,6 +14,11 @@ struct LdpcCsrMatrix {
     uint16_t                  num_rows;
     uint16_t                  num_cols;
     uint32_t                  crc32;
+
+    /**
+     * @brief Perform a JIT integrity check of matrix structure using CRC32. [CBIT-AFS-LDPC]
+     */
+    [[nodiscard]] bool verify_integrity() const noexcept;
 };
 
 extern const LdpcCsrMatrix kLdpc_sf2_a;

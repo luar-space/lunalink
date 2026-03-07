@@ -1,6 +1,7 @@
 #include "lunalink/signal/matched_code.hpp"
 
 #include "lunalink/signal/prn.hpp"
+#include "lunalink/signal/safety.hpp"
 #include <algorithm> // for std::fill
 
 namespace lunalink::signal {
@@ -27,27 +28,27 @@ MatchedCodeStatus matched_code_epoch_checked(
   // ESA/JAXA Safety Policy: Invalidate output immediately to prevent stale data transmission
   // in case of early return or unhandled failure.
   if (!out.empty()) {
-    std::fill(out.begin(), out.end(), 0U);
+    secure_scrub(out);
   }
 
-  if (out.size() < kWeil10230ChipLength) [[unlikely]] {
+  if (out.size() < kWeil10230ChipLength) {
     status = MatchedCodeStatus::kOutputTooSmall;
-  } else if (epoch_idx >= kEpochsPerFrame) [[unlikely]] {
+  } else if (epoch_idx >= kEpochsPerFrame) {
     status = MatchedCodeStatus::kInvalidEpoch;
-  } else if (!valid_matched_assignment(assignment)) [[unlikely]] {
+  } else if (!valid_matched_assignment(assignment)) {
     status = MatchedCodeStatus::kInvalidAssignment;
   }
 
   if (status == MatchedCodeStatus::kOk) {
     PrnCode primary_code;
     if (weil10230_prn_packed(assignment.primary_prn, primary_code) !=
-        PrnStatus::kOk) [[unlikely]] {
+        PrnStatus::kOk) {
       status = MatchedCodeStatus::kInvalidAssignment;
     }
     
     PrnCode tertiary_code;
     if (status == MatchedCodeStatus::kOk && weil1500_prn_packed(assignment.tertiary_prn, tertiary_code) !=
-        PrnStatus::kOk) [[unlikely]] {
+        PrnStatus::kOk) {
       status = MatchedCodeStatus::kInvalidAssignment;
     }
 
@@ -65,7 +66,7 @@ MatchedCodeStatus matched_code_epoch_checked(
           kWeil1500ChipLength);
       uint8_t tert_chip = 0;
       if (unpack_chip(tertiary_code, tert_idx, tert_chip) !=
-          PrnStatus::kOk) [[unlikely]] {
+          PrnStatus::kOk) {
         status = MatchedCodeStatus::kInvalidAssignment;
       }
 
@@ -95,10 +96,11 @@ MatchedCodeStatus matched_code_epoch_checked(
             out[base + 6U] = (final_byte >> 1U) & 1U;
             out[base + 7U] = (final_byte >> 0U) & 1U;
             byte_count++;
+            wip_tick();
         }
         
         // CFI: Control-Flow Integrity check for loop terminal count.
-        if (byte_count != kWeil10230FullBytes) [[unlikely]] {
+        if (byte_count != kWeil10230FullBytes) {
             status = MatchedCodeStatus::kFaultDetected;
         }
 
@@ -107,11 +109,16 @@ MatchedCodeStatus matched_code_epoch_checked(
             const auto last_byte = static_cast<uint8_t>(primary_code.data[kWeil10230FullBytes] ^ byte_modifier);
             for (uint32_t i = 0; i < kWeil10230TrailingChips; ++i) {
                 out[(kWeil10230FullBytes << 3U) + i] = (last_byte >> (7U - i)) & 1U;
+                wip_tick();
             }
         }
         // NOLINTEND(hicpp-signed-bitwise)
       }
     }
+  }
+
+  if (status != MatchedCodeStatus::kOk) {
+    secure_scrub(out);
   }
 
   return status;

@@ -1,16 +1,17 @@
-// GENERATED - do not edit.
-// Re-run scripts/gen_bch_table.py to regenerate.
 #include "lunalink/signal/bch.hpp"
+#include "lunalink/signal/safety.hpp"
 #include <cstdint>
 #include <array>
 
 namespace lunalink::signal {
 
-// Packed codebook for BCH(51,8) ML decoder.
-// Each uint64_t contains 52 symbols (packed LSB-first).
-// Indexing: 100 * FID + TOI (400 entries total).
-// Aligned to 64 bytes for optimal cache-line fetching on flight hardware.
-alignas(64) extern const std::array<uint64_t, 400> kBchCodebook = {{
+/**
+ * @brief Pre-computed BCH(51,8) codebook for all 400 FID/TOI pairs. [LSIS-AFS-501]
+ * Generated using generator polynomial 1 + X^3 + X^4 + X^5 + X^6 + X^7 + X^8.
+ * Flight-Hardened: 64-byte alignment, section pinning, and constinit.
+ * Packing: LSB-first (First bit of codeword is bit 0 of uint64_t).
+ */
+alignas(64) LUNALINK_LUT_SECTION extern constinit const std::array<uint64_t, 400> kBchCodebook = {
   // FID 0
   0x0000000000000000ULL,  0x000C7D2DA095CF00ULL,  0x000A43BB70DF2880ULL,  0x00063E96D04AE780ULL,
   0x000521DDB86F9440ULL,  0x00095CF018FA5B40ULL,  0x000F6266C8B0BCC0ULL,  0x00031F4B682573C0ULL,
@@ -119,6 +120,6 @@ alignas(64) extern const std::array<uint64_t, 400> kBchCodebook = {{
   0x00048F20D77EB789ULL,  0x0008F20D77EB7889ULL,  0x000ECC9BA7A19F09ULL,  0x0002B1B607345009ULL,
   0x0004ECC9BA7A19F1ULL,  0x000891E41AEFD6F1ULL,  0x000EAF72CAA53171ULL,  0x0002D25F6A30FE71ULL,
 
-}};
+};
 
 } // namespace lunalink::signal

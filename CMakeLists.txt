@@ -106,6 +106,7 @@ if(BUILD_TESTING)
         cpp/tests/test_coverage_gap.cpp
         cpp/tests/test_safety.cpp
         cpp/tests/test_ldpc.cpp
+        cpp/tests/test_safety_extended.cpp
     )
     target_link_libraries(test_lunalink PRIVATE lunalink_core Catch2::Catch2WithMain)
     target_compile_options(test_lunalink PRIVATE ${LUNALINK_WARNING_FLAGS})

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Generate the 400-entry codebook LUT for the BCH(51,8) ML decoder."""
+"""Generate the 400-entry codebook LUT for the BCH(51,8) ML decoder.
+
+Applies Class A Hardening: alignas(64) and constinit.
+Packing: LSB-first (First bit of codeword is bit 0 of uint64_t).
+"""
 
 
 def bch_encode_bits(fid, toi):
@@ -16,9 +20,9 @@ def bch_encode_bits(fid, toi):
 
     for _ in range(51):
         output = (state >> 7) & 1
-        # Parity of tapped stages
-        fb = bin(state & feedback_mask).count("1") % 2
-        # Shift and load feedback
+        # count set bits in state & mask
+        count = bin(state & feedback_mask).count("1")
+        fb = count % 2
         state = ((state << 1) | fb) & 0xFF
         codeword_bits.append(output ^ bit0)
 
@@ -31,37 +35,38 @@ def bch_encode_bits(fid, toi):
 
 
 def main():
-    """Generate the BCH codebook."""
-    header = """// GENERATED - do not edit.
-// Re-run scripts/gen_bch_table.py to regenerate.
-#include "lunalink/signal/bch.hpp"
-#include <cstdint>
-#include <array>
-
-namespace lunalink::signal {
-
-// Packed codebook for BCH(51,8) ML decoder.
-// Each uint64_t contains 52 symbols (packed LSB-first).
-// Indexing: 100 * FID + TOI (400 entries total).
-// Aligned to 64 bytes for optimal cache-line fetching on flight hardware.
-alignas(64) extern const std::array<uint64_t, 400> kBchCodebook = {{
-"""
-    footer = """}};
-
-} // namespace lunalink::signal
-"""
+    """Process all FID/TOI pairs and generate hardened C++ LUT."""
+    header = (
+        '#include "lunalink/signal/bch.hpp"\n'
+        '#include "lunalink/signal/safety.hpp"\n'
+        "#include <cstdint>\n"
+        "#include <array>\n\n"
+        "namespace lunalink::signal {\n\n"
+        "/**\n"
+        " * @brief Pre-computed BCH(51,8) codebook for all 400 FID/TOI pairs. "
+        "[LSIS-AFS-501]\n"
+        " * Generated using generator polynomial 1 + X^3 + X^4 + X^5 + X^6 + "
+        "X^7 + X^8.\n"
+        " * Flight-Hardened: 64-byte alignment, section pinning, and constinit.\n"
+        " * Packing: LSB-first (First bit of codeword is bit 0 of uint64_t).\n"
+        " */\n"
+        "alignas(64) LUNALINK_LUT_SECTION extern constinit const "
+        "std::array<uint64_t, 400> kBchCodebook = {\n"
+    )
+    footer = "};\n\n} // namespace lunalink::signal\n"
 
     with open("cpp/signal/bch_table.cpp", "w") as f:
         f.write(header)
         for fid in range(4):
             f.write(f"  // FID {fid}\n")
             for toi in range(100):
-                cw = bch_encode_bits(fid, toi)
-                f.write(f"  0x{cw:016X}ULL,")
+                val = bch_encode_bits(fid, toi)
+                f.write(f"  0x{val:016X}ULL,")
                 if (toi + 1) % 4 == 0:
                     f.write("\n")
             f.write("\n")
         f.write(footer)
+    print("Generated bch_table.cpp: kBchCodebook (alignas(64), constinit, LSB-first)")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 #include "lunalink/signal/iq_mux.hpp"
 
 #include "lunalink/signal/prn.hpp"
+#include "lunalink/signal/safety.hpp"
 #include <algorithm> // for std::fill
 #include <cassert>
 
@@ -18,7 +19,7 @@ IqMuxStatus multiplex_iq(
 
   // ESA/JAXA Safety Policy: Pre-initialise buffer.
   if (!out.empty()) {
-    std::fill(out.begin(), out.end(), static_cast<int16_t>(0));
+    secure_scrub(out);
   }
 
   if (i_samples.size() < kGoldChipLength || q_samples.size() < kWeil10230ChipLength) [[unlikely]] {
@@ -64,6 +65,7 @@ IqMuxStatus multiplex_iq(
       out[idx] = i_val;
       out[idx + 1U] = q_val;
       loop_count++;
+      wip_tick();
     }
 
     // CFI: Terminal count verification.
@@ -73,7 +75,7 @@ IqMuxStatus multiplex_iq(
 
     if (status != IqMuxStatus::kOk) [[unlikely]] {
         // Clear partially written output on failure.
-        std::fill(out.begin(), out.end(), static_cast<int16_t>(0));
+        secure_scrub(out);
     }
   }
   return status;

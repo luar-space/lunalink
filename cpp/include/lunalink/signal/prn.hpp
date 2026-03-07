@@ -22,6 +22,14 @@ struct PrnId {
   explicit constexpr PrnId(uint8_t v) noexcept : storage(CheckedRange<uint8_t, 1, kPrnCount>{v}) {}
 
   [[nodiscard]] constexpr uint8_t value() const noexcept {
+    return static_cast<uint8_t>(storage.peek());
+  }
+
+  /**
+   * @brief Perform active repair of the TMR triplets.
+   * @return The repaired majority value.
+   */
+  uint8_t repair() const noexcept {
     return static_cast<uint8_t>(storage.vote());
   }
 

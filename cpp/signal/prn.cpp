@@ -1,10 +1,11 @@
+#include <algorithm>  // for std::fill
 #include <cstddef>
-#include <algorithm> // for std::fill
 
 #include "lunalink/signal/prn.hpp"
 #include "lunalink/signal/prn_table.hpp"
 #include "lunalink/signal/prn_table_weil10230.hpp"
 #include "lunalink/signal/prn_table_weil1500.hpp"
+#include "lunalink/signal/safety.hpp"
 
 namespace lunalink::signal {
 
@@ -18,8 +19,8 @@ PrnStatus gold_prn_packed(PrnId prn_id, PrnCode& out) noexcept {
     status = PrnStatus::kInvalidPrn;
   } else {
     // Each Gold PRN is 2046 chips -> 256 bytes packed.
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-    out.data = std::span<const uint8_t>(&kGoldPrnsPacked[static_cast<size_t>(prn_id) - 1U][0], 256);
+    const size_t idx = static_cast<size_t>(prn_id.repair()) - 1U;
+    out.data = std::span(kGoldPrnsPacked.at(idx));
     out.chip_length = kGoldChipLength;
   }
   return status;
@@ -34,8 +35,8 @@ PrnStatus weil10230_prn_packed(PrnId prn_id, PrnCode& out) noexcept {
     status = PrnStatus::kInvalidPrn;
   } else {
     // Each Weil-10230 PRN is 10230 chips -> 1279 bytes packed.
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-    out.data = std::span<const uint8_t>(&kWeil10230PrnsPacked[static_cast<size_t>(prn_id) - 1U][0], 1279);
+    const size_t idx = static_cast<size_t>(prn_id.repair()) - 1U;
+    out.data = std::span(kWeil10230PrnsPacked.at(idx));
     out.chip_length = kWeil10230ChipLength;
   }
   return status;
@@ -50,31 +51,39 @@ PrnStatus weil1500_prn_packed(PrnId prn_id, PrnCode& out) noexcept {
     status = PrnStatus::kInvalidPrn;
   } else {
     // Each Weil-1500 PRN is 1500 chips -> 188 bytes packed.
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-    out.data = std::span<const uint8_t>(&kWeil1500PrnsPacked[static_cast<size_t>(prn_id) - 1U][0], 188);
+    const size_t idx = static_cast<size_t>(prn_id.repair()) - 1U;
+    out.data = std::span(kWeil1500PrnsPacked.at(idx));
     out.chip_length = kWeil1500ChipLength;
   }
   return status;
 }
 
 uint64_t weil10230_codebook_checksum() noexcept {
-  uint64_t sum = 0;
+  uint32_t crc = 0xFFFFFFFFU;
   for (const auto& row : kWeil10230PrnsPacked) {
     for (const uint8_t val : row) {
-      sum += val;
+      crc ^= val;
+      for (uint32_t i = 0; i < 8U; i++) {
+        crc = (crc >> 1U) ^ (0xEDB88320U & (-(crc & 1U)));
+      }
+      wip_tick();
     }
   }
-  return sum;
+  return ~(static_cast<uint64_t>(crc));
 }
 
 uint64_t weil1500_codebook_checksum() noexcept {
-  uint64_t sum = 0;
+  uint32_t crc = 0xFFFFFFFFU;
   for (const auto& row : kWeil1500PrnsPacked) {
     for (const uint8_t val : row) {
-      sum += val;
+      crc ^= val;
+      for (uint32_t i = 0; i < 8U; i++) {
+        crc = (crc >> 1U) ^ (0xEDB88320U & (-(crc & 1U)));
+      }
+      wip_tick();
     }
   }
-  return sum;
+  return ~(static_cast<uint64_t>(crc));
 }
 
-} // namespace lunalink::signal
+}  // namespace lunalink::signal

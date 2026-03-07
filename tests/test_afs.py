@@ -340,10 +340,13 @@ class TestBchEncode:
         out = bch_encode(4, 0)
         assert out.shape == (52,)
 
-    def test_invalid_toi_raises(self):
-        """TOI > 99 raises ValueError."""
-        with pytest.raises((ValueError, Exception)):
-            bch_encode(0, 100)
+    def test_saturating_toi(self):
+        """TOI > 99 saturates to 99."""
+        # This no longer raises ValueError because CheckedRange saturates
+        codeword = bch_encode(0, 100)
+        assert len(codeword) == 52
+        result = bch_decode(codeword)
+        assert int(result.toi.value) == 99
 
 
 class TestFrameBuildPartial:

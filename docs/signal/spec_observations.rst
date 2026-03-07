@@ -47,3 +47,17 @@ interoperability between independent implementations.
 *   **Proposed Resolution**: We propose a standard for **Interleaved Signed 16-bit 
     IQ (int16)** pairs at the AFS-Q chip rate (5.115 MSPS) as the primary 
     digital interchange format for hardware-in-the-loop validation.
+
+5. LDPC Rate Matching and Block Truncation
+------------------------------------------
+
+*   **Observation**: §2.4.3 specifies exact block lengths for SB2 (2400) and 
+    SB3/4 (1740), but the provided sub-matrices (Annex 2) define larger 
+    codeword spaces (e.g., 5040 parity bits for SF2).
+*   **Conflict**: The standard lacks an explicit **Rate Matching** or 
+    **Parity Truncation** algorithm. Independent implementations may select 
+    different parity subsets, breaking mathematical interoperability.
+*   **Proposed Resolution**: LunaLink implements **Linear Systematic Truncation**. 
+    We take the first :math:`N_{output}` bits of the systematic codeword 
+    (after the initial :math:`2Z` puncturing). This ensures that the generated 
+    symbols perfectly fit the 60×98 Block Interleaver geometry (5880 symbols).

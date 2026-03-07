@@ -20,8 +20,8 @@ BchStatus bch_encode(
     std::span<uint8_t, 52ULL> out) noexcept {
   
   BchStatus status = BchStatus::kOk;
-  const auto fid_val = fid.value();
-  const auto toi_val = toi.value;
+  const auto fid_val = fid.repair();
+  const auto toi_val = toi.repair();
 
   // ESA Safety: Force zero initial state.
   std::ranges::fill(out, 0U);
@@ -43,6 +43,7 @@ BchStatus bch_encode(
       const auto fb     = static_cast<uint8_t>(static_cast<uint32_t>(std::popcount(static_cast<uint32_t>(state & kFeedbackMask))) % 2U);
       state = static_cast<uint8_t>((static_cast<uint32_t>(state) << 1U) | fb);
       out[k + 1U] = static_cast<uint8_t>(output ^ bit0);
+      wip_tick();
     }
   }
 
@@ -56,6 +57,7 @@ BchResult bch_decode(std::span<const uint8_t, 52ULL> in) noexcept {
   uint64_t received = 0;
   for (uint32_t i = 0; i < 52U; ++i) {
     received |= (static_cast<uint64_t>(in[i] != 0U) << i);
+    wip_tick();
   }
 
   // Soft-TMR: Mirrored variables to detect ALU/Register bit-flips.
@@ -87,6 +89,7 @@ BchResult bch_decode(std::span<const uint8_t, 52ULL> in) noexcept {
     }
 
     loop_count++;
+    wip_tick();
   }
 
   // 4. Control-Flow Integrity (CFI): Ensure every codeword was inspected.
@@ -126,17 +129,26 @@ BchResult bch_decode(std::span<const uint8_t, 52ULL> in) noexcept {
   }
 
   // JAXA/NASA Safety: Stack Scrubbing.
-  std::fill(verify_buf.begin(), verify_buf.end(), 0U);
+  secure_scrub(verify_buf);
 
-  return BchResult(result_status, best_fid, best_toi, min_dist);
+  return BchResult(result_status, best_fid, best_toi, static_cast<uint8_t>(min_dist));
 }
 
 uint64_t bch_codebook_checksum() noexcept {
-  uint64_t sum = 0;
+  uint32_t crc = 0xFFFFFFFFU;
+  auto update_crc = [&](uint64_t val) {
+    for (uint32_t i = 0; i < 8U; i++) {
+      crc ^= static_cast<uint8_t>((val >> (i * 8U)) & 0xFFU);
+      for (uint32_t j = 0; j < 8U; j++) {
+        crc = (crc >> 1U) ^ (0xEDB88320U & (-(crc & 1U)));
+      }
+    }
+  };
   for (const auto val : kBchCodebook) {
-    sum += val;
+    update_crc(val);
   }
-  return sum;
+
+  return ~(static_cast<uint64_t>(crc));
 }
 
 } // namespace lunalink::signal

@@ -19,11 +19,12 @@ enum class LdpcStatus : uint8_t {
 
 /**
  * @brief LDPC Subframe types supported by LSIS-AFS.
+ * Hardened with non-contiguous bit patterns.
  */
 enum class LdpcSubframe : uint8_t {
-    kSF2 = 2,
-    kSF3 = 3,
-    kSF4 = 4  // SF4 reuses SF3 matrices
+    kSF2 = 0x5AU,
+    kSF3 = 0xA5U,
+    kSF4 = 0x33U  // SF4 reuses SF3 matrices
 };
 
 /**
