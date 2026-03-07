@@ -9,7 +9,7 @@ deliverables to the **ESA-CCSDS Delivery Outline** requirements.
 
 *   **Compliance Matrix**: See :doc:`signal/compliance_matrix` for a line-by-line 
     mapping of implemented modules to the LSIS standard.
-*   **Proposed Resolutions**: See :doc:`signal/spec_observations` for our 
+*   **Proposed Resolutions**: See :doc:`signal/spec_findings_report` for our 
     identificiation of spec ambiguities and proposed formal resolutions.
 *   **Architecture**: See :doc:`signal/architecture` for the high-level 
     design of the C++ and Python layers.
