@@ -26,17 +26,21 @@ inline constexpr uint16_t kSymbolRate = 500;
 /// Frame duration: 12.0 seconds.
 inline constexpr float kFrameDurationS = 12.0F;
 
-/// Status codes for navigation frame building.
+/**
+ * @brief Fault-tolerant status codes for navigation frame building.
+ * Non-contiguous bit patterns with high Hamming distance resist SEU bit-flips.
+ */
 enum class FrameStatus : uint8_t {
   kOk              = 0x5AU,  // 01011010
   kOutputTooSmall  = 0xA5U,  // 10100101
   kInvalidFid      = 0x33U,  // 00110011
   kInvalidToi      = 0xCCU,  // 11001100
   kBchFailed       = 0x0FU,  // 00001111
+  kFaultDetected   = 0x99U,  // 10011001
 };
 
 /**
- * @brief Build a partial AFS navigation frame (§2.4).
+ * @brief Build a partial AFS navigation frame (§2.4). [LSIS-AFS-601]
  *
  * Current implementation constructs:
  *   - 68-symbol sync pattern

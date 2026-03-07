@@ -21,6 +21,8 @@ FrameStatus frame_build_partial(
     Toi                        toi,
     std::span<uint8_t, 6000ULL> out) noexcept {
   
+  FrameStatus status = FrameStatus::kOk;
+
   // ESA Safety Policy: Zero-initialise entire frame.
   std::ranges::fill(out, 0U);
 
@@ -33,14 +35,14 @@ FrameStatus frame_build_partial(
   if (bch_status != BchStatus::kOk) [[unlikely]] {
     std::ranges::fill(out, 0U);
     switch (bch_status) {
-      case BchStatus::kInvalidFid:     return FrameStatus::kInvalidFid;
-      case BchStatus::kInvalidToi:     return FrameStatus::kInvalidToi;
-      default:                         return FrameStatus::kBchFailed;
+      case BchStatus::kInvalidFid:     status = FrameStatus::kInvalidFid; break;
+      case BchStatus::kInvalidToi:     status = FrameStatus::kInvalidToi; break;
+      default:                         status = FrameStatus::kBchFailed; break;
     }
   }
 
   // 3. SB2-SB4 payload: remains zeroed per initialization.
-  return FrameStatus::kOk;
+  return status;
 }
 
 } // namespace lunalink::signal

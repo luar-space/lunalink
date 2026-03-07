@@ -44,6 +44,7 @@ tasks:
     desc: Run all static analysis tools (type checking, linting, formatting).
     cmds:
       - task: pyright
+      - task: cppcheck
       - task: ruff-fix
     silent: false
 
@@ -51,8 +52,20 @@ tasks:
     desc: Run non-mutating lint checks used by CI and pre-commit.
     cmds:
       - task: pyright
+      - task: cppcheck
       - uv run ruff format --check .
       - uv run ruff check .
+    silent: false
+
+  cppcheck:
+    desc: Run cppcheck static analysis on C++ core.
+    cmds:
+      - |
+        if command -v cppcheck >/dev/null 2>&1; then
+          cppcheck --enable=all --inconclusive --error-exitcode=1 --suppress=missingIncludeSystem cpp/include/ cpp/signal/
+        else
+          echo "cppcheck not found; skipping. Install cppcheck to enable this task."
+        fi
     silent: false
 
   pyright:

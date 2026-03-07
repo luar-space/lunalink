@@ -8,7 +8,7 @@ namespace {
 
 uint8_t read_chip(const PrnCode& code, uint16_t chip_idx) {
   uint8_t chip = 0;
-  REQUIRE(unpack_chip(code, chip_idx, &chip) == PrnStatus::kOk);
+  REQUIRE(unpack_chip(code, chip_idx, chip) == PrnStatus::kOk);
   return chip;
 }
 
@@ -130,16 +130,48 @@ TEST_CASE("weil1500_prn PRN 1 first byte matches reference") {
     REQUIRE(read_chip(packed, i) == expected[i]);
 }
 
-TEST_CASE("PRN APIs return explicit status on invalid input") {
+TEST_CASE("PRN APIs: saturating logic (C-Pattern 4)") {
   PrnCode packed_gold;
-  REQUIRE(gold_prn_packed(PrnId{0}, packed_gold) == PrnStatus::kInvalidPrn);
+  // PRN 0 saturates to 1
+  REQUIRE(gold_prn_packed(PrnId{0}, packed_gold) == PrnStatus::kOk);
   
   PrnCode packed_weil;
-  REQUIRE(weil10230_prn_packed(PrnId{211}, packed_weil) == PrnStatus::kInvalidPrn);
+  // PRN 211 saturates to 210
+  REQUIRE(weil10230_prn_packed(PrnId{211}, packed_weil) == PrnStatus::kOk);
 
   uint8_t chip = 0;
-  REQUIRE(unpack_chip(get_gold(1), kGoldChipLength, &chip) ==
+  // Chip index still returns error as it's not a CheckedRange parameter but a loop boundary.
+  REQUIRE(unpack_chip(get_gold(1), kGoldChipLength, chip) ==
           PrnStatus::kInvalidChipIndex);
-  REQUIRE(unpack_chip(get_gold(1), 0, nullptr) ==
-          PrnStatus::kNullOutput);
+}
+
+TEST_CASE("Weil codebook checksums (CBIT integrity)") {
+  const uint64_t sum10230 = weil10230_codebook_checksum();
+  const uint64_t sum1500  = weil1500_codebook_checksum();
+  
+  CHECK(sum10230 != 0);
+  CHECK(sum1500 != 0);
+  
+  // Verify stability
+  CHECK(weil10230_codebook_checksum() == sum10230);
+  CHECK(weil1500_codebook_checksum() == sum1500);
+}
+
+TEST_CASE("PrnId: Triple Modular Redundancy (TMR) resilience") {
+  PrnId id(42);
+  REQUIRE(id.value() == 42);
+  REQUIRE(id.valid());
+  
+  // Simulate single event upset (SEU) in one of the storage slots.
+  id.storage.v1 = CheckedRange<uint8_t, 1, kPrnCount>{99};
+  CHECK(id.value() == 42); // Majority vote should preserve the correct value.
+  CHECK(id.valid());
+  
+  id.storage.refresh(CheckedRange<uint8_t, 1, kPrnCount>{42});
+  id.storage.v2 = CheckedRange<uint8_t, 1, kPrnCount>{1}; // valid but wrong
+  CHECK(id.value() == 42);
+  
+  id.storage.refresh(CheckedRange<uint8_t, 1, kPrnCount>{42});
+  id.storage.v3 = CheckedRange<uint8_t, 1, kPrnCount>{210};
+  CHECK(id.value() == 42);
 }

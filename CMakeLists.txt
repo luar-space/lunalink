@@ -14,7 +14,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Warning Flags (NASA/ESA/JAXA Compliance)
 if(MSVC)
-    set(LUNALINK_WARNING_FLAGS /W4 /WX /permissive-)
+    set(LUNALINK_WARNING_FLAGS /W4 /WX /permissive- /GS /volatile:iso)
 else()
     set(LUNALINK_WARNING_FLAGS
         -Wall -Wextra -Wpedantic -Werror
@@ -27,8 +27,21 @@ else()
         -Wformat=2
         -Wold-style-cast
         -Wimplicit-fallthrough
+        -Woverloaded-virtual
+        # Determinism
         -fno-fast-math
+        -ffp-contract=off
+        "-ffile-prefix-map=${CMAKE_SOURCE_DIR}=."
+        # Hardening
+        -fstack-protector-strong
+        -fno-common
+        -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
         )
+    # Linker Hardening (NASA/ESA)
+    if(NOT APPLE)
+        set(LUNALINK_LINKER_FLAGS "-Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack")
+    endif()
+
     # Mission-critical safety flags (Core only)
     set(LUNALINK_CORE_FLAGS -fno-exceptions -fno-rtti)
 endif()
@@ -49,6 +62,7 @@ add_library(lunalink_core
 target_include_directories(lunalink_core PUBLIC cpp/include)
 set_target_properties(lunalink_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_options(lunalink_core PRIVATE ${LUNALINK_WARNING_FLAGS} ${LUNALINK_CORE_FLAGS})
+target_link_options(lunalink_core PRIVATE ${LUNALINK_LINKER_FLAGS})
 
 # --- Python Bindings ---
 if(BUILD_PYTHON_BINDINGS)
@@ -73,7 +87,7 @@ if(BUILD_TESTING)
         FetchContent_Declare(
           Catch2
           GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-          GIT_TAG        v3.4.0
+          GIT_TAG        f90e8f50a6e76e3492ee9aadfe1014677c4807d2 # v3.4.0 (Pinned SHA for Supply Chain Security)
         )
         FetchContent_MakeAvailable(Catch2)
     endif()
@@ -88,8 +102,8 @@ if(BUILD_TESTING)
         cpp/tests/test_bch.cpp
         cpp/tests/test_frame.cpp
         cpp/tests/test_coverage_gap.cpp
-        )
-
+        cpp/tests/test_safety.cpp
+    )
     target_link_libraries(test_lunalink PRIVATE lunalink_core Catch2::Catch2WithMain)
     target_compile_options(test_lunalink PRIVATE ${LUNALINK_WARNING_FLAGS})
 

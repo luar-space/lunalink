@@ -10,22 +10,52 @@ radiation environment of the Lunar surface.
 Core Hardening Philosophy
 -------------------------
 
-Space software faces two critical risks not present in terrestrial applications:
+Space software faces three critical risks not present in terrestrial applications:
 
-1. **Silent Data Corruption**: Radiation-induced Single Event Upsets (SEU) 
+1. **Silent Data Corruption (SDC)**: Radiation-induced Single Event Upsets (SEU) 
    can flip bits in registers or memory, potentially causing Undefined 
    Behavior (UB) or state corruption without crashing the system.
 2. **Autonomous Survival**: A lunar payload must be able to detect and 
    mitigate internal faults without ground intervention.
+3. **Timing Jitter**: Non-deterministic execution times in signal processing 
+   can lead to phase-lock-loop (PLL) instability in the receiver.
 
 The following measures address these risks systematically.
+
+Design Constraints (NASA NPR 7150.2D / JPL Rule 1-10)
+-----------------------------------------------------
+
+1. Zero Dynamic Allocation
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+Strictly zero heap usage (``malloc``/``new``) after the initialization phase. 
+This eliminates the risk of memory fragmentation, leaks, and non-deterministic 
+allocation failures during flight.
+
+2. Fixed-Bound Loops & No Recursion
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+All loops must have a fixed, verifiable upper bound. Recursion is forbidden. 
+This allows formal calculation of the **Worst-Case Stack Depth** and 
+ensures the stack will never overflow into data segments.
+
+3. Cyclomatic Complexity & Single Exit Points
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* **Complexity**: We enforce a limit of **10** per function.
+* **Single Exit**: Functions utilize a single ``return`` statement. This 
+  ensures that mandatory **Stack Scrubbing** and **Reciprocal Checks** 
+  at the end of a function are never bypassed by an early exit.
+
+4. Bidirectional Traceability
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Every mission-critical function in ``cpp/signal/`` is tagged with its 
+corresponding LSIS requirement ID (e.g., ``[LSIS-AFS-101]``). This ensures 
+that the implementation can be audited against the standard for 100% 
+functional compliance.
 
 Mission-Critical Coding Patterns
 --------------------------------
 
 1. SEU-Resistant Enumerations (ESA/NASA)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 Standard sequential enums (0, 1, 2...) are vulnerable to single-bit flips. 
 LunaLink utilizes **Non-Contiguous Bit Patterns** with high Hamming distance 
 for all status codes (e.g., ``BchStatus``, ``FrameStatus``).
@@ -36,7 +66,6 @@ for all status codes (e.g., ``BchStatus``, ``FrameStatus``).
 
 2. Variable Mirroring / Soft-TMR (JAXA)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 Critical state variables in performance loops are "mirrored" to detect 
 ALU or register file corruption *during* calculation.
 
@@ -47,87 +76,127 @@ ALU or register file corruption *during* calculation.
 * **Benefit**: Detects transient hardware faults in the middle of 
   Digital Signal Processing (DSP) blocks.
 
-3. Control-Flow Integrity (CFI) (NASA/JAXA)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+3. Parameter Majority Voting (TMR) (ESA/NASA)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Mission-critical parameters (e.g., ``PrnId``, ``Fid``) are stored in 
+triplets. Reading a parameter invokes a **Majority Vote** (2-of-3).
 
+* **Benefit**: If an SEU flips a bit in one copy of the parameter in RAM, 
+  the software corrects the value on-the-fly without mission interruption.
+
+4. Control-Flow Integrity (CFI) (NASA/JAXA)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Radiation can cause the Program Counter to jump, leading to skipped 
 logic or early loop exits.
 
 * **Implementation**: Safety-critical loops implement independent terminal 
-  count verification (Sentinel Counters).
+  count verification (**Sentinel Counters**).
 * **Benefit**: Ensures that the entire information space (e.g., 400 BCH 
   codewords) was inspected and no radiation-induced "shortcuts" were taken.
 
-4. Reciprocal Sanity Checks (NASA/ESA)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+5. Value Invariants & Saturating Logic (ESA/NASA)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Value-constrained wrappers for signal parameters (Phase Offsets, PRN IDs) 
+ensure corrupted indices remain within safe buffer bounds. Logic uses 
+**Saturating Arithmetic** rather than wrapping to prevent catastrophic 
+index overflows.
 
-Even if search logic completes, the result is mathematically verified 
-via a separate execution path.
+Time-Deterministic Execution (NASA/JAXA)
+----------------------------------------
 
-* **Implementation**: The BCH decoder re-encodes its "winner" and 
-  verifies that the Hamming distance matches the search result.
-* **Benefit**: Catches "Silent Data Corruption" where logic returns 
-  a structurally valid but mathematically incorrect result.
+1. Constant-Time DSP
+~~~~~~~~~~~~~~~~~~~~
+LunaLink prioritizes **Branchless Arithmetic** for signal generation (BPSK, 
+multiplexing). By eliminating data-dependent branching, we ensure that the 
+execution time is identical regardless of the input data.
 
-5. Radiation Masking (JAXA)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* **Benefit**: Guarantees a stable **Worst-Case Execution Time (WCET)**, 
+  crucial for real-time scheduling on RTOS like RTEMS or VxWorks.
 
-* **Implementation**: Explicit bit-masking (``& kCodewordMask``) is 
-  applied to memory fetches.
-* **Benefit**: Prevents bit-flips in "unused" word bits (e.g., bits 53-63 
-  of a 64-bit word storing a 52-bit codeword) from polluting calculations.
+2. Temporal Windowed Watchdogs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Critical tasks report their completion to a windowed watchdog. If a task 
+finishes **too early** or **too late**, it indicates a timing fault 
+(e.g., oscillator jitter or logic skip).
 
-C++20 Engineering Standards
----------------------------
+Fault Management & Telemetry
+----------------------------
 
-Standard: C++20 (ISO/IEC 14882:2020)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1. Continuous Built-In Test (CBIT) (ESA/JAXA)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In addition to Power-On Self Tests (POST), LunaLink supports periodic 
+background scrubbing of critical Look-Up Tables (LUTs).
 
-The project leverages modern C++20 safety features:
+* **Implementation**: ``bch_codebook_checksum()`` is designed to be 
+  called by a background "scrubber" task.
+* **Benefit**: Detects Single-Bit Upsets in RAM-cached tables before 
+  they can pollute signal generation.
 
-* **Strong Typing**: ``enum class Fid`` and ``struct Toi`` prevent 
-  dimensional/unit errors (e.g., swapping FID and TOI).
-* **Deterministic Initialization**: ``constinit`` guarantees compile-time 
-  initialization of global tables (Sync Patterns, PRN LUTs), 
-  eliminating boot-time non-determinism.
-* **Bounds Safety**: ``std::span<T, N>`` provides the compiler with 
-  buffer geometry, allowing formal proof of memory safety.
-
-Deterministic Memory & Execution
+2. Frame Commitment & Validation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+No signal frame is "released" to the hardware DMA/SDR layer until it has 
+been structurally validated in RAM.
 
-* **No Heap Allocation**: Strictly zero dynamic memory usage after startup.
-* **No Exceptions/RTTI**: Core logic is compiled with ``-fno-exceptions`` 
-  and ``-fno-rtti`` to ensure deterministic Worst-Case Execution Time (WCET).
-* **Branchless DSP**: Critical paths (BPSK, validation) use branchless 
-  arithmetic to eliminate timing side-channels and improve pipelining.
+* **Requirement**: The final bit-stream must pass a **Post-Generation Checksum** 
+  to ensure no bit-flips occurred during the assembly of the frame in local memory.
+
+3. Forbidden State Detection (NASA/JPL)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Any `default` case hit in a state transition (e.g., ``FrameStatus`` check) 
+is treated as a **Critical Fault Event**, triggering a transition to a 
+"Safe Mode" and logging a high-priority telemetry packet.
+
+4. Fixed-Width Telemetry (NASA)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Error logging avoids variable-length strings (which risk stack corruption). 
+LunaLink uses **Fixed-Width Binary Telemetry Packs**: 
+`[Module ID (8b) | Error Code (8b) | Context (16b)]`.
+
+Supply Chain Security & Reproducibility (ECSS-Q-ST-80C)
+-------------------------------------------------------
+
+1. Immutable Dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~~
+All external dependencies (e.g., Catch2) are pinned by **Commit Hash (SHA)**, 
+not mutable tags. This protects the mission from "Supply Chain Attacks" 
+where an upstream tag is maliciously overwritten.
+
+2. Bit-for-Bit Reproducible Builds
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The build system enforces deterministic compilation.
+
+* **Path Remapping**: ``-ffile-prefix-map`` is used to strip absolute 
+  paths (e.g., ``/home/user/code``) from the binary debug symbols.
+* **Verification**: The MD5 hash of the binary must be identical whether 
+  built on a developer laptop or the flight CI server.
 
 Verification & Tooling
 ----------------------
 
-1. Static Analysis (Clang-Tidy)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1. Digital Twin Compatibility (NASA)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The core library is strictly decoupled from hardware registers via a 
+Hardware Abstraction Layer (HAL). This allows the **exact same binary** 
+to be verified on a Linux Digital Twin and flight hardware (LEON/RISC-V).
 
-Enforces High-Integrity C++ rules (MISRA-aligned). 
-Checked families: ``bugprone-*``, ``cert-*``, ``cppcoreguidelines-*``, ``hicpp-*``.
-
-2. Runtime Sanitizers (ASan/UBSan)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-CI jobs execute the full suite with Address and Undefined Behavior 
-sanitizers enabled to catch memory leaks or overflows.
-
-3. Exhaustive Testing & Coverage
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-* **Python (src/)**: 100% statement and branch coverage requirement.
-* **C++ (cpp/)**: ≥ 90% line coverage requirement (currently 98%).
-* **Built-In Test (BIT)**: ``bch_codebook_checksum()`` allows flight 
-  executives to verify the integrity of static LUTs in PROM/MRAM.
-
-4. Information Security (NASA)
+2. Information Security (NASA)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 **Stack Scrubbing**: All internal temporary signal buffers are 
 explicitly zeroed (scrubbed) using ``std::fill`` before the function 
 returns to prevent cross-task data leakage.
+
+3. Static & Dynamic Analysis
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* **Clang-Tidy**: Enforces MISRA-aligned High-Integrity C++ (HICPP) rules.
+* **Cppcheck**: Secondary static analyzer focused on embedded safety-critical bugs (buffer overruns, memory leaks).
+* **ASan/UBSan**: Catch memory safety and undefined behavior at runtime.
+* **Coverage**: Mandates ≥ 90% C++ line coverage and 100% Python coverage.
+
+4. Compiler-Level Defenses
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+The build system mandates strict hardening flags across all platforms:
+
+* **Stack Protection**: ``-fstack-protector-strong`` to detect stack corruption.
+* **Symbol Hardening**: ``-D_FORTIFY_SOURCE=2`` and ``-fno-common``.
+* **Floating-Point Determinism**: ``-ffp-contract=off`` to ensure bit-for-bit parity between platforms.
+* **Linker Hardening**: RELRO (Relocation Read-Only) and NX (No-Execute) stack configuration.

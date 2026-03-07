@@ -29,7 +29,7 @@ TEST_CASE("modulate_bpsk_i full PRN 1 all values in {-1, +1}") {
   std::array<uint8_t, kGoldChipLength> chips{};
   for (uint16_t i = 0; i < kGoldChipLength; ++i) {
     uint8_t chip = 0;
-    REQUIRE(unpack_chip(packed, i, &chip) == PrnStatus::kOk);
+    REQUIRE(unpack_chip(packed, i, chip) == PrnStatus::kOk);
     chips[i] = chip;
   }
 

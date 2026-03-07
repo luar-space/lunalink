@@ -22,11 +22,18 @@ class BchStatus(IntEnum):
     AMBIGUOUS_MATCH = 0x66
     FAULT_DETECTED = 0x99
 
-class Fid(IntEnum):
-    NODE1 = 0
-    NODE2 = 1
-    NODE3 = 2
-    NODE4 = 3
+class Fid:
+    value: int
+    def __init__(self, value: int) -> None: ...
+    def __int__(self) -> int: ...
+    @staticmethod
+    def NODE1() -> Fid: ...  # noqa: N802
+    @staticmethod
+    def NODE2() -> Fid: ...  # noqa: N802
+    @staticmethod
+    def NODE3() -> Fid: ...  # noqa: N802
+    @staticmethod
+    def NODE4() -> Fid: ...  # noqa: N802
 
 class Toi:
     value: int

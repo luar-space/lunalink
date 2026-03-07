@@ -6,37 +6,45 @@
 
 namespace lunalink::signal {
 
+/**
+ * @brief Fault-tolerant status codes for IQ Multiplexer operations.
+ * Non-contiguous bit patterns with high Hamming distance resist SEU bit-flips.
+ */
 enum class IqMuxStatus : uint8_t {
-  kOk = 0,
-  kInputTooSmall,
-  kOutputTooSmall,
-  kInvalidISample,
-  kInvalidQSample,
-  kNullInput,
+  kOk             = 0x5AU,  // 01011010
+  kInputTooSmall  = 0xA5U,  // 10100101
+  kOutputTooSmall = 0x33U,  // 00110011
+  kInvalidISample = 0xCCU,  // 11001100
+  kInvalidQSample = 0x0FU,  // 00001111
+  kNullInput      = 0xF0U,  // 11110000
+  kFaultDetected  = 0x99U,  // 10011001
 };
 
 /// Samples per 2 ms AFS-I chip: 1.
 inline constexpr uint8_t kSamplesPerIChip = 1;
 
-/// Samples per 2 ms AFS-Q chip: 1 (native).
-inline constexpr uint8_t kSamplesPerQChip = 1;
+/// Samples per 2 ms AFS-Q chip: 5.
+inline constexpr uint8_t kSamplesPerQChip = 5;
 
-/// Upsample factor for I to match Q sample rate: 1.023 / 5.115 = 1/5.
+/// Upsample factor from I to Q (pilot rate).
 inline constexpr uint8_t kIqUpsampleFactor = 5;
 
-/// Total IQ samples per 2 ms epoch: 10230 Q chips.
-inline constexpr uint16_t kIqSamplesPerEpoch = kWeil10230ChipLength;
+/// Total Q-rate samples per 2ms epoch.
+inline constexpr uint16_t kIqSamplesPerEpoch = 10230;
 
 /**
- * @brief Multiplex AFS-I and AFS-Q into interleaved baseband IQ samples.
+ * @brief Multiplex I and Q channels into a single interleaved sequence. [LSIS-AFS-301]
+ * Interleaving pattern: [I0, Q0, I1, Q1, ...].
+ * The I channel is upsampled 5x to match the Q channel rate.
  *
- * Implements sample-and-hold upsampling for I channel by factor 5.
- * Output is interleaved [I0, Q0, I1, Q1, ...].
+ * @param i_samples  In-phase chips (min 2046).
+ * @param q_samples  Quadrature chips (min 10230).
+ * @param out        Interleaved output (min 20460 samples).
  *
- * @param i_samples Input AFS-I symbols in {-1, 1} (2046 samples)
- * @param q_samples Input AFS-Q chips in {-1, 1} (10230 samples)
- * @param out       Output interleaved samples (2 * 10230 = 20460 samples)
- * @return IqMuxStatus::kOk or error
+ * @pre i_samples.size() >= 2046
+ * @pre q_samples.size() >= 10230
+ * @pre out.size() >= 20460
+ * @return IqMuxStatus::kOk or an error code.
  */
 [[nodiscard]] IqMuxStatus multiplex_iq(
     std::span<const int8_t> i_samples,
@@ -44,7 +52,7 @@ inline constexpr uint16_t kIqSamplesPerEpoch = kWeil10230ChipLength;
     std::span<int16_t>      out) noexcept;
 
 /**
- * @brief Ergonomic overloads.
+ * @brief Ergonomic template overload for multiplex_iq.
  */
 template <typename T, typename U, typename V>
 [[nodiscard]] inline IqMuxStatus multiplex_iq(

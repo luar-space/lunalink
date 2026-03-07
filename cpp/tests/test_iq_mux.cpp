@@ -14,7 +14,7 @@ TEST_CASE("multiplex_iq upsamples I by factor 5") {
   REQUIRE(gold_prn_packed(PrnId{1}, u_i) == PrnStatus::kOk);
   // Unpack full PRN to bytes
   for (size_t i = 0; i < kGoldChipLength; ++i) {
-    REQUIRE(unpack_chip(u_i, static_cast<uint16_t>(i), &i_chips[i]) == PrnStatus::kOk);
+    REQUIRE(unpack_chip(u_i, static_cast<uint16_t>(i), i_chips[i]) == PrnStatus::kOk);
   }
   
   std::array<int8_t, kGoldChipLength> i_samples{};
@@ -44,7 +44,7 @@ TEST_CASE("multiplex_iq Q channel passes through at chip rate") {
   PrnCode u_i;
   REQUIRE(gold_prn_packed(PrnId{1}, u_i) == PrnStatus::kOk);
   for (size_t i=0; i<kGoldChipLength; ++i) {
-    REQUIRE(unpack_chip(u_i, static_cast<uint16_t>(i), &i_chips[i]) == PrnStatus::kOk);
+    REQUIRE(unpack_chip(u_i, static_cast<uint16_t>(i), i_chips[i]) == PrnStatus::kOk);
   }
   std::array<int8_t, kGoldChipLength> i_samples{};
   REQUIRE(modulate_bpsk_i(i_chips, 1, i_samples) == ModulationStatus::kOk);

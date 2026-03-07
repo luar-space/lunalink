@@ -18,7 +18,7 @@ py::array_t<uint8_t> unpack_prn(const PrnCode& code) {
   auto out = py::array_t<uint8_t>(code.chip_length);
   auto *dst = out.mutable_data();
   for (uint32_t i = 0; i < code.chip_length; ++i) {
-    if (unpack_chip(code, static_cast<uint16_t>(i), &dst[i]) != PrnStatus::kOk) {
+    if (unpack_chip(code, static_cast<uint16_t>(i), dst[i]) != PrnStatus::kOk) {
       throw py::value_error("unpack_chip failed");
     }
   }
@@ -30,12 +30,14 @@ py::array_t<uint8_t> unpack_prn(const PrnCode& code) {
 PYBIND11_MODULE(_afs, m) {
   m.doc() = "LunaLink AFS C++ extension module.";
 
-  py::enum_<Fid>(m, "Fid")
-      .value("NODE1", Fid::kNode1)
-      .value("NODE2", Fid::kNode2)
-      .value("NODE3", Fid::kNode3)
-      .value("NODE4", Fid::kNode4)
-      .export_values();
+  py::class_<Fid>(m, "Fid")
+      .def(py::init<uint8_t>())
+      .def_property_readonly("value", &Fid::value)
+      .def("__int__", [](const Fid& f) { return static_cast<uint8_t>(f); })
+      .def_static("NODE1", &Fid::kNode1)
+      .def_static("NODE2", &Fid::kNode2)
+      .def_static("NODE3", &Fid::kNode3)
+      .def_static("NODE4", &Fid::kNode4);
 
   py::class_<Toi>(m, "Toi")
       .def(py::init<uint8_t>())
@@ -58,6 +60,42 @@ PYBIND11_MODULE(_afs, m) {
       .value("INVALID_FID", FrameStatus::kInvalidFid)
       .value("INVALID_TOI", FrameStatus::kInvalidToi)
       .value("BCH_FAILED", FrameStatus::kBchFailed)
+      .value("FAULT_DETECTED", FrameStatus::kFaultDetected)
+      .export_values();
+
+  py::enum_<MatchedCodeStatus>(m, "MatchedCodeStatus")
+      .value("OK", MatchedCodeStatus::kOk)
+      .value("INVALID_PRN", MatchedCodeStatus::kInvalidPrn)
+      .value("INVALID_EPOCH", MatchedCodeStatus::kInvalidEpoch)
+      .value("OUTPUT_TOO_SMALL", MatchedCodeStatus::kOutputTooSmall)
+      .value("INVALID_ASSIGNMENT", MatchedCodeStatus::kInvalidAssignment)
+      .value("FAULT_DETECTED", MatchedCodeStatus::kFaultDetected)
+      .export_values();
+
+  py::enum_<ModulationStatus>(m, "ModulationStatus")
+      .value("OK", ModulationStatus::kOk)
+      .value("INVALID_SYMBOL", ModulationStatus::kInvalidSymbol)
+      .value("INVALID_CHIP_VALUE", ModulationStatus::kInvalidChipValue)
+      .value("OUTPUT_TOO_SMALL", ModulationStatus::kOutputTooSmall)
+      .value("FAULT_DETECTED", ModulationStatus::kFaultDetected)
+      .export_values();
+
+  py::enum_<IqMuxStatus>(m, "IqMuxStatus")
+      .value("OK", IqMuxStatus::kOk)
+      .value("INPUT_TOO_SMALL", IqMuxStatus::kInputTooSmall)
+      .value("OUTPUT_TOO_SMALL", IqMuxStatus::kOutputTooSmall)
+      .value("INVALID_I_SAMPLE", IqMuxStatus::kInvalidISample)
+      .value("INVALID_Q_SAMPLE", IqMuxStatus::kInvalidQSample)
+      .value("NULL_INPUT", IqMuxStatus::kNullInput)
+      .value("FAULT_DETECTED", IqMuxStatus::kFaultDetected)
+      .export_values();
+
+  py::enum_<PrnStatus>(m, "PrnStatus")
+      .value("OK", PrnStatus::kOk)
+      .value("INVALID_PRN", PrnStatus::kInvalidPrn)
+      .value("NULL_OUTPUT", PrnStatus::kNullOutput)
+      .value("INVALID_CHIP_INDEX", PrnStatus::kInvalidChipIndex)
+      .value("FAULT_DETECTED", PrnStatus::kFaultDetected)
       .export_values();
 
   py::class_<BchResult>(m, "BchResult")
@@ -90,7 +128,7 @@ PYBIND11_MODULE(_afs, m) {
   m.def("prn_code", [](int prn_id) {
     const PrnId id{static_cast<uint8_t>(prn_id)};
     PrnCode p;
-    if (!id.valid() || gold_prn_packed(id, p) != PrnStatus::kOk) throw py::value_error("Invalid PRN");
+    if (gold_prn_packed(id, p) != PrnStatus::kOk) throw py::value_error("Invalid PRN");
     return unpack_prn(p);
   });
 
@@ -132,7 +170,7 @@ PYBIND11_MODULE(_afs, m) {
   m.def("matched_code_epoch", [](int id, int epoch) {
     auto out = py::array_t<uint8_t>(10230);
     MatchedCodeAssignment a;
-    if (default_matched_assignment_checked(PrnId{static_cast<uint8_t>(id)}, &a) != MatchedCodeStatus::kOk) throw py::value_error("Bad ID");
+    if (default_matched_assignment_checked(PrnId{static_cast<uint8_t>(id)}, a) != MatchedCodeStatus::kOk) throw py::value_error("Bad ID");
     if (matched_code_epoch_checked(a, static_cast<uint16_t>(epoch), std::span<uint8_t>(out.mutable_data(), 10230)) != MatchedCodeStatus::kOk) throw py::value_error("Bad epoch");
     return out;
   });
@@ -140,9 +178,9 @@ PYBIND11_MODULE(_afs, m) {
   m.def("matched_code_epoch_assigned", [](int primary_prn, int secondary_code_idx, int tertiary_prn, int tertiary_phase_offset, int epoch_idx) {
     MatchedCodeAssignment a;
     a.primary_prn = PrnId{static_cast<uint8_t>(primary_prn)};
-    a.secondary_code_idx = static_cast<uint8_t>(secondary_code_idx);
+    a.secondary_code_idx = CheckedRange<uint8_t, 0, 3>{static_cast<uint8_t>(secondary_code_idx)};
     a.tertiary_prn = PrnId{static_cast<uint8_t>(tertiary_prn)};
-    a.tertiary_phase_offset = static_cast<uint16_t>(tertiary_phase_offset);
+    a.tertiary_phase_offset = CheckedRange<uint16_t, 0, 1499>{static_cast<uint16_t>(tertiary_phase_offset)};
     auto out = py::array_t<uint8_t>(10230);
     if (matched_code_epoch_checked(a, static_cast<uint16_t>(epoch_idx), std::span<uint8_t>(out.mutable_data(), 10230)) != MatchedCodeStatus::kOk) throw py::value_error("Bad assignment");
     return out;

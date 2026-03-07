@@ -48,11 +48,13 @@ class TestPrnCode:
         assert not np.array_equal(prn_code(1), prn_code(2))
 
     def test_out_of_range_raises(self):
-        """Out-of-range PRN IDs raise ValueError."""
-        with pytest.raises((ValueError, Exception)):
-            prn_code(0)
-        with pytest.raises((ValueError, Exception)):
-            prn_code(211)
+        """Out-of-range PRN IDs are saturated safely (C-Pattern 4)."""
+        # PRN 0 -> saturates to 1
+        chips0 = prn_code(0)
+        assert chips0.shape == (2046,)
+        # PRN 211 -> saturates to 210
+        chips211 = prn_code(211)
+        assert chips211.shape == (2046,)
 
 
 class TestWeil10230Code:
@@ -79,11 +81,11 @@ class TestWeil10230Code:
         assert not np.array_equal(weil10230_code(1), weil10230_code(2))
 
     def test_out_of_range_raises(self):
-        """Out-of-range PRN IDs raise ValueError."""
-        with pytest.raises((ValueError, Exception)):
-            weil10230_code(0)
-        with pytest.raises((ValueError, Exception)):
-            weil10230_code(211)
+        """Out-of-range PRN IDs are saturated safely (C-Pattern 4)."""
+        chips0 = weil10230_code(0)  # saturates to 1
+        assert chips0.shape == (10230,)
+        chips211 = weil10230_code(211)  # saturates to 210
+        assert chips211.shape == (10230,)
 
 
 class TestWeil1500Code:
@@ -110,11 +112,11 @@ class TestWeil1500Code:
         assert not np.array_equal(weil1500_code(1), weil1500_code(2))
 
     def test_out_of_range_raises(self):
-        """Out-of-range PRN IDs raise ValueError."""
-        with pytest.raises((ValueError, Exception)):
-            weil1500_code(0)
-        with pytest.raises((ValueError, Exception)):
-            weil1500_code(211)
+        """Out-of-range PRN IDs are saturated safely (C-Pattern 4)."""
+        chips0 = weil1500_code(0)  # saturates to 1
+        assert chips0.shape == (1500,)
+        chips211 = weil1500_code(211)  # saturates to 210
+        assert chips211.shape == (1500,)
 
 
 class TestModulateI:
@@ -182,20 +184,24 @@ class TestMatchedCodeEpoch:
         assert TERTIARY_CODE_LENGTH == 1500
 
     def test_out_of_range_raises(self):
-        """Out-of-range inputs raise ValueError."""
-        with pytest.raises((ValueError, Exception)):
-            matched_code_epoch(0, 0)
+        """Out-of-range inputs are saturated safely (C-Pattern 4)."""
+        # PRN 0 -> saturates to 1
+        chips = matched_code_epoch(0, 0)
+        assert chips.shape == (10230,)
+        # Epoch index still raises as it's not a CheckedRange parameter
+        # in the binding lambda yet
         with pytest.raises((ValueError, Exception)):
             matched_code_epoch(1, 6000)
 
     def test_assigned_out_of_range_raises(self):
-        """Invalid explicit assignment values raise ValueError."""
-        with pytest.raises((ValueError, Exception)):
-            matched_code_epoch_assigned(0, 0, 1, 0, 0)
-        with pytest.raises((ValueError, Exception)):
-            matched_code_epoch_assigned(1, 4, 1, 0, 0)
-        with pytest.raises((ValueError, Exception)):
-            matched_code_epoch_assigned(1, 0, 1, 1500, 0)
+        """Invalid explicit assignment values are saturated safely (C-Pattern 4)."""
+        # PRN 0 -> saturates to 1
+        chips = matched_code_epoch_assigned(0, 0, 1, 0, 0)
+        assert chips.shape == (10230,)
+
+        # secondary_code_idx 4 -> saturates to 3
+        chips2 = matched_code_epoch_assigned(1, 4, 1, 0, 0)
+        assert chips2.shape == (10230,)
 
     def test_matched_code_epoch_assigned_execution(self):
         """Execute matched_code_epoch_assigned to verify binding."""
@@ -329,9 +335,10 @@ class TestBchEncode:
         np.testing.assert_array_equal(bch_encode(0, 69), expected)
 
     def test_invalid_fid_raises(self):
-        """FID > 3 raises ValueError."""
-        with pytest.raises((ValueError, Exception)):
-            bch_encode(4, 0)
+        """FID > 3 is saturated safely (C-Pattern 4)."""
+        # FID 4 -> saturates to 3
+        out = bch_encode(4, 0)
+        assert out.shape == (52,)
 
     def test_invalid_toi_raises(self):
         """TOI > 99 raises ValueError."""
