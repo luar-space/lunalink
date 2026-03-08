@@ -16,15 +16,16 @@ Gateway 1: Spreading Code Generation
    * - LSIS-110
      - Gold-2046 Spreading Codes (210 IDs)
      - ✅
-     - Implemented [Hardened] in ``prn_table.cpp``
+     - Hardened C++ Generator (``gold.cpp``) + Packed LUTs
    * - LSIS-120
      - Weil-10230 Spreading Codes (210 IDs)
      - ✅
-     - Implemented [Hardened] in ``prn_table_weil10230.cpp``
+     - Hardened C++ Generator (``weil.cpp``) + Packed LUTs
    * - LSIS-130
      - Weil-1500 Spreading Codes (210 IDs)
      - ✅
-     - Implemented [Hardened] in ``prn_table_weil1500.cpp``
+     - Hardened C++ Generator (``weil.cpp``) + Packed LUTs
+
    * - LSIS-140
      - Matched-Code Combination (Primary XOR Secondary XOR Tertiary)
      - ✅

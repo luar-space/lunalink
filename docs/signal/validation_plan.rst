@@ -9,7 +9,10 @@ Validation Hierarchy
 We follow a five-level validation hierarchy to ensure quality at every stage of the signal chain.
 
 *   **Level 1: Unit Tests** — Mathematical correctness of LFSRs, GF(2) operations, and bit-packing.
-*   **Level 2: Component Tests** — Verification of individual Gateways (G1-G6) against Annex3 reference data and Table 11 interim codes.
+*   **Level 2: Component Tests** — Verification of individual Gateways (G1-G6).
+    *   **Generator Validation:** Bit-for-bit comparison between C++ Algorithmic Generators (Gold, Weil) and Annex3 Hex reference data.
+    *   **Coherency Validation:** Verification of Primary/Secondary/Tertiary phase alignment (LSIS-172) over a full 6000-epoch frame.
+    *   **Interim Codes:** Validation of Table 11 mappings for PRN 1-12.
 *   **Level 3: Integration Tests** — End-to-end Round-Trip (TX -> Channel -> RX) verification.
 *   **Level 4: Compliance Tests** — Traceability to every "shall" requirement in the LSIS V1.0 spec.
 *   **Level 5: Interoperability Tests** — Cross-decoding of standardized test vectors with independent implementations.
