@@ -20,27 +20,50 @@ Core Design Decisions
     combiners are implemented using bitwise logic and modern C++20 features
     (e.g., ``std::popcount``) for aerospace-grade performance.
 
-Module Layout
--------------
+Mission Assurance Integration
+-----------------------------
+
+To satisfy **Class A Flight Software** standards, the architecture incorporates 
+safety-critical patterns defined in :doc:`../assurance/mission_assurance`:
+
+*   **TMR Protection**: Critical identifiers like ``PrnId`` and ``Fid`` utilize 
+    Triple Modular Redundancy with active repair.
+*   **Control-Flow Integrity**: Safety-critical loops (BCH, LDPC, PRN) implement 
+    sentinel counters to detect radiation-induced logic jumps.
+*   **Memory Pinning**: Large look-up tables are mapped to the 
+    ``.lunalink_lut`` section for physical memory placement control.
+
+Module & Gateway Mapping
+------------------------
 
 .. list-table::
    :header-rows: 1
-   :widths: 20 80
+   :widths: 20 60 20
 
    * - Module
-     - Description
+     - Deliverable
+     - Gateway
    * - ``prn``
-     - Code generation and lookup for Gold-2046, Weil-10230, and Weil-1500.
-   * - ``modulator``
-     - BPSK mapping for I (1.023 Mcps) and Q (5.115 Mcps) channels.
+     - Spreading Code Loader (GD1.1)
+     - G1
    * - ``matched_code``
-     - AFS-Q composite code generation via XORing tiered components.
-   * - ``iq_mux``
-     - 50/50 power multiplexing and sample-and-hold upsampling (1x I → 5x Q).
+     - Tiered Code Combiner (GD1.2)
+     - G1
    * - ``bch``
-     - BCH(51,8) encoding and ML correlation-based decoding for SB1.
+     - BCH(51,8) Codec (GD2.1)
+     - G2
+   * - ``ldpc``
+     - LDPC Encoder/Decoder (GD2.2)
+     - G2
    * - ``frame``
-     - Navigation frame construction, including sync pattern insertion.
+     - Message Framing (GD3.1)
+     - G3
+   * - ``modulator``
+     - BPSK Modulation (GD4.1)
+     - G4
+   * - ``iq_mux``
+     - IQ Multiplexing (GD4.2)
+     - G4
 
 Python Integration
 ------------------

@@ -28,9 +28,15 @@ The following tools must be installed before working on the project:
    * - `Ninja <https://ninja-build.org>`_
      - ``brew install ninja``
      - Fast C++ build backend (optional but recommended)
-   * - A C++17 compiler
-     - Ships with Xcode CLT on macOS (``xcode-select --install``)
-     - Required to compile the C++ extension
+   * - A C++20 compiler
+     - Ships with Xcode CLT on macOS (``xcode-select --install``) or GCC 11+ / Clang 13+
+     - Required to compile the C++ extension (utilizing ``constinit`` and ``span``)
+   * - `clang-tidy <https://clang.llvm.org/extra/clang-tidy/>`_
+     - ``brew install llvm``
+     - Static analysis for MISRA/HICPP compliance (optional for local dev)
+   * - `cppcheck <https://cppcheck.sourceforge.io/>`_
+     - ``brew install cppcheck``
+     - Secondary safety-critical static analyzer
 
 Getting Started
 ---------------
