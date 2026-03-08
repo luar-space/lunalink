@@ -1,244 +1,112 @@
-Test Vector Format
-==================
+Test Vector Format & Interoperability
+=====================================
 
-This page documents the LunaLink test vector format — a layered, spec-traceable
-format designed for cross-team interoperability testing of AFS codec
-implementations.
+This page documents the LunaLink test vector format, aligned with the official 
+**LSIS-AFS Interoperability Testing** protocol (Level 1–5).
 
 Purpose
 -------
 
-Test vectors enable any team to validate their AFS receiver pipeline against
-our encoder output (and vice versa) without installing our library. Each vector
-pairs ground truth message fields with intermediate and final encoded outputs,
-so teams can isolate exactly where a divergence occurs.
+Test vectors enable any team to validate their AFS receiver pipeline against 
+our encoder output (and vice versa) without installing our library. These 
+vectors pair ground truth message fields with intermediate and final encoded 
+outputs, including mandatory competition headers.
 
-Signal Chain and Vector Layers
-------------------------------
+Interoperability Levels
+-----------------------
 
-The AFS transmit pipeline has multiple stages. Test vectors capture five layers
-(L0–L4), stopping before modulation:
+Following the official competition structure, validation is divided into five 
+increasing levels of complexity:
 
-.. code-block:: text
+*   **Level 1: Code Generation**: Verification of identical spreading codes 
+    (Gold, Weil, Legendre).
+*   **Level 2: Encoding**: Verification of bit-identical encoded frames 
+    (Sync, BCH, LDPC, Interleaving).
+*   **Level 3: Signal Generation**: Verification of compatible I/Q signals 
+    (Sample rates, BPSK mapping).
+*   **Level 4: Decoding**: Cross-decoding implementation A's signal with 
+    implementation B's decoder.
+*   **Level 5: Message Parsing**: Field-by-field JSON comparison of extracted 
+    navigation data.
 
-    Message fields (JSON)              ← L0: ground truth
-        ↓ serialize
-    Information bits                   ← L1: packed bit fields (hex in JSON)
-        ↓ CRC-24 append
-    Protected bits                     ← L2: checksum (hex in JSON)
-        ↓ LDPC encode + interleave
-    Encoded symbols (0/1)              ← L3: per-subframe binary files
-        ↓ BCH(51,8) + sync prepend
-    Complete frame symbols (0/1)       ← L4: full frame binary file
-        ↓ chip mapping + spreading + BPSK modulation
-    Baseband IQ (complex float32)      ← NOT shared
+Standardized Test Messages (Level 2)
+------------------------------------
 
-Everything below L4 (chip mapping, spreading, BPSK modulation) is deterministic
-and trivial. A team that matches L4 will produce identical RF.
+Milestone 2 validation requires processing the five official baseline messages:
 
-.. list-table:: Layer Summary
+.. list-table:: Mandatory Test Scenarios
    :header-rows: 1
-   :widths: 10 30 20 20
+   :widths: 15 25 60
 
-   * - Layer
-     - Content
-     - Location
-     - Typical Size
-   * - L0
-     - Message field values with units, bit widths, scale factors, spec refs
-     - ``vector.json``
-     - ~2 KB
-   * - L1
-     - Serialized information bits (before FEC)
-     - ``vector.json`` (hex string)
-     - ~330 hex chars
-   * - L2
-     - CRC-24 value
-     - ``vector.json`` (6 hex chars)
-     - 6 chars
-   * - L3
-     - LDPC-encoded + interleaved symbols (SB2+SB3+SB4 concatenated)
-     - ``subframes.bin`` (1 byte/symbol)
-     - ~17 KB
-   * - L4
-     - Complete frame: sync + SB1 + SB2 + SB3 + SB4
-     - ``frame.bin`` (1 byte/symbol)
-     - ~17 KB
+   * - Scenario
+     - Name
+     - Purpose
+   * - MSG-1
+     - All Zeros
+     - Baseline check; verifies padding and CRC handling.
+   * - MSG-2
+     - All Ones
+     - Inverse baseline; verifies scrambler/mapping logic.
+   * - MSG-3
+     - Alternating
+     - Pattern ``0xAA...``; verifies interleaver/deinterleaver matrix.
+   * - MSG-4
+     - Ephemeris
+     - Known CED parameters; verifies field bit-packing.
+   * - MSG-5
+     - Random
+     - Known seed; stress tests LDPC decoder convergence.
 
-Binary files use one byte per symbol (``0x00`` or ``0x01``) to avoid
-endianness and bit-packing ambiguity.
+Mandatory File Formats
+----------------------
 
-File Layout
------------
+Test vectors are exported in the following official competition formats:
 
-.. code-block:: text
+1. Spreading Codes (``codes_prn{N}.hex``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ASCII text using sectional headers:
+*   ``[GOLD_CODE]``
+*   ``[WEIL_PRIMARY]``
+*   ``[WEIL_TERTIARY]``
+*   ``[SECONDARY_S0]`` ... ``[SECONDARY_S3]``
 
-    vectors/
-    ├── manifest.json
-    ├── validate.py
-    ├── G01_ephemeris/
-    │   ├── vector.json
-    │   ├── subframes.bin
-    │   └── frame.bin
-    ├── G02_almanac/
-    │   ├── vector.json
-    │   ├── subframes.bin
-    │   └── frame.bin
-    ├── ...
-    └── G30_utc/
-        ├── vector.json
-        ├── subframes.bin
-        └── frame.bin
+2. Encoded Frames (``frame_{id}.bin``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Binary symbols with a **64-byte metadata header**:
+*   **Magic**: ``"LSISAFS\0"`` (8 bytes)
+*   **Version**: ``1`` (4 bytes, uint32)
+*   **Frame Length**: ``6000`` (4 bytes, uint32)
+*   **PRN**: ``{N}`` (4 bytes, uint32)
+*   **Timestamp**: Unix epoch (8 bytes, uint64)
+*   **Reserved**: 36 bytes (zero-filled)
+*   **Data**: 6000 bytes (1 byte/symbol: ``0x00`` or ``0x01``).
 
-One directory per message type (22 total). The 8 spec-defined types (G1, G2,
-G4, G5, G8, G22, G24, G30) carry ``"spec_status": "fully_defined"``; the 14
-TBW types carry ``"spec_status": "sisicd_defined"``.
+3. Baseband Signal (``signal_{prn}_{dur}s.iq``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Binary I/Q samples with a **128-byte metadata header**:
+*   **Magic**: ``"LSISIQ\0\0"`` (8 bytes)
+*   **Version**: ``1`` (4 bytes, uint32)
+*   **Sample Rate**: float64 (8 bytes)
+*   **Duration**: float64 seconds (8 bytes)
+*   **PRN**: uint32 (4 bytes)
+*   **Sample Format**: ``"float32"`` (16 bytes)
+*   **Reserved**: 80 bytes (zero-filled)
+*   **Data**: Interleaved float32 pairs ``[I0, Q0, I1, Q1, ...]``.
 
-Manifest
---------
-
-``manifest.json`` contains format version, spec reference, generation metadata,
-and the list of included vector directories:
+4. Parsed Data (``parsed_{id}.json``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+JSON field extraction using the official schema:
 
 .. code-block:: json
 
     {
-      "format_version": "1.0.0",
-      "spec_reference": "LSIS V1.0",
-      "generated_by": "lunalink",
-      "generated_by_version": "0.2.0",
-      "generated_by_commit": "abc1234",
-      "generated_at": "2026-03-15T12:00:00Z",
-      "vector_count": 22,
-      "vectors": ["G01_ephemeris", "G02_almanac", "..."]
+      "version": "1.0",
+      "timestamp": "2026-03-07T12:00:00Z",
+      "frame_id": "test_001",
+      "subframe1": { "fid": 0, "toi": 42 },
+      "subframe2": { "wn": 1234, "itow": 256, "ced": { "af0": 1.23e-9 } },
+      "time_of_transmission": 1234567890.123
     }
-
-Vector JSON Schema
-------------------
-
-Each ``vector.json`` contains all non-binary layers and SHA-256 references to
-binary files:
-
-.. code-block:: json
-
-    {
-      "format_version": "1.0.0",
-      "spec_reference": "LSIS V1.0",
-      "message_type": "G04",
-      "message_name": "Clock & Ephemeris",
-      "spec_section": "§2.5.4",
-      "spec_status": "fully_defined",
-      "prn": 1,
-      "subframe": 2,
-      "frame_id": 0,
-      "toi": 42,
-      "L0_fields": {
-        "t_oc": {
-          "value": 3600, "unit": "s", "bits": 16,
-          "scale": "2^4", "spec_table": "Table 15"
-        }
-      },
-      "L1_info_bits_hex": "A3F7...0000",
-      "L1_info_bits_length": 1320,
-      "L1_filler_bits": 0,
-      "L2_crc24_hex": "B7A3F1",
-      "L3_subframes_sha256": "e3b0c44298fc...",
-      "L3_subframes_sizes": [5880, 5880, 5880],
-      "L4_frame_sha256": "a1b2c3d4e5f6...",
-      "L4_frame_symbols": 17760
-    }
-
-Validation
-----------
-
-``validate.py`` is a standalone Python 3 script with **zero external
-dependencies**. Any team can run it without installing our library::
-
-    python3 validate.py vectors/
-
-It performs:
-
-- SHA-256 checksum verification of all ``.bin`` files
-- Binary file size validation against declared symbol counts
-- JSON schema validation (all required fields present)
-- Per-vector PASS/FAIL output; exits non-zero on any failure
-
-Distribution via GitHub Releases
----------------------------------
-
-Test vectors are versioned independently from the library:
-
-.. list-table::
-   :header-rows: 1
-   :widths: 30 70
-
-   * - Aspect
-     - Detail
-   * - Tag format
-     - ``vectors-v1.0.0``
-   * - Release asset
-     - ``lunalink-test-vectors-v1.0.0.tar.gz``
-   * - First release (V2)
-     - 8 spec-defined message types
-   * - Second release (V3)
-     - All 22 message types
-   * - Release notes
-     - Changelog, spec version, included types, known limitations
-
-Separate versioning allows correcting vectors without implying a library
-change.
-
-Integration Tests
------------------
-
-The same vectors drive four CI test suites:
-
-.. list-table::
-   :header-rows: 1
-   :widths: 25 75
-
-   * - Test
-     - What it proves
-   * - Golden encode
-     - ``encode(L0_fields)`` produces output identical to ``frame.bin`` —
-       regression guard
-   * - Golden decode
-     - ``decode(frame.bin)`` recovers ``L0_fields`` bit-perfect — full RX
-       pipeline proof
-   * - Noisy decode
-     - ``decode(frame.bin + AWGN)`` at operational Eb/N₀ — LDPC decoder
-       robustness
-   * - Cross-layer
-     - Encoder intermediate outputs match L1, L2, L3 — catches silent
-       internal changes
-
-Size Budget
------------
-
-.. list-table::
-   :header-rows: 1
-   :widths: 30 25 25
-
-   * - Item
-     - Per vector
-     - All 22 vectors
-   * - ``vector.json``
-     - ~2 KB
-     - ~44 KB
-   * - ``subframes.bin``
-     - ~17 KB
-     - ~374 KB
-   * - ``frame.bin``
-     - ~17 KB
-     - ~391 KB
-   * - **Total**
-     - ~36 KB
-     - **~809 KB**
-
-Under 1 MB total. No compression or git-lfs needed.
-
-Noisy IQ vectors for BER testing (V4) are large (~490 MB each) and distributed
-only as GitHub Release assets, never committed to the repository.
 
 Workflow
 --------
@@ -246,5 +114,5 @@ Workflow
 ::
 
     task vectors          # regenerate all vectors from current code
-    task vectors-check    # validate checksums (CI runs this)
+    task vectors-check    # validate headers and checksums
     task vectors-release  # tag + create GitHub release
