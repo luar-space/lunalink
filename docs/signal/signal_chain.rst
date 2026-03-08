@@ -1,7 +1,7 @@
-Signal Chain (C1–C4)
-====================
+Signal Chain (GD1-GD4)
+======================
 
-The LunaLink signal generation pipeline follows the LSIS V1.0 Augmented Forward Signal (AFS) specification. It is composed of modular, stateless components that transform navigation data into baseband I/Q samples.
+The LunaLink signal generation pipeline follows the LSIS V1.0 Augmented Forward Signal (AFS) specification. It is composed of modular, flight-hardened components that transform navigation data into baseband I/Q samples.
 
 Block Diagram
 -------------
@@ -15,14 +15,14 @@ Block Diagram
              │                          │
              ▼                          ▼
     ┌─────────────────┐     ┌──────────────────────┐
-    │  C1 Code Loader  │     │  Tertiary Code         │
+    │  GD1.1 Code Ldr  │     │  Tertiary Code         │
     │  (Gold-2046)     │     │  (Weil-1500)           │
     └────────┬────────┘     └──────────┬───────────┘
              │                          │
              │                          │
              ▼                          │
     ┌─────────────────┐                 │
-    │  C2 BPSK(1)     │                 │
+    │  GD4.1 BPSK(1)  │                 │
     │  Modulator      │                 │
     │                 │                 │
     │  1.023 Mcps     │                 │
@@ -32,7 +32,7 @@ Block Diagram
              │                          │
              │                          ▼
              │                ┌─────────────────┐
-             │                │  C3 Matched-Code│
+             │                │  GD1.2 Matched  │
              │                │  Combiner       │
              │                │                 │
              │                │  primary ⊕      │
@@ -45,7 +45,7 @@ Block Diagram
              │                         │
              │                         ▼
              │                ┌─────────────────┐
-             │                │  C2 BPSK(5)     │
+             │                │  GD4.1 BPSK(5)  │
              │                │  Modulator      │
              │                │                 │
              │                │  5.115 Mcps     │
@@ -56,7 +56,7 @@ Block Diagram
              ▼                         ▼
     ┌──────────────────────────────────────────────┐
     │                                              │
-    │              C4 IQ Multiplexer               │
+    │              GD4.2 IQ Multiplexer            │
     │                                              │
     │  AFS-I (I channel)      AFS-Q (Q channel)    │
     │  Upsampled 5x           Pass-through         │
@@ -70,30 +70,26 @@ Block Diagram
 Data Flow
 ---------
 
-1.  **Code Loading (C1)**:
-    Static tables (``prn_table_*.cpp``) are queried to retrieve the full chip sequences for the Primary (Gold-2046, Weil-10230) and Tertiary (Weil-1500) codes. This avoids runtime LFSR generation.
+1.  **Code Loading (GD1.1)**:
+    Static tables (``prn_table_*.cpp``) are queried to retrieve the full chip sequences for the Primary (Gold-2046, Weil-10230) and Tertiary (Weil-1500) codes. Includes TMR-protected PRN ID validation and packed storage.
 
-2.  **Matched-Code Combination (C3)**:
+2.  **Matched-Code Combination (GD1.2)**:
     For the AFS-Q pilot channel, three components are XORed together to form the final ranging code:
     
     *   **Primary**: Weil-10230 code (10230 chips, 2 ms epoch).
     *   **Secondary**: 4-bit fixed sequence (S0–S3), repeating every 4 primary epochs.
     *   **Tertiary**: Weil-1500 code, 1 chip per 4 primary epochs (20 ms duration).
     
-    The combiner handles the phasing logic (``LSIS-TBD-2001`` interim assumption: phase 0) and outputs a binary chip stream.
+    The combiner handles phasing logic and enforces ``CheckedRange`` constraints on offsets.
 
-3.  **Modulation (C2)**:
-    Binary chips ``{0, 1}`` are mapped to bipolar baseband samples ``{+1, -1}``.
+3.  **Modulation (GD4.1)**:
+    Binary chips ``{0, 1}`` are mapped to bipolar baseband samples ``{+1, -1}`` using branchless arithmetic.
     
-    *   **AFS-I**: Modulated with navigation data (currently fixed +1 data symbol for C1-C4 tests).
+    *   **AFS-I**: Modulated with navigation data symbols.
     *   **AFS-Q**: Pilot channel, no data modulation (data symbol always +1).
 
-4.  **IQ Multiplexing (C4)**:
-    The two channels are combined into a single complex baseband stream at the higher chip rate (5.115 Mcps).
-    
-    *   **AFS-I (1.023 Mcps)**: Upsampled by 5x (sample-and-hold) to match the output rate.
-    *   **AFS-Q (5.115 Mcps)**: Passed through directly.
-    *   **Output**: Interleaved ``int16`` array ``[I0, Q0, I1, Q1, ...]``.
+4.  **IQ Multiplexing (GD4.2)**:
+    The two channels are combined into a single complex baseband stream at the higher chip rate (5.115 Mcps) with aliasing protection and WIP signaling.
 
 Component Status
 ----------------
@@ -102,18 +98,18 @@ Component Status
    :header-rows: 1
    :widths: 15 30 20
 
-   * - Part
+   * - ID
      - Description
      - Status
-   * - C1
-     - Code loader (Gold-2046, Weil-10230, Weil-1500)
-     - Complete
-   * - C2
-     - BPSK modulator (AFS-I BPSK(1) + AFS-Q BPSK(5))
-     - Complete
-   * - C3
-     - Matched-code combiner (interim mapping + explicit assignment API)
-     - Complete
-   * - C4
-     - IQ multiplexer (5.115 MSPS, normalized-amplitude baseband)
-     - Complete
+   * - GD1.1
+     - Spreading Code Loader (Gold, Weil, Legendre)
+     - Implemented [Hardened]
+   * - GD1.2
+     - Matched-code Combiner (Tiered assembly)
+     - Implemented [Hardened]
+   * - GD4.1
+     - BPSK Modulator (I + Q)
+     - Implemented [Hardened]
+   * - GD4.2
+     - IQ Multiplexer (5.115 MSPS)
+     - Implemented [Hardened]

@@ -33,7 +33,7 @@ interoperability between independent implementations.
 
 *   **Observation**: The standard defines 22 message types, but 14 are marked 
     as "To Be Written" (TBW).
-*   **Conflict**: Total frame construction (C8) is blocked without bit-level 
+*   **Conflict**: Total frame construction (GD3.1) is blocked without bit-level 
     definitions for these types.
 *   **Proposed Resolution**: LunaLink utilizes the **LunaLink SISICD extension** 
     to provide draft bit-layouts for TBW types (e.g., G3 High-Precision Clock). 

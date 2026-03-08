@@ -73,20 +73,20 @@ As defined in the Interoperability Plan, all round-trip tests are executed again
 *   **MSG-4 (Ephemeris):** Real-world field serialization.
 *   **MSG-5 (Random):** LDPC convergence and stress testing.
 
-Performance Benchmarking (G7, G8)
----------------------------------
+Performance Benchmarking (GD7.3, GD8.2)
+---------------------------------------
 
 Final verification includes empirical proof of the following NFRs:
 
-*   **Generation Latency (G1):** < 1.0s per PRN.
-*   **Encoding Throughput (G2):** > 10 Frames Per Second (FPS).
-*   **Decoding Latency (G2):** < 1.0s per 12s frame.
+*   **Generation Latency (GD1.1):** < 1.0s per PRN.
+*   **Encoding Throughput (GD2.2):** > 10 Frames Per Second (FPS).
+*   **Decoding Latency (GD2.2):** < 1.0s per 12s frame.
 *   **Real-Time Margin:** Processing time must be < 8% of signal duration (12s).
 
 Design Rationale & Traceability
 -------------------------------
 
-Each gateway deliverable (G8) includes a **Design Rationale** section explaining:
+Each gateway deliverable (GD8.1) includes a **Design Rationale** section explaining:
 *   **Algorithm Choice:** e.g., "Min-Sum BP chosen for LDPC decoding to ensure fixed-point stability and deterministic latency."
 *   **Mathematical Alignment:** Code snippets linked to Equation 1, Equation 2, and Figure 7/8 of the LSIS spec.
 *   **Implementation Trade-offs:** Rationale for static buffer sizing vs. heap flexibility.
