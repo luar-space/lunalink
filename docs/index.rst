@@ -5,6 +5,12 @@ LunaLink AFS reference implementation with C++ core and pybind11 bindings.
 
 .. toctree::
    :maxdepth: 2
+   :caption: Deliverable Verification:
+
+   gateway2
+
+.. toctree::
+   :maxdepth: 2
    :caption: Executive Summary:
 
    evaluation_guide
@@ -26,7 +32,10 @@ LunaLink AFS reference implementation with C++ core and pybind11 bindings.
 
    signal/architecture
    signal/signal_chain
+   signal/algorithms
    signal/bch_decoder_design
+   signal/bch_performance
+   signal/ldpc_performance
    signal/sisicd
 
 .. toctree::

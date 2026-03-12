@@ -59,12 +59,12 @@ Gateway 2: Forward Error Correction
      - Implemented [Hardened] encoder
    * - LSIS-330
      - Interleaving for SB2-SB4
-     - ❌
-     - Planned for Phase 2
+     - ✅
+     - Implemented [Hardened] 60x98 block interleaver
    * - LSIS-340
      - CRC-24 for Message Integrity
-     - ❌
-     - Planned for Phase 2
+     - ✅
+     - Implemented [Hardened] CRC-24Q (0x864CFB)
 
 Gateway 3: Message Framing
 --------------------------

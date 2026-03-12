@@ -9,9 +9,10 @@ set -e
 echo "Running pre-commit checks via Taskfile..."
 echo ""
 
-if ! task ci-checks; then
+if ! task pre-commit; then
   echo ""
-  echo "Pre-commit checks failed. Run 'task ci-checks' to reproduce."
+  echo "Pre-commit checks failed. Run 'task pre-commit' to reproduce."
+  echo "For full CI checks (tidy, sanitizers, docs): task ci-checks"
   exit 1
 fi
 

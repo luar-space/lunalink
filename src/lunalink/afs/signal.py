@@ -23,11 +23,16 @@ from lunalink.afs._afs import BchResult as BchResult
 from lunalink.afs._afs import BchStatus as BchStatus
 from lunalink.afs._afs import Fid as Fid
 from lunalink.afs._afs import FrameStatus as FrameStatus
+from lunalink.afs._afs import LdpcStatus as LdpcStatus
+from lunalink.afs._afs import LdpcSubframe as LdpcSubframe
+from lunalink.afs._afs import LdpcWorkspace as LdpcWorkspace
 from lunalink.afs._afs import Toi as Toi
 from lunalink.afs._afs import bch_codebook_checksum as _bch_codebook_checksum
 from lunalink.afs._afs import bch_decode as _bch_decode
 from lunalink.afs._afs import bch_encode as _bch_encode
 from lunalink.afs._afs import frame_build_partial as _frame_build_partial
+from lunalink.afs._afs import ldpc_decode as _ldpc_decode
+from lunalink.afs._afs import ldpc_encode as _ldpc_encode
 from lunalink.afs._afs import matched_code_epoch as _matched_code_epoch
 from lunalink.afs._afs import (
     matched_code_epoch_assigned as _matched_code_epoch_assigned,
@@ -43,6 +48,11 @@ __all__ = [
     "bch_encode",
     "bch_decode",
     "bch_codebook_checksum",
+    "ldpc_encode",
+    "ldpc_decode",
+    "LdpcWorkspace",
+    "LdpcSubframe",
+    "LdpcStatus",
     "BchResult",
     "BchStatus",
     "Fid",
@@ -152,6 +162,24 @@ def bch_decode(codeword: NDArray[np.uint8]) -> BchResult:
 def bch_codebook_checksum() -> int:
     """Return the XOR-checksum of the static codebook for integrity verification."""
     return _bch_codebook_checksum()
+
+
+def ldpc_encode(type: LdpcSubframe, msg: NDArray[np.uint8]) -> NDArray[np.uint8]:
+    """Encode subframe payload using LDPC(1/2) (§2.4)."""
+    return _ldpc_encode(type, msg)
+
+
+def ldpc_decode(
+    type: LdpcSubframe,
+    symbols: NDArray[np.float32],
+    iterations: int = 50,
+    workspace: LdpcWorkspace | None = None,
+) -> tuple[NDArray[np.uint8], LdpcStatus]:
+    """Decode LDPC codeword using fixed-point Layered Min-Sum decoder.
+
+    Returns (decoded_bits, status) where status is OK or NOT_CONVERGED.
+    """
+    return _ldpc_decode(type, symbols, iterations, workspace)
 
 
 def frame_build_partial(fid: int, toi: int) -> NDArray[np.uint8]:

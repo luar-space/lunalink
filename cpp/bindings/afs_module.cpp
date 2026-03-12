@@ -1,4 +1,7 @@
 #include "lunalink/signal/bch.hpp"
+#include "lunalink/signal/crc.hpp"
+#include "lunalink/signal/interleaver.hpp"
+#include "lunalink/signal/ldpc.hpp"
 #include "lunalink/signal/frame.hpp"
 #include "lunalink/signal/iq_mux.hpp"
 #include "lunalink/signal/modulator.hpp"
@@ -91,6 +94,39 @@ PYBIND11_MODULE(_afs, m) {
       .value("FAULT_DETECTED", IqMuxStatus::kFaultDetected)
       .export_values();
 
+  py::enum_<LdpcSubframe>(m, "LdpcSubframe")
+      .value("SF2", LdpcSubframe::kSF2)
+      .value("SF3", LdpcSubframe::kSF3)
+      .value("SF4", LdpcSubframe::kSF4)
+      .export_values();
+
+  py::enum_<LdpcStatus>(m, "LdpcStatus")
+      .value("OK", LdpcStatus::kOk)
+      .value("INVALID_INPUT", LdpcStatus::kInvalidInput)
+      .value("OUTPUT_TOO_SMALL", LdpcStatus::kOutputTooSmall)
+      .value("FAULT_DETECTED", LdpcStatus::kFaultDetected)
+      .value("NOT_CONVERGED", LdpcStatus::kNotConverged)
+      .export_values();
+
+  py::enum_<CrcStatus>(m, "CrcStatus")
+      .value("OK", CrcStatus::kOk)
+      .value("NULL_INPUT", CrcStatus::kNullInput)
+      .value("OUTPUT_TOO_SMALL", CrcStatus::kOutputTooSmall)
+      .value("FAULT_DETECTED", CrcStatus::kFaultDetected)
+      .export_values();
+
+  py::enum_<InterleaverStatus>(m, "InterleaverStatus")
+      .value("OK", InterleaverStatus::kOk)
+      .value("INPUT_TOO_SMALL", InterleaverStatus::kInputTooSmall)
+      .value("OUTPUT_TOO_SMALL", InterleaverStatus::kOutputTooSmall)
+      .value("FAULT_DETECTED", InterleaverStatus::kFaultDetected)
+      .export_values();
+
+  py::class_<LdpcWorkspace>(m, "LdpcWorkspace")
+      .def(py::init<>())
+      .def_readwrite("alpha_numerator", &LdpcWorkspace::alpha_numerator)
+      .def_readwrite("alpha_denominator", &LdpcWorkspace::alpha_denominator);
+
   py::enum_<PrnStatus>(m, "PrnStatus")
       .value("OK", PrnStatus::kOk)
       .value("INVALID_PRN", PrnStatus::kInvalidPrn)
@@ -117,7 +153,76 @@ PYBIND11_MODULE(_afs, m) {
     return bch_decode(std::span<const uint8_t, 52>(codeword.data(), 52));
   });
 
+  m.def("bch_decode_soft", [](py::array_t<float> llr) {
+    if (llr.size() != 52) throw py::value_error("Must be 52 soft symbols");
+    return bch_decode_soft(std::span<const float, 52>(llr.data(), 52));
+  });
+
   m.def("bch_codebook_checksum", &bch_codebook_checksum);
+
+  m.def("crc24_calculate", [](py::array_t<uint8_t> data) {
+    auto out = py::array_t<uint8_t>(24);
+    std::array<uint8_t, 24> crc{};
+    auto status = crc24_calculate(
+        std::span<const uint8_t>(data.data(), static_cast<size_t>(data.size())),
+        std::span<uint8_t, 24>(crc.data(), 24));
+    if (status != CrcStatus::kOk) throw py::value_error("CRC-24 failed");
+    auto* dst = out.mutable_data();
+    for (uint32_t i = 0; i < 24U; ++i) dst[i] = crc[i];
+    return out;
+  });
+
+  m.def("crc24_verify", [](py::array_t<uint8_t> data_with_crc) {
+    return crc24_verify(std::span<const uint8_t>(
+        data_with_crc.data(), static_cast<size_t>(data_with_crc.size())));
+  });
+
+  m.def("block_interleave", [](py::array_t<uint8_t> in) {
+    auto out = py::array_t<uint8_t>(static_cast<ssize_t>(kInterleaverSize));
+    auto status = block_interleave(
+        std::span<const uint8_t>(in.data(), static_cast<size_t>(in.size())),
+        std::span<uint8_t>(out.mutable_data(), kInterleaverSize));
+    if (status != InterleaverStatus::kOk)
+      throw py::value_error("block_interleave failed: input must be exactly 5880 bits");
+    return out;
+  });
+
+  m.def("block_deinterleave", [](py::array_t<uint8_t> in) {
+    auto out = py::array_t<uint8_t>(static_cast<ssize_t>(kInterleaverSize));
+    auto status = block_deinterleave(
+        std::span<const uint8_t>(in.data(), static_cast<size_t>(in.size())),
+        std::span<uint8_t>(out.mutable_data(), kInterleaverSize));
+    if (status != InterleaverStatus::kOk)
+      throw py::value_error("block_deinterleave failed: input must be exactly 5880 bits");
+    return out;
+  });
+
+  m.def("ldpc_encode", [](LdpcSubframe type, py::array_t<uint8_t> msg) {
+    const size_t n_out = (type == LdpcSubframe::kSF2) ? 2400U : 1740U;
+    auto out = py::array_t<uint8_t>(static_cast<ssize_t>(n_out));
+    LdpcEncodeWorkspace enc_ws{};
+    auto status = ldpc_encode(type, std::span<const uint8_t>(msg.data(), static_cast<size_t>(msg.size())), std::span<uint8_t>(out.mutable_data(), n_out), enc_ws);
+    if (status != LdpcStatus::kOk) throw py::value_error("LDPC encode failed");
+    return out;
+  });
+
+  m.def("ldpc_decode", [](LdpcSubframe type, py::array_t<float> symbols, uint8_t iterations, py::object workspace) {
+    const size_t k_nom = (type == LdpcSubframe::kSF2) ? 1200U : 870U;
+    auto out = py::array_t<uint8_t>(static_cast<ssize_t>(k_nom));
+    // Stack-allocate workspace to comply with zero-dynamic-allocation mandate (§DC-1).
+    LdpcWorkspace  local_ws_stack{};
+    LdpcWorkspace* ws_ptr;
+    if (workspace.is_none()) {
+        ws_ptr = &local_ws_stack;
+    } else {
+        ws_ptr = workspace.cast<LdpcWorkspace*>();
+    }
+
+    auto status = ldpc_decode(type, std::span<const float>(symbols.data(), static_cast<size_t>(symbols.size())), iterations, std::span<uint8_t>(out.mutable_data(), k_nom), *ws_ptr);
+    if (status != LdpcStatus::kOk && status != LdpcStatus::kNotConverged)
+        throw py::value_error("LDPC decode failed");
+    return py::make_tuple(out, status);
+  }, py::arg("type"), py::arg("symbols"), py::arg("iterations"), py::arg("workspace") = py::none());
 
   m.def("frame_build_partial", [](uint8_t fid, uint8_t toi) {
     auto out = py::array_t<uint8_t>(6000);
@@ -201,4 +306,7 @@ PYBIND11_MODULE(_afs, m) {
   m.attr("BCH_CODEWORD_LENGTH") = 52;
   m.attr("SYMBOL_RATE") = kSymbolRate;
   m.attr("FRAME_DURATION_S") = kFrameDurationS;
+  m.attr("INTERLEAVER_SIZE") = kInterleaverSize;
+  m.attr("INTERLEAVER_ROWS") = kInterleaverRows;
+  m.attr("INTERLEAVER_COLS") = kInterleaverCols;
 }

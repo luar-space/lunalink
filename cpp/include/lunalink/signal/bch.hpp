@@ -147,6 +147,34 @@ template <typename T>
 [[nodiscard]] BchResult bch_decode(std::span<const uint8_t, 52ULL> in) noexcept;
 
 /**
+ * @brief Soft-decision Maximum Likelihood BCH decoder. [LSIS-AFS-501]
+ *
+ * Operates on 52 channel LLRs (L_ch = 2y/σ² for BPSK AWGN).
+ * For BPSK/AWGN: positive value favours bit=0, negative favours bit=1.
+ * Selects the codebook entry that maximises the inner-product metric
+ * Σ_j llr_j × (1 − 2·c_j), giving ~2 dB gain over hard-decision ML.
+ *
+ * **Behavioural differences from bch_decode (hard):**
+ * - Sets kInvalidInput (does not early-return) if any LLR is non-finite (NaN or Inf).
+ * - Always returns kOk for valid finite inputs — there is no confidence threshold
+ *   (no equivalent of the hard decoder's kNullOutput / min_dist > 2 guard).
+ *   The caller must not infer reliability from the kOk status alone.
+ * - No ambiguity detection: soft-metric ties are broken by the lowest codebook
+ *   index. kAmbiguousMatch is never returned.
+ * - BchResult::hamming_distance is always 0xFF (255) — a soft-decode sentinel,
+ *   not a Hamming distance. Do not compare this field against numeric thresholds.
+ * - LLR values are internally clamped to ±100.0 before accumulation; inputs
+ *   outside this range are treated as saturated but do not raise kInvalidInput.
+ *
+ * @param llr  52 finite channel LLR values (float, one per bit position).
+ * @return BchResult with decoded FID/TOI.
+ *         status == kInvalidInput if any LLR is non-finite.
+ *         status == kOk otherwise (including low-confidence / very noisy cases).
+ *         status == kFaultDetected if CFI or variable-mirror integrity check fails.
+ */
+[[nodiscard]] BchResult bch_decode_soft(std::span<const float, 52ULL> llr) noexcept;
+
+/**
  * @brief Calculate JIT codebook checksum for CBIT integrity. [NASA-FSW-CBIT]
  * @return 64-bit CRC-like checksum of the internal codebook memory.
  */

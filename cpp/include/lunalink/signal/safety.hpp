@@ -35,6 +35,15 @@ inline void secure_scrub(std::span<T> data) noexcept {
 }
 
 /**
+ * @brief Securely scrub a scalar value.
+ */
+template <typename T>
+inline void secure_scrub_scalar(T& val) noexcept {
+  volatile T* p = &val;
+  *p = T{0};
+}
+
+/**
  * @brief Overload for std::array or other containers with data() and size().
  */
 template <typename Container>
@@ -78,6 +87,12 @@ class CheckedRange {
   // NOLINTEND(fuchsia-overloaded-operator)
 
   [[nodiscard]] constexpr T value() const noexcept { return value_; }
+
+  /**
+   * @brief Force a value into the range, bypassing saturating logic.
+   * Internal use only for Mission Assurance fault injection.
+   */
+  void force_set(T v) noexcept { value_ = v; }
 
   // Implicit conversion is intentionally allowed for ergonomic use in DSP
   // blocks. NOLINTNEXTLINE(hicpp-explicit-conversions)
@@ -154,6 +169,23 @@ struct TmrValue {
    * Internal use only for Mission Assurance coverage testing.
    */
   void inject_fault(T bad_value) noexcept { v1 = v2 = v3 = bad_value; }
+
+  /**
+   * @brief Force a raw underlying value into all TMR copies.
+   * Bypasses CheckedRange saturating logic if T is CheckedRange.
+   */
+  template<typename RawT>
+  void force_fault(RawT raw_bad_value) noexcept {
+      if constexpr (requires { v1.force_set(raw_bad_value); }) {
+          v1.force_set(raw_bad_value);
+          v2.force_set(raw_bad_value);
+          v3.force_set(raw_bad_value);
+      } else {
+          v1 = static_cast<T>(raw_bad_value);
+          v2 = static_cast<T>(raw_bad_value);
+          v3 = static_cast<T>(raw_bad_value);
+      }
+  }
 };
 
 }  // namespace lunalink::signal

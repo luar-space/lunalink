@@ -5,22 +5,52 @@ from enum import IntEnum
 import numpy as np
 from numpy.typing import NDArray
 
+class CrcStatus(IntEnum):
+    OK = 0x5A
+    NULL_INPUT = 0xCC
+    OUTPUT_TOO_SMALL = 0x33
+    FAULT_DETECTED = 0x99
+
+class InterleaverStatus(IntEnum):
+    OK = 0x5A
+    INPUT_TOO_SMALL = 0xCC
+    OUTPUT_TOO_SMALL = 0x33
+    FAULT_DETECTED = 0x99
+
 class FrameStatus(IntEnum):
     OK = 0x5A
     OUTPUT_TOO_SMALL = 0xA5
     INVALID_FID = 0x33
     INVALID_TOI = 0xCC
     BCH_FAILED = 0x0F
+    FAULT_DETECTED = 0x99
+
+class LdpcSubframe(IntEnum):
+    SF2 = 0x5A
+    SF3 = 0xA5
+    SF4 = 0x33
+
+class LdpcStatus(IntEnum):
+    OK = 0x5A
+    INVALID_INPUT = 0xA5
+    OUTPUT_TOO_SMALL = 0x33
+    FAULT_DETECTED = 0x99
+    NOT_CONVERGED = 0x66
+
+class LdpcWorkspace:
+    alpha_numerator: int
+    alpha_denominator: int
+    def __init__(self) -> None: ...
 
 class BchStatus(IntEnum):
     OK = 0x5A
     OUTPUT_TOO_SMALL = 0xA5
     INVALID_FID = 0x33
     INVALID_TOI = 0xCC
-    NULL_OUTPUT = 0x0F
-    INVALID_INPUT = 0xF0
-    AMBIGUOUS_MATCH = 0x66
-    FAULT_DETECTED = 0x99
+    NULL_OUTPUT = 0x99
+    INVALID_INPUT = 0x66
+    AMBIGUOUS_MATCH = 0xF0
+    FAULT_DETECTED = 0x0F
 
 class Fid:
     value: int
@@ -57,7 +87,19 @@ def matched_code_epoch_assigned(
 ) -> NDArray[np.uint8]: ...
 def bch_encode(fid: int, toi: int) -> NDArray[np.uint8]: ...
 def bch_decode(codeword: NDArray[np.uint8]) -> BchResult: ...
+def bch_decode_soft(llr: NDArray[np.float32]) -> BchResult: ...
 def bch_codebook_checksum() -> int: ...
+def crc24_calculate(data: NDArray[np.uint8]) -> NDArray[np.uint8]: ...
+def crc24_verify(data_with_crc: NDArray[np.uint8]) -> bool: ...
+def block_interleave(data: NDArray[np.uint8]) -> NDArray[np.uint8]: ...
+def block_deinterleave(data: NDArray[np.uint8]) -> NDArray[np.uint8]: ...
+def ldpc_encode(type: LdpcSubframe, msg: NDArray[np.uint8]) -> NDArray[np.uint8]: ...
+def ldpc_decode(
+    type: LdpcSubframe,
+    symbols: NDArray[np.float32],
+    iterations: int,
+    workspace: LdpcWorkspace | None = None,
+) -> tuple[NDArray[np.uint8], LdpcStatus]: ...
 def frame_build_partial(fid: int, toi: int) -> NDArray[np.uint8]: ...
 
 EPOCHS_PER_FRAME: int
@@ -74,3 +116,6 @@ PAYLOAD_LENGTH: int
 SYMBOL_RATE: int
 FRAME_DURATION_S: float
 BCH_CODEWORD_LENGTH: int
+INTERLEAVER_SIZE: int
+INTERLEAVER_ROWS: int
+INTERLEAVER_COLS: int

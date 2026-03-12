@@ -60,6 +60,13 @@ add_library(lunalink_core
     cpp/signal/frame.cpp
     cpp/signal/ldpc.cpp
     cpp/signal/ldpc_tables.cpp
+    cpp/signal/interleaver.cpp
+    cpp/signal/crc.cpp
+    cpp/signal/gold.cpp
+    cpp/signal/legendre.cpp
+    cpp/signal/weil.cpp
+    cpp/signal/weil_parameters.cpp
+    cpp/signal/bch_table.cpp
 )
 target_include_directories(lunalink_core PUBLIC cpp/include)
 set_target_properties(lunalink_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -107,13 +114,24 @@ if(BUILD_TESTING)
         cpp/tests/test_safety.cpp
         cpp/tests/test_ldpc.cpp
         cpp/tests/test_safety_extended.cpp
+        cpp/tests/test_interleaver.cpp
+        cpp/tests/test_crc.cpp
+        cpp/tests/test_performance.cpp
+        cpp/tests/test_roundtrip.cpp
+        cpp/tests/test_ldpc_ber.cpp
+        cpp/tests/test_bch_ber.cpp
+        cpp/tests/test_prn_generators.cpp
+        cpp/tests/test_coverage_booster.cpp
+        cpp/tests/test_coherency.cpp
     )
     target_link_libraries(test_lunalink PRIVATE lunalink_core Catch2::Catch2WithMain)
     target_compile_options(test_lunalink PRIVATE ${LUNALINK_WARNING_FLAGS})
 
     include(Catch OPTIONAL RESULT_VARIABLE CATCH_MODULE_FOUND)
     if(CATCH_MODULE_FOUND)
-        catch_discover_tests(test_lunalink)
+        # Exclude [performance] tests from default CTest runs.
+        # Run them explicitly with: task test-performance
+        catch_discover_tests(test_lunalink TEST_SPEC "~[performance]")
     else()
         message(WARNING "Catch2 CMake module not found. CTest integration disabled.")
     endif()

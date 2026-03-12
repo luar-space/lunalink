@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-03-11T23:16:56+00:00",
+  "frame_id": "test_5_midrange",
+  "description": "Mid-range values",
+  "subframe1": {
+    "fid": 2,
+    "toi": 55
+  },
+  "subframe2": null,
+  "subframe3": null,
+  "subframe4": null,
+  "notes": "subframes 2-4 not yet implemented (GD3.2 pending)"
+}

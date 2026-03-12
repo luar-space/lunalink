@@ -1,5 +1,6 @@
 #include "lunalink/signal/frame.hpp"
 #include "lunalink/signal/bch.hpp"
+#include "lunalink/signal/interleaver.hpp"
 #include <algorithm>
 #include <array>
 #include <ranges>
@@ -41,7 +42,25 @@ FrameStatus frame_build_partial(
     }
   }
 
-  // 3. SB2-SB4 payload: remains zeroed per initialization.
+  // 3. SB2-SB4 payload: Interleaved block (5880 symbols).
+  // Note: Builders for SB2-SB4 are implemented in Gateway 3.
+  // We apply the interleaver to the zeroed buffer to ensure the structure is ready.
+  if (status == FrameStatus::kOk) {
+      // Temporary staging buffer for non-interleaved data (SB2+SB3+SB4)
+      // Mandate: Zero dynamic allocation. Use stack.
+      alignas(16) std::array<uint8_t, kInterleaverSize> staging{};
+      std::ranges::fill(staging, 0U);
+
+      // In Gateway 3, we will fill 'staging' with encoded LDPC symbols here.
+
+      const auto int_status = block_interleave(staging, out.subspan<kSyncLength + 52ULL, kInterleaverSize>());
+      if (int_status != InterleaverStatus::kOk) [[unlikely]] {
+          status = FrameStatus::kFaultDetected;
+          secure_scrub(out);
+      }
+      secure_scrub(staging);
+  }
+
   return status;
 }
 
