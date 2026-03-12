@@ -3,7 +3,6 @@
 #include "lunalink/signal/prn.hpp"
 #include "lunalink/signal/safety.hpp"
 #include <algorithm> // for std::fill
-#include <cassert>
 
 namespace lunalink::signal {
 
@@ -29,14 +28,14 @@ IqMuxStatus multiplex_iq(
   }
 
   if (status == IqMuxStatus::kOk) {
-    // JAXA Safety: Aliasing Protection.
-    // We assert that the output buffer does not overlap with either input.
-    // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    assert(static_cast<const void*>(out.data()) >= static_cast<const void*>(i_samples.data() + i_samples.size()) ||
-           static_cast<const void*>(out.data() + out.size()) <= static_cast<const void*>(i_samples.data()));
-    assert(static_cast<const void*>(out.data()) >= static_cast<const void*>(q_samples.data() + q_samples.size()) ||
-           static_cast<const void*>(out.data() + out.size()) <= static_cast<const void*>(q_samples.data()));
-    // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    // JAXA Safety: Aliasing Protection — runtime guards (assert() disabled in release builds).
+    if (spans_overlap(static_cast<const void*>(i_samples.data()), i_samples.size_bytes(),
+                      static_cast<const void*>(out.data()), out.size_bytes()) ||
+        spans_overlap(static_cast<const void*>(q_samples.data()), q_samples.size_bytes(),
+                      static_cast<const void*>(out.data()), out.size_bytes())) [[unlikely]] {
+      secure_scrub(out);
+      return IqMuxStatus::kFaultDetected;  // FIZ-1
+    }
 
     uint32_t loop_count = 0;
     for (uint32_t n = 0; n < kIqSamplesPerEpoch; ++n) {
@@ -70,7 +69,7 @@ IqMuxStatus multiplex_iq(
 
     // CFI: Terminal count verification.
     if (status == IqMuxStatus::kOk && loop_count != kIqSamplesPerEpoch) [[unlikely]] {
-        status = IqMuxStatus::kFaultDetected;
+        status = IqMuxStatus::kFaultDetected;  // FIZ-1
     }
 
     if (status != IqMuxStatus::kOk) [[unlikely]] {

@@ -101,7 +101,7 @@ MatchedCodeStatus matched_code_epoch_checked(
         
         // CFI: Control-Flow Integrity check for loop terminal count.
         if (byte_count != kWeil10230FullBytes) {
-            status = MatchedCodeStatus::kFaultDetected;
+            status = MatchedCodeStatus::kFaultDetected;  // FIZ-1
         }
 
         if (status == MatchedCodeStatus::kOk) {

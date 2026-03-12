@@ -63,6 +63,25 @@ inline void wip_tick() noexcept {
   wip_count = wip_count + 1U;
 }
 
+// Runtime aliasing check: returns true if two byte ranges overlap.
+// Used as a runtime guard replacing assert() for Class A compliance.
+[[nodiscard]] inline bool spans_overlap(const void* a, size_t a_bytes,
+                                        const void* b, size_t b_bytes) noexcept {
+    const auto* ab = static_cast<const uint8_t*>(a);
+    const auto* bb = static_cast<const uint8_t*>(b);
+    // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    return (ab < bb + b_bytes) && (bb < ab + a_bytes);
+    // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+}
+
+// Convenience template overload for typed spans.
+// NOLINTNEXTLINE(fuchsia-trailing-return)
+template <typename T, typename U>
+[[nodiscard]] inline bool spans_overlap(std::span<T> a, std::span<U> b) noexcept {
+    return spans_overlap(static_cast<const void*>(a.data()), a.size_bytes(),
+                         static_cast<const void*>(b.data()), b.size_bytes());
+}
+
 /**
  * @brief Value-constrained wrapper ensuring a value remains within [Min, Max].
  * Implements "Saturating Logic" per Mission Assurance requirements.
@@ -170,6 +189,18 @@ struct TmrValue {
    */
   void inject_fault(T bad_value) noexcept { v1 = v2 = v3 = bad_value; }
 
+#ifdef LUNALINK_FAULT_INJECTION
+  /**
+   * @brief Single-copy fault injection: corrupt one TMR copy by index (0=v1, 1=v2, 2=v3).
+   * Only available when LUNALINK_FAULT_INJECTION=1.
+   */
+  void inject_fault(uint8_t copy_index, T corrupted_value) noexcept {
+    if (copy_index == 0U) { v1 = corrupted_value; }
+    else if (copy_index == 1U) { v2 = corrupted_value; }
+    else { v3 = corrupted_value; }
+  }
+#endif
+
   /**
    * @brief Force a raw underlying value into all TMR copies.
    * Bypasses CheckedRange saturating logic if T is CheckedRange.
@@ -185,6 +216,58 @@ struct TmrValue {
           v2 = static_cast<T>(raw_bad_value);
           v3 = static_cast<T>(raw_bad_value);
       }
+  }
+};
+
+/**
+ * @brief Control-Flow Integrity guard: encapsulates volatile counter + expected terminal value.
+ * New components (POST, FSM) use this class. Existing inline CFI sentinels in signal sources
+ * are not refactored to avoid regression risk.
+ */
+class CfiGuard {
+  volatile uint32_t count_;
+  uint32_t expected_;
+ public:
+  explicit constexpr CfiGuard(uint32_t magic, uint32_t n) noexcept
+      : count_(magic), expected_(magic + n) {}
+  void tick() noexcept { count_ = count_ + 1U; }
+  [[nodiscard]] bool verify() const noexcept { return count_ == expected_; }
+#ifdef LUNALINK_FAULT_INJECTION
+  void inject_skip(uint32_t n) noexcept { count_ = count_ - n; }
+#endif
+};
+
+/**
+ * @brief Compile-time legal state transition matrix (edge-list representation).
+ * N: maximum number of legal (from→to) edge pairs.
+ * State values are cast to uint8_t for storage; use enums with uint8_t underlying type.
+ */
+template <typename State, size_t N>
+class TransitionMatrix {
+  struct Edge { uint8_t from; uint8_t to; };
+  // NOLINTNEXTLINE(hicpp-avoid-c-arrays)
+  Edge edges_[N]{};
+  size_t count_{0};
+
+ public:
+  constexpr TransitionMatrix() noexcept : edges_{}, count_(0) {}
+
+  constexpr void add(State from, State to) noexcept {
+    if (count_ < N) {
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+      edges_[count_++] = {static_cast<uint8_t>(from), static_cast<uint8_t>(to)};
+    }
+  }
+
+  [[nodiscard]] bool is_legal(State from, State to) const noexcept {
+    const auto f = static_cast<uint8_t>(from);
+    const auto t = static_cast<uint8_t>(to);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+    for (size_t i = 0; i < count_; ++i) {
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+      if (edges_[i].from == f && edges_[i].to == t) { return true; }
+    }
+    return false;
   }
 };
 

@@ -1,5 +1,6 @@
 // NOLINTBEGIN(hicpp-*,cppcoreguidelines-pro-bounds-*)
 #include "lunalink/signal/ldpc.hpp"
+#include "lunalink/signal/safety.hpp"
 #include <algorithm>
 #include <array>
 #include <cstdint>
@@ -51,14 +52,6 @@ inline int16_t sat_sub(int16_t a, int16_t b) noexcept {
     if (res > 32767) { res = 32767; }
     if (res < -32767) { res = -32767; }
     return static_cast<int16_t>(res);
-}
-
-// Runtime aliasing check: returns true if two byte ranges overlap.
-[[nodiscard]] inline bool spans_overlap(const void* a, size_t a_bytes,
-                                        const void* b, size_t b_bytes) noexcept {
-    const auto* a_begin = static_cast<const uint8_t*>(a);
-    const auto* b_begin = static_cast<const uint8_t*>(b);
-    return (a_begin < b_begin + b_bytes) && (b_begin < a_begin + a_bytes);
 }
 
 // JIT integrity check: verify all matrices for a given subframe type.
@@ -422,7 +415,7 @@ LdpcStatus ldpc_encode(LdpcSubframe type, std::span<const uint8_t> msg,
         status = LdpcStatus::kOutputTooSmall;
     } else if (spans_overlap(msg.data(), msg.size_bytes(), out.data(), out.size_bytes()) ||
                !verify_tables(type)) {
-        status = LdpcStatus::kFaultDetected;
+        status = LdpcStatus::kFaultDetected;  // FIZ-1 (aliasing) / FIZ-3 (LUT integrity)
     } else {
         // --- DSP core ---
         const LdpcCsrMatrix& mA = is_sf2 ? kLdpc_sf2_a : kLdpc_sf3_a;
@@ -512,7 +505,7 @@ LdpcStatus ldpc_decode(LdpcSubframe type, std::span<const float> symbols,
     } else if (spans_overlap(symbols.data(), symbols.size_bytes(),
                               out.data(), out.size_bytes()) ||
                !verify_tables(type)) {
-        status = LdpcStatus::kFaultDetected;
+        status = LdpcStatus::kFaultDetected;  // FIZ-1 (aliasing) / FIZ-3 (LUT integrity)
     } else {
         // --- DSP core ---
         std::span<int16_t> L_v(workspace.L_v);
@@ -621,7 +614,7 @@ LdpcStatus ldpc_decode(LdpcSubframe type, std::span<const float> symbols,
             // A5: CFI terminal check — all 4 milestones must have been reached.
             constexpr uint32_t kExpectedCfi = kCfiMagicDecode + 4U;
             if (layer_fault || cfi_count != kExpectedCfi) {
-                status = LdpcStatus::kFaultDetected;
+                status = LdpcStatus::kFaultDetected;  // FIZ-1
             } else if (converged) {
                 status = LdpcStatus::kOk;
             } else {

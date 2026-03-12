@@ -55,13 +55,22 @@ FrameStatus frame_build_partial(
 
       const auto int_status = block_interleave(staging, out.subspan<kSyncLength + 52ULL, kInterleaverSize>());
       if (int_status != InterleaverStatus::kOk) [[unlikely]] {
-          status = FrameStatus::kFaultDetected;
+          status = FrameStatus::kFaultDetected;  // FIZ-2
           secure_scrub(out);
       }
       secure_scrub(staging);
   }
 
   return status;
+}
+
+FrameStatus commit_frame(std::span<const uint8_t> frame_buf) noexcept {
+  // SW-SAF-01: No frame shall be transmitted unless the post-generation CRC-24Q check passes.
+  // The last 24 symbols of frame_buf must be the CRC-24Q of the preceding symbols.
+  if (!crc24_verify(frame_buf)) {
+    return FrameStatus::kFaultDetected;  // FIZ-2
+  }
+  return FrameStatus::kOk;
 }
 
 } // namespace lunalink::signal

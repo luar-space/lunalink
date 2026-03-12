@@ -163,9 +163,19 @@ bool LdpcCsrMatrix::verify_integrity() const noexcept {
     crc = crc32_byte(crc, static_cast<uint8_t>((num_rows >> 8U) & 0xFFU));
     crc = crc32_byte(crc, static_cast<uint8_t>(num_cols & 0xFFU));
     crc = crc32_byte(crc, static_cast<uint8_t>((num_cols >> 8U) & 0xFFU));
-    for (const auto c : col_indices) {
-        crc = crc32_byte(crc, static_cast<uint8_t>(c & 0xFFU));
-        crc = crc32_byte(crc, static_cast<uint8_t>((c >> 8U) & 0xFFU));
+    for (size_t idx = 0; idx < col_indices.size(); ++idx) {
+        const auto c = col_indices[idx];
+        auto lo = static_cast<uint8_t>(c & 0xFFU);
+        auto hi = static_cast<uint8_t>((c >> 8U) & 0xFFU);
+#ifdef LUNALINK_FAULT_INJECTION
+        if (fi_active != 0U) {
+            const size_t byte_base = idx * 2U;
+            if (fi_byte_offset == byte_base)      { lo = static_cast<uint8_t>(lo ^ fi_bit_mask); }
+            else if (fi_byte_offset == byte_base + 1U) { hi = static_cast<uint8_t>(hi ^ fi_bit_mask); }
+        }
+#endif
+        crc = crc32_byte(crc, lo);
+        crc = crc32_byte(crc, hi);
     }
     for (const auto p : row_ptr) {
         crc = crc32_byte(crc, static_cast<uint8_t>(p & 0xFFU));

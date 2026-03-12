@@ -289,11 +289,15 @@ FMEA Table — State Machine & System-Level (top-level signal chain FSM)
    * - FM-033
      - Windowed watchdog lower-bound violation (task completes too early)
      - Radiation-induced logic skip; frame generation incomplete; wrong frame on air
-     - D-TELEM: Windowed watchdog lower-bound trip; fault alarm.
+     - D-TELEM: Windowed watchdog lower-bound trip; fault alarm.  D-SWIFI:
+       SWIFI test ``watchdog_lower_bound_trip`` verifies detection empirically.
      - S2
      - Zone 3
-     - Windowed watchdog with WCET-derived lower and upper thresholds.  Lower-bound
-       trip treated as Critical Fault; Zone 3 response.
+     - **Implemented** — ``WindowedWatchdog`` class in ``watchdog.hpp``; lower-bound
+       trip emits ``FaultPacket(fiz_level=2)``; SWIFI test
+       ``watchdog_lower_bound_trip`` passes.  WCET-derived lower and upper
+       thresholds documented in ``assurance/wcet_profile.rst``.  Lower-bound trip
+       treated as Critical Fault; Zone 3 response.
    * - FM-034
      - CFI binary identity (SCI header) corrupt at boot
      - Unknown software version executing; traceability broken; may be wrong build

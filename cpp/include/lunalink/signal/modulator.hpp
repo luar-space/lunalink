@@ -4,7 +4,6 @@
 #include "lunalink/signal/safety.hpp"
 #include <span>
 #include <algorithm> // for std::fill
-#include <cassert>
 
 namespace lunalink::signal {
 
@@ -43,10 +42,12 @@ enum class ModulationStatus : uint8_t {
   }
 
   if (status == ModulationStatus::kOk) {
-    // JAXA Safety: Aliasing Protection.
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    assert(static_cast<const void*>(out.data()) >= static_cast<const void*>(chips.data() + chips.size()) ||
-           static_cast<const void*>(out.data() + out.size()) <= static_cast<const void*>(chips.data()));
+    // JAXA Safety: Aliasing Protection — runtime guard (assert() is disabled in release builds).
+    if (spans_overlap(static_cast<const void*>(chips.data()), chips.size_bytes(),
+                      static_cast<const void*>(out.data()), out.size_bytes())) [[unlikely]] {
+      secure_scrub(out);
+      return ModulationStatus::kFaultDetected;  // FIZ-1
+    }
 
     uint32_t loop_count = 0;
     for (std::size_t i = 0; i < chips.size(); ++i) {
@@ -63,7 +64,7 @@ enum class ModulationStatus : uint8_t {
 
     // CFI: Terminal count verification.
     if (status == ModulationStatus::kOk && loop_count != chips.size()) [[unlikely]] {
-        status = ModulationStatus::kFaultDetected;
+        status = ModulationStatus::kFaultDetected;  // FIZ-1
     }
 
     if (status != ModulationStatus::kOk) [[unlikely]] {

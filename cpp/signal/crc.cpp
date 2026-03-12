@@ -28,7 +28,7 @@ CrcStatus crc24_calculate(
     for (size_t i = 0; i < in.size(); ++i) {
         i_mir = ~i;
         if (i != (~i_mir)) [[unlikely]] {
-            status = CrcStatus::kFaultDetected;
+            status = CrcStatus::kFaultDetected;  // FIZ-1
             break;
         }
 
@@ -48,7 +48,7 @@ CrcStatus crc24_calculate(
     if (status == CrcStatus::kOk) {
         // CFI terminal check
         if (cfi_count != (0xA5A5A5A5U + static_cast<uint32_t>(in.size()))) [[unlikely]] {
-            status = CrcStatus::kFaultDetected;
+            status = CrcStatus::kFaultDetected;  // FIZ-1
         } else {
             // Unpack 24-bit state to output bit-bytes
             for (uint8_t b = 0; b < 24U; ++b) {

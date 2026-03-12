@@ -15,7 +15,7 @@ InterleaverStatus block_interleave(
     } else if (out.size() < kInterleaverSize) {
         status = InterleaverStatus::kOutputTooSmall;
     } else if (in.data() == out.data()) {
-        status = InterleaverStatus::kFaultDetected;
+        status = InterleaverStatus::kFaultDetected;  // FIZ-1
     }
 
     if (status == InterleaverStatus::kOk) {
@@ -32,7 +32,7 @@ InterleaverStatus block_interleave(
 
                 // Cross-check: sequential accumulator must match computed index.
                 if (in_idx != in_idx_acc) [[unlikely]] {
-                    status = InterleaverStatus::kFaultDetected;
+                    status = InterleaverStatus::kFaultDetected;  // FIZ-1
                     break;
                 }
 
@@ -50,7 +50,7 @@ InterleaverStatus block_interleave(
             // CFI: total elements processed must equal matrix size.
             if (cfi_count != (0xA5A5A5A5U + kInterleaverSize) ||
                 in_idx_acc != kInterleaverSize) [[unlikely]] {
-                status = InterleaverStatus::kFaultDetected;
+                status = InterleaverStatus::kFaultDetected;  // FIZ-1
             }
         }
     }
@@ -74,7 +74,7 @@ InterleaverStatus block_deinterleave(
     } else if (out.size() < kInterleaverSize) {
         status = InterleaverStatus::kOutputTooSmall;
     } else if (in.data() == out.data()) {
-        status = InterleaverStatus::kFaultDetected;
+        status = InterleaverStatus::kFaultDetected;  // FIZ-1
     }
 
     if (status == InterleaverStatus::kOk) {
@@ -88,7 +88,7 @@ InterleaverStatus block_deinterleave(
                 const size_t out_idx = (static_cast<size_t>(r) * kInterleaverCols) + c;
 
                 if (in_idx != in_idx_acc) [[unlikely]] {
-                    status = InterleaverStatus::kFaultDetected;
+                    status = InterleaverStatus::kFaultDetected;  // FIZ-1
                     break;
                 }
 
@@ -105,7 +105,7 @@ InterleaverStatus block_deinterleave(
         if (status == InterleaverStatus::kOk) {
             if (cfi_count != (0xA5A5A5A5U + kInterleaverSize) ||
                 in_idx_acc != kInterleaverSize) [[unlikely]] {
-                status = InterleaverStatus::kFaultDetected;
+                status = InterleaverStatus::kFaultDetected;  // FIZ-1
             }
         }
     }

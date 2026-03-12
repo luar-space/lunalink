@@ -40,6 +40,17 @@ tasks:
       - "{{.BUILD_DIR}}/test_lunalink [performance] --reporter console"
     silent: false
 
+  wcet-profile:
+    desc: Run [performance] benchmarks and display WCET profile (Release build).
+    vars:
+      GENERATOR:
+        sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
+    cmds:
+      - cmake -B build/wcet -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release
+      - cmake --build build/wcet --parallel
+      - build/wcet/test_lunalink "[performance]" --reporter console
+    silent: false
+
   test-cpp:
     desc: Build and run C++ unit tests with CTest (uses Ninja if available).
     vars:
@@ -93,16 +104,20 @@ tasks:
     silent: false
 
   coverage-cpp:
-    desc: Build and run C++ tests with coverage, then generate HTML report.
+    desc: Build and run C++ tests with LLVM-native MC/DC coverage, then generate HTML report.
     vars:
+      LLVM_DIR: /opt/homebrew/opt/llvm/bin
       GENERATOR:
         sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
     cmds:
-      - cmake -B build/coverage -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON
+      - cmake -B build/coverage -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_LLVM_COVERAGE=ON -DCMAKE_C_COMPILER={{.LLVM_DIR}}/clang -DCMAKE_CXX_COMPILER={{.LLVM_DIR}}/clang++
       - cmake --build build/coverage --parallel
-      - find build/coverage -name '*.gcda' -delete
-      - ctest --test-dir build/coverage --output-on-failure
-      - uv run python -m gcovr -r . build/coverage --html-details build/coverage/coverage.html --print-summary --fail-under-line 90 --gcov-exclude '.*catch2.*' --exclude '.*catch2.*' --exclude 'build/coverage/_deps/.*' --exclude 'cpp/tests/.*' --gcov-ignore-errors=source_not_found --gcov-ignore-errors=output_error --gcov-ignore-errors=no_working_dir_found
+      - rm -f build/coverage/*.profraw build/coverage/*.profdata
+      - LLVM_PROFILE_FILE="lunalink-%m.profraw" ctest --test-dir build/coverage --output-on-failure
+      - "/opt/homebrew/opt/llvm/bin/llvm-profdata merge -sparse build/coverage/*.profraw -o build/coverage/lunalink.profdata"
+      - "{{.LLVM_DIR}}/llvm-cov show build/coverage/test_lunalink -instr-profile=build/coverage/lunalink.profdata -format=html -output-dir=build/coverage/html -show-mcdc-summary -show-mcdc -ignore-filename-regex='_deps|tests' -path-equivalence=.,$(pwd)"
+      - "{{.LLVM_DIR}}/llvm-cov report build/coverage/test_lunalink -instr-profile=build/coverage/lunalink.profdata -show-mcdc-summary -ignore-filename-regex='_deps|tests' -path-equivalence=.,$(pwd)"
+      - echo "MC/DC Coverage report generated at build/coverage/html/index.html"
     silent: false
 
   sanitize:
@@ -221,6 +236,28 @@ tasks:
       - uv run radon mi src/ -s
     silent: false
 
+  swifi:
+    desc: Build and run SWIFI fault-injection test suite (requires LUNALINK_FAULT_INJECTION=ON).
+    vars:
+      GENERATOR:
+        sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
+      BUILD_DIR:
+        sh: which ninja >/dev/null 2>&1 && echo "build/swifi-ninja" || echo "build/swifi-make"
+    cmds:
+      - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DLUNALINK_FAULT_INJECTION=ON
+      - cmake --build {{.BUILD_DIR}} --parallel
+      - ctest --test-dir {{.BUILD_DIR}} -L swifi --output-on-failure --parallel
+    silent: false
+
+  check-flags:
+    desc: Verify required/forbidden compiler flags in compile_commands.json (S10 gate).
+    vars:
+      BUILD_DIR:
+        sh: which ninja >/dev/null 2>&1 && echo "build/cpp-tests-ninja" || echo "build/cpp-tests-make"
+    cmds:
+      - uv run python scripts/check_build_flags.py {{.BUILD_DIR}}/compile_commands.json
+    silent: false
+
   docs-build:
     desc: Build the HTML documentation with Sphinx.
     cmds:
@@ -251,11 +288,13 @@ tasks:
     silent: false
 
   ci-checks:
-    desc: Full CI checks including tidy, sanitizers, and docs.
+    desc: Full CI checks including tidy, sanitizers, docs, SWIFI, and flag verification.
     cmds:
       - task: build
       - task: lint-check
+      - task: check-flags
       - task: test-cpp
+      - task: swifi
       - task: coverage-cpp
       - task: tidy
       - task: test-py

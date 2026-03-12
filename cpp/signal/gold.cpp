@@ -58,7 +58,7 @@ PrnStatus GoldGenerator::generate(PrnId prn_id, std::span<uint8_t> out) noexcept
             i_mir = ~static_cast<uint32_t>(i);
             
             if (static_cast<uint32_t>(i) != (~i_mir)) [[unlikely]] {
-                status = PrnStatus::kFaultDetected;
+                status = PrnStatus::kFaultDetected;  // FIZ-1
                 break;
             }
 
@@ -69,7 +69,7 @@ PrnStatus GoldGenerator::generate(PrnId prn_id, std::span<uint8_t> out) noexcept
 
         // CFI: Terminal verification
         if (cfi_count != (0xA5A5A5A5U + kGoldChipLength)) [[unlikely]] {
-            status = PrnStatus::kFaultDetected;
+            status = PrnStatus::kFaultDetected;  // FIZ-1
         }
     }
 

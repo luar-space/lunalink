@@ -2,6 +2,7 @@
 #include <array>
 #include <cstddef>
 #include "lunalink/signal/bch.hpp"
+#include "lunalink/signal/crc.hpp"
 #include <cstdint>
 #include <span>
 
@@ -72,5 +73,17 @@ template <typename T>
     T&& out) noexcept {
   return frame_build_partial(fid, toi, std::span<uint8_t, 6000ULL>(out));
 }
+
+/**
+ * @brief Frame Commit Gate: verify the assembled frame by recomputing CRC-24Q. [SW-SAF-01]
+ *
+ * Verifies that the last 24 symbols of frame_buf are the correct CRC-24Q of the
+ * preceding symbols. Returns kFaultDetected and scrubs the output if the checksum
+ * fails — no frame shall be transmitted unless this check passes.
+ *
+ * @param frame_buf  Assembled frame buffer (must be at least 25 symbols).
+ * @return FrameStatus::kOk if the CRC matches; kFaultDetected otherwise. // FIZ-2
+ */
+[[nodiscard]] FrameStatus commit_frame(std::span<const uint8_t> frame_buf) noexcept;
 
 } // namespace lunalink::signal

@@ -6,6 +6,52 @@ option(BUILD_PYTHON_BINDINGS "Build Python bindings" ON)
 option(BUILD_TESTING "Build unit tests" ON)
 option(ENABLE_COVERAGE "Enable coverage reporting" OFF)
 option(ENABLE_SANITIZERS "Enable sanitizers" OFF)
+option(LUNALINK_FAULT_INJECTION "Enable fault-injection APIs for SWIFI tests" OFF)
+option(ENABLE_LLVM_COVERAGE "Enable LLVM source-based coverage (MC/DC, requires Clang)" OFF)
+
+# --- SCI Header Generation ---
+# Inject git SHA, build timestamp (seconds since J2000), and pre-computed CRC-32
+# into a generated header consumed by sci_header.cpp.
+execute_process(
+    COMMAND git rev-parse HEAD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE LUNALINK_GIT_SHA_RAW
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+)
+if(NOT LUNALINK_GIT_SHA_RAW OR LUNALINK_GIT_SHA_RAW STREQUAL "")
+    set(LUNALINK_GIT_SHA_RAW "0000000000000000000000000000000000000000")
+endif()
+
+string(TIMESTAMP LUNALINK_BUILD_TIMESTAMP_UNIX "%s")
+math(EXPR LUNALINK_BUILD_TIMESTAMP_J2000 "${LUNALINK_BUILD_TIMESTAMP_UNIX} - 946728000")
+
+# Compute SCI header CRC-32 over (git_sha[41] + lsis_version[16] + build_timestamp[4]).
+execute_process(
+    COMMAND python3 -c
+        "import struct; sha = b'${LUNALINK_GIT_SHA_RAW}'[:40] + b'\\x00'; ver = b'LSIS-V1.0-2025\\x00\\x00'; ts = struct.pack('<I', ${LUNALINK_BUILD_TIMESTAMP_J2000}); data = sha + ver + ts; crc = 0xFFFFFFFF;\n[crc := (crc >> 1) ^ (0xEDB88320 if (crc & 1) else 0) for _ in range(8) for b in [data[i] for i in range(len(data))][0:0] or (crc := crc ^ b,)]; print(hex(0))"
+    OUTPUT_VARIABLE LUNALINK_SCI_CRC32_HEX
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+)
+# Simpler CRC computation using a separate inline script:
+execute_process(
+    COMMAND python3 -c
+        "import struct; d=b'${LUNALINK_GIT_SHA_RAW}'[:40]+b'\\x00'+b'LSIS-V1.0-2025\\x00\\x00'+struct.pack('<I',${LUNALINK_BUILD_TIMESTAMP_J2000}); c=0xFFFFFFFF;\nexec('for x in d:\\n  c^=x\\n  for _ in range(8):\\n    c=(c>>1)^(0xEDB88320 if c&1 else 0)'); print(hex(~c&0xFFFFFFFF))"
+    OUTPUT_VARIABLE LUNALINK_SCI_CRC32_HEX
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+)
+if(NOT LUNALINK_SCI_CRC32_HEX OR LUNALINK_SCI_CRC32_HEX STREQUAL "")
+    set(LUNALINK_SCI_CRC32_HEX "0x00000000")
+endif()
+
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/generated)
+configure_file(
+    ${CMAKE_SOURCE_DIR}/cmake/sci_header_generated.hpp.in
+    ${CMAKE_BINARY_DIR}/generated/sci_header_generated.hpp
+    @ONLY
+)
 
 # --- C++ Standard & Flags ---
 set(CMAKE_CXX_STANDARD 20)
@@ -67,11 +113,23 @@ add_library(lunalink_core
     cpp/signal/weil.cpp
     cpp/signal/weil_parameters.cpp
     cpp/signal/bch_table.cpp
+    cpp/signal/sci_header.cpp
+    cpp/signal/post.cpp
+    cpp/signal/signal_chain_fsm.cpp
+    cpp/signal/watchdog.cpp
 )
 target_include_directories(lunalink_core PUBLIC cpp/include)
+target_include_directories(lunalink_core PRIVATE ${CMAKE_BINARY_DIR}/generated)
 set_target_properties(lunalink_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_options(lunalink_core PRIVATE ${LUNALINK_WARNING_FLAGS} ${LUNALINK_CORE_FLAGS})
 target_link_options(lunalink_core PRIVATE ${LUNALINK_LINKER_FLAGS})
+
+# Fault injection APIs are enabled either by the explicit CMake option or
+# automatically when testing is enabled. This ensures lunalink_core and
+# lunalink_swifi_tests share the same struct layout (no ABI mismatch).
+if(LUNALINK_FAULT_INJECTION OR BUILD_TESTING)
+    target_compile_definitions(lunalink_core PUBLIC LUNALINK_FAULT_INJECTION=1)
+endif()
 
 # --- Python Bindings ---
 if(BUILD_PYTHON_BINDINGS)
@@ -135,6 +193,26 @@ if(BUILD_TESTING)
     else()
         message(WARNING "Catch2 CMake module not found. CTest integration disabled.")
     endif()
+
+    # --- SWIFI (fault injection) test suite ---
+    add_executable(lunalink_swifi_tests
+        cpp/tests/test_fault_injection.cpp
+    )
+    target_link_libraries(lunalink_swifi_tests PRIVATE lunalink_core Catch2::Catch2WithMain)
+    # -Wno-c2y-extensions: Catch2 TEST_CASE macro uses __COUNTER__ which newer
+    # LLVM clang warns about as a C2y extension; suppress to keep -Werror clean.
+    target_compile_options(lunalink_swifi_tests PRIVATE ${LUNALINK_WARNING_FLAGS}
+        $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Wno-c2y-extensions>)
+    target_compile_definitions(lunalink_swifi_tests PRIVATE LUNALINK_FAULT_INJECTION=1)
+    target_include_directories(lunalink_swifi_tests PRIVATE ${CMAKE_BINARY_DIR}/generated)
+
+    if(CATCH_MODULE_FOUND)
+        catch_discover_tests(lunalink_swifi_tests
+            TEST_SPEC ""
+            TEST_PREFIX "swifi."
+            PROPERTIES LABELS swifi
+        )
+    endif()
 endif()
 
 # --- Coverage Analysis ---
@@ -144,6 +222,23 @@ if(ENABLE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     
     target_compile_options(test_lunalink PRIVATE --coverage)
     target_link_options(test_lunalink PRIVATE --coverage)
+endif()
+
+# --- LLVM Source-Based Coverage (MC/DC) ---
+if(ENABLE_LLVM_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # -Wno-error=c2y-extensions: Allow __COUNTER__ in Catch2 without erroring on Clang 22.
+    # -Wno-error=pgo-coverage: Allow skipping MC/DC for unsupported nested boolean expressions.
+    set(LLVM_COV_FLAGS -fprofile-instr-generate -fcoverage-mapping -fcoverage-mcdc -Wno-error=c2y-extensions -Wno-error=pgo-coverage)
+    target_compile_options(lunalink_core PRIVATE ${LLVM_COV_FLAGS})
+    target_link_options(lunalink_core PRIVATE ${LLVM_COV_FLAGS})
+    if(BUILD_TESTING)
+        target_compile_options(test_lunalink PRIVATE ${LLVM_COV_FLAGS})
+        target_link_options(test_lunalink PRIVATE ${LLVM_COV_FLAGS})
+        target_compile_options(lunalink_swifi_tests PRIVATE ${LLVM_COV_FLAGS})
+        target_link_options(lunalink_swifi_tests PRIVATE ${LLVM_COV_FLAGS})
+    endif()
+elseif(ENABLE_LLVM_COVERAGE AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    message(WARNING "ENABLE_LLVM_COVERAGE requires Clang. Use CC=clang CXX=clang++.")
 endif()
 
 # --- Sanitizers ---

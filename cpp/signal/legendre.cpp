@@ -86,7 +86,7 @@ LegendreStatus generate_legendre_sequence(
         for (uint16_t x = 1; x < limit; ++x) {
             x_mir = ~static_cast<uint32_t>(x);
             if (static_cast<uint32_t>(x) != (~x_mir)) [[unlikely]] {
-                status = LegendreStatus::kFaultDetected;
+                status = LegendreStatus::kFaultDetected;  // FIZ-1
                 break;
             }
 
@@ -100,7 +100,7 @@ LegendreStatus generate_legendre_sequence(
         }
 
         if (cfi_count != (0xA5A5A5A5U + (limit - 1U))) [[unlikely]] {
-            status = LegendreStatus::kFaultDetected;
+            status = LegendreStatus::kFaultDetected;  // FIZ-1
         }
     }
 

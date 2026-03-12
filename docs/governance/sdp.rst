@@ -258,3 +258,35 @@ Both require:
 No deviation or waiver may lower the SWIFI fault detection coverage below 100% or
 lower the MC/DC coverage below 100% for any ``[LSIS-AFS-*]``-tagged function without
 a full safety case justification.
+
+Approval Record
+---------------
+
+This document is approved for the LunaLink competition submission baseline.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 25 25 25 25
+
+   * - Role
+     - Name
+     - Signature / Identifier
+     - Date
+   * - Author (Lead Developer)
+     - LunaLink Development Team
+     - Git commit on branch ``assurance`` (see SCI header ``kSciHeader.git_sha``)
+     - 2026-03-12
+   * - Technical Reviewer
+     - Competition Assessment Panel
+     - Submission artefact review
+     - TBD (at submission)
+   * - Programme Authority
+     - Self-certified (Digital Twin phase)
+     - See ``governance/baseline_register.rst`` BL-002
+     - 2026-03-12
+
+.. note::
+   In a full flight programme, this section would carry wet or digital signatures from
+   the Programme Manager, Chief Engineer, and Software Safety Officer.  For the
+   competition Digital Twin phase, self-certification is used per ``certification_delta.rst``
+   §Organisational Gaps Acknowledged.

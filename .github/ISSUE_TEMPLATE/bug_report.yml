@@ -1,0 +1,40 @@
+name: Bug / Problem Report
+description: Report a defect or anomaly (PRACA)
+title: "[BUG] "
+labels: ["status::new"]
+body:
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: Per LUNALINK-PRACA-001 §2
+      options:
+        - "S1 — Critical / Safety (blocks submission)"
+        - "S2 — Major (must fix before gateway exit)"
+        - "S3 — Moderate (fix within 2 sprints)"
+        - "S4 — Minor (backlog)"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Problem Description
+      description: What happened? What was expected?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+  - type: textarea
+    id: root_cause
+    attributes:
+      label: Root Cause (if known)
+  - type: checkboxes
+    id: fix_verification
+    attributes:
+      label: Fix Verification (S1/S2 required)
+      options:
+        - label: Regression test added
+        - label: Full CI including SWIFI suite passes
+        - label: Independent reviewer sign-off obtained

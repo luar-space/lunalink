@@ -53,7 +53,7 @@ PrnStatus WeilGenerator::construct_weil(
     
     const auto legendre = get_cached_legendre(prime);
     if (legendre.empty()) [[unlikely]] {
-        return PrnStatus::kFaultDetected;
+        return PrnStatus::kFaultDetected;  // FIZ-1
     }
 
     uint32_t cfi_count = 0xA5A5A5A5U;
@@ -63,7 +63,7 @@ PrnStatus WeilGenerator::construct_weil(
     for (uint16_t t = 0; t < prime; ++t) {
         t_mir = static_cast<uint16_t>(~t);
         if (t != static_cast<uint16_t>(~t_mir)) [[unlikely]] {
-            return PrnStatus::kFaultDetected;
+            return PrnStatus::kFaultDetected;  // FIZ-1
         }
 
         if (out_idx == (insertion_index - 1U)) {
@@ -86,7 +86,7 @@ PrnStatus WeilGenerator::construct_weil(
     }
 
     if (cfi_count != (0xA5A5A5A5U + prime)) [[unlikely]] {
-        return PrnStatus::kFaultDetected;
+        return PrnStatus::kFaultDetected;  // FIZ-1
     }
 
     return PrnStatus::kOk;
