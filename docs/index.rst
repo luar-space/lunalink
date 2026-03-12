@@ -22,9 +22,20 @@ LunaLink AFS reference implementation with C++ core and pybind11 bindings.
    :caption: Mission Assurance:
 
    assurance/mission_assurance
+   assurance/fmea
+   assurance/safety_plan
+   assurance/oss_assessment
+   assurance/certification_delta
    signal/compliance_matrix
    signal/spec_findings_report
    signal/validation_plan
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Governance:
+
+   governance/sdp
+   governance/scmp
 
 .. toctree::
    :maxdepth: 2
