@@ -22,7 +22,10 @@ LunaLink AFS reference implementation with C++ core and pybind11 bindings.
    :maxdepth: 2
    :caption: Deliverable Verification:
 
+   gateway0
+   gateway1
    gateway2
+   gateway4
 
 .. toctree::
    :maxdepth: 2

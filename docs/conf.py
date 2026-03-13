@@ -40,3 +40,50 @@ autodoc_default_options = {
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 html_theme = "furo"
+
+# -- LaTeX / PDF output -------------------------------------------------------
+
+latex_documents = [
+    (
+        "gateway0",  # source start file (without .rst)
+        "LunaLink-Gateway0-Phase1.tex",  # output filename
+        "LSIS-AFS Reference Implementation\n"
+        "Standards Compliance \\& Architecture",  # title
+        "LunaLink",  # author
+        "howto",  # document class: 'howto' for article, 'manual' for report
+        False,  # toctree_only
+    ),
+]
+
+latex_engine = "xelatex"
+
+latex_elements = {
+    "papersize": "a4paper",
+    "pointsize": "11pt",
+    "preamble": r"""
+\usepackage{enumitem}
+\setlistdepth{9}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, calc}
+""",
+    "maketitle": r"""
+\begin{titlepage}
+\centering
+\vspace*{3cm}
+{\Huge\bfseries LSIS-AFS Reference Implementation\par}
+\vspace{0.5cm}
+{\LARGE Standards Compliance \& Architecture\par}
+\vspace{1.5cm}
+{\Large Phase 1 Deliverable\par}
+{\large ESA-CCSDS Protocol Development Competition\par}
+\vspace{1cm}
+{\large Milestone 1 — 31 March 2026\par}
+\vspace{3cm}
+{\large\bfseries LunaLink\par}
+\vspace{1cm}
+{\normalsize Document ID: LUNALINK-GW0-001 \quad Version: 1.0\par}
+\vfill
+\end{titlepage}
+""",
+    "tableofcontents": r"\tableofcontents\clearpage",
+}
