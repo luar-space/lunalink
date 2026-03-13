@@ -217,9 +217,11 @@ endif()
 
 # --- LLVM Source-Based Coverage (MC/DC) ---
 if(ENABLE_LLVM_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # -Wno-unknown-warning-option: suppress errors from version-specific warnings (e.g.
+    #   c2y-extensions in Clang 22, pgo-coverage in Clang 20+) when building on older LLVM.
     # -Wno-error=c2y-extensions: Allow __COUNTER__ in Catch2 without erroring on Clang 22.
     # -Wno-error=pgo-coverage: Allow skipping MC/DC for unsupported nested boolean expressions.
-    set(LLVM_COV_FLAGS -fprofile-instr-generate -fcoverage-mapping -fcoverage-mcdc -Wno-error=c2y-extensions -Wno-error=pgo-coverage)
+    set(LLVM_COV_FLAGS -fprofile-instr-generate -fcoverage-mapping -fcoverage-mcdc -Wno-unknown-warning-option -Wno-error=c2y-extensions -Wno-error=pgo-coverage)
     target_compile_options(lunalink_core PRIVATE ${LLVM_COV_FLAGS})
     target_link_options(lunalink_core PRIVATE ${LLVM_COV_FLAGS})
     if(BUILD_TESTING)
