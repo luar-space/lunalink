@@ -10,15 +10,27 @@ jobs:
   coverage-mcdc:
     name: LLVM MC/DC Coverage
     runs-on: ubuntu-latest
+    env:
+      LLVM_VERSION: "19"
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Install LLVM + tools
-        run: sudo apt-get install -y ninja-build clang llvm
+      - name: Install LLVM ${{ env.LLVM_VERSION }} + tools
+        run: |
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          CODENAME=$(lsb_release -cs)
+          echo "deb http://apt.llvm.org/${CODENAME}/ llvm-toolchain-${CODENAME}-${LLVM_VERSION} main" \
+            | sudo tee /etc/apt/sources.list.d/llvm.list
+          sudo apt-get update
+          sudo apt-get install -y ninja-build \
+            clang-${LLVM_VERSION} llvm-${LLVM_VERSION} lld-${LLVM_VERSION}
       - uses: arduino/setup-task@v2
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
       - run: uv sync --group dev
-      - run: task coverage-cpp
+      - name: Run MC/DC coverage
+        run: |
+          export PATH="/usr/lib/llvm-${LLVM_VERSION}/bin:${PATH}"
+          task coverage-cpp

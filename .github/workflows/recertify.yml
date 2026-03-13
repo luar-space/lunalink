@@ -147,13 +147,22 @@ jobs:
   gate-coverage-mcdc:
     name: "Gate: MC/DC Coverage"
     runs-on: ubuntu-latest
+    env:
+      LLVM_VERSION: "19"
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.ref }}
           fetch-depth: 0
-      - name: Install LLVM + ninja
-        run: sudo apt-get install -y ninja-build clang llvm
+      - name: Install LLVM ${{ env.LLVM_VERSION }} + ninja
+        run: |
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          CODENAME=$(lsb_release -cs)
+          echo "deb http://apt.llvm.org/${CODENAME}/ llvm-toolchain-${CODENAME}-${LLVM_VERSION} main" \
+            | sudo tee /etc/apt/sources.list.d/llvm.list
+          sudo apt-get update
+          sudo apt-get install -y ninja-build \
+            clang-${LLVM_VERSION} llvm-${LLVM_VERSION} lld-${LLVM_VERSION}
       - uses: arduino/setup-task@v2
       - uses: astral-sh/setup-uv@v5
         with:
@@ -161,6 +170,7 @@ jobs:
       - run: uv sync --group dev
       - name: Configure (LLVM MC/DC)
         run: |
+          export PATH="/usr/lib/llvm-${LLVM_VERSION}/bin:${PATH}"
           cmake -B build/mcdc -S . -G Ninja \
             -DBUILD_PYTHON_BINDINGS=OFF \
             -DBUILD_TESTING=ON \
@@ -169,13 +179,17 @@ jobs:
             -DCMAKE_C_COMPILER=clang \
             -DCMAKE_CXX_COMPILER=clang++
       - name: Build
-        run: cmake --build build/mcdc --parallel
+        run: |
+          export PATH="/usr/lib/llvm-${LLVM_VERSION}/bin:${PATH}"
+          cmake --build build/mcdc --parallel
       - name: Run tests
         run: |
+          export PATH="/usr/lib/llvm-${LLVM_VERSION}/bin:${PATH}"
           LLVM_PROFILE_FILE="lunalink-%m.profraw" \
             ctest --test-dir build/mcdc --output-on-failure
       - name: Merge profiles and generate MC/DC report
         run: |
+          export PATH="/usr/lib/llvm-${LLVM_VERSION}/bin:${PATH}"
           llvm-profdata merge -sparse build/mcdc/*.profraw \
             -o build/mcdc/lunalink.profdata
           llvm-cov report build/mcdc/test_lunalink \
