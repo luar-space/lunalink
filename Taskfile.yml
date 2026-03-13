@@ -288,6 +288,33 @@ tasks:
       - uv run python -m sphinx -b html docs/ docs/_build/html -W
     silent: false
 
+  docs-pdf:
+    desc: Build the PDF documentation with Sphinx and xelatex.
+    vars:
+      TEXLIVE:
+        sh: |
+          if command -v latexmk >/dev/null 2>&1; then
+            echo ""
+          elif [ -d /usr/local/texlive/2026/bin/universal-darwin ]; then
+            echo "/usr/local/texlive/2026/bin/universal-darwin"
+          elif [ -d /usr/local/texlive/2025/bin/universal-darwin ]; then
+            echo "/usr/local/texlive/2025/bin/universal-darwin"
+          fi
+    cmds:
+      - uv run python -m sphinx -b latex docs/ docs/_build/latex
+      - |
+        if [ -n "{{.TEXLIVE}}" ]; then
+          export PATH="{{.TEXLIVE}}:$PATH"
+        fi
+        if ! command -v latexmk >/dev/null 2>&1; then
+          echo "latexmk not found; LaTeX files are in docs/_build/latex/ but cannot build PDF."
+          echo "Install TeX Live (e.g. brew install --cask mactex) to enable PDF builds."
+          exit 1
+        fi
+        make -C docs/_build/latex
+      - echo "PDF built at docs/_build/latex/LunaLink-Gateway0-Phase1.pdf"
+    silent: false
+
   docs-serve:
     desc: Serve the documentation locally with auto-reload.
     cmds:
