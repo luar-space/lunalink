@@ -73,4 +73,13 @@ TEST_CASE("PRN Generators: Exhaustive validation against Annex 3") {
         CHECK(weil_gen.generate_primary(good_prn, small) == PrnStatus::kNullOutput);
         CHECK(weil_gen.generate_tertiary(good_prn, small) == PrnStatus::kNullOutput);
     }
+
+    SECTION("Weil zero insertion_index (PRN 38) returns kFaultDetected") {
+        // PRN 38 has insertion_index == 0 in weil_parameters.cpp.
+        // Regression test: construct_weil must return kFaultDetected, not silently
+        // skip the expansion and return kOk with a wrong spreading code.
+        std::array<uint8_t, kWeil10230ChipLength> out{};
+        PrnId prn38(38);
+        CHECK(weil_gen.generate_primary(prn38, out) == PrnStatus::kFaultDetected);
+    }
 }

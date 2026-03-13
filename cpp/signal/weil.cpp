@@ -51,6 +51,10 @@ PrnStatus WeilGenerator::construct_weil(
     uint16_t           insertion_index,
     std::span<uint8_t> out) noexcept {
     
+    if (insertion_index == 0U) [[unlikely]] {
+        return PrnStatus::kFaultDetected;  // FIZ-1
+    }
+
     const auto legendre = get_cached_legendre(prime);
     if (legendre.empty()) [[unlikely]] {
         return PrnStatus::kFaultDetected;  // FIZ-1
