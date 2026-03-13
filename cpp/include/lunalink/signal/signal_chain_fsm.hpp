@@ -35,6 +35,9 @@ class SignalChainFsm {
      * @brief Record a frame-level fault (Zone 2). Escalates to kSafeMode (Zone 3)
      * after two consecutive frame faults. [FM-032]
      * Returns false if escalation to kSafeMode occurred.
+     *
+     * @pre state() == kOperational. If called from any other state, emits FIZ-3
+     *      telemetry and locks to kSafeMode to contain radiation-induced CFI diversion.
      */
     [[nodiscard]] bool on_frame_fault() noexcept;
 

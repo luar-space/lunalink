@@ -46,8 +46,8 @@ change control.  LunaLink SCIs are listed below.
      - ``CMakeLists.txt``, ``pyproject.toml``, ``Taskfile.yml``
      - Build definitions and task runner
    * - Toolchain manifest
-     - ``toolchain.lock``
-     - Exact compiler, binutils, and standard-library versions for the flight build
+     - CI build artifact log (``toolchain.lock`` scoped to flight programme adoption)
+     - Compiler version logged on every CI run; formal manifest at flight adoption
    * - Dependency lockfile
      - ``uv.lock``
      - SHA-pinned resolution of all Python and Python-build dependencies
@@ -212,7 +212,7 @@ directly affects the binary produced:
      - Pinning Mechanism
      - Notes
    * - C++ compiler (GCC/Clang)
-     - ``toolchain.lock`` + CI version assertion
+     - CI build artifact log; formal ``toolchain.lock`` at flight adoption
      - Any upgrade is a formal change-controlled event requiring full re-verification
    * - CMake
      - Minimum version in ``CMakeLists.txt``; CI runner image pinned

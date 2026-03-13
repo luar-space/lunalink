@@ -29,14 +29,6 @@ math(EXPR LUNALINK_BUILD_TIMESTAMP_J2000 "${LUNALINK_BUILD_TIMESTAMP_UNIX} - 946
 # Compute SCI header CRC-32 over (git_sha[41] + lsis_version[16] + build_timestamp[4]).
 execute_process(
     COMMAND python3 -c
-        "import struct; sha = b'${LUNALINK_GIT_SHA_RAW}'[:40] + b'\\x00'; ver = b'LSIS-V1.0-2025\\x00\\x00'; ts = struct.pack('<I', ${LUNALINK_BUILD_TIMESTAMP_J2000}); data = sha + ver + ts; crc = 0xFFFFFFFF;\n[crc := (crc >> 1) ^ (0xEDB88320 if (crc & 1) else 0) for _ in range(8) for b in [data[i] for i in range(len(data))][0:0] or (crc := crc ^ b,)]; print(hex(0))"
-    OUTPUT_VARIABLE LUNALINK_SCI_CRC32_HEX
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    ERROR_QUIET
-)
-# Simpler CRC computation using a separate inline script:
-execute_process(
-    COMMAND python3 -c
         "import struct; d=b'${LUNALINK_GIT_SHA_RAW}'[:40]+b'\\x00'+b'LSIS-V1.0-2025\\x00\\x00'+struct.pack('<I',${LUNALINK_BUILD_TIMESTAMP_J2000}); c=0xFFFFFFFF;\nexec('for x in d:\\n  c^=x\\n  for _ in range(8):\\n    c=(c>>1)^(0xEDB88320 if c&1 else 0)'); print(hex(~c&0xFFFFFFFF))"
     OUTPUT_VARIABLE LUNALINK_SCI_CRC32_HEX
     OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -112,7 +104,6 @@ add_library(lunalink_core
     cpp/signal/legendre.cpp
     cpp/signal/weil.cpp
     cpp/signal/weil_parameters.cpp
-    cpp/signal/bch_table.cpp
     cpp/signal/sci_header.cpp
     cpp/signal/post.cpp
     cpp/signal/signal_chain_fsm.cpp

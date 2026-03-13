@@ -302,6 +302,22 @@ tasks:
       - task: docs-build
     silent: false
 
+  recertify:
+    desc: >-
+      Run all recertification gates locally and write
+      docs/assurance/recertification_record.rst.
+      Override defaults with: MILESTONE=PDR REASON="..." AUTHORITY="..."
+    vars:
+      MILESTONE: '{{default "Periodic" .MILESTONE}}'
+      REASON: '{{default "Local recertification run" .REASON}}'
+      AUTHORITY: '{{default "" .AUTHORITY}}'
+    cmd: >-
+      bash scripts/recertify_local.sh
+      --milestone "{{.MILESTONE}}"
+      --reason "{{.REASON}}"
+      --authority "{{.AUTHORITY}}"
+    silent: false
+
   default:
     desc: Run all quality checks (lint, test, docs).
     cmds:

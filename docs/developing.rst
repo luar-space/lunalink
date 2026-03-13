@@ -82,6 +82,20 @@ Run ``task --list`` to see all tasks. The most common ones are:
      - Serve the documentation locally with live reload on port 8000.
    * - ``task install-hooks``
      - Register the git pre-commit hook in ``.githooks/``.
+   * - ``task swifi``
+     - Build and run the SWIFI fault-injection test suite (``LUNALINK_FAULT_INJECTION=1``).
+   * - ``task sanitize``
+     - Build and run C++ tests with AddressSanitizer + UBSan.
+   * - ``task tidy``
+     - Run clang-tidy HICPP static analysis on all C++ signal sources.
+   * - ``task wcet-profile``
+     - Build in Release mode and run ``[performance]`` benchmarks to check WCET tolerance.
+   * - ``task ci-checks``
+     - Full local CI suite: build, lint, flags, test-cpp, swifi, coverage, tidy, test-py, sanitize, docs.
+   * - ``task recertify``
+     - Run all recertification gates locally and write
+       ``docs/assurance/recertification_record.rst``.
+       Override defaults: ``task recertify MILESTONE=PDR REASON="..." AUTHORITY="..."``
 
 Daily Workflow
 --------------
@@ -182,32 +196,138 @@ To re-run the checks manually without committing::
 CI Pipeline
 -----------
 
-GitHub Actions workflows run on every push to ``main``, on every tag 
-matching ``v*``, and on all pull requests. The pipeline is split into 
-independent workflows for granular status reporting:
+GitHub Actions workflows run on every push to ``main``, on every tag
+matching ``v*``, and on all pull requests.  The pipeline is split into
+independent workflows for granular status reporting.
 
 .. list-table::
    :header-rows: 1
-   :widths: 25 75
+   :widths: 22 13 65
 
    * - Workflow
+     - Trigger
      - Description
-   * - **Python Tests**
-     - ``pytest`` run on Python 3.12, 3.13, and 3.14 with coverage enforcement (≥ 100%).
-   * - **Lint**
-     - ``ruff format --check``, ``ruff check``, and ``pyright`` type checking.
-   * - **C++ Tests**
-     - CMake + Ninja build and execution of Catch2 unit tests.
-   * - **Sanitizers**
-     - C++ tests recompiled with ``-fsanitize=address,undefined`` to catch UB at runtime.
-   * - **clang-tidy**
-     - Static analysis of C++ core sources for MISRA/High-Integrity compliance.
-   * - **C++ Coverage**
-     - gcov instrumentation and reporting; ≥ 90% line coverage enforced.
-   * - **Docs Check**
-     - Verification of Sphinx documentation build (warnings as errors).
-   * - **Docs Deploy**
-     - Automatic deployment of documentation to GitHub Pages upon merge to ``main``.
+   * - **Lint** (``lint.yml``)
+     - push, PR, tag
+     - ``ruff``, ``pyright``, ``cppcheck``; S10 build-flags gate
+       (``scripts/check_build_flags.py``).  Uploads ``cppcheck_report.rst``.
+   * - **C++ Tests** (``test-cpp.yml``)
+     - push, PR, tag
+     - CMake + Ninja build; Catch2 unit tests via CTest.
+   * - **Python Tests** (``test-python.yml``)
+     - push, PR, tag
+     - ``pytest`` on Python 3.12, 3.13, and 3.14 (matrix).
+   * - **SWIFI** (``swifi.yml``)
+     - push, PR, tag
+     - Fault-injection test suite compiled with ``LUNALINK_FAULT_INJECTION=1``;
+       100% single-bit fault detection coverage enforced.
+   * - **Sanitizers** (``sanitize.yml``)
+     - push, PR, tag
+     - C++ tests recompiled with ``-fsanitize=address,undefined``; any
+       sanitizer report is a blocking failure.
+   * - **C++ Coverage** (``coverage-cpp.yml``)
+     - push, PR, tag
+     - LLVM source-based line coverage; HTML report generated.
+   * - **MC/DC Coverage** (``coverage-mcdc.yml``)
+     - push, PR (main)
+     - LLVM MC/DC instrumentation; ``llvm-cov report --show-mcdc-summary``;
+       100% MC/DC on ``[LSIS-AFS-*]``-tagged functions required.
+   * - **clang-tidy** (``tidy.yml``)
+     - push, PR, tag
+     - Full HICPP clang-tidy analysis on all ``cpp/signal/`` sources;
+       zero violations required.  Uploads ``static_analysis_report.rst``.
+   * - **WCET Profile** (``wcet.yml``)
+     - push, PR (main)
+     - Release build; ``[performance]`` benchmarks; ±2% intra-run
+       input-class spread check.  Uploads ``wcet_profile.rst``.
+   * - **Docs Check** (``docs-check.yml``)
+     - push, PR, tag
+     - Sphinx build with ``-W`` (warnings as errors).
+   * - **Docs Deploy** (``docs-pages.yml``)
+     - push to main, manual
+     - Assembles assurance artefacts and deploys to GitHub Pages.
 
 Ninja is installed on all CI runners so both the Python extension build
 (via scikit-build-core) and the C++ test build use it automatically.
+
+Recertification
+---------------
+
+In addition to the continuous integration workflows above, the project
+provides an **on-demand recertification** facility: a single authorised
+run that exercises every assurance gate against a specified git ref and
+emits a dated, signed-off RST record suitable for attachment to a
+milestone review (PDR, CDR, SAR, flight baseline, etc.).
+
+**When to use it:**
+
+* Before cutting a formal baseline tag (``v*``).
+* To certify a hotfix branch before merging to ``main``.
+* As evidence for a programme milestone review (SRR/PDR/CDR/SAR).
+* Periodically as a scheduled quality check on long-lived feature branches.
+
+**Running locally** (9 of 10 gates; MC/DC coverage requires dedicated CI
+toolchain):
+
+.. code-block:: bash
+
+    task recertify MILESTONE=PDR REASON="Pre-PDR baseline" AUTHORITY="Your Name"
+
+Runs all gates sequentially, prints a coloured per-gate summary, and
+writes ``docs/assurance/recertification_record.rst``.  Exit code is non-zero
+if any gate fails.  Per-gate logs are written to ``build/recertify-logs/``.
+
+**Running in CI** (all 10 gates in parallel):
+
+Trigger ``workflow_dispatch`` on ``.github/workflows/recertify.yml`` from
+the GitHub Actions UI.  Inputs:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 18 82
+
+   * - Input
+     - Description
+   * - ``ref``
+     - Branch, tag, or full SHA to certify (e.g. ``main``, ``v1.2.0``,
+       ``abc1234``).
+   * - ``milestone``
+     - Lifecycle phase: ``SRR``, ``PDR``, ``CDR``, ``SAR``, ``Flight``,
+       ``Hotfix``, or ``Periodic``.
+   * - ``reason``
+     - Freetext reason (e.g. ``"Pre-CDR baseline certification"``).
+   * - ``authority``
+     - Authorising party name or role (appears in the signature block).
+
+All 10 gate jobs run in **parallel** regardless of each other's outcome —
+a failure in one never cancels the others.  The ``record`` job always runs
+last (``if: always()``), collects every gate outcome, and uploads the
+artifact:
+
+.. code-block:: text
+
+    recertification-record-<MILESTONE>-<short-SHA>
+
+**The record document** (``docs/assurance/recertification_record.rst``)
+contains:
+
+* Document ID, certified ref (branch + full SHA), milestone, timestamp,
+  authorising party.
+* Gate verdict table with specification references (SWE-108, SW-SAF-06, …).
+* **Overall verdict**: ``PASS`` when all gates pass; ``FAIL`` when any gate
+  fails; ``WARN`` when gates were skipped or cancelled.
+* Open items list for any non-``PASS`` gates.
+* Blank signature block for Lead Developer / IV&V / Programme Manager.
+
+To commit the record alongside a release tag::
+
+    task recertify MILESTONE=Flight REASON="Flight baseline v1.0.0" AUTHORITY="M. Rossi"
+    git add docs/assurance/recertification_record.rst
+    git commit -m "assurance: add Flight recertification record for v1.0.0"
+    git tag -s v1.0.0
+
+**Reuse in other projects:**  Copy ``scripts/gen_recertification_record.py``,
+``scripts/recertify_local.sh``, and ``.github/workflows/recertify.yml`` to
+any project.  The generator has no project-specific knowledge.  Update the
+``GATE_KEYS`` / ``GATE_LABELS`` / ``GATE_COMMANDS`` in ``recertify_local.sh``
+and the gate jobs in ``recertify.yml`` to match the target project's gate set.

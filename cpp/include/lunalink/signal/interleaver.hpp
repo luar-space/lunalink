@@ -20,9 +20,9 @@ inline constexpr uint16_t kInterleaverCols = 98;
 inline constexpr uint16_t kInterleaverSize = kInterleaverRows * kInterleaverCols; // 5880
 
 /**
- * @brief 60x98 Block Interleaver (LSIS-FID0-470).
+ * @brief 60x98 Block Interleaver. [LSIS-FID0-470]
  * Write row-wise, read column-wise.
- * 
+ *
  * Uses Class A Hardening: CFI sentinels and mirrored calculation.
  */
 [[nodiscard]] InterleaverStatus block_interleave(
@@ -30,7 +30,7 @@ inline constexpr uint16_t kInterleaverSize = kInterleaverRows * kInterleaverCols
     std::span<uint8_t>       out) noexcept;
 
 /**
- * @brief 60x98 Block De-interleaver.
+ * @brief 60x98 Block De-interleaver. [LSIS-FID0-470]
  * Write column-wise, read row-wise.
  */
 [[nodiscard]] InterleaverStatus block_deinterleave(

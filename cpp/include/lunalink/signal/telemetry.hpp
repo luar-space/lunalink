@@ -10,7 +10,9 @@ namespace lunalink::signal {
  */
 struct FaultPacket {
     uint32_t timestamp_ms;      // monotonic millisecond counter (HAL-provided)
-    uint8_t  fault_code;        // enum-class value of the originating fault status
+    uint8_t  fault_code;        // module-specific fault discriminator; FSM emits
+                                //   the destination state enum (e.g. kSafeMode = 0x99),
+                                //   watchdog emits kWatchdogLowerBoundFaultCode (0xCC)
     uint8_t  fiz_level;         // 1, 2, or 3
     uint8_t  originating_step;  // POST step (1-5), FSM state, or 0
     uint8_t  reserved;          // padding; must be 0x00

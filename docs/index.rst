@@ -23,9 +23,11 @@ LunaLink AFS reference implementation with C++ core and pybind11 bindings.
 
    assurance/mission_assurance
    assurance/fmea
+   assurance/fault_coverage
    assurance/safety_plan
    assurance/oss_assessment
    assurance/certification_delta
+   assurance/recertification_record
    assurance/static_analysis_report
    assurance/cppcheck_report
    assurance/srs

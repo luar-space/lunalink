@@ -42,7 +42,9 @@ All loops must have a fixed, verifiable upper bound. Recursion is forbidden.
 3. Cyclomatic Complexity & Single Exit Points
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *   **Complexity**: We enforce a limit of **10** per function.
-*   **Single Exit**: Functions utilize a single ``return`` statement.
+*   **Single Exit**: All ``[LSIS-AFS-*]``-tagged DSP functions shall have a single
+    return point.  Control-plane functions (FSM transitions, POST, PRN accessors)
+    are exempt where a guard-clause ``return`` improves fault containment clarity.
 
 *   **Explanation**: High cyclomatic complexity (the number of independent paths through code) leads to "hidden" execution branches that are exponentially difficult to test with 100% path coverage. In flight software, we enforce a limit of 10 to ensure the code remains human-auditable and that all logical outcomes can be verified through white-box testing. Complementing this, the **Single Exit Point** mandate ensures that functions return from only one location. This is critical for mission assurance because it guarantees that mandatory cleanup logic—such as stack scrubbing (physically erasing sensitive signal data) and reciprocal sanity checks—is always executed and cannot be bypassed by an accidental early ``return`` or ``break`` in the middle of a function.
 *   **Benefit**: Ensures that mandatory **Stack Scrubbing** and **Reciprocal Checks** are never bypassed.
@@ -50,18 +52,28 @@ All loops must have a fixed, verifiable upper bound. Recursion is forbidden.
 4. Bidirectional Traceability & Automated Compliance Matrix
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Every mission-critical function in ``cpp/signal/`` is tagged with its
-corresponding LSIS requirement ID (e.g., ``[LSIS-AFS-101]``). Traceability
-is **machine-verified**, not manually asserted.
+corresponding LSIS requirement ID (e.g., ``[LSIS-AFS-101]``). Tag
+density is enforced by the ``lint`` CI gate; bidirectional traceability
+is provided through the human-curated ``signal/compliance_matrix.rst``.
 
-*   **Explanation**: Every line of code in a flight-certified system must be justifiable against an external standard. Bidirectional traceability links each C++ function directly to a specific requirement ID in the LunaNet (LSIS) specification, and each requirement back to the exact test case that verifies it. This is not a manual process: LunaLink's ``scripts/verify_traceability.py`` script parses the LSIS specification, the ``cpp/signal/`` source tree, and the Catch2 test suite simultaneously to generate a **Compliance Matrix Report**, published to the **documentation site** (``gh-pages``) on every passing build for a stable, publicly accessible URL. The script itself is a blocking CI gate — if any ``[LSIS-AFS-*]``-tagged requirement has no corresponding implementation tag, or any implementation tag has no covering test, the build fails before deployment.
-*   **Compliance Matrix Content**: For every LSIS requirement ID, the report provides:
-
-    1. The requirement text extracted from the LSIS specification.
-    2. The exact ``file:line`` in ``cpp/signal/`` where it is implemented.
-    3. The exact Catch2 ``TEST_CASE`` name and ``file:line`` that verifies it.
-    4. The MC/DC coverage percentage for the implementing function.
-
-*   **Benefit**: Transforms compliance from a manual audit into a reproducible, machine-generated proof. An auditor can open the compliance matrix, click any requirement ID, and be taken directly to the implementation and its covering test — providing 100% traceable confidence at zero review overhead.
+*   **Explanation**: Every line of code in a flight-certified system must be
+    justifiable against an external standard.  Bidirectional traceability links
+    each C++ function directly to a specific requirement ID in the LunaNet (LSIS)
+    specification, and each requirement back to the exact test case that verifies it.
+*   **Current scope**: ``scripts/verify_traceability.py`` validates the LDPC matrix
+    CSV files against their embedded CRC-32 checksums and cross-checks the
+    ``signal/compliance_matrix.rst`` table for formatting consistency.  The
+    ``[LSIS-AFS-*]`` tags in the source headers (updated at Gateway 2) are the
+    traceable implementation markers; the ``signal/compliance_matrix.rst`` document
+    is the human-curated bidirectional traceability artefact for this release.
+*   **Gateway 4 deliverable**: Full automated compliance matrix generation — parsing
+    LSIS spec PDF, ``cpp/signal/`` source, and Catch2 test names simultaneously into
+    a machine-generated HTML report published to ``gh-pages`` — is scoped to
+    Gateway 4.  A blocking CI gate on tag density (all signal-chain headers must
+    carry ``[LSIS-AFS-*]`` annotations) is already enforced by the ``lint`` CI job.
+*   **Benefit**: Transforms compliance from a manual audit into a reproducible,
+    traceable record.  An auditor can cross-reference ``signal/compliance_matrix.rst``
+    against the implementation tags in headers to verify bidirectional coverage.
 
 Mission-Critical Coding Patterns
 --------------------------------
@@ -165,14 +177,32 @@ buffers.
 *   **Implementation**: DSP blocks perform a pointer-range check at the start of the function. If an overlap is detected, the function halts and returns ``kFaultDetected``.
 *   **Benefit**: Prevents catastrophic feedback loops and pointer-based memory corruption that standard CFI cannot catch.
 
-12. Data-in-Transit Protection (CCSDS/ESA)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Data structures transferred between major DSP pipeline stages must carry
+12. Data-in-Transit Protection (CCSDS/ESA) — Flight Integration Requirement
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Data structures transferred between major DSP pipeline stages shall carry
 a **Handoff CRC** verified by the consumer before processing begins.
 
-*   **Explanation**: LunaLink's hardening strategy covers three distinct threat surfaces. *Data-at-Rest* is protected by Memory Section Pinning and JIT Integrity Checks (see §8, §10). *Data-in-Processing* is protected by Variable Mirroring and TMR (see §2, §3). The third surface—*Data-in-Transit*—is equally vulnerable: an SEU striking a pointer or a bus latch during a handoff between the LDPC Encoder, the Interleaver, and the Modulator can silently corrupt the payload without triggering any of the in-processing guards. LunaLink mandates that every inter-block transfer structure includes a ``handoff_crc`` header field (CRC-16/CCITT). The producing block computes and embeds this value immediately before releasing the buffer. The consuming block **must** verify it before touching any payload byte. If the CRC fails, the consumer returns ``kFaultDetected`` and the frame is scrubbed at the Frame Isolation Boundary (see :ref:`fault-isolation`).
-*   **Implementation**: ``DspFrameHeader::handoff_crc`` is computed by the producer and verified by the first line of each consumer's entry function.
-*   **Benefit**: Closes the Data-in-Transit threat surface; any SEU on a bus or pointer during a pipeline handoff is detected before it can propagate.
+*   **Explanation**: LunaLink's hardening strategy covers three distinct threat
+    surfaces.  *Data-at-Rest* is protected by Memory Section Pinning and JIT
+    Integrity Checks (see §8, §10).  *Data-in-Processing* is protected by Variable
+    Mirroring and TMR (see §2, §3).  The third surface—*Data-in-Transit*—is equally
+    vulnerable: an SEU striking a pointer or a bus latch during a handoff between the
+    LDPC Encoder, the Interleaver, and the Modulator can silently corrupt the payload
+    without triggering any of the in-processing guards.
+*   **Flight requirement**: In the RTOS multi-task deployment every inter-block
+    transfer structure shall include a ``DspFrameHeader::handoff_crc`` field
+    (CRC-16/CCITT), computed by the producing task immediately before releasing the
+    buffer.  The consuming task shall verify this field as the first operation of its
+    entry function.  A CRC mismatch returns ``kFaultDetected`` and scrubs the frame
+    at the Frame Isolation Boundary (see :ref:`fault-isolation`).
+*   **Digital twin scope**: The digital twin executes the entire signal chain in a
+    single task with no shared-memory handoff risk.  The ``DspFrameHeader`` struct
+    and ``handoff_crc`` field are not instantiated in this release; the mechanism is
+    documented here as a **required flight integration step** and will be implemented
+    at flight programme adoption.
+*   **Benefit**: Closes the Data-in-Transit threat surface for the multi-task RTOS
+    deployment; any SEU on a bus or pointer during a pipeline handoff is detected
+    before it can propagate.
 
 .. _isr-safety:
 
@@ -182,8 +212,22 @@ Mirrored variables, TMR triplets, and CFI sentinel counters are **not
 inherently atomic** and must be protected from preemptive interrupts.
 
 *   **Explanation**: LunaLink targets RTOS environments (RTEMS, VxWorks) with preemptive scheduling and hardware interrupt lines. If an Interrupt Service Routine (ISR) fires between the write to a mirrored variable ``x`` and the write to its inverse ``x_mir``, the integrity check performed after the ISR returns will see a momentarily inconsistent pair and fire a false-positive fault. In a high-radiation environment, a false positive is nearly as dangerous as a missed fault: it can cause unnecessary safe-mode transitions during critical signal transmission windows. LunaLink mandates that all atomic invariants—mirror-pair writes, TMR triple writes, and CFI sentinel increments—are wrapped in **Critical Sections** (``LUNALINK_CRITICAL_ENTER`` / ``LUNALINK_CRITICAL_EXIT``). These macros map to the target RTOS's interrupt-masking primitives (e.g., ``rtems_interrupt_local_disable`` on RTEMS) and to compiler barriers (``asm volatile("" ::: "memory")``) on the host-native build for Digital Twin verification.
-*   **Implementation**: The macros ``LUNALINK_CRITICAL_ENTER`` and ``LUNALINK_CRITICAL_EXIT`` bracket every atomic invariant write. ISR handlers that read LunaLink state are restricted to polling ``volatile`` status flags; they must never write into TMR or mirrored structures directly.
-*   **Benefit**: Eliminates false-positive fault events caused by RTOS preemption; ensures the integrity of all soft-TMR and CFI invariants in a multi-task environment.
+*   **Implementation**: The macros ``LUNALINK_CRITICAL_ENTER`` and
+    ``LUNALINK_CRITICAL_EXIT`` are declared in
+    ``cpp/include/lunalink/signal/safety.hpp``.
+
+    * **Digital twin** (single-threaded, no RTOS): the macros expand to ``((void)0)``
+      — no-ops that impose zero overhead.  The single-task execution model eliminates
+      preemption risk; all assertions in this release are verified under this model.
+    * **Flight** (RTEMS or equivalent RTOS): the flight HAL overrides these macros
+      before including ``safety.hpp``, replacing the no-ops with platform-specific
+      interrupt masking (e.g., ``rtems_interrupt_local_disable`` / ``_enable``).
+      ISR handlers that read LunaLink state are restricted to polling ``volatile``
+      status flags; they must never write into TMR or mirrored structures directly.
+*   **Benefit**: Eliminates false-positive fault events caused by RTOS preemption;
+    ensures the integrity of all soft-TMR and CFI invariants in a multi-task
+    environment.  The no-op default makes the digital twin fully deterministic
+    without requiring RTOS stubs.
 
 State Machine Robustness (NASA/ESA)
 ------------------------------------
@@ -256,7 +300,7 @@ branches exist in any ``[LSIS-AFS-*]``-tagged DSP function.
 The branchless mandate is not asserted — it is **measured and reported**
 as a formal deliverable, published to the documentation site.
 
-*   **Explanation**: Claiming a function is branchless is a design intent; proving it requires measurement. LunaLink's CI pipeline instruments the Digital Twin build with hardware performance counters (``perf`` on Linux, ``mach_absolute_time`` on macOS) to produce a **WCET Profile Report** (``docs/assurance/wcet_profile.rst``) for every ``[LSIS-AFS-*]``-tagged function. For each function, the report records the cycle count for three adversarial input classes: all-zeros payload, all-ones payload, and a pseudo-random payload. In a correctly branchless implementation, all three measurements must fall within a **±2% tolerance band** — a threshold tight enough to catch any data-dependent branch that slipped through code review.
+*   **Explanation**: Claiming a function is branchless is a design intent; proving it requires measurement. LunaLink's CI pipeline runs the Catch2 benchmark suite and produces a **WCET Profile Report** (``docs/assurance/wcet_profile.rst``) for every ``[LSIS-AFS-*]``-tagged function. Where benchmark variants exist for multiple adversarial input classes (all-zeros, all-ones, pseudo-random), the CI step computes the spread ``(max − min) / min × 100`` across those samples. A correctly branchless function shows near-zero spread; a data-dependent branch widens the spread beyond the **±2% tolerance band**.
 
     .. code-block:: text
 
@@ -270,8 +314,18 @@ as a formal deliverable, published to the documentation site.
         └─────────────────────┴──────────┴──────────┴──────────┴──────────┘
         VERDICT: PASS — all classes within ±2% tolerance band.
 
-*   **Mandate**: Any function whose WCET profile exceeds the ±2% tolerance band is a **blocking CI failure**. The offending function must be refactored to remove data-dependent branches before the build is green. The WCET profile report is published to the **documentation site** (``gh-pages``) on every passing build, giving it a stable, permanent, publicly accessible URL. It is not committed to the ``main`` branch — generated outputs belong on ``gh-pages``, not in code history.
-*   **Benefit**: Converts the branchless mandate from a code-review assertion into a machine-verified, reproducible proof — the exact evidence a NASA/ESA real-time scheduling review requires.
+    .. note::
+
+       The ±2% check is an **intra-run input-sensitivity check**: it detects data-dependent
+       branches within a single CI run by comparing timing across adversarial input classes.
+       It is **not** a build-to-build regression check against a stored baseline.
+       Full inter-build baseline comparison (WCET regression tracking) is scoped to
+       Gateway 3, when multi-class benchmark variants are added for all tagged functions.
+       Functions with only a single timing sample receive a ``WARN`` verdict; the build
+       is not blocked, but adding a multi-class variant is mandatory before Gateway 3 exit.
+
+*   **Mandate**: Any function where multiple input-class variants exist and the spread exceeds ±2% is a **blocking CI failure**, indicating a data-dependent branch. The WCET profile report is published to the **documentation site** (``gh-pages``) on every passing build.
+*   **Benefit**: Converts the branchless mandate from a code-review assertion into a measurement-backed CI check — escalating to full inter-build baseline tracking at Gateway 3.
 
 3. Temporal Windowed Watchdogs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -295,7 +349,12 @@ safety-critical data structures.
     1. **SCI Header Integrity**: Verify the CRC of the embedded Software Configuration Item header (see Supply Chain §3). A mismatch means the flight binary itself is corrupt — no further POST steps are attempted.
     2. **LUT CRC Verification**: Run ``verify_integrity()`` on every ``LdpcCsrMatrix`` and BCH codebook. These are the reference data for all signal generation; corrupted LUTs make every subsequent check meaningless.
     3. **TMR Triplet Consistency**: Verify that all ``TmrValue<T>`` instances read the same value from all three copies. Initialise ``repair()`` on any mismatch detected at boot, before any operational code has run.
-    4. **Stack Sentinel Check**: Verify that the stack guard region (painted with a known pattern at link-time) has not been overwritten, establishing that the previous execution did not overflow the stack.
+    4. **Read-Only Data Integrity Check**: Verify that compile-time constants in
+       ``.rodata`` (painted with a known pattern at compile time) have not been
+       corrupted by a radiation event affecting the read-only data segment.  This
+       is distinct from stack-overflow detection: in flight, a linker-script-painted
+       sentinel at ``_stack_limit`` provides stack-overflow detection; the digital
+       twin implements ``.rodata`` integrity verification only.
     5. **CFI Baseline**: Execute a single no-op pass through the CFI framework to verify that the magic-pattern constants embedded in the binary match their expected values (i.e., that the constants themselves have not been corrupted in PROM/MRAM).
 
 *   **Benefit**: Guarantees that the signal chain boots into a verified, coherent state. Prevents the scenario where a radiation strike during a watchdog-reset cycle causes the system to resume from a pre-corrupted baseline.
@@ -329,9 +388,26 @@ All external dependencies are pinned by **Commit Hash (SHA)**.
 The compiler, linker, and standard library are pinned to exact versions
 and treated as change-controlled flight artifacts.
 
-*   **Explanation**: Pinning source dependencies is necessary but not sufficient — the tool that transforms source into machine code is an equally critical supply chain component. Two different versions of GCC can produce observably different code generation for the same C++ source: loop reordering, struct padding, and inlining heuristics all change between releases. In a system where the CFI sentinel counter relies on the compiler generating a specific number of instructions per loop iteration, an uncontrolled compiler upgrade is a silent regression. LunaLink pins the exact compiler version (e.g., ``arm-rtems-gcc 12.3.1``), the binutils version, and the C++ standard library version in the build environment manifest (``toolchain.lock``). Any compiler upgrade is a **formal change-controlled event** that requires: a full re-run of all MC/DC verification data, a re-comparison of the generated assembly for all ``[LSIS-AFS-*]``-tagged functions against the previous baseline, and a new reproducible-build MD5 certification.
-*   **Implementation**: The CI pipeline asserts ``$(CC) --version`` against the pinned version string before any compilation step. A version mismatch is a **blocking** CI failure. The toolchain manifest (``toolchain.lock``) is committed to git; generated build artifacts are not.
-*   **Benefit**: Eliminates silent safety regressions introduced by compiler upgrades; ensures the verified binary and the re-buildable binary are produced by identical toolchains.
+*   **Explanation**: Pinning source dependencies is necessary but not sufficient —
+    the tool that transforms source into machine code is an equally critical supply
+    chain component.  Two different versions of GCC can produce observably different
+    code generation for the same C++ source: loop reordering, struct padding, and
+    inlining heuristics all change between releases.  In a system where the CFI
+    sentinel counter relies on the compiler generating a specific number of
+    instructions per loop iteration, an uncontrolled compiler upgrade is a silent
+    regression.  The target compiler for flight use is ``arm-rtems-gcc 12.3.1`` or
+    equivalent; any compiler upgrade shall be a **formal change-controlled event**
+    requiring: a full re-run of all MC/DC verification data, a re-comparison of the
+    generated assembly for all ``[LSIS-AFS-*]``-tagged functions against the previous
+    baseline, and a new reproducible-build MD5 certification.
+*   **Implementation**: The compiler version is logged to the CI build artifact on
+    every run, providing a time-stamped record of the toolchain used for each build.
+    Formal ``toolchain.lock`` file management — committing an explicit compiler version
+    manifest and asserting it in CI as a blocking gate — is scoped to flight programme
+    adoption.
+*   **Benefit**: Eliminates silent safety regressions introduced by compiler upgrades;
+    ensures the verified binary and the re-buildable binary are produced by identical
+    toolchains.
 
 3. Software Configuration Item (SCI) Version Register
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -488,16 +564,39 @@ Demonstration of a pattern is.
 
 *   **Safety Coverage Report**: The SWIFI suite produces a machine-readable fault coverage report on every passing CI run, published to the **documentation site** (``gh-pages``) for a stable, permanent, publicly accessible URL. It is not committed to the ``main`` branch. The report records, for each injection scenario: the fault injected, the detection mechanism that fired, the cycle count from injection to detection, and pass/fail. The headline metric is **Single-Bit Fault Detection Coverage**: the percentage of injected single-bit faults that were correctly detected and contained before affecting the output. This must be **100%**; any regression is a blocking CI failure.
 *   **Mandate**: Every new hardening pattern added to this document **must** be accompanied by a corresponding SWIFI test case before the pattern is considered verified. A pattern without a SWIFI test is classified as "documented but unverified" and is not admissible as evidence in a safety case review.
-*   **Mutation Testing**: Complementing SWIFI, LunaLink's CI pipeline runs mutation testing (via ``mutate-cpp`` or equivalent) against ``[LSIS-AFS-*]``-tagged functions. Mutation testing deliberately introduces source-level faults (operator flips, condition negations) and verifies the test suite kills every mutant. This proves that the MC/DC test vectors are not only achieving coverage but are semantically sensitive to the logic they cover.
-*   **Benefit**: Converts the hardening specification from a set of engineering claims into a set of empirically verified, reproducible safety assertions. The ``fault_coverage.rst`` report is the single most important artifact in this safety case: 100% single-bit fault detection, measured, reproducible, and machine-generated.
+*   **Mutation testing (Gateway 4 planned deliverable)**: A planned CI addition will
+    run mutation testing (via ``mutate-cpp`` or equivalent) against
+    ``[LSIS-AFS-*]``-tagged functions.  Mutation testing deliberately introduces
+    source-level faults (operator flips, condition negations) and verifies the test
+    suite kills every mutant.  This proves that the MC/DC test vectors are not only
+    achieving coverage but are semantically sensitive to the logic they cover.
+    Integration is planned for Gateway 4 exit; the SWIFI suite provides the primary
+    fault-detection coverage evidence for this release.
+*   **Benefit**: Converts the hardening specification from a set of engineering claims
+    into a set of empirically verified, reproducible safety assertions.  The
+    ``fault_coverage.rst`` report records 100% single-bit fault detection coverage
+    measured by the SWIFI suite.
 
-7. Golden Test Vector Suite (CCSDS / LunaNet ICD)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LunaLink publishes a **versioned, machine-readable test vector library** that
+7. Golden Test Vector Suite (CCSDS / LunaNet ICD) — Gateway 3 Deliverable
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+LunaLink will publish a **versioned, machine-readable test vector library** that
 constitutes the reference for the entire LSIS ecosystem.
 
-*   **Explanation**: A reference implementation has two obligations: it must be correct, and it must enable others to verify their own correctness against it. LunaLink fulfills the second obligation by publishing a comprehensive, versioned test vector library (``tests/vectors/``) in JSON format. The library is the normative reference: if a hardware receiver or another software implementation disagrees with a LunaLink vector, the vector is authoritative until proven otherwise by a spec errata. Every vector is tagged with the LSIS requirement IDs it exercises and the spec version it was generated against.
-*   **Vector Categories**:
+*   **Status**: The test vector suite is a **Gateway 3 design specification**.
+    ``tests/generate_test_vectors.py`` provides the scaffolding for vector
+    generation.  The ``tests/vectors/`` directory will be created and populated at
+    Gateway 3 exit.  This section documents the intended design so that the
+    implementation matches the published specification.
+
+*   **Design intent**: A reference implementation has two obligations: it must be
+    correct, and it must enable others to verify their own correctness against it.
+    LunaLink will fulfil the second obligation by publishing a comprehensive,
+    versioned test vector library in JSON format.  The library will be the normative
+    reference: if a hardware receiver or another software implementation disagrees
+    with a LunaLink vector, the vector is authoritative until proven otherwise by a
+    spec errata.
+
+*   **Planned vector categories**:
 
     .. list-table::
        :header-rows: 1
@@ -512,15 +611,18 @@ constitutes the reference for the entire LSIS ecosystem.
        * - **Corner Case — Min Power**
          - Frames at the minimum received power level (−160 dBW); verifies that the SNR margin of the coding chain is sufficient without clipping or saturation.
        * - **Corner Case — Poisoned Nav Data**
-         - Frames with a structurally valid CRC and valid LDPC codeword but semantically invalid navigation fields (e.g., out-of-range ephemeris values). Verifies that receivers detect the semantic fault rather than silently accepting the data.
+         - Frames with a structurally valid CRC and valid LDPC codeword but semantically invalid navigation fields (e.g., out-of-range ephemeris values).
        * - **Fault Injection**
-         - Frames with deliberate single-bit errors at known positions in the BCH-protected fields; verifies that decoders correct exactly those bits and no others.
+         - Frames with deliberate single-bit errors at known positions in the BCH-protected fields.
        * - **Boundary**
          - Frames at the first and last valid PRN ID, minimum and maximum Subframe ID, and at every rollover boundary for the time-of-week counter.
 
-*   **Format**: Each vector is a self-describing JSON object containing the input parameters, the expected output at each pipeline stage, the LSIS requirement IDs exercised, and the LunaLink git commit SHA used to generate it. Vectors are immutable once published; new spec versions create new vector sets rather than overwriting existing ones.
-*   **Versioning**: The vector library is versioned independently (``vectors/v1.0/``, ``vectors/v1.1/``, ...). Vectors are **committed to git by a deliberate human action** — never auto-generated by CI. CI validates the committed vectors on every run and fails if the implementation drifts from them. If a spec update requires new vectors, an engineer runs ``task generate-vectors``, reviews the diff, and commits with an explicit change-controlled message. Large vector files use **Git LFS** to keep the repository lightweight.
-*   **Benefit**: Establishes LunaLink as the normative reference for the LSIS ecosystem; enables any hardware or software implementation to validate their own compliance against a single, authoritative, machine-readable source.
+*   **Format**: Each vector will be a self-describing JSON object containing the
+    input parameters, the expected output at each pipeline stage, the LSIS
+    requirement IDs exercised, and the LunaLink git commit SHA used to generate it.
+*   **Benefit**: Establishes LunaLink as the normative reference for the LSIS
+    ecosystem; enables any hardware or software implementation to validate their own
+    compliance against a single, authoritative, machine-readable source.
 
 Path to Full NPR 7150.2D Certification
 ---------------------------------------

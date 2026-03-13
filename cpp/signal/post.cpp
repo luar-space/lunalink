@@ -4,6 +4,7 @@
 #include "lunalink/signal/ldpc_tables.hpp"
 #include "lunalink/signal/prn.hpp"
 #include "lunalink/signal/safety.hpp"
+#include "lunalink/signal/codebook_checksums.hpp"
 
 #include <array>
 #include <cstdint>
@@ -19,15 +20,18 @@ namespace {
     return tmr.vote() == kTestValue;
 }
 
-// Step 4: Stack sentinel pattern painted at link time.
-// constinit guarantees zero-initialisation is never replaced by a runtime call.
-// The pattern is chosen to be detectable if memory is zeroed or corrupted.
-alignas(16) constinit const std::array<uint32_t, 4> kStackSentinel = {
+// Step 4: .rodata integrity sentinel.
+// constinit ensures zero-initialisation is never replaced by a runtime call,
+// placing this array in the .rodata (read-only data) segment.
+// This verifies that radiation events have not corrupted compile-time constants
+// in the .rodata segment.  This is DISTINCT from stack-overflow detection, which
+// requires a flight linker script to paint the stack guard region at _stack_limit.
+alignas(16) constinit const std::array<uint32_t, 4> kRodataIntegritySentinel = {
     0xDEADBEEFU, 0xDEADBEEFU, 0xDEADBEEFU, 0xDEADBEEFU
 };
 
-[[nodiscard]] bool post_verify_stack_sentinel() noexcept {
-    for (const auto val : kStackSentinel) {
+[[nodiscard]] bool post_verify_rodata_constants() noexcept {
+    for (const auto val : kRodataIntegritySentinel) {
         if (val != 0xDEADBEEFU) { return false; }
     }
     return true;
@@ -53,11 +57,15 @@ PostResult run_post() noexcept {
     if (!ldpc_ok) {
         return {PostStatus::kFaultDetected, 2};  // FIZ-3
     }
-    // BCH and Weil codebook checksums: verify non-zero (indicates computation ran).
+    // BCH and Weil codebook checksums: compare against ground-truth golden constants.
+    // Non-zero guard alone only detects total table destruction; equality comparison
+    // detects single-bit SEU corruption consistent with [SW-SAF-02, CBIT-AFS-PRN].
     const uint64_t bch_crc = bch_codebook_checksum();
     const uint64_t w10_crc = weil10230_codebook_checksum();
     const uint64_t w15_crc = weil1500_codebook_checksum();
-    if (bch_crc == 0U || w10_crc == 0U || w15_crc == 0U) {
+    if (bch_crc != kBchCodebookChecksum ||
+        w10_crc != kWeil10230Checksum   ||
+        w15_crc != kWeil1500Checksum) {
         return {PostStatus::kFaultDetected, 2};  // FIZ-3
     }
 
@@ -66,8 +74,8 @@ PostResult run_post() noexcept {
         return {PostStatus::kFaultDetected, 3};  // FIZ-3
     }
 
-    // Step 4: Stack sentinel integrity.
-    if (!post_verify_stack_sentinel()) {
+    // Step 4: .rodata integrity (compile-time constant corruption detection).
+    if (!post_verify_rodata_constants()) {
         return {PostStatus::kFaultDetected, 4};  // FIZ-3
     }
 

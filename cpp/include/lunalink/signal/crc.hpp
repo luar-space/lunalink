@@ -18,21 +18,21 @@ enum class CrcStatus : uint8_t {
 inline constexpr uint8_t kCrc24Bits = 24;
 
 /**
- * @brief Calculate 24-bit CRC (CRC-24Q) per LSIS-FID0-467.
+ * @brief Calculate 24-bit CRC (CRC-24Q). [LSIS-FID0-467]
  * Polynomial: G(X) = (1+X)P(X) = 0x864CFB.
  * Seed: 0.
  * Bit ordering: MSB first.
- * 
+ *
  * @param in Input bit sequence (one bit per byte, 0 or 1).
  * @param out_crc Pointer to 24-bit output (3 bytes or 24 bit-bytes).
- * @return CrcStatus 
+ * @return CrcStatus
  */
 [[nodiscard]] CrcStatus crc24_calculate(
     std::span<const uint8_t> in,
     std::span<uint8_t, 24ULL> out_crc) noexcept;
 
 /**
- * @brief Hardened CRC verification.
+ * @brief Hardened CRC verification. [LSIS-FID0-467]
  * @return true if CRC matches.
  */
 [[nodiscard]] bool crc24_verify(

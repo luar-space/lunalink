@@ -5,6 +5,33 @@
 #include <span>
 
 /**
+ * @brief Critical-section macros for ISR-safe atomic invariant writes.
+ *
+ * In the **digital twin** (single-threaded, no RTOS), these expand to no-ops.
+ * In **flight** (RTEMS or equivalent RTOS), the flight HAL must define these
+ * macros with platform-specific interrupt masking (e.g., RTEMS irq_disable /
+ * irq_enable) **before** this header is included.
+ *
+ * These macros bracket every atomic invariant write involving TMR triplets,
+ * mirrored variables, and CFI sentinel counters to prevent false-positive fault
+ * events caused by RTOS preemption.  [SW-SAF-02]
+ *
+ * @par Flight HAL integration note
+ * The `#ifndef` guard means the flight HAL header providing the overriding
+ * definitions must appear earlier in the include chain than this file.  The
+ * recommended pattern is to add a top-level flight BSP header that defines
+ * `LUNALINK_CRITICAL_ENTER` / `LUNALINK_CRITICAL_EXIT` before any LunaLink
+ * signal header is included, or to pass `-DLUNALINK_CRITICAL_ENTER=...` via
+ * the flight build system.  A future refactor (Gateway 3) will introduce an
+ * explicit `lunalink/hal/critical_section.hpp` to remove this include-order
+ * dependency entirely.
+ */
+#ifndef LUNALINK_CRITICAL_ENTER
+#  define LUNALINK_CRITICAL_ENTER  ((void)0)  // Override in flight HAL (see note above)
+#  define LUNALINK_CRITICAL_EXIT   ((void)0)
+#endif
+
+/**
  * @brief Macro for portable memory section pinning of LUTs.
  * ELF (Linux/RTEMS): .lunalink_lut
  * Mach-O (macOS): __TEXT,lunalink_lut

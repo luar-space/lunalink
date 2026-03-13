@@ -75,13 +75,18 @@ Metrics Catalogue
      - **≤ 64 KB** (text + rodata combined)
      - CI gate blocks merge; author must profile and reduce size or
        request threshold increase via Lead Developer review
-   * - **WCET deviation** — percentage change in worst-case execution time
-       of ``[LSIS-AFS-*]``-tagged functions relative to the current baseline
-     - Benchmark suite (``tests/bench/``) on pinned CI runner
+   * - **WCET input-class spread** — intra-run spread ``(max − min) / min``
+       across adversarial input classes (all-zeros, all-ones, pseudo-random)
+       for ``[LSIS-AFS-*]``-tagged functions; detects data-dependent branches
+       within a single build.  Inter-build baseline regression tracking is a
+       Gateway 3 deliverable.
+     - Catch2 benchmark suite parsed by ``wcet.yml`` CI step
      - Every pull request; every push to ``main``
-     - **± 2%** relative to current ``main`` baseline
-     - CI emits warning at ±1%; CI gate blocks merge at ±2%; author must
-       profile and justify or optimise within 48 hours
+     - **≤ 2%** spread across input classes (functions with a single timing
+       sample emit ``WARN`` only; non-blocking until multi-class variants added)
+     - CI gate blocks merge if spread > 2%; ``WARN`` emitted for single-sample
+       functions (non-blocking); author must add multi-class variants by
+       Gateway 3 exit or raise a PRACA waiver
 
 Escalation Procedure
 ---------------------
@@ -119,13 +124,12 @@ Metrics History
 
 .. note::
 
-   This section is populated automatically by CI.  On every passing build
-   against ``main``, the CI ``metrics`` job appends a row to
-   ``docs/metrics_history.csv`` and publishes a rendered HTML dashboard to
-   ``gh-pages`` at ``https://<org>.github.io/lunalink/metrics/``.
-
-   The stub table below will be replaced by CI-generated content once the
-   ``metrics`` workflow step is activated (planned for Gateway 3 exit).
+   This section will be populated automatically by CI once the ``metrics``
+   workflow step is activated (planned for Gateway 3 exit).  On every passing
+   build against ``main``, the CI ``metrics`` job will append a row to
+   ``docs/metrics_history.csv`` and publish a rendered HTML dashboard to
+   ``gh-pages``.  The stub table below is a placeholder until that workflow
+   step is active.
 
 .. list-table::
    :header-rows: 1

@@ -18,7 +18,7 @@ public:
     GoldGenerator() noexcept = default;
 
     /**
-     * @brief Generate full 2046-chip sequence for a given PRN.
+     * @brief Generate full 2046-chip sequence for a given PRN. [LSIS-AFS-101]
      */
     [[nodiscard]] PrnStatus generate(PrnId prn_id, std::span<uint8_t> out) noexcept;
 

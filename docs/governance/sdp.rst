@@ -91,7 +91,7 @@ Development Tools
      - Version
      - Purpose
    * - GCC / Clang
-     - Pinned in ``toolchain.lock``
+     - Version logged to CI artifact (``toolchain.lock`` at flight adoption)
      - C++20 compilation; ``-fno-exceptions -fno-rtti -fno-fast-math`` flight flags
    * - CMake + Ninja
      - ≥ 3.15; CI runner pinned
