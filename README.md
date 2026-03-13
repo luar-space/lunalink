@@ -1,6 +1,7 @@
 # LunaLink
 
 [![Python Tests](https://github.com/fiskio/lunalink/actions/workflows/test-python.yml/badge.svg?branch=main)](https://github.com/fiskio/lunalink/actions/workflows/test-python.yml)
+[![Python Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/COVERAGE_GIST_ID/raw/lunalink-python-coverage.json)](https://github.com/fiskio/lunalink/actions/workflows/test-python.yml)
 [![Lint](https://github.com/fiskio/lunalink/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/fiskio/lunalink/actions/workflows/lint.yml)
 [![Docs Check](https://github.com/fiskio/lunalink/actions/workflows/docs-check.yml/badge.svg?branch=main)](https://github.com/fiskio/lunalink/actions/workflows/docs-check.yml)
 [![Docs Deploy](https://github.com/fiskio/lunalink/actions/workflows/docs-pages.yml/badge.svg?branch=main)](https://github.com/fiskio/lunalink/actions/workflows/docs-pages.yml)
@@ -8,7 +9,10 @@
 [![C++ Tests](https://github.com/fiskio/lunalink/actions/workflows/test-cpp.yml/badge.svg?branch=main)](https://github.com/fiskio/lunalink/actions/workflows/test-cpp.yml)
 [![Sanitizers](https://github.com/fiskio/lunalink/actions/workflows/sanitize.yml/badge.svg?branch=main)](https://github.com/fiskio/lunalink/actions/workflows/sanitize.yml)
 [![clang-tidy](https://github.com/fiskio/lunalink/actions/workflows/tidy.yml/badge.svg?branch=main)](https://github.com/fiskio/lunalink/actions/workflows/tidy.yml)
-[![C++ Coverage](https://github.com/fiskio/lunalink/actions/workflows/coverage-cpp.yml/badge.svg?branch=main)](https://github.com/fiskio/lunalink/actions/workflows/coverage-cpp.yml)
+[![Region Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/COVERAGE_GIST_ID/raw/lunalink-region-coverage.json)](https://github.com/fiskio/lunalink/actions/workflows/coverage-cpp.yml)
+[![Line Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/COVERAGE_GIST_ID/raw/lunalink-line-coverage.json)](https://github.com/fiskio/lunalink/actions/workflows/coverage-cpp.yml)
+[![Branch Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/COVERAGE_GIST_ID/raw/lunalink-branch-coverage.json)](https://github.com/fiskio/lunalink/actions/workflows/coverage-cpp.yml)
+[![MC/DC Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/COVERAGE_GIST_ID/raw/lunalink-mcdc-coverage.json)](https://github.com/fiskio/lunalink/actions/workflows/coverage-cpp.yml)
 [![Last Commit](https://img.shields.io/github/last-commit/fiskio/lunalink/main)](https://github.com/fiskio/lunalink/commits/main)
 [![Python](https://img.shields.io/badge/python-3.12%20%7C%203.13%20%7C%203.14-blue.svg)](https://github.com/fiskio/lunalink/blob/main/.github/workflows/ci.yml#L24)
 [![Style: ruff](https://img.shields.io/badge/style-ruff-D7FF64?logo=ruff)](https://github.com/astral-sh/ruff)

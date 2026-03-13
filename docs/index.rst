@@ -1,6 +1,21 @@
 lunalink
 ========
 
+.. raw:: html
+
+   <p>
+     <a href="https://github.com/fiskio/lunalink/actions/workflows/test-cpp.yml"><img src="https://github.com/fiskio/lunalink/actions/workflows/test-cpp.yml/badge.svg?branch=main" alt="C++ Tests"></a>
+     <a href="https://github.com/fiskio/lunalink/actions/workflows/test-python.yml"><img src="https://github.com/fiskio/lunalink/actions/workflows/test-python.yml/badge.svg?branch=main" alt="Python Tests"></a>
+     <a href="https://github.com/fiskio/lunalink/actions/workflows/test-python.yml"><img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/COVERAGE_GIST_ID/raw/lunalink-python-coverage.json" alt="Python Coverage"></a>
+     <a href="https://github.com/fiskio/lunalink/actions/workflows/coverage-cpp.yml"><img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/COVERAGE_GIST_ID/raw/lunalink-region-coverage.json" alt="Region Coverage"></a>
+     <a href="https://github.com/fiskio/lunalink/actions/workflows/coverage-cpp.yml"><img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/COVERAGE_GIST_ID/raw/lunalink-line-coverage.json" alt="Line Coverage"></a>
+     <a href="https://github.com/fiskio/lunalink/actions/workflows/coverage-cpp.yml"><img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/COVERAGE_GIST_ID/raw/lunalink-branch-coverage.json" alt="Branch Coverage"></a>
+     <a href="https://github.com/fiskio/lunalink/actions/workflows/coverage-cpp.yml"><img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/COVERAGE_GIST_ID/raw/lunalink-mcdc-coverage.json" alt="MC/DC Coverage"></a>
+     <a href="https://github.com/fiskio/lunalink/actions/workflows/sanitize.yml"><img src="https://github.com/fiskio/lunalink/actions/workflows/sanitize.yml/badge.svg?branch=main" alt="Sanitizers"></a>
+     <a href="https://github.com/fiskio/lunalink/actions/workflows/tidy.yml"><img src="https://github.com/fiskio/lunalink/actions/workflows/tidy.yml/badge.svg?branch=main" alt="clang-tidy"></a>
+     <a href="https://github.com/fiskio/lunalink/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-green.svg" alt="License: Apache 2.0"></a>
+   </p>
+
 LunaLink AFS reference implementation with C++ core and pybind11 bindings.
 
 .. toctree::

@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       LLVM_VERSION: "19"
+      LINE_COVERAGE_MIN: "90"
+      MCDC_COVERAGE_MIN: "30"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,3 +36,135 @@ jobs:
         run: |
           export PATH="/usr/lib/llvm-${LLVM_VERSION}/bin:${PATH}"
           task coverage-cpp
+
+      - name: Extract coverage metrics
+        id: coverage
+        run: |
+          export PATH="/usr/lib/llvm-${LLVM_VERSION}/bin:${PATH}"
+          mkdir -p build/coverage
+
+          # Re-run llvm-cov report and capture output
+          llvm-cov report build/coverage/test_lunalink \
+            -instr-profile=build/coverage/lunalink.profdata \
+            -show-mcdc-summary \
+            -ignore-filename-regex='_deps|tests' \
+            -path-equivalence=.,$(pwd) \
+            | tee build/coverage/mcdc_report.txt
+
+          # Parse TOTAL line for all metrics
+          TOTAL=$(grep '^TOTAL' build/coverage/mcdc_report.txt)
+
+          # Extract all percentage fields from TOTAL line
+          # Format: TOTAL  regions  missed  cover%  functions  missed  cover%  lines  missed  cover%  branches  missed  cover%  conditions  missed  cover%
+          PCTS=($(echo "$TOTAL" | grep -oE '[0-9]+\.[0-9]+%'))
+          REGION_PCT="${PCTS[0]}"
+          FUNCTION_PCT="${PCTS[1]}"
+          LINE_PCT="${PCTS[2]}"
+          BRANCH_PCT="${PCTS[3]}"
+          MCDC_PCT="${PCTS[4]}"
+
+          # Strip % for numeric comparison
+          MCDC_NUM="${MCDC_PCT%\%}"
+
+          echo "region_pct=${REGION_PCT}" >> "$GITHUB_OUTPUT"
+          echo "function_pct=${FUNCTION_PCT}" >> "$GITHUB_OUTPUT"
+          echo "line_pct=${LINE_PCT}" >> "$GITHUB_OUTPUT"
+          echo "branch_pct=${BRANCH_PCT}" >> "$GITHUB_OUTPUT"
+          echo "mcdc_pct=${MCDC_PCT}" >> "$GITHUB_OUTPUT"
+          echo "mcdc_num=${MCDC_NUM}" >> "$GITHUB_OUTPUT"
+
+          # Determine badge colors: <50 red, 50-79 orange, 80-99 yellow, 100 brightgreen
+          badge_color() {
+            local num="${1%\%}"
+            if awk "BEGIN{exit !(${num} >= 100)}"; then echo "brightgreen"
+            elif awk "BEGIN{exit !(${num} >= 80)}"; then echo "yellow"
+            elif awk "BEGIN{exit !(${num} >= 50)}"; then echo "orange"
+            else echo "red"; fi
+          }
+          echo "region_color=$(badge_color "$REGION_PCT")" >> "$GITHUB_OUTPUT"
+          echo "line_color=$(badge_color "$LINE_PCT")" >> "$GITHUB_OUTPUT"
+          echo "branch_color=$(badge_color "$BRANCH_PCT")" >> "$GITHUB_OUTPUT"
+          echo "mcdc_color=$(badge_color "$MCDC_PCT")" >> "$GITHUB_OUTPUT"
+
+          # Write badge JSON (shields.io endpoint format)
+          printf '{"schemaVersion":1,"label":"MC/DC","message":"%s","color":"%s"}\n' \
+            "$MCDC_PCT" "$COLOR" > build/coverage/coverage-badge.json
+
+          # Write full summary JSON
+          printf '{"regions":"%s","functions":"%s","lines":"%s","branches":"%s","mcdc":"%s"}\n' \
+            "$REGION_PCT" "$FUNCTION_PCT" "$LINE_PCT" "$BRANCH_PCT" "$MCDC_PCT" \
+            > build/coverage/coverage-summary.json
+
+          echo "::notice::MC/DC Coverage: ${MCDC_PCT} | Lines: ${LINE_PCT} | Branches: ${BRANCH_PCT} | Regions: ${REGION_PCT}"
+
+      - name: Enforce coverage thresholds
+        run: |
+          LINE_NUM="${{ steps.coverage.outputs.line_pct }}"
+          LINE_NUM="${LINE_NUM%\%}"
+          MCDC_NUM="${{ steps.coverage.outputs.mcdc_num }}"
+          FAIL=0
+
+          if awk "BEGIN{exit !(${LINE_NUM} < ${{ env.LINE_COVERAGE_MIN }})}"; then
+            echo "::error::Line coverage ${LINE_NUM}% is below minimum ${{ env.LINE_COVERAGE_MIN }}%"
+            FAIL=1
+          fi
+
+          if awk "BEGIN{exit !(${MCDC_NUM} < ${{ env.MCDC_COVERAGE_MIN }})}"; then
+            echo "::error::MC/DC coverage ${MCDC_NUM}% is below minimum ${{ env.MCDC_COVERAGE_MIN }}%"
+            FAIL=1
+          fi
+
+          exit $FAIL
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcdc-coverage
+          path: |
+            build/coverage/mcdc_report.txt
+            build/coverage/coverage-badge.json
+            build/coverage/coverage-summary.json
+
+      - name: Update region coverage badge
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: ${{ vars.COVERAGE_GIST_ID }}
+          filename: lunalink-region-coverage.json
+          label: Regions
+          message: ${{ steps.coverage.outputs.region_pct }}
+          color: ${{ steps.coverage.outputs.region_color }}
+
+      - name: Update line coverage badge
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: ${{ vars.COVERAGE_GIST_ID }}
+          filename: lunalink-line-coverage.json
+          label: Lines
+          message: ${{ steps.coverage.outputs.line_pct }}
+          color: ${{ steps.coverage.outputs.line_color }}
+
+      - name: Update branch coverage badge
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: ${{ vars.COVERAGE_GIST_ID }}
+          filename: lunalink-branch-coverage.json
+          label: Branches
+          message: ${{ steps.coverage.outputs.branch_pct }}
+          color: ${{ steps.coverage.outputs.branch_color }}
+
+      - name: Update MC/DC coverage badge
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: ${{ vars.COVERAGE_GIST_ID }}
+          filename: lunalink-mcdc-coverage.json
+          label: MC/DC
+          message: ${{ steps.coverage.outputs.mcdc_pct }}
+          color: ${{ steps.coverage.outputs.mcdc_color }}

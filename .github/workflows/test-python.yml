@@ -24,3 +24,48 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: uv sync --group test
       - run: task test-py
+
+      - name: Generate coverage JSON
+        if: matrix.python-version == '3.12'
+        run: uv run python -m coverage json -o coverage.json
+
+      - name: Upload coverage data
+        if: matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-coverage
+          path: coverage.json
+
+  coverage-badge:
+    name: Update Python Coverage Badge
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download coverage data
+        uses: actions/download-artifact@v4
+        with:
+          name: python-coverage
+
+      - name: Extract percentage
+        id: coverage
+        run: |
+          PCT=$(python3 -c "import json; print(round(json.load(open('coverage.json'))['totals']['percent_covered'], 1))")
+          echo "pct=${PCT}%" >> "$GITHUB_OUTPUT"
+
+          # Determine badge color: <50 red, 50-79 orange, 80-99 yellow, 100 brightgreen
+          COLOR="red"
+          if awk "BEGIN{exit !(${PCT} >= 50)}"; then COLOR="orange"; fi
+          if awk "BEGIN{exit !(${PCT} >= 80)}"; then COLOR="yellow"; fi
+          if awk "BEGIN{exit !(${PCT} >= 100)}"; then COLOR="brightgreen"; fi
+          echo "color=${COLOR}" >> "$GITHUB_OUTPUT"
+
+      - name: Update Python coverage badge
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: ${{ vars.COVERAGE_GIST_ID }}
+          filename: lunalink-python-coverage.json
+          label: Python Coverage
+          message: ${{ steps.coverage.outputs.pct }}
+          color: ${{ steps.coverage.outputs.color }}
