@@ -75,7 +75,7 @@ template <typename T>
 }
 
 /**
- * @brief Frame Commit Gate: verify the assembled frame by recomputing CRC-24Q. [SW-SAF-01]
+ * @brief Frame Commit Gate: verify the assembled frame by recomputing CRC-24Q. [LSIS-AFS-601] [SW-SAF-01]
  *
  * Verifies that the last 24 symbols of frame_buf are the correct CRC-24Q of the
  * preceding symbols. Returns kFaultDetected and scrubs the output if the checksum

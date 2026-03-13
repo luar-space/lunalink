@@ -30,7 +30,11 @@ coverage.xml
 # Docs build output
 docs/_build/
 
+# Standards PDFs (large binaries — download locally, see docs/standards/)
+docs/standards/**/*.pdf
+
 # Editor
 .vscode/
 .idea/
 *.swp
+compile_commands.json
