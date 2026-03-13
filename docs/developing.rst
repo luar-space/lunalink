@@ -225,11 +225,8 @@ independent workflows for granular status reporting.
      - push, PR, tag
      - C++ tests recompiled with ``-fsanitize=address,undefined``; any
        sanitizer report is a blocking failure.
-   * - **C++ Coverage** (``coverage-cpp.yml``)
+   * - **C++ Coverage — MC/DC** (``coverage-cpp.yml``)
      - push, PR, tag
-     - LLVM source-based line coverage; HTML report generated.
-   * - **MC/DC Coverage** (``coverage-mcdc.yml``)
-     - push, PR (main)
      - LLVM MC/DC instrumentation; ``llvm-cov report --show-mcdc-summary``;
        100% MC/DC on ``[LSIS-AFS-*]``-tagged functions required.
    * - **clang-tidy** (``tidy.yml``)

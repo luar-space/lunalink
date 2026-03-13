@@ -106,15 +106,29 @@ tasks:
   coverage-cpp:
     desc: Build and run C++ tests with LLVM-native MC/DC coverage, then generate HTML report.
     vars:
-      LLVM_DIR: /opt/homebrew/opt/llvm/bin
       GENERATOR:
         sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
+      LLVM_DIR:
+        sh: |
+          if command -v llvm-profdata >/dev/null 2>&1; then
+            dirname "$(command -v llvm-profdata)"
+          elif [ -x /opt/homebrew/opt/llvm/bin/llvm-profdata ]; then
+            echo /opt/homebrew/opt/llvm/bin
+          elif [ -x /usr/local/opt/llvm/bin/llvm-profdata ]; then
+            echo /usr/local/opt/llvm/bin
+          fi
     cmds:
+      - |
+        if [ -z "{{.LLVM_DIR}}" ]; then
+          echo "LLVM not found; skipping MC/DC coverage. Install LLVM (e.g. brew install llvm) to enable."
+          exit 0
+        fi
+        echo "Using LLVM from {{.LLVM_DIR}}"
       - cmake -B build/coverage -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_LLVM_COVERAGE=ON -DCMAKE_C_COMPILER={{.LLVM_DIR}}/clang -DCMAKE_CXX_COMPILER={{.LLVM_DIR}}/clang++
       - cmake --build build/coverage --parallel
       - rm -f build/coverage/*.profraw build/coverage/*.profdata
       - LLVM_PROFILE_FILE="lunalink-%m.profraw" ctest --test-dir build/coverage --output-on-failure
-      - "/opt/homebrew/opt/llvm/bin/llvm-profdata merge -sparse build/coverage/*.profraw -o build/coverage/lunalink.profdata"
+      - "{{.LLVM_DIR}}/llvm-profdata merge -sparse build/coverage/*.profraw -o build/coverage/lunalink.profdata"
       - "{{.LLVM_DIR}}/llvm-cov show build/coverage/test_lunalink -instr-profile=build/coverage/lunalink.profdata -format=html -output-dir=build/coverage/html -show-mcdc-summary -show-mcdc -ignore-filename-regex='_deps|tests' -path-equivalence=.,$(pwd)"
       - "{{.LLVM_DIR}}/llvm-cov report build/coverage/test_lunalink -instr-profile=build/coverage/lunalink.profdata -show-mcdc-summary -ignore-filename-regex='_deps|tests' -path-equivalence=.,$(pwd)"
       - echo "MC/DC Coverage report generated at build/coverage/html/index.html"
