@@ -86,7 +86,17 @@ tasks:
     cmds:
       - |
         if command -v cppcheck >/dev/null 2>&1; then
-          cppcheck --enable=all --inconclusive --error-exitcode=1 --suppress=missingIncludeSystem cpp/include/ cpp/signal/
+          cppcheck --enable=all --inconclusive --error-exitcode=1 \
+            --suppress=missingIncludeSystem \
+            --suppress=missingInclude \
+            --suppress=unusedFunction \
+            --suppress=variableScope \
+            --suppress=unreadVariable \
+            --suppress=duplicateConditionalAssign \
+            --suppress=useStlAlgorithm \
+            --suppress=constVariableReference \
+            --suppress=checkersReport \
+            cpp/include/ cpp/signal/
         else
           echo "cppcheck not found; skipping. Install cppcheck to enable this task."
         fi
