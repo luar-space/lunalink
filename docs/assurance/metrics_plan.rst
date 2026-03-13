@@ -2,7 +2,7 @@ Software Metrics Plan
 ======================
 
 **Document ID**: LUNALINK-METRICS-001
-**Specification Reference**: NPR 7150.2D SWE-164
+**Specification Reference**: ECSS-Q-HB-80-04A; NPR 7150.2D SWE-164 (secondary)
 **Revision**: 1.0
 **Date**: 2026-03-12
 **Status**: Released — Competition Submission Baseline
@@ -15,9 +15,9 @@ LunaLink development, the tools used to collect them, the thresholds that
 constitute compliance, and the escalation procedure when a threshold is
 breached.
 
-It satisfies NPR 7150.2D SWE-164 ("the project shall develop a Software
-Metrics Plan that identifies software metrics to be used to manage the software
-development effort").
+It satisfies ECSS-Q-HB-80-04A (NPR 7150.2D SWE-164, "the project shall develop a
+Software Metrics Plan that identifies software metrics to be used to manage the
+software development effort").
 
 The plan governs all CI-collected metrics that enforce quality gates on pull
 requests merging into ``main`` and on every ``v*`` release tag.

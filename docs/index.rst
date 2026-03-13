@@ -27,6 +27,7 @@ LunaLink AFS reference implementation with C++ core and pybind11 bindings.
    assurance/safety_plan
    assurance/oss_assessment
    assurance/certification_delta
+   assurance/ecss_tailoring
    assurance/recertification_record
    assurance/static_analysis_report
    assurance/cppcheck_report
@@ -46,6 +47,14 @@ LunaLink AFS reference implementation with C++ core and pybind11 bindings.
    governance/sdp
    governance/scmp
    governance/baseline_register
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Standards & Compliance:
+
+   standards/esa/ecss_standards
+   standards/nasa/npr7150_standards
+   standards/nasa_compliance_addendum
 
 .. toctree::
    :maxdepth: 2

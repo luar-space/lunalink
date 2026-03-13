@@ -1,6 +1,12 @@
 Software FMEA
 =============
 
+**Document ID**: LUNALINK-FMEA-001
+**Specification Reference**: ECSS-Q-ST-80C Rev.2 §5.5 (dependability); method per ECSS-Q-HB-80-03A Rev.1; ECSS-Q-ST-30C; MIL-STD-1629A; NPR 7150.2D SWE-028/029 (secondary)
+**Revision**: 1.0
+**Date**: 2026-03-12
+**Status**: Released — Competition Submission Baseline
+
 This Software Failure Modes and Effects Analysis (FMEA) is the formal companion to the
 Fault Containment Architecture described in ``mission_assurance.rst``.  Where that document
 specifies *how* LunaLink responds to faults, this document analyses *what can go wrong*,
@@ -9,8 +15,6 @@ specifies *how* LunaLink responds to faults, this document analyses *what can go
 The scope is all safety-critical software functions in ``cpp/signal/``.  Hardware failure
 modes (power supply, oscillator, memory DRAM/SRAM) are outside scope and are treated
 as inputs to this analysis via the system-level hazard analysis.
-
-**Standard References**: NPR 7150.2D SWE-028/029, MIL-STD-1629A, ECSS-Q-ST-30C.
 
 Severity Classification
 -----------------------
@@ -372,21 +376,25 @@ tracked as open items.  They are not currently mitigated by a software-layer con
        layer provides final defence.
 
 
-NPR 7150.2D SWE Traceability
------------------------------
+Standards Traceability
+----------------------
 
 .. list-table::
    :header-rows: 1
-   :widths: 15 85
+   :widths: 25 15 60
 
-   * - SWE
-     - Addressed by this document
-   * - SWE-028
+   * - ECSS Reference
+     - NPR Cross-Ref
+     - Evidence
+   * - Q-ST-80C §5.5; method per Q-HB-80-03A Rev.1 (software FMEA)
+     - SWE-028
      - All safety-critical software functions enumerated with failure modes and
        effects (full FMEA table above)
-   * - SWE-029
+   * - Q-ST-80C §5.5; method per Q-HB-80-03A Rev.1 (detection & containment)
+     - SWE-029
      - Fault detection methods and containment zones specified per failure mode;
        cross-referenced to FIZ architecture in ``mission_assurance.rst``
-   * - SWE-127
+   * - ECSS-E-ST-40C Rev.1 §5.5.3 (unit testing)
+     - SWE-127
      - SWIFI column in every FM entry cross-references the empirical detection
-       evidence required by SWE-127 (unit test coverage of fault paths)
+       evidence required for unit test coverage of fault paths

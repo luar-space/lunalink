@@ -2,7 +2,7 @@ Technical Stack & Compliance
 ============================
 
 LunaLink utilizes a dual-layered technical stack designed to satisfy both the 
-high-performance, deterministic requirements of **Class A Flight Software (FSW)** 
+high-performance, deterministic requirements of **Class B Flight Software (FSW)** 
 and the ease-of-use requirements for a **Software Reference Implementation**.
 
 Core Philosophy

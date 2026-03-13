@@ -23,7 +23,7 @@ Core Design Decisions
 Mission Assurance Integration
 -----------------------------
 
-To satisfy **Class A Flight Software** standards, the architecture incorporates 
+To satisfy **Class B Flight Software** standards, the architecture incorporates 
 safety-critical patterns defined in :doc:`../assurance/mission_assurance`:
 
 *   **TMR Protection**: Critical identifiers like ``PrnId`` and ``Fid`` utilize 

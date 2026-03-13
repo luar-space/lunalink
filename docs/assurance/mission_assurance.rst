@@ -1,11 +1,15 @@
 Mission Assurance
 =================
 
-LunaLink is engineered for **Class A Flight Software (FSW)** standards,
-incorporating high-reliability patterns from NASA (JPL/Goddard), ESA (ESTEC),
-and JAXA (Tsukuba). This document details the engineering rigor applied
-to ensure deterministic, safe, and fault-tolerant operation in the extreme
-radiation environment of the Lunar surface.
+LunaLink is engineered for **Class B Flight Software (FSW)** certification,
+deliberately exceeding Category B requirements to satisfy the stricter
+Category A / DO-178C Level A technical controls wherever practical.  This
+approach de-risks any future criticality upgrade and demonstrates readiness
+for the most demanding space-software assurance regimes.  The hardening
+patterns draw from NASA (JPL/Goddard), ESA (ESTEC), and JAXA (Tsukuba).
+This document details the engineering rigor applied to ensure deterministic,
+safe, and fault-tolerant operation in the extreme radiation environment of
+the Lunar surface.
 
 Core Hardening Philosophy
 -------------------------
@@ -22,8 +26,8 @@ Space software faces three critical risks not present in terrestrial application
 
 The following measures address these risks systematically.
 
-Design Constraints (NASA NPR 7150.2D / JPL Rule 1-10)
------------------------------------------------------
+Design Constraints (ECSS-E-ST-40C / JPL Rule 1-10)
+--------------------------------------------------
 
 1. Zero Dynamic Allocation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -50,7 +54,7 @@ All loops must have a fixed, verifiable upper bound. Recursion is forbidden.
 *   **Benefit**: Ensures that mandatory **Stack Scrubbing** and **Reciprocal Checks** are never bypassed.
 
 4. Bidirectional Traceability & Automated Compliance Matrix
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Every mission-critical function in ``cpp/signal/`` is tagged with its
 corresponding LSIS requirement ID (e.g., ``[LSIS-AFS-101]``). Tag
 density is enforced by the ``lint`` CI gate; bidirectional traceability
@@ -152,7 +156,7 @@ placement of the linker.
 *   **Benefit**: Allows mapping tables to the most radiation-hardened memory banks.
 
 9. Temporal WIP Signaling (Watchdog Feed)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Long-running DSP loops must provide "proof of progress" to the system watchdog.
 
 *   **Explanation**: Hardware watchdogs are the last line of defense for autonomous spacecraft. However, a traditional watchdog only detects a total system hang (where the CPU stops responding). In a radiation-heavy environment, it is possible for a bit flip in a jump instruction to trap the CPU in a logical infinite loop that *looks* active to the OS but is not doing useful work. LunaLink implements "proof of progress" by requiring safety-critical loops to call ``wip_tick()``. This increments a volatile **Work-In-Progress** counter that is independently monitored. If the system stops reporting these ticks within a specific temporal window, or if it reports them at an impossible frequency (indicating radiation-induced logic skips), the system triggers a reset. This ensures the spacecraft never remains stuck in a "zombie" state during critical signal transmission.
@@ -160,7 +164,7 @@ Long-running DSP loops must provide "proof of progress" to the system watchdog.
 *   **Benefit**: Ensures the hardware watchdog can detect if the CPU is stuck.
 
 10. Self-Validating Data Structures (JIT Integrity)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Critical Look-Up Tables (LUTs) and sparse matrices include embedded CRC32
 checksums.
 
@@ -173,12 +177,12 @@ checksums.
 Mandatory runtime verification that output buffers do not overlap with input
 buffers.
 
-*   **Explanation**: A radiation-induced bit flip in a pointer (Single Event Upset) can cause an output buffer to alias (overlap) with an input buffer. In Digital Signal Processing, this causes the function to overwrite its own source data while processing it, leading to non-deterministic signal corruption that bypasses standard logic checks. While terrestrial code relies on ``assert()`` (which is removed in production builds), Class A FSW mandates **Always-On Logic Gates**.
+*   **Explanation**: A radiation-induced bit flip in a pointer (Single Event Upset) can cause an output buffer to alias (overlap) with an input buffer. In Digital Signal Processing, this causes the function to overwrite its own source data while processing it, leading to non-deterministic signal corruption that bypasses standard logic checks. While terrestrial code relies on ``assert()`` (which is removed in production builds), Class B FSW mandates **Always-On Logic Gates**.
 *   **Implementation**: DSP blocks perform a pointer-range check at the start of the function. If an overlap is detected, the function halts and returns ``kFaultDetected``.
 *   **Benefit**: Prevents catastrophic feedback loops and pointer-based memory corruption that standard CFI cannot catch.
 
 12. Data-in-Transit Protection (CCSDS/ESA) — Flight Integration Requirement
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Data structures transferred between major DSP pipeline stages shall carry
 a **Handoff CRC** verified by the consumer before processing begins.
 
@@ -207,7 +211,7 @@ a **Handoff CRC** verified by the consumer before processing begins.
 .. _isr-safety:
 
 13. Critical Section Protection / ISR Safety (NASA/JAXA)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Mirrored variables, TMR triplets, and CFI sentinel counters are **not
 inherently atomic** and must be protected from preemptive interrupts.
 
@@ -233,14 +237,14 @@ State Machine Robustness (NASA/ESA)
 ------------------------------------
 
 1. SEU-Resistant State Encoding
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 State variables use the same non-contiguous bit-pattern encoding as
 mission-critical enumerations (see §1 of Mission-Critical Coding Patterns).
 A single-bit flip in a state register produces an illegal pattern, not a
 valid-but-wrong state.
 
 2. Legal Transition Matrix (Formal State Machine)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Every state machine in the signal chain is defined by an explicit
 **Legal Transition Matrix** — a compile-time table enumerating every
 permitted ``(current_state, next_state)`` pair.
@@ -261,12 +265,12 @@ Any hit to a ``default`` branch in a state transition is treated as a Critical F
 Fault Containment Architecture (NASA/ESA)
 ------------------------------------------
 
-Detecting a fault is necessary but insufficient — a Class A system must also
+Detecting a fault is necessary but insufficient — a Category B system must also
 *contain* it. LunaLink defines three nested **Fault Isolation Zones (FIZs)**
 that bound the blast radius of any detected fault.
 
 1. Fault Isolation Zones
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 *   **Explanation**: Without defined containment boundaries, a fault in the BCH decoder could propagate to the interleaver, which could corrupt the modulator output, which could trigger a watchdog reset of the entire OBC. This cascade is more destructive than any single fault. LunaLink prevents it with a layered containment model, analogous to the watertight bulkheads of a submarine:
 
@@ -288,15 +292,15 @@ Time-Deterministic Execution (NASA/JAXA)
 ----------------------------------------
 
 1. Branchless DSP & Data-Independent Execution
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 LunaLink's signal chain is **branchless by mandate** — no data-dependent
 branches exist in any ``[LSIS-AFS-*]``-tagged DSP function.
 
 *   **Explanation**: Real-time signal processing depends on a stable, predictable execution budget. Terrestrial algorithms often optimize for "average case" performance using data-dependent branching (e.g., ``if (bit == 1) { ... }``). In a flight system, if the execution time varies based on the message content, it causes "timing jitter" that disrupts high-precision Phase-Locked Loops (PLLs) in the receiver or causes the CPU to miss its real-time deadline. LunaLink mandates branchless arithmetic — bitwise masks instead of conditional branches — for all modulation, multiplexing, and LDPC gather operations. The result is that the execution time of ``ldpc_encode()`` with an all-zeros input is **bit-for-bit identical** to its execution time with an all-ones input.
 *   **Benefit**: Guarantees zero timing jitter regardless of navigation message content.
 
-2. Formal WCET Profiling (DO-178C / NASA NPR 7150.2D)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+2. Formal WCET Profiling (DO-178C / ECSS-E-ST-40C)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The branchless mandate is not asserted — it is **measured and reported**
 as a formal deliverable, published to the documentation site.
 
@@ -384,7 +388,7 @@ All external dependencies are pinned by **Commit Hash (SHA)**.
 *   **Benefit**: Guarantees source-code consistency across the entire mission lifespan.
 
 2. Toolchain Version Pinning
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The compiler, linker, and standard library are pinned to exact versions
 and treated as change-controlled flight artifacts.
 
@@ -410,7 +414,7 @@ and treated as change-controlled flight artifacts.
     toolchains.
 
 3. Software Configuration Item (SCI) Version Register
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Every flight binary embeds an **SCI header** — a fixed-size, CRC-protected
 block containing the binary's complete identity, readable via telemetry.
 
@@ -429,7 +433,7 @@ block containing the binary's complete identity, readable via telemetry.
 *   **Benefit**: Provides an unambiguous, tamper-evident chain of custody from source commit to flying binary; enables post-anomaly root-cause analysis by confirming which verified build was executing at the time of the event.
 
 4. Bit-for-Bit Reproducible Builds
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The build system enforces deterministic compilation.
 
 *   **Explanation**: Reproducibility is the ultimate proof of build system integrity. In flight software, it is vital that the binary generated on a developer's workstation is identical to the one generated on the official flight CI server. LunaLink's build system enforces deterministic compilation by stripping absolute file paths from the binary (using ``-ffile-prefix-map``) and disabling non-deterministic compiler features. This allows for independent verification: any agency can re-build the source code and compare the MD5 hash of the resulting binary to the official flight image, ensuring that no build-environment artifacts or hidden logic were introduced during the release process.
@@ -438,15 +442,15 @@ The build system enforces deterministic compilation.
 Verification & Tooling
 ----------------------
 
-1. Modified Condition/Decision Coverage (MC/DC) (DO-178C / NASA NPR 7150.2D)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1. Modified Condition/Decision Coverage (MC/DC) (DO-178C / ECSS-E-ST-40C)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 LunaLink mandates **MC/DC** as its primary coverage metric for all
 safety-critical DSP logic. Line coverage is a secondary, supplementary metric.
 
-*   **Explanation**: Line coverage proves that a line of code was *executed*. For a safety-critical DSP block containing compound boolean guards (e.g., ``if (seu_detected || range_exceeded)``), line coverage only verifies that the branch was reached. It says nothing about whether each individual condition independently affects the outcome. **Modified Condition/Decision Coverage (MC/DC)**, mandated by DO-178C for Level A software, requires demonstrating that: (1) every condition in a decision has been shown to independently affect the decision's outcome, and (2) every condition has been evaluated as both ``true`` and ``false``. For LunaLink's SEU detection logic—where the difference between a missed fault and a correct detection is a single boolean evaluation—line coverage is not sufficient to constitute a safety case. An auditor from ESA or NASA will reject a "90% line coverage" claim as evidence of correctness for Class A logic; they will ask for MC/DC data.
+*   **Explanation**: Line coverage proves that a line of code was *executed*. For a safety-critical DSP block containing compound boolean guards (e.g., ``if (seu_detected || range_exceeded)``), line coverage only verifies that the branch was reached. It says nothing about whether each individual condition independently affects the outcome. **Modified Condition/Decision Coverage (MC/DC)**, mandated by DO-178C for Level A software, requires demonstrating that: (1) every condition in a decision has been shown to independently affect the decision's outcome, and (2) every condition has been evaluated as both ``true`` and ``false``. Category B / DO-178C Level B requires only Decision Coverage (DC); LunaLink deliberately targets MC/DC to satisfy the stricter Level A / Category A threshold so that a future upgrade to Category A requires no additional test infrastructure. For LunaLink's SEU detection logic—where the difference between a missed fault and a correct detection is a single boolean evaluation—line coverage is not sufficient to constitute a robust safety case regardless of criticality category.
 *   **Mandate**: All functions tagged ``[LSIS-AFS-*]`` in ``cpp/signal/`` must achieve **100% MC/DC** as measured by LLVM's source-based coverage instrumentation (``-fprofile-instr-generate -fcoverage-mapping``). The CI pipeline generates an MC/DC report published to the **documentation site** (``gh-pages``) on every passing build; any regression below 100% for tagged functions is a **blocking** build failure.
 *   **Line Coverage**: ≥ 90% C++ line coverage and 100% Python coverage are maintained as secondary metrics and reported alongside MC/DC data.
-*   **Benefit**: Provides a mathematically rigorous proof that all safety-critical boolean logic has been independently verified, satisfying DO-178C Level A auditing requirements.
+*   **Benefit**: Provides a mathematically rigorous proof that all safety-critical boolean logic has been independently verified. Although Category B only requires Decision Coverage, LunaLink's MC/DC evidence satisfies the stricter DO-178C Level A / Category A threshold, de-risking any future criticality upgrade.
 
 2. Digital Twin Compatibility (NASA)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -472,7 +476,7 @@ The core library is strictly decoupled from hardware registers via a HAL.
 *   **Coverage**: Mandates **100% MC/DC** on ``[LSIS-AFS-*]``-tagged functions, ≥ 90% C++ line coverage, and 100% Python coverage.
 
 5. Compiler-Level Defenses & Forbidden Optimizations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The build system mandates strict hardening flags and explicitly forbids
 compiler optimizations that undermine LunaLink's safety patterns.
 
@@ -503,7 +507,7 @@ compiler optimizations that undermine LunaLink's safety patterns.
 *   **Benefit**: Leverages the compiler to insert automated runtime safety checks while guaranteeing that no optimization silently removes a safety pattern.
 
 6. Software-Implemented Fault Injection (SWIFI) (ESA ECSS-E-ST-40C)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Every hardening pattern must be **empirically verified** to detect the fault
 it claims to detect. Documentation of a pattern is not a safety case.
 Demonstration of a pattern is.
@@ -578,7 +582,7 @@ Demonstration of a pattern is.
     measured by the SWIFI suite.
 
 7. Golden Test Vector Suite (CCSDS / LunaNet ICD) — Gateway 3 Deliverable
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 LunaLink will publish a **versioned, machine-readable test vector library** that
 constitutes the reference for the entire LSIS ecosystem.
 
@@ -624,49 +628,57 @@ constitutes the reference for the entire LSIS ecosystem.
     ecosystem; enables any hardware or software implementation to validate their own
     compliance against a single, authoritative, machine-readable source.
 
-Path to Full NPR 7150.2D Certification
----------------------------------------
+ECSS Compliance Status
+----------------------
 
-This document satisfies the **technical** coding, verification, and fault-tolerance
-requirements of NASA NPR 7150.2D Class A.  A complete programme-level certification
-requires additional process and organisational infrastructure.  The table below
-summarises the classification honestly.
+LunaLink's assurance infrastructure is natively structured against **ECSS-E-ST-40C Rev.1**
+and **ECSS-Q-ST-80C Rev.2** (Category B — mission-critical).  NASA NPR 7150.2D is
+maintained as a secondary cross-reference; satisfying ECSS automatically covers the
+corresponding NPR requirements.
 
 **Satisfied (strong evidence)**:
 
 .. list-table::
    :header-rows: 1
-   :widths: 12 88
+   :widths: 18 15 67
 
-   * - SWE
-     - Evidence in this document or companion artifacts
-   * - SWE-108/109
+   * - ECSS Clause
+     - Requirement
+     - Evidence
+   * - E-ST-40C §5.5.1
+     - Coding Standards
      - Design Constraints section; compiler flag assertions; ``static_analysis.rst``
-   * - SWE-088
+   * - E-ST-40C §5.3
+     - Requirements Traceability
      - Bidirectional traceability mandate; ``compliance_matrix.rst``
-   * - SWE-117
+   * - Q-ST-80C §5.5
+     - Verification (static analysis / inspection)
      - Clang-Tidy + Cppcheck zero-violation reports on ``gh-pages``
-   * - SWE-127/128
+   * - E-ST-40C §5.5.3–4
+     - Unit & Integration Testing
      - 100% MC/DC; SWIFI 100% single-bit fault detection; Digital Twin compatibility
-   * - SWE-074 (partial)
+   * - Q-ST-80C §5.4
+     - Configuration Management
      - SHA-pinned dependencies; reproducible builds; SCI version register; ``scmp.rst``
-   * - SWE-028/029
-     - ``fmea.rst`` — full software FMEA table
-   * - SWE-027
-     - ``safety_plan.rst`` — Software Safety Plan
-   * - SWE-050/070
+   * - Q-ST-80C §5.3/§5.5
+     - Software FMEA / Safety
+     - ``fmea.rst`` — full software FMEA table; ``safety_plan.rst``
+   * - Q-ST-80C §5.7
+     - Software Reuse Assessment
      - ``oss_assessment.rst`` — COTS/OSS assessment
 
 **Organisational requirements — outside the scope of this reference implementation**:
 
-IV&V (SWE-121), formal milestone reviews (SWE-020), Change Control Board (SWE-079),
-and Physical Configuration Audit (SWE-155) require programme office infrastructure
-and cannot be satisfied by a development team acting alone.  These gaps are
-documented in full in ``docs/assurance/certification_delta.rst``, including a
-concrete path forward for a programme adopting LunaLink for flight.
+IV&V (Q-ST-80C §5.5), formal review milestones (E-ST-40C §5.1), formal CM board
+(Q-ST-80C §5.4), and physical configuration audit (Q-ST-80C §5.4) require programme
+office infrastructure and cannot be satisfied by a development team acting alone.
+These items are tailored in the ECSS Tailoring Record
+(``docs/assurance/ecss_tailoring.rst``) and the corresponding NPR cross-references
+are provided in the NASA Compliance Addendum
+(``docs/standards/nasa_compliance_addendum.rst``).
 
 8. Exhaustive Static Analysis Report
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Static analysis results are **published as formal artifacts**, not cited as
 passing claims.
 

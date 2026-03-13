@@ -2,7 +2,7 @@ Fault Coverage Report
 =====================
 
 **Document ID**: LUNALINK-FAULT-COV-001
-**Specification Reference**: NPR 7150.2D SWE-027; Safety Plan SW-SAF-06
+**Specification Reference**: ECSS-Q-ST-80C Rev.2 §5.5; method per ECSS-Q-HB-80-03A Rev.1; NPR 7150.2D SWE-027 (secondary); Safety Plan SW-SAF-06
 **Revision**: 1.0
 **Date**: 2026-03-13
 **Status**: Released — Competition Submission Baseline

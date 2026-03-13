@@ -343,7 +343,7 @@ Implementation files:
 Hardening
 ~~~~~~~~~
 
-CFI sentinels and mirrored address calculation (Class A hardening):
+CFI sentinels and mirrored address calculation (Category B hardening):
 the output index is computed twice via independent paths; a mismatch
 triggers ``kFaultDetected`` before any write.
 

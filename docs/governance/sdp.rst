@@ -2,7 +2,7 @@ Software Development Plan
 ==========================
 
 **Document ID**: LUNALINK-SDP-001
-**Specification Reference**: NPR 7150.2D SWE-013
+**Specification Reference**: ECSS-E-ST-40C Rev.1 §5.2; NPR 7150.2D SWE-013 (secondary)
 **Revision**: 1.0
 **Date**: 2026-03-12
 **Status**: Released — Competition Submission Baseline
@@ -13,7 +13,7 @@ Purpose
 This Software Development Plan (SDP) defines the lifecycle model, roles and
 responsibilities, development tools, and entry/exit criteria applied to LunaLink.
 It formalises the practices described informally in ``developing.rst`` to satisfy
-NPR 7150.2D SWE-013.
+ECSS-E-ST-40C Rev.1 §5.2 (NPR 7150.2D SWE-013).
 
 Lifecycle Model
 ---------------

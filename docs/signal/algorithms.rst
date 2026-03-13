@@ -1,7 +1,7 @@
 Algorithm Selection Rationale
 =============================
 
-This document details the specific algorithms and architectural patterns chosen for the Forward Error Correction (FEC) and signal processing components of the LunaLink reference implementation. The selections prioritize **determinism**, **robustness**, and **computational efficiency**, aligning with Class A Flight Software constraints.
+This document details the specific algorithms and architectural patterns chosen for the Forward Error Correction (FEC) and signal processing components of the LunaLink reference implementation. The selections prioritize **determinism**, **robustness**, and **computational efficiency**, aligning with Class B Flight Software constraints.
 
 Architectural Hardening Patterns
 --------------------------------

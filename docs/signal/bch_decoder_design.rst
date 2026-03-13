@@ -56,7 +56,7 @@ an algebraic decoder stops at 2 errors.
     conditions typical of lunar-to-surface links.
 
 ### 4. Implementation Simplicity and Verifiability
-Space flight certification (ECSS-Q-ST-80C / NASA Class A) requires rigorous 
+Space flight certification (ECSS-Q-ST-80C / NASA Class B) requires rigorous 
 code auditing and path coverage.
 
 *   Traditional decoders require complex Galois Field (:math:`GF(2^m)`) arithmetic 

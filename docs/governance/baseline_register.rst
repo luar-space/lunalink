@@ -2,7 +2,7 @@ Configuration Baseline Register
 ================================
 
 **Document ID**: LUNALINK-BASELINE-001
-**Specification Reference**: NPR 7150.2D SWE-077
+**Specification Reference**: ECSS-Q-ST-80C Rev.2 §5.4; NPR 7150.2D SWE-077 (secondary)
 **Revision**: 1.0
 **Date**: 2026-03-12
 **Status**: Released — Competition Submission Baseline
