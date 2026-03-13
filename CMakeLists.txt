@@ -240,4 +240,7 @@ if(ENABLE_SANITIZERS AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     
     target_compile_options(test_lunalink PRIVATE ${SANITIZE_FLAGS})
     target_link_options(test_lunalink PRIVATE ${SANITIZE_FLAGS})
+
+    target_compile_options(lunalink_swifi_tests PRIVATE ${SANITIZE_FLAGS})
+    target_link_options(lunalink_swifi_tests PRIVATE ${SANITIZE_FLAGS})
 endif()
