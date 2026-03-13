@@ -31,7 +31,7 @@ void prepare_soft_symbols(LdpcSubframe type,
 }
 } // namespace
 
-TEST_CASE("Gateway 2: WCET Analysis") {
+TEST_CASE("Gateway 2: WCET Analysis", "[performance]") {
     std::array<uint8_t, 1200> msg_sf2{};
     std::array<uint8_t, 2400> encoded_sf2{};
     std::array<float, 2400> soft_sf2{};
@@ -80,7 +80,7 @@ TEST_CASE("Gateway 2: WCET Analysis") {
     std::cout << "[WCET] BCH ML Decode: " << avg_bch << " us" << std::endl;
 }
 
-TEST_CASE("Gateway 2: LDPC Decode Throughput") {
+TEST_CASE("Gateway 2: LDPC Decode Throughput", "[performance]") {
     constexpr int kRuns = 20;
 
     SECTION("SF2 — alpha sweep throughput") {
