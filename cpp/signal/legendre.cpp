@@ -1,14 +1,29 @@
 #include "lunalink/signal/legendre.hpp"
 #include "lunalink/signal/safety.hpp"
+#include "lunalink/signal/codebook_checksums.hpp"
 #include <algorithm>
 #include <array>
 
 namespace lunalink::signal {
 
 namespace {
+
+// CRC-32 (IEEE 802.3, reflected) over a byte span.
+// Same algorithm as bch_codebook_checksum / weil*_codebook_checksum.
+uint64_t calculate_crc(std::span<const uint8_t> data) noexcept {
+    uint32_t crc = 0xFFFFFFFFU;
+    for (uint8_t val : data) {
+        crc ^= val;
+        for (uint32_t i = 0; i < 8U; i++) {
+            crc = (crc >> 1U) ^ (0xEDB88320U & (-(crc & 1U)));
+        }
+    }
+    return ~static_cast<uint64_t>(crc);
+}
+
 /**
  * @brief Thread-safe, hardened cache for Legendre sequences.
- * Mandated by Class A FSW: Generate once, verify often.
+ * Mandated by Class B FSW: Generate once, verify against golden CRCs.
  */
 class LegendreCache {
 public:
@@ -18,10 +33,6 @@ public:
     LegendreCache() noexcept {
         (void)generate_legendre_sequence(kPrime10223, std::span(data10223_));
         (void)generate_legendre_sequence(kPrime1499,  std::span(data1499_));
-        
-        // Calculate integrity checksums
-        crc10223_ = calculate_crc(std::span(data10223_));
-        crc1499_  = calculate_crc(std::span(data1499_));
         initialized_ = true;
     }
 
@@ -33,29 +44,25 @@ public:
         return {data1499_.data(), kPrime1499};
     }
 
+    // Verify against build-time golden CRCs — not self-signed.
     [[nodiscard]] bool verify_integrity() const noexcept {
-        return (calculate_crc(std::span(data10223_)) == crc10223_) &&
-               (calculate_crc(std::span(data1499_)) == crc1499_);
+        return (calculate_crc(std::span(data10223_)) == kLegendre10223Checksum) &&
+               (calculate_crc(std::span(data1499_)) == kLegendre1499Checksum);
+    }
+
+    [[nodiscard]] uint64_t crc_10223() const noexcept {
+        return calculate_crc(std::span(data10223_));
+    }
+
+    [[nodiscard]] uint64_t crc_1499() const noexcept {
+        return calculate_crc(std::span(data1499_));
     }
 
 private:
     // Pinned to high-integrity sections if supported by linker
     alignas(64) std::array<uint8_t, kPrime10223> data10223_{};
     alignas(64) std::array<uint8_t, kPrime1499>  data1499_{};
-    uint64_t crc10223_{0};
-    uint64_t crc1499_{0};
     bool initialized_{false};
-
-    static uint64_t calculate_crc(std::span<const uint8_t> data) noexcept {
-        uint32_t crc = 0xFFFFFFFFU;
-        for (uint8_t val : data) {
-            crc ^= val;
-            for (uint32_t i = 0; i < 8U; i++) {
-                crc = (crc >> 1U) ^ (0xEDB88320U & (-(crc & 1U)));
-            }
-        }
-        return ~static_cast<uint64_t>(crc);
-    }
 };
 
 // Global static instance (constructed on first use)
@@ -125,6 +132,14 @@ LegendreStatus generate_legendre_sequence(
         return cache.get_1499();
     }
     return {};
+}
+
+uint64_t legendre_10223_checksum() noexcept {
+    return get_cache().crc_10223();
+}
+
+uint64_t legendre_1499_checksum() noexcept {
+    return get_cache().crc_1499();
 }
 
 } // namespace lunalink::signal

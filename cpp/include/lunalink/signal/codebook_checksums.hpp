@@ -22,8 +22,12 @@ namespace lunalink::signal {
  */
 
 // Golden values — recompute with `task compute-golden-checksums` if tables change.
-inline constexpr uint64_t kBchCodebookChecksum  = 0xfffffffff7c352e2ULL;
-inline constexpr uint64_t kWeil10230Checksum    = 0xffffffff780e10a7ULL;
-inline constexpr uint64_t kWeil1500Checksum     = 0xffffffff031ee19dULL;
+inline constexpr uint64_t kBchCodebookChecksum    = 0xfffffffff7c352e2ULL;
+inline constexpr uint64_t kWeil10230Checksum      = 0xffffffff780e10a7ULL;
+inline constexpr uint64_t kWeil1500Checksum       = 0xffffffff031ee19dULL;
+// Legendre sequences are generated at runtime — golden CRCs verify generation correctness.
+// Recompute with `task compute-golden-checksums` if generate_legendre_sequence() changes.
+inline constexpr uint64_t kLegendre10223Checksum  = 0xffffffff29cddcc8ULL;
+inline constexpr uint64_t kLegendre1499Checksum   = 0xffffffff6f7f944fULL;
 
 }  // namespace lunalink::signal

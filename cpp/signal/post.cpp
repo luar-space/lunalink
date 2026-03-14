@@ -2,6 +2,7 @@
 #include "lunalink/signal/sci_header.hpp"
 #include "lunalink/signal/bch.hpp"
 #include "lunalink/signal/ldpc_tables.hpp"
+#include "lunalink/signal/legendre.hpp"
 #include "lunalink/signal/prn.hpp"
 #include "lunalink/signal/safety.hpp"
 #include "lunalink/signal/codebook_checksums.hpp"
@@ -66,6 +67,14 @@ PostResult run_post() noexcept {
     if (bch_crc != kBchCodebookChecksum ||
         w10_crc != kWeil10230Checksum   ||
         w15_crc != kWeil1500Checksum) {
+        return {PostStatus::kFaultDetected, 2};  // FIZ-3
+    }
+    // Legendre sequences are generated at runtime — verify against golden CRCs
+    // to detect corrupted initialization (TOCTOU integrity gap closure).
+    const uint64_t leg10223_crc = legendre_10223_checksum();
+    const uint64_t leg1499_crc  = legendre_1499_checksum();
+    if (leg10223_crc != kLegendre10223Checksum ||
+        leg1499_crc  != kLegendre1499Checksum) {
         return {PostStatus::kFaultDetected, 2};  // FIZ-3
     }
 

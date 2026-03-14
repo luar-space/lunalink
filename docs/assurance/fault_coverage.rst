@@ -120,6 +120,14 @@ SWIFI Scenario Coverage
      - ``cfi_count != kCfiMagicFrame + 6`` → ``kFaultDetected``; output scrubbed
      - 2
      - PASS
+   * - FI-15
+     - Legendre cache TOCTOU integrity gap closure (FM-005)
+     - ``verify_integrity()`` compares runtime CRC against golden constants in
+       ``codebook_checksums.hpp``; POST step 2 verifies both Legendre sequences
+     - Golden CRC mismatch → ``verify_integrity()`` returns false →
+       ``get_cached_legendre()`` returns empty span → downstream ``kFaultDetected``
+     - 3 (POST)
+     - PASS
 
 Summary
 -------
@@ -131,9 +139,9 @@ Summary
    * - Metric
      - Value
    * - Total injection scenarios
-     - 14
+     - 15
    * - Detected (PASS)
-     - 13
+     - 14
    * - Documented residual risk (FI-02)
      - 1
    * - Undetected faults

@@ -116,6 +116,21 @@ FMEA Table — Spreading Code Generator (``gold.cpp``, ``weil.cpp``, ``matched_c
      - Zone 1
      - CFI guard wraps every generation loop.  Terminal check ``cfi_count !=
        Magic_Start + N`` → ``kFaultDetected``.
+   * - FM-005
+     - SEU during Legendre cache initialisation corrupts reference sequences
+       (TOCTOU: self-computed CRC blesses bad data)
+     - Weil code generation produces incorrect spreading codes for all PRN IDs;
+       silent corruption — no downstream detection possible if CRC is self-signed
+     - D-POST: POST step 2 compares runtime Legendre CRC against build-time
+       golden constants (``kLegendre10223Checksum``, ``kLegendre1499Checksum``).
+       D-CBIT: ``verify_integrity()`` checks against same golden constants on
+       every cache access.
+     - S2
+     - Zone 3 (POST)
+     - Golden CRCs computed at build time and committed to
+       ``codebook_checksums.hpp``.  POST step 2 verifies both Legendre sequences
+       against golden constants before entering OPERATIONAL.  Runtime
+       ``get_cached_legendre()`` re-verifies on every access.
 
 
 FMEA Table — Forward Error Correction (``bch.cpp``, ``ldpc.cpp``, ``interleaver.cpp``)

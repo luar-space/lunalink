@@ -31,4 +31,17 @@ enum class LegendreStatus : uint8_t {
  */
 [[nodiscard]] std::span<const uint8_t> get_cached_legendre(uint16_t prime) noexcept;
 
+/**
+ * @brief Compute CRC-32 checksum of the cached Legendre sequence for prime 10223.
+ *
+ * Used by POST step 2 and the golden-checksum computation task.
+ * Algorithm: CRC-32 (IEEE 802.3, poly 0xEDB88320, reflected).
+ */
+[[nodiscard]] uint64_t legendre_10223_checksum() noexcept;
+
+/**
+ * @brief Compute CRC-32 checksum of the cached Legendre sequence for prime 1499.
+ */
+[[nodiscard]] uint64_t legendre_1499_checksum() noexcept;
+
 } // namespace lunalink::signal
