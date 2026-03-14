@@ -7,8 +7,10 @@ namespace lunalink::signal {
 
 // Build the legal transition matrix at compile time.
 // Any (from, to) pair not listed here is illegal and triggers Zone 3.
-// NOLINTBEGIN(cert-err58-cpp,fuchsia-statically-constructed-objects)
-const TransitionMatrix<SignalChainState, 8> SignalChainFsm::kLegalTransitions = []() {
+// constinit guarantees static initialisation — no hidden __cxa_guard or
+// dynamic constructor; the table is present in .rodata at boot.
+// NOLINTNEXTLINE(fuchsia-statically-constructed-objects) — constinit guarantees static init
+constinit const TransitionMatrix<SignalChainState, 8> SignalChainFsm::kLegalTransitions = []() {
     TransitionMatrix<SignalChainState, 8> m;
     using S = SignalChainState;
     m.add(S::kUninitialized, S::kPostRunning);
@@ -21,7 +23,6 @@ const TransitionMatrix<SignalChainState, 8> SignalChainFsm::kLegalTransitions = 
     m.add(S::kSafeMode,      S::kUninitialized); // OBC commanded restart
     return m;
 }();
-// NOLINTEND(cert-err58-cpp,fuchsia-statically-constructed-objects)
 
 SignalChainFsm::SignalChainFsm(ITelemetryHal& hal) noexcept
     : hal_(hal), state_(SignalChainState::kUninitialized), consecutive_fault_count_(0) {}
