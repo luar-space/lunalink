@@ -3,6 +3,7 @@
 #include <cstddef>
 #include "lunalink/signal/bch.hpp"
 #include "lunalink/signal/crc.hpp"
+#include "lunalink/signal/ldpc.hpp"
 #include <cstdint>
 #include <span>
 
@@ -18,8 +19,29 @@ inline constexpr uint8_t kSyncLength = 68;
 /// Length of the SB1 sub-block (52 binary symbols).
 inline constexpr uint8_t kSb1Length = 52;
 
-/// Length of the remaining payload (SB2-SB4) before CRC/LDPC (5880 binary symbols).
+/// Length of the remaining payload (SB2-SB4) after LDPC+interleave (5880 binary symbols).
 inline constexpr uint16_t kPayloadLength = 5880;
+
+/// SB2 data bits (before CRC-24). Per LSIS V1.0 Table 18.
+inline constexpr uint16_t kSb2DataBits = 1176;
+/// SB2 message bits (data + CRC-24, LDPC SF2 input).
+inline constexpr uint16_t kSb2MsgBits  = 1200;
+/// SB2 encoded length (LDPC SF2 output, rate 1/2).
+inline constexpr uint16_t kSb2Length   = 2400;
+
+/// SB3 data bits (before CRC-24). Per LSIS V1.0 Table 19.
+inline constexpr uint16_t kSb3DataBits = 846;
+/// SB3 message bits (data + CRC-24, LDPC SF3 input).
+inline constexpr uint16_t kSb3MsgBits  = 870;
+/// SB3 encoded length (LDPC SF3 output, rate 1/2).
+inline constexpr uint16_t kSb3Length   = 1740;
+
+/// SB4 data bits (before CRC-24). Per LSIS V1.0 Table 20.
+inline constexpr uint16_t kSb4DataBits = 846;
+/// SB4 message bits (data + CRC-24, LDPC SF4 input).
+inline constexpr uint16_t kSb4MsgBits  = 870;
+/// SB4 encoded length (LDPC SF4 output, rate 1/2; reuses SF3 matrices).
+inline constexpr uint16_t kSb4Length   = 1740;
 
 /// Symbol rate: 500 sps.
 inline constexpr uint16_t kSymbolRate = 500;
@@ -38,6 +60,8 @@ enum class FrameStatus : uint8_t {
   kInvalidToi      = 0xCCU,  // 11001100
   kBchFailed       = 0x0FU,  // 00001111
   kFaultDetected   = 0x99U,  // 10011001
+  kLdpcFailed      = 0x3CU,  // 00111100 (HD≥4 from all existing)
+  kCrcFailed       = 0xC3U,  // 11000011 (HD≥4 from all existing)
 };
 
 /**
@@ -85,5 +109,80 @@ template <typename T>
  * @return FrameStatus::kOk if the CRC matches; kFaultDetected otherwise. // FIZ-2
  */
 [[nodiscard]] FrameStatus commit_frame(std::span<const uint8_t> frame_buf) noexcept;
+
+/**
+ * @brief Build Subframe 2: CRC-24 + LDPC SF2 encode. [LSIS-AFS-602]
+ *
+ * Computes CRC-24Q over data, appends it, then LDPC-encodes the 1200-bit
+ * message to produce 2400 encoded symbols.
+ *
+ * @param data      SB2 navigation data (1176 bits, one bit per byte).
+ * @param out       Output buffer for encoded symbols (2400 symbols).
+ * @param workspace LDPC encoder scratchpad (caller-allocated).
+ * @return FrameStatus::kOk or an error code.
+ */
+[[nodiscard]] FrameStatus subframe_build_sb2(
+    std::span<const uint8_t, kSb2DataBits> data,
+    std::span<uint8_t, kSb2Length>          out,
+    LdpcEncodeWorkspace&                   workspace) noexcept;
+
+/**
+ * @brief Build Subframe 3: CRC-24 + LDPC SF3 encode. [LSIS-AFS-603]
+ *
+ * Computes CRC-24Q over data, appends it, then LDPC-encodes the 870-bit
+ * message to produce 1740 encoded symbols.
+ *
+ * @param data      SB3 navigation data (846 bits, one bit per byte).
+ * @param out       Output buffer for encoded symbols (1740 symbols).
+ * @param workspace LDPC encoder scratchpad (caller-allocated).
+ * @return FrameStatus::kOk or an error code.
+ */
+[[nodiscard]] FrameStatus subframe_build_sb3(
+    std::span<const uint8_t, kSb3DataBits> data,
+    std::span<uint8_t, kSb3Length>          out,
+    LdpcEncodeWorkspace&                   workspace) noexcept;
+
+/**
+ * @brief Build Subframe 4: CRC-24 + LDPC SF4 encode. [LSIS-AFS-604]
+ *
+ * Identical pipeline to SB3 (LDPC SF4 reuses SF3 matrices).
+ *
+ * @param data      SB4 navigation data (846 bits, one bit per byte).
+ * @param out       Output buffer for encoded symbols (1740 symbols).
+ * @param workspace LDPC encoder scratchpad (caller-allocated).
+ * @return FrameStatus::kOk or an error code.
+ */
+[[nodiscard]] FrameStatus subframe_build_sb4(
+    std::span<const uint8_t, kSb4DataBits> data,
+    std::span<uint8_t, kSb4Length>          out,
+    LdpcEncodeWorkspace&                   workspace) noexcept;
+
+/**
+ * @brief Build a complete AFS navigation frame (§2.4). [LSIS-AFS-605]
+ *
+ * Constructs a full 6000-symbol frame:
+ *   - 68-symbol sync pattern (Table 12)
+ *   - 52-symbol BCH-encoded SB1 header (FID + TOI)
+ *   - 5880 interleaved symbols (SB2 + SB3 + SB4)
+ *
+ * Pipeline: data → CRC-24 → LDPC encode → concatenate → block interleave.
+ *
+ * @param fid       Frame ID (0-3).
+ * @param toi       Time of Interval (0-99).
+ * @param sb2_data  Subframe 2 navigation data (1176 bits).
+ * @param sb3_data  Subframe 3 navigation data (846 bits).
+ * @param sb4_data  Subframe 4 navigation data (846 bits).
+ * @param out       Buffer to populate (exactly 6000 symbols).
+ * @param workspace LDPC encoder scratchpad (caller-allocated, reused across subframes).
+ * @return FrameStatus::kOk or an error code.
+ */
+[[nodiscard]] FrameStatus frame_build(
+    Fid                                    fid,
+    Toi                                    toi,
+    std::span<const uint8_t, kSb2DataBits> sb2_data,
+    std::span<const uint8_t, kSb3DataBits> sb3_data,
+    std::span<const uint8_t, kSb4DataBits> sb4_data,
+    std::span<uint8_t, kFrameLength>       out,
+    LdpcEncodeWorkspace&                   workspace) noexcept;
 
 } // namespace lunalink::signal

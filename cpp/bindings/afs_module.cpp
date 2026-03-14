@@ -65,6 +65,8 @@ PYBIND11_MODULE(_afs, m) {
       .value("INVALID_TOI", FrameStatus::kInvalidToi)
       .value("BCH_FAILED", FrameStatus::kBchFailed)
       .value("FAULT_DETECTED", FrameStatus::kFaultDetected)
+      .value("LDPC_FAILED", FrameStatus::kLdpcFailed)
+      .value("CRC_FAILED", FrameStatus::kCrcFailed)
       .export_values();
 
   py::enum_<MatchedCodeStatus>(m, "MatchedCodeStatus")
@@ -224,10 +226,66 @@ PYBIND11_MODULE(_afs, m) {
     return py::make_tuple(out, status);
   }, py::arg("type"), py::arg("symbols"), py::arg("iterations"), py::arg("workspace") = py::none());
 
+  py::class_<LdpcEncodeWorkspace>(m, "LdpcEncodeWorkspace")
+      .def(py::init<>());
+
   m.def("frame_build_partial", [](uint8_t fid, uint8_t toi) {
     auto out = py::array_t<uint8_t>(6000);
     if (frame_build_partial(static_cast<Fid>(fid), Toi(toi), std::span<uint8_t, 6000>(out.mutable_data(), 6000)) != FrameStatus::kOk)
       throw py::value_error("Frame build failed");
+    return out;
+  });
+
+  m.def("frame_build", [](uint8_t fid, uint8_t toi,
+                           py::array_t<uint8_t> sb2_data,
+                           py::array_t<uint8_t> sb3_data,
+                           py::array_t<uint8_t> sb4_data) {
+    if (sb2_data.size() != kSb2DataBits) throw py::value_error("SB2 data must be 1176 bits");
+    if (sb3_data.size() != kSb3DataBits) throw py::value_error("SB3 data must be 846 bits");
+    if (sb4_data.size() != kSb4DataBits) throw py::value_error("SB4 data must be 846 bits");
+    auto out = py::array_t<uint8_t>(static_cast<ssize_t>(kFrameLength));
+    LdpcEncodeWorkspace ws{};
+    auto status = frame_build(
+        static_cast<Fid>(fid), Toi(toi),
+        std::span<const uint8_t, kSb2DataBits>(sb2_data.data(), kSb2DataBits),
+        std::span<const uint8_t, kSb3DataBits>(sb3_data.data(), kSb3DataBits),
+        std::span<const uint8_t, kSb4DataBits>(sb4_data.data(), kSb4DataBits),
+        std::span<uint8_t, kFrameLength>(out.mutable_data(), kFrameLength),
+        ws);
+    if (status != FrameStatus::kOk) throw py::value_error("Frame build failed");
+    return out;
+  });
+
+  m.def("subframe_build_sb2", [](py::array_t<uint8_t> data) {
+    if (data.size() != kSb2DataBits) throw py::value_error("SB2 data must be 1176 bits");
+    auto out = py::array_t<uint8_t>(static_cast<ssize_t>(kSb2Length));
+    LdpcEncodeWorkspace ws{};
+    auto status = subframe_build_sb2(
+        std::span<const uint8_t, kSb2DataBits>(data.data(), kSb2DataBits),
+        std::span<uint8_t, kSb2Length>(out.mutable_data(), kSb2Length), ws);
+    if (status != FrameStatus::kOk) throw py::value_error("SB2 build failed");
+    return out;
+  });
+
+  m.def("subframe_build_sb3", [](py::array_t<uint8_t> data) {
+    if (data.size() != kSb3DataBits) throw py::value_error("SB3 data must be 846 bits");
+    auto out = py::array_t<uint8_t>(static_cast<ssize_t>(kSb3Length));
+    LdpcEncodeWorkspace ws{};
+    auto status = subframe_build_sb3(
+        std::span<const uint8_t, kSb3DataBits>(data.data(), kSb3DataBits),
+        std::span<uint8_t, kSb3Length>(out.mutable_data(), kSb3Length), ws);
+    if (status != FrameStatus::kOk) throw py::value_error("SB3 build failed");
+    return out;
+  });
+
+  m.def("subframe_build_sb4", [](py::array_t<uint8_t> data) {
+    if (data.size() != kSb4DataBits) throw py::value_error("SB4 data must be 846 bits");
+    auto out = py::array_t<uint8_t>(static_cast<ssize_t>(kSb4Length));
+    LdpcEncodeWorkspace ws{};
+    auto status = subframe_build_sb4(
+        std::span<const uint8_t, kSb4DataBits>(data.data(), kSb4DataBits),
+        std::span<uint8_t, kSb4Length>(out.mutable_data(), kSb4Length), ws);
+    if (status != FrameStatus::kOk) throw py::value_error("SB4 build failed");
     return out;
   });
 
@@ -309,4 +367,13 @@ PYBIND11_MODULE(_afs, m) {
   m.attr("INTERLEAVER_SIZE") = kInterleaverSize;
   m.attr("INTERLEAVER_ROWS") = kInterleaverRows;
   m.attr("INTERLEAVER_COLS") = kInterleaverCols;
+  m.attr("SB2_DATA_BITS") = kSb2DataBits;
+  m.attr("SB2_MSG_BITS") = kSb2MsgBits;
+  m.attr("SB2_LENGTH") = kSb2Length;
+  m.attr("SB3_DATA_BITS") = kSb3DataBits;
+  m.attr("SB3_MSG_BITS") = kSb3MsgBits;
+  m.attr("SB3_LENGTH") = kSb3Length;
+  m.attr("SB4_DATA_BITS") = kSb4DataBits;
+  m.attr("SB4_MSG_BITS") = kSb4MsgBits;
+  m.attr("SB4_LENGTH") = kSb4Length;
 }
