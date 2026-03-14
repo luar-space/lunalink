@@ -237,9 +237,9 @@ PYBIND11_MODULE(_afs, m) {
   });
 
   m.def("frame_build", [](uint8_t fid, uint8_t toi,
-                           py::array_t<uint8_t> sb2_data,
-                           py::array_t<uint8_t> sb3_data,
-                           py::array_t<uint8_t> sb4_data) {
+                           py::array_t<uint8_t, py::array::c_style | py::array::forcecast> sb2_data,
+                           py::array_t<uint8_t, py::array::c_style | py::array::forcecast> sb3_data,
+                           py::array_t<uint8_t, py::array::c_style | py::array::forcecast> sb4_data) {
     if (sb2_data.size() != kSb2DataBits) throw py::value_error("SB2 data must be 1176 bits");
     if (sb3_data.size() != kSb3DataBits) throw py::value_error("SB3 data must be 846 bits");
     if (sb4_data.size() != kSb4DataBits) throw py::value_error("SB4 data must be 846 bits");
@@ -256,7 +256,7 @@ PYBIND11_MODULE(_afs, m) {
     return out;
   });
 
-  m.def("subframe_build_sb2", [](py::array_t<uint8_t> data) {
+  m.def("subframe_build_sb2", [](py::array_t<uint8_t, py::array::c_style | py::array::forcecast> data) {
     if (data.size() != kSb2DataBits) throw py::value_error("SB2 data must be 1176 bits");
     auto out = py::array_t<uint8_t>(static_cast<ssize_t>(kSb2Length));
     LdpcEncodeWorkspace ws{};
@@ -267,7 +267,7 @@ PYBIND11_MODULE(_afs, m) {
     return out;
   });
 
-  m.def("subframe_build_sb3", [](py::array_t<uint8_t> data) {
+  m.def("subframe_build_sb3", [](py::array_t<uint8_t, py::array::c_style | py::array::forcecast> data) {
     if (data.size() != kSb3DataBits) throw py::value_error("SB3 data must be 846 bits");
     auto out = py::array_t<uint8_t>(static_cast<ssize_t>(kSb3Length));
     LdpcEncodeWorkspace ws{};
@@ -278,7 +278,7 @@ PYBIND11_MODULE(_afs, m) {
     return out;
   });
 
-  m.def("subframe_build_sb4", [](py::array_t<uint8_t> data) {
+  m.def("subframe_build_sb4", [](py::array_t<uint8_t, py::array::c_style | py::array::forcecast> data) {
     if (data.size() != kSb4DataBits) throw py::value_error("SB4 data must be 846 bits");
     auto out = py::array_t<uint8_t>(static_cast<ssize_t>(kSb4Length));
     LdpcEncodeWorkspace ws{};

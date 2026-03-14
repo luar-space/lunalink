@@ -21,44 +21,70 @@ FrameStatus frame_build_partial(
     Fid                        fid,
     Toi                        toi,
     std::span<uint8_t, 6000ULL> out) noexcept {
-  
-  FrameStatus status = FrameStatus::kOk;
+
+  // [LSIS-AFS-601] CFI sentinel for partial frame builder (§5).
+  constexpr uint32_t kCfiMagicPartial = 0xD2D2D2D2U;
+
+  FrameStatus status = FrameStatus::kFaultDetected;  // Pessimistic default
+  volatile uint32_t cfi_count = kCfiMagicPartial;
+  bool ok = true;
 
   // ESA Safety Policy: Zero-initialise entire frame.
   std::ranges::fill(out, 0U);
 
   // 1. Sync pattern: 68 symbols.
   std::ranges::copy(kSyncPattern, out.begin());
+  cfi_count = cfi_count + 1U;  // milestone 1: sync copied
 
   // 2. SB1 (FID + TOI): 52 symbols BCH(51,8).
-  const auto bch_status = bch_encode(fid, toi, out.subspan<kSyncLength, 52ULL>());
-  
-  if (bch_status != BchStatus::kOk) [[unlikely]] {
-    secure_scrub(out);
-    switch (bch_status) {
-      case BchStatus::kInvalidFid:     status = FrameStatus::kInvalidFid; break;
-      case BchStatus::kInvalidToi:     status = FrameStatus::kInvalidToi; break;
-      default:                         status = FrameStatus::kBchFailed; break;
+  {
+    const auto bch_status = bch_encode(fid, toi,
+                                       out.subspan<kSyncLength, kSb1Length>());
+    if (bch_status != BchStatus::kOk) [[unlikely]] {
+      ok = false;
+      switch (bch_status) {
+        case BchStatus::kInvalidFid: status = FrameStatus::kInvalidFid; break;
+        case BchStatus::kInvalidToi: status = FrameStatus::kInvalidToi; break;
+        default:                     status = FrameStatus::kBchFailed;  break;
+      }
+    } else {
+      cfi_count = cfi_count + 1U;  // milestone 2: SB1 done
     }
   }
 
   // 3. SB2-SB4 payload: Interleaved block (5880 symbols).
   // Note: Builders for SB2-SB4 are implemented in Gateway 3.
   // We apply the interleaver to the zeroed buffer to ensure the structure is ready.
-  if (status == FrameStatus::kOk) {
+  if (ok) {
       // Temporary staging buffer for non-interleaved data (SB2+SB3+SB4)
       // Mandate: Zero dynamic allocation. Use stack.
-      alignas(16) std::array<uint8_t, kInterleaverSize> staging{};
+      alignas(16) std::array<uint8_t, kPayloadLength> staging{};
       std::ranges::fill(staging, 0U);
 
-      // In Gateway 3, we will fill 'staging' with encoded LDPC symbols here.
-
-      const auto int_status = block_interleave(staging, out.subspan<kSyncLength + 52ULL, kInterleaverSize>());
+      const auto int_status = block_interleave(staging,
+          out.subspan<kSyncLength + static_cast<size_t>(kSb1Length),
+                       kPayloadLength>());
       if (int_status != InterleaverStatus::kOk) [[unlikely]] {
+          ok = false;
           status = FrameStatus::kFaultDetected;  // FIZ-2
-          secure_scrub(out);
+      } else {
+          cfi_count = cfi_count + 1U;  // milestone 3: interleave done
       }
       secure_scrub(staging);
+  }
+
+  // CFI terminal check: all 3 milestones must have been reached (§5).
+  if (ok) {
+    if (cfi_count == kCfiMagicPartial + 3U) {
+      status = FrameStatus::kOk;
+    } else {
+      status = FrameStatus::kFaultDetected;  // FIZ-2 (CFI violation)
+    }
+  }
+
+  // Cleanup: scrub frame on fault (§7).
+  if (status != FrameStatus::kOk) {
+    secure_scrub(out);
   }
 
   return status;
@@ -107,6 +133,8 @@ constexpr uint32_t kCfiMagicFrame = 0x4B4B4B4BU;
   // --- Precondition checks (C4: bounds validation) ---
   bool ok = (data.size() == static_cast<size_t>(expected_data_bits)) &&
             (out.size()  == static_cast<size_t>(expected_out_len)) &&
+            (expected_msg_bits == expected_data_bits + kCrc24Bits) &&
+            (expected_msg_bits <= 1200U) &&
             !spans_overlap(data, out);
 
   // Step 1: Copy data into message buffer.
@@ -203,6 +231,16 @@ FrameStatus frame_build(
   FrameStatus status = FrameStatus::kFaultDetected;  // Pessimistic default
   volatile uint32_t cfi_count = kCfiMagicFrame;
   bool ok = true;
+
+  // Aliasing check: input data buffers must not overlap output frame (§11).
+  if (spans_overlap(sb2_data.data(), sb2_data.size_bytes(),
+                    out.data(), out.size_bytes()) ||
+      spans_overlap(sb3_data.data(), sb3_data.size_bytes(),
+                    out.data(), out.size_bytes()) ||
+      spans_overlap(sb4_data.data(), sb4_data.size_bytes(),
+                    out.data(), out.size_bytes())) {
+    ok = false;
+  }
 
   // ESA Safety Policy: Zero-initialise entire frame.
   std::ranges::fill(out, 0U);

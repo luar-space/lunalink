@@ -26,6 +26,15 @@ Space software faces three critical risks not present in terrestrial application
 
 The following measures address these risks systematically.
 
+Assurance Document Index
+------------------------
+- ``docs/assurance/c_plus_plus_guidelines.rst``: C++20 coding standard and patterns.
+- ``docs/assurance/traceability_matrix.rst``: Canonical requirements-to-evidence matrix.
+- ``docs/assurance/test_procedures.rst``: Formal test procedure template and examples.
+- ``docs/assurance/tool_confidence.rst``: Toolchain and evidence trust record.
+- ``docs/assurance/build_policy.rst``: Flight vs non-flight build policy.
+- ``docs/assurance/configuration_baseline.rst``: Release baseline and reproducibility.
+
 Design Constraints (ECSS-E-ST-40C / JPL Rule 1-10)
 --------------------------------------------------
 

@@ -24,6 +24,8 @@ class FrameStatus(IntEnum):
     INVALID_TOI = 0xCC
     BCH_FAILED = 0x0F
     FAULT_DETECTED = 0x99
+    LDPC_FAILED = 0x3C
+    CRC_FAILED = 0xC3
 
 class LdpcSubframe(IntEnum):
     SF2 = 0x5A
@@ -101,6 +103,19 @@ def ldpc_decode(
     workspace: LdpcWorkspace | None = None,
 ) -> tuple[NDArray[np.uint8], LdpcStatus]: ...
 def frame_build_partial(fid: int, toi: int) -> NDArray[np.uint8]: ...
+def frame_build(
+    fid: int,
+    toi: int,
+    sb2_data: NDArray[np.uint8],
+    sb3_data: NDArray[np.uint8],
+    sb4_data: NDArray[np.uint8],
+) -> NDArray[np.uint8]: ...
+def subframe_build_sb2(data: NDArray[np.uint8]) -> NDArray[np.uint8]: ...
+def subframe_build_sb3(data: NDArray[np.uint8]) -> NDArray[np.uint8]: ...
+def subframe_build_sb4(data: NDArray[np.uint8]) -> NDArray[np.uint8]: ...
+
+class LdpcEncodeWorkspace:
+    def __init__(self) -> None: ...
 
 EPOCHS_PER_FRAME: int
 SECONDARY_CODE_LENGTH: int
@@ -119,3 +134,12 @@ BCH_CODEWORD_LENGTH: int
 INTERLEAVER_SIZE: int
 INTERLEAVER_ROWS: int
 INTERLEAVER_COLS: int
+SB2_DATA_BITS: int
+SB2_MSG_BITS: int
+SB2_LENGTH: int
+SB3_DATA_BITS: int
+SB3_MSG_BITS: int
+SB3_LENGTH: int
+SB4_DATA_BITS: int
+SB4_MSG_BITS: int
+SB4_LENGTH: int

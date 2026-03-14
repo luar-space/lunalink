@@ -249,6 +249,39 @@ FMEA Table — Frame Assembly & Modulation (``frame.cpp``, ``modulator.cpp``, ``
      - Zone 1
      - Pointer-range aliasing check at function entry; ``kFaultDetected`` if
        overlap detected.
+   * - FM-025
+     - SEU skips milestone step in subframe builder CFI
+       (``subframe_build_ldpc`` 3-milestone counter)
+     - CRC or LDPC encode step silently skipped; subframe codeword incomplete
+       or wrong
+     - D-SWIFI: CFI sentinel terminal check (``cfi_count != Magic + 3``) fires
+       ``kFaultDetected``.
+     - S3
+     - Zone 1
+     - ``volatile uint32_t cfi_count`` with unique magic pattern; milestone
+       incremented after each step; terminal check before ``kOk`` promotion.
+       Output scrubbed on failure.
+   * - FM-026
+     - SEU skips milestone step in frame assembler CFI
+       (``frame_build`` 6-milestone counter)
+     - One or more frame assembly stages skipped; incomplete frame
+     - D-SWIFI: CFI sentinel terminal check (``cfi_count != Magic + 6``) fires
+       ``kFaultDetected``.
+     - S3
+     - Zone 2
+     - ``volatile uint32_t cfi_count`` with unique magic pattern; 6 milestones
+       (sync, SB1, SB2, SB3, SB4, interleave); terminal check.  Output scrubbed
+       on failure.
+   * - FM-027
+     - SEU skips milestone step in partial frame builder CFI
+       (``frame_build_partial`` 3-milestone counter)
+     - Partial frame incomplete; SB1 or interleave step skipped
+     - D-SWIFI: CFI sentinel terminal check (``cfi_count != Magic + 3``) fires
+       ``kFaultDetected``.
+     - S3
+     - Zone 2
+     - ``volatile uint32_t cfi_count`` with unique magic pattern; 3 milestones
+       (sync, SB1, interleave); terminal check.  Output scrubbed on failure.
 
 
 FMEA Table — State Machine & System-Level (top-level signal chain FSM)

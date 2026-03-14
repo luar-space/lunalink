@@ -14,6 +14,15 @@ from lunalink.afs._afs import IQ_SAMPLES_PER_EPOCH as IQ_SAMPLES_PER_EPOCH
 from lunalink.afs._afs import IQ_UPSAMPLE_FACTOR as IQ_UPSAMPLE_FACTOR
 from lunalink.afs._afs import PAYLOAD_LENGTH as PAYLOAD_LENGTH
 from lunalink.afs._afs import SB1_LENGTH as SB1_LENGTH
+from lunalink.afs._afs import SB2_DATA_BITS as SB2_DATA_BITS
+from lunalink.afs._afs import SB2_LENGTH as SB2_LENGTH
+from lunalink.afs._afs import SB2_MSG_BITS as SB2_MSG_BITS
+from lunalink.afs._afs import SB3_DATA_BITS as SB3_DATA_BITS
+from lunalink.afs._afs import SB3_LENGTH as SB3_LENGTH
+from lunalink.afs._afs import SB3_MSG_BITS as SB3_MSG_BITS
+from lunalink.afs._afs import SB4_DATA_BITS as SB4_DATA_BITS
+from lunalink.afs._afs import SB4_LENGTH as SB4_LENGTH
+from lunalink.afs._afs import SB4_MSG_BITS as SB4_MSG_BITS
 from lunalink.afs._afs import SECONDARY_CODE_COUNT as SECONDARY_CODE_COUNT
 from lunalink.afs._afs import SECONDARY_CODE_LENGTH as SECONDARY_CODE_LENGTH
 from lunalink.afs._afs import SYMBOL_RATE as SYMBOL_RATE
@@ -23,6 +32,7 @@ from lunalink.afs._afs import BchResult as BchResult
 from lunalink.afs._afs import BchStatus as BchStatus
 from lunalink.afs._afs import Fid as Fid
 from lunalink.afs._afs import FrameStatus as FrameStatus
+from lunalink.afs._afs import LdpcEncodeWorkspace as LdpcEncodeWorkspace
 from lunalink.afs._afs import LdpcStatus as LdpcStatus
 from lunalink.afs._afs import LdpcSubframe as LdpcSubframe
 from lunalink.afs._afs import LdpcWorkspace as LdpcWorkspace
@@ -30,6 +40,7 @@ from lunalink.afs._afs import Toi as Toi
 from lunalink.afs._afs import bch_codebook_checksum as _bch_codebook_checksum
 from lunalink.afs._afs import bch_decode as _bch_decode
 from lunalink.afs._afs import bch_encode as _bch_encode
+from lunalink.afs._afs import frame_build as _frame_build
 from lunalink.afs._afs import frame_build_partial as _frame_build_partial
 from lunalink.afs._afs import ldpc_decode as _ldpc_decode
 from lunalink.afs._afs import ldpc_encode as _ldpc_encode
@@ -41,6 +52,9 @@ from lunalink.afs._afs import modulate_i as _modulate_i
 from lunalink.afs._afs import modulate_q as _modulate_q
 from lunalink.afs._afs import multiplex_iq as _multiplex_iq
 from lunalink.afs._afs import prn_code as _prn_code
+from lunalink.afs._afs import subframe_build_sb2 as _subframe_build_sb2
+from lunalink.afs._afs import subframe_build_sb3 as _subframe_build_sb3
+from lunalink.afs._afs import subframe_build_sb4 as _subframe_build_sb4
 from lunalink.afs._afs import weil1500_code as _weil1500_code
 from lunalink.afs._afs import weil10230_code as _weil10230_code
 
@@ -51,13 +65,18 @@ __all__ = [
     "ldpc_encode",
     "ldpc_decode",
     "LdpcWorkspace",
+    "LdpcEncodeWorkspace",
     "LdpcSubframe",
     "LdpcStatus",
     "BchResult",
     "BchStatus",
     "Fid",
     "Toi",
+    "frame_build",
     "frame_build_partial",
+    "subframe_build_sb2",
+    "subframe_build_sb3",
+    "subframe_build_sb4",
     "modulate_i",
     "modulate_q",
     "multiplex_iq",
@@ -81,6 +100,15 @@ __all__ = [
     "IQ_UPSAMPLE_FACTOR",
     "IQ_SAMPLES_PER_EPOCH",
     "FrameStatus",
+    "SB2_DATA_BITS",
+    "SB2_MSG_BITS",
+    "SB2_LENGTH",
+    "SB3_DATA_BITS",
+    "SB3_MSG_BITS",
+    "SB3_LENGTH",
+    "SB4_DATA_BITS",
+    "SB4_MSG_BITS",
+    "SB4_LENGTH",
 ]
 
 
@@ -185,3 +213,29 @@ def ldpc_decode(
 def frame_build_partial(fid: int, toi: int) -> NDArray[np.uint8]:
     """Build a partial AFS navigation frame (§2.4)."""
     return _frame_build_partial(fid, toi)
+
+
+def frame_build(
+    fid: int,
+    toi: int,
+    sb2_data: NDArray[np.uint8],
+    sb3_data: NDArray[np.uint8],
+    sb4_data: NDArray[np.uint8],
+) -> NDArray[np.uint8]:
+    """Build a complete AFS navigation frame (§2.4)."""
+    return _frame_build(fid, toi, sb2_data, sb3_data, sb4_data)
+
+
+def subframe_build_sb2(data: NDArray[np.uint8]) -> NDArray[np.uint8]:
+    """Build Subframe 2: CRC-24 + LDPC SF2 encode (§2.4)."""
+    return _subframe_build_sb2(data)
+
+
+def subframe_build_sb3(data: NDArray[np.uint8]) -> NDArray[np.uint8]:
+    """Build Subframe 3: CRC-24 + LDPC SF3 encode (§2.4)."""
+    return _subframe_build_sb3(data)
+
+
+def subframe_build_sb4(data: NDArray[np.uint8]) -> NDArray[np.uint8]:
+    """Build Subframe 4: CRC-24 + LDPC SF4 encode (§2.4)."""
+    return _subframe_build_sb4(data)

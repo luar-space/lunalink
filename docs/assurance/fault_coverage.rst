@@ -107,6 +107,19 @@ SWIFI Scenario Coverage
      - ``evaluate()`` detects under-run; ``FaultPacket(fiz_level=2)`` emitted
      - 2
      - PASS
+   * - FI-13
+     - Frame-assembly CFI: subframe builder milestone skip (FM-025)
+     - Force early exit via invalid LDPC subframe type → milestone count
+       insufficient at terminal check
+     - ``cfi_count != kCfiMagicSb + 3`` → ``kFaultDetected``; output scrubbed
+     - 1
+     - PASS
+   * - FI-14
+     - Frame-assembly CFI: frame assembler milestone skip (FM-026)
+     - Force BCH failure to cause milestone skip → cfi_count != Magic + 6
+     - ``cfi_count != kCfiMagicFrame + 6`` → ``kFaultDetected``; output scrubbed
+     - 2
+     - PASS
 
 Summary
 -------
@@ -118,9 +131,9 @@ Summary
    * - Metric
      - Value
    * - Total injection scenarios
-     - 12
+     - 14
    * - Detected (PASS)
-     - 11
+     - 13
    * - Documented residual risk (FI-02)
      - 1
    * - Undetected faults

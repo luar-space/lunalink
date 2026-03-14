@@ -14,10 +14,10 @@ namespace lunalink::signal {
 inline constexpr uint16_t kFrameLength = 6000;
 
 /// Length of the sync pattern (68 binary symbols).
-inline constexpr uint8_t kSyncLength = 68;
+inline constexpr uint16_t kSyncLength = 68;
 
 /// Length of the SB1 sub-block (52 binary symbols).
-inline constexpr uint8_t kSb1Length = 52;
+inline constexpr uint16_t kSb1Length = 52;
 
 /// Length of the remaining payload (SB2-SB4) after LDPC+interleave (5880 binary symbols).
 inline constexpr uint16_t kPayloadLength = 5880;
@@ -99,11 +99,17 @@ template <typename T>
 }
 
 /**
- * @brief Frame Commit Gate: verify the assembled frame by recomputing CRC-24Q. [LSIS-AFS-601] [SW-SAF-01]
+ * @brief Frame Commit Gate: verify the assembled frame by recomputing CRC-24Q. [LSIS-AFS-606] [SW-SAF-01]
  *
  * Verifies that the last 24 symbols of frame_buf are the correct CRC-24Q of the
- * preceding symbols. Returns kFaultDetected and scrubs the output if the checksum
- * fails — no frame shall be transmitted unless this check passes.
+ * preceding symbols. Returns kFaultDetected if the checksum fails — no frame
+ * shall be transmitted unless this check passes.
+ *
+ * @note This function performs a read-only check. The caller is responsible for
+ *       scrubbing the frame buffer if this function returns kFaultDetected.
+ * @note The LSIS spec defines no frame-level CRC; per-subframe CRCs are embedded
+ *       inside LDPC codewords. This gate is a defence-in-depth hook for transmit
+ *       pipelines that append an outer CRC before DMA hand-off.
  *
  * @param frame_buf  Assembled frame buffer (must be at least 25 symbols).
  * @return FrameStatus::kOk if the CRC matches; kFaultDetected otherwise. // FIZ-2
