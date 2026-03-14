@@ -25,7 +25,7 @@ struct PostResult {
  *
  * Steps:
  *   1. SCI header CRC-32 verification (binary integrity)
- *   2. LUT CRCs: LDPC, BCH, Weil codebook integrity
+ *   2. LUT CRCs: LDPC, BCH, Weil, Legendre codebook integrity
  *   3. TMR mechanism self-test
  *   4. Stack sentinel integrity
  *   5. CfiGuard baseline self-test

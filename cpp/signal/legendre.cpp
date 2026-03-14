@@ -21,61 +21,52 @@ uint64_t calculate_crc(std::span<const uint8_t> data) noexcept {
     return ~static_cast<uint64_t>(crc);
 }
 
-/**
- * @brief Thread-safe, hardened cache for Legendre sequences.
- * Mandated by Class B FSW: Generate once, verify against golden CRCs.
- */
-class LegendreCache {
-public:
-    static constexpr uint16_t kPrime10223 = 10223;
-    static constexpr uint16_t kPrime1499  = 1499;
+// Legendre cache — file-scope, no hidden __cxa_guard initialization.
+// Must be explicitly initialized via legendre_cache_init() before use.
+constexpr uint16_t kPrime10223 = 10223;
+constexpr uint16_t kPrime1499  = 1499;
 
-    LegendreCache() noexcept {
-        (void)generate_legendre_sequence(kPrime10223, std::span(data10223_));
-        (void)generate_legendre_sequence(kPrime1499,  std::span(data1499_));
-        initialized_ = true;
-    }
+alignas(64) std::array<uint8_t, kPrime10223> g_data10223{};
+alignas(64) std::array<uint8_t, kPrime1499>  g_data1499{};
+bool g_initialized = false;
 
-    [[nodiscard]] std::span<const uint8_t> get_10223() const noexcept {
-        return {data10223_.data(), kPrime10223};
-    }
-
-    [[nodiscard]] std::span<const uint8_t> get_1499() const noexcept {
-        return {data1499_.data(), kPrime1499};
-    }
-
-    // Verify against build-time golden CRCs — not self-signed.
-    [[nodiscard]] bool verify_integrity() const noexcept {
-        return (calculate_crc(std::span(data10223_)) == kLegendre10223Checksum) &&
-               (calculate_crc(std::span(data1499_)) == kLegendre1499Checksum);
-    }
-
-    [[nodiscard]] uint64_t crc_10223() const noexcept {
-        return calculate_crc(std::span(data10223_));
-    }
-
-    [[nodiscard]] uint64_t crc_1499() const noexcept {
-        return calculate_crc(std::span(data1499_));
-    }
-
-private:
-    // Pinned to high-integrity sections if supported by linker
-    alignas(64) std::array<uint8_t, kPrime10223> data10223_{};
-    alignas(64) std::array<uint8_t, kPrime1499>  data1499_{};
-    bool initialized_{false};
-};
-
-// Global static instance (constructed on first use)
-LegendreCache& get_cache() noexcept {
-    static LegendreCache cache;
-    return cache;
-}
 } // namespace
+
+LegendreStatus legendre_cache_init() noexcept {
+    // Generate both Legendre sequences.
+    const auto s1 = generate_legendre_sequence(kPrime10223, std::span(g_data10223));
+    if (s1 != LegendreStatus::kOk) [[unlikely]] {
+        secure_scrub(g_data10223);
+        secure_scrub(g_data1499);
+        g_initialized = false;
+        return s1;
+    }
+
+    const auto s2 = generate_legendre_sequence(kPrime1499, std::span(g_data1499));
+    if (s2 != LegendreStatus::kOk) [[unlikely]] {
+        secure_scrub(g_data10223);
+        secure_scrub(g_data1499);
+        g_initialized = false;
+        return s2;
+    }
+
+    // Verify against golden CRCs — reject corrupted generation.
+    if (calculate_crc(std::span(g_data10223)) != kLegendre10223Checksum ||
+        calculate_crc(std::span(g_data1499))  != kLegendre1499Checksum) {
+        secure_scrub(g_data10223);
+        secure_scrub(g_data1499);
+        g_initialized = false;
+        return LegendreStatus::kFaultDetected;
+    }
+
+    g_initialized = true;
+    return LegendreStatus::kOk;
+}
 
 LegendreStatus generate_legendre_sequence(
     uint16_t           prime,
     std::span<uint8_t> out) noexcept {
-    
+
     LegendreStatus status = LegendreStatus::kOk;
     uint32_t cfi_count = 0xA5A5A5A5U;
 
@@ -118,28 +109,40 @@ LegendreStatus generate_legendre_sequence(
 }
 
 [[nodiscard]] std::span<const uint8_t> get_cached_legendre(uint16_t prime) noexcept {
-    auto& cache = get_cache();
-    if (!cache.verify_integrity()) [[unlikely]] {
-        // In Class A FSW, we might trigger a hardware reset here.
-        // For now, return empty span to trigger downstream failure.
+    // Lazy init if POST has not yet run — plain bool, no __cxa_guard.
+    if (!g_initialized) [[unlikely]] {
+        if (legendre_cache_init() != LegendreStatus::kOk) {
+            return {};
+        }
+    }
+
+    // Verify against golden CRCs on every access.
+    if (calculate_crc(std::span(g_data10223)) != kLegendre10223Checksum ||
+        calculate_crc(std::span(g_data1499))  != kLegendre1499Checksum) [[unlikely]] {
         return {};
     }
 
-    if (prime == 10223) {
-        return cache.get_10223();
+    if (prime == kPrime10223) {
+        return {g_data10223.data(), kPrime10223};
     }
-    if (prime == 1499) {
-        return cache.get_1499();
+    if (prime == kPrime1499) {
+        return {g_data1499.data(), kPrime1499};
     }
     return {};
 }
 
 uint64_t legendre_10223_checksum() noexcept {
-    return get_cache().crc_10223();
+    if (!g_initialized) [[unlikely]] {
+        (void)legendre_cache_init();
+    }
+    return calculate_crc(std::span(g_data10223));
 }
 
 uint64_t legendre_1499_checksum() noexcept {
-    return get_cache().crc_1499();
+    if (!g_initialized) [[unlikely]] {
+        (void)legendre_cache_init();
+    }
+    return calculate_crc(std::span(g_data1499));
 }
 
 } // namespace lunalink::signal

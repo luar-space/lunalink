@@ -69,12 +69,10 @@ PostResult run_post() noexcept {
         w15_crc != kWeil1500Checksum) {
         return {PostStatus::kFaultDetected, 2};  // FIZ-3
     }
-    // Legendre sequences are generated at runtime — verify against golden CRCs
-    // to detect corrupted initialization (TOCTOU integrity gap closure).
-    const uint64_t leg10223_crc = legendre_10223_checksum();
-    const uint64_t leg1499_crc  = legendre_1499_checksum();
-    if (leg10223_crc != kLegendre10223Checksum ||
-        leg1499_crc  != kLegendre1499Checksum) {
+    // Legendre cache: explicit deterministic initialisation.
+    // Generates both sequences and verifies against golden CRCs internally.
+    // Eliminates hidden __cxa_guard dynamic init (TOCTOU integrity gap closure).
+    if (legendre_cache_init() != LegendreStatus::kOk) {
         return {PostStatus::kFaultDetected, 2};  // FIZ-3
     }
 

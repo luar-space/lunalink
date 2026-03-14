@@ -26,8 +26,25 @@ enum class LegendreStatus : uint8_t {
     std::span<uint8_t> out) noexcept;
 
 /**
+ * @brief Explicitly initialise the Legendre sequence cache.
+ *
+ * Generates both Legendre sequences (p=10223, p=1499) and verifies them
+ * against build-time golden CRCs.  Must be called before any call to
+ * get_cached_legendre().  Designed to be called from the POST sequence
+ * to eliminate hidden __cxa_guard dynamic initialisation.
+ *
+ * @return LegendreStatus::kOk on success; kFaultDetected if golden CRC
+ *         mismatch (corrupted generation).
+ */
+[[nodiscard]] LegendreStatus legendre_cache_init() noexcept;
+
+/**
  * @brief Get a pointer to the hardened, pre-generated Legendre sequence.
  * This is the high-performance path for Weil code generation.
+ *
+ * @pre legendre_cache_init() must have returned kOk.
+ * @return Non-empty span on success; empty span if not initialised or
+ *         golden CRC verification fails.
  */
 [[nodiscard]] std::span<const uint8_t> get_cached_legendre(uint16_t prime) noexcept;
 
