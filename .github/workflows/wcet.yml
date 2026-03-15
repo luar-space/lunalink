@@ -77,52 +77,54 @@ jobs:
 
           verdict_block = '\n'.join(verdicts) if verdicts else '(no [performance] benchmarks found)'
 
-          content = f'''WCET Profile
-============
-
-**Document ID**: LUNALINK-WCET-001
-**Revision**: CI-generated — {today} ({sha})
-**Specification Reference**: Safety Plan §Acceptance Criteria 4
-
-.. note::
-   Generated automatically by the ``wcet`` CI workflow.
-
-Measurement Environment
------------------------
-
-.. list-table::
-   :header-rows: 1
-   :widths: 30 70
-
-   * - Parameter
-     - Value
-   * - Runner
-     - GitHub Actions ``ubuntu-latest``
-   * - Compiler
-     - GCC (Release, ``-O2``, ``-fno-fast-math``)
-   * - Timing method
-     - Catch2 ``BENCHMARK`` macro (nanosecond resolution)
-   * - Git SHA
-     - {sha}
-
-WCET Measurements
------------------
-
-.. code-block:: text
-
-'''
+          content = (
+              'WCET Profile\n'
+              '============\n'
+              '\n'
+              f'**Document ID**: LUNALINK-WCET-001\n'
+              f'**Revision**: CI-generated — {today} ({sha})\n'
+              '**Specification Reference**: Safety Plan §Acceptance Criteria 4\n'
+              '\n'
+              '.. note::\n'
+              '   Generated automatically by the ``wcet`` CI workflow.\n'
+              '\n'
+              'Measurement Environment\n'
+              '-----------------------\n'
+              '\n'
+              '.. list-table::\n'
+              '   :header-rows: 1\n'
+              '   :widths: 30 70\n'
+              '\n'
+              '   * - Parameter\n'
+              '     - Value\n'
+              '   * - Runner\n'
+              '     - GitHub Actions ``ubuntu-latest``\n'
+              '   * - Compiler\n'
+              '     - GCC (Release, ``-O2``, ``-fno-fast-math``)\n'
+              '   * - Timing method\n'
+              '     - Catch2 ``BENCHMARK`` macro (nanosecond resolution)\n'
+              '   * - Git SHA\n'
+              f'     - {sha}\n'
+              '\n'
+              'WCET Measurements\n'
+              '-----------------\n'
+              '\n'
+              '.. code-block:: text\n'
+              '\n'
+          )
           for line in raw.splitlines():
               content += f'   {line}\n'
 
-          content += f'''
-Compliance Status
------------------
-
-Per-function PASS/WARN/FAIL verdicts (±2% band, Safety Plan Acceptance Criteria 4):
-
-.. code-block:: text
-
-'''
+          content += (
+              '\n'
+              'Compliance Status\n'
+              '-----------------\n'
+              '\n'
+              'Per-function PASS/WARN/FAIL verdicts (±2% band, Safety Plan Acceptance Criteria 4):\n'
+              '\n'
+              '.. code-block:: text\n'
+              '\n'
+          )
           for v in (verdicts if verdicts else ['(no benchmark data)']):
               content += f'   {v}\n'
 
