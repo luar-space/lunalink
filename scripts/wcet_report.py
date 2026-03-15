@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import json
 import os
 import subprocess
 import sys
@@ -226,6 +227,7 @@ def main() -> None:  # noqa: D103
     parser.add_argument("--xml", required=True, help="Path to Catch2 XML output")
     parser.add_argument("--console", required=True, help="Path to console output")
     parser.add_argument("--output", required=True, help="Output RST path")
+    parser.add_argument("--bench-json", help="Output JSON for benchmark-action")
     args = parser.parse_args()
 
     entries = parse_xml(args.xml)
@@ -250,6 +252,13 @@ def main() -> None:  # noqa: D103
     rst = generate_rst(entries, verdicts, console_text, sha, today)
     with open(args.output, "w") as f:
         f.write(rst)
+
+    if args.bench_json:
+        bench_data = [
+            {"name": e.name, "unit": "ns", "value": e.mean_ns} for e in entries
+        ]
+        with open(args.bench_json, "w") as f:
+            json.dump(bench_data, f, indent=2)
 
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary_path:

@@ -46,7 +46,8 @@ jobs:
           python3 scripts/wcet_report.py \
             --xml /tmp/wcet_results.xml \
             --console /tmp/wcet_console.txt \
-            --output docs/assurance/wcet_profile.rst
+            --output docs/assurance/wcet_profile.rst \
+            --bench-json /tmp/bench.json
       - name: Upload WCET report
         uses: actions/upload-artifact@v5
         with:
@@ -55,8 +56,8 @@ jobs:
       - name: Track benchmark history
         uses: benchmark-action/github-action-benchmark@v1
         with:
-          tool: catch2
-          output-file-path: /tmp/wcet_console.txt
+          tool: customSmallerIsBetter
+          output-file-path: /tmp/bench.json
           gh-pages-branch: gh-pages
           benchmark-data-dir-path: dev/bench
           auto-push: ${{ github.ref == 'refs/heads/main' }}
