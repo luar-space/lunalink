@@ -85,21 +85,19 @@ tasks:
     desc: Run cppcheck static analysis on C++ core.
     cmds:
       - |
-        if command -v cppcheck >/dev/null 2>&1; then
-          cppcheck --enable=all --inconclusive --error-exitcode=1 \
-            --suppress=missingIncludeSystem \
-            --suppress=missingInclude \
-            --suppress=unusedFunction \
-            --suppress=variableScope \
-            --suppress=unreadVariable \
-            --suppress=duplicateConditionalAssign \
-            --suppress=useStlAlgorithm \
-            --suppress=constVariableReference \
-            --suppress=checkersReport \
-            cpp/include/ cpp/signal/
-        else
-          echo "cppcheck not found; skipping. Install cppcheck to enable this task."
+        if ! command -v cppcheck >/dev/null 2>&1; then
+          echo "ERROR: cppcheck not found. Install it: brew install cppcheck"
+          exit 1
         fi
+        cppcheck --enable=all --inconclusive --inline-suppr --error-exitcode=1 \
+          --suppress=missingIncludeSystem \
+          --suppress=missingInclude \
+          --suppress=unusedFunction \
+          --suppress=useStlAlgorithm \
+          --suppress=checkersReport \
+          --suppress=normalCheckLevelMaxBranches \
+          --suppress=unmatchedSuppression \
+          cpp/include/ cpp/signal/
     silent: false
 
   pyright:
@@ -130,8 +128,8 @@ tasks:
     cmds:
       - |
         if [ -z "{{.LLVM_DIR}}" ]; then
-          echo "LLVM not found; skipping MC/DC coverage. Install LLVM (e.g. brew install llvm) to enable."
-          exit 0
+          echo "ERROR: LLVM not found. Install it: brew install llvm"
+          exit 1
         fi
         echo "Using LLVM from {{.LLVM_DIR}}"
       - cmake -B build/coverage -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_LLVM_COVERAGE=ON -DCMAKE_C_COMPILER={{.LLVM_DIR}}/clang -DCMAKE_CXX_COMPILER={{.LLVM_DIR}}/clang++
@@ -142,6 +140,17 @@ tasks:
       - "{{.LLVM_DIR}}/llvm-cov show build/coverage/test_lunalink -instr-profile=build/coverage/lunalink.profdata -format=html -output-dir=build/coverage/html -show-mcdc-summary -show-mcdc -ignore-filename-regex='_deps|tests' -path-equivalence=.,$(pwd)"
       - "{{.LLVM_DIR}}/llvm-cov report build/coverage/test_lunalink -instr-profile=build/coverage/lunalink.profdata -show-mcdc-summary -ignore-filename-regex='_deps|tests' -path-equivalence=.,$(pwd)"
       - echo "MC/DC Coverage report generated at build/coverage/html/index.html"
+      - |
+        LINE_PCT=$({{.LLVM_DIR}}/llvm-cov report build/coverage/test_lunalink \
+          -instr-profile=build/coverage/lunalink.profdata \
+          -ignore-filename-regex='_deps|tests' \
+          -path-equivalence=.,$(pwd) 2>/dev/null | \
+          awk '/TOTAL/{for(i=1;i<=NF;i++) if($i ~ /%/) {gsub(/%/,"",$i); print $i; exit}}')
+        echo "Line coverage: ${LINE_PCT}%"
+        if [ "$(echo "$LINE_PCT < 90" | bc -l)" -eq 1 ]; then
+          echo "ERROR: Line coverage ${LINE_PCT}% is below minimum 90%"
+          exit 1
+        fi
     silent: false
 
   sanitize:
@@ -328,14 +337,18 @@ tasks:
     silent: false
 
   pre-commit:
-    desc: Fast pre-commit checks (build, lint, test, coverage, incremental tidy).
+    desc: Fast pre-commit checks (build, lint, test, incremental tidy).
     cmds:
       - task: build
       - task: lint-check
       - task: tidy-staged
       - task: test-cpp
-      - task: coverage-cpp
       - task: test-py
+
+  pre-push:
+    desc: Pre-push checks (coverage threshold gate).
+    cmds:
+      - task: coverage-cpp
     silent: false
 
   ci-checks:

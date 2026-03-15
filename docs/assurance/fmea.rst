@@ -392,6 +392,76 @@ FMEA Table — Telemetry & Fault Reporting (``telemetry.cpp``)
        verified at POST.  ``-fstack-protector-strong`` compiler canary.
 
 
+FMEA Table — Software Correlator (``correlator.cpp``)
+------------------------------------------------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 5 25 20 15 8 12 15
+
+   * - ID
+     - Failure Mode
+     - Effect on System
+     - Detection Mechanism
+     - Severity
+     - FIZ Zone
+     - Mitigation
+   * - FM-050
+     - SEU corrupts channel state TMR register (e.g., kTracking → undefined)
+     - Channel operates in wrong mode; correlator may process acquisition data
+       as tracking or vice versa; incorrect pseudoranges
+     - D-SWIFI: TMR majority vote on ``ch.state`` detects single-copy corruption;
+       illegal transition matrix catches invalid state values.
+     - S2
+     - Zone 1
+     - ``TmrValue<uint8_t>`` on channel state; majority vote before every state
+       read; high Hamming distance enum values (≥3 bits apart); illegal transition
+       → telemetry fault packet + ``kFaultDetected``.
+   * - FM-051
+     - PCPS acquisition false lock (peak/mean metric passes threshold on noise)
+     - Channel transitions to tracking with wrong code phase and Doppler;
+       pseudoranges systematically wrong until C/N0 lock detection triggers
+     - D-CBIT: C/N0 estimation in ``track()`` detects low signal quality
+       (< 25 dB-Hz) within one code period; channel transitions to kLost.
+     - S3
+     - Zone 2
+     - Threshold set to 15.0 (Pfa ≈ 10⁻⁶ for N=2048 Gaussian noise).
+       C/N0-based lock detection in tracking loop provides secondary gate;
+       channel declared lost if C/N0 < ``kMinCn0DbHz``.
+   * - FM-052
+     - PLL integrator runaway (SEU corrupts loop filter integrator state)
+     - Doppler estimate diverges; carrier phase wraps uncontrollably;
+       tracking loop becomes unstable; wrong pseudoranges
+     - D-CBIT: Integrator saturation clamp (``std::clamp`` at
+       ±\ ``kMaxPllIntegratorRadS``); C/N0 lock detection.
+     - S3
+     - Zone 1–2
+     - ``LoopFilter2::integrator`` clamped to ±2× Doppler range on every
+       update.  C/N0 estimation detects divergence; channel declared lost.
+   * - FM-053
+     - SEU skips loop iteration in ``prepare_code_replica`` or ``correlate_epl``
+     - Code replica or E/P/L correlator output truncated; wrong acquisition
+       or tracking result
+     - D-SWIFI: CFI sentinel counters in both functions; terminal check
+       fires ``kFaultDetected`` on count mismatch.
+     - S3
+     - Zone 1
+     - ``uint32_t cfi_count`` with unique magic per function
+       (0xA5A5A5A5 for prepare, 0xC3C3C3C3 for EPL, 0xB4B4B4B4 for PCPS);
+       terminal check ``cfi_count != magic + N`` → output scrubbed +
+       ``kFaultDetected``.
+   * - FM-054
+     - SEU corrupts code phase float to NaN/Inf during tracking
+     - Code phase becomes non-finite; all subsequent pseudoranges invalid;
+       correlate_epl produces garbage
+     - D-SWIFI: ``std::isfinite()`` guard after code phase update.
+     - S3
+     - Zone 1
+     - ``std::isfinite(code_phase_chips)`` checked after every DLL update.
+       On failure: channel transitions to kLost; ``kFaultDetected`` returned.
+       Bounded wrapping via ``std::fmod`` replaces unbounded ``while`` loop.
+
+
 Open FMEA Items
 ---------------
 

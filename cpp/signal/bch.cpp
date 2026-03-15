@@ -100,9 +100,11 @@ BchResult bch_decode_soft(std::span<const float, 52ULL> llr) noexcept {
         wip_tick();
     }
 
+    // cppcheck-suppress variableScope
     float    best_metric  = -3.4e+38F; // -FLT_MAX without <cfloat>
     uint32_t best_idx     = 0U;
     uint32_t best_idx_mir = ~0U;  // MA §2 variable mirror: invariant best_idx ^ best_idx_mir == 0xFFFFFFFF
+    // cppcheck-suppress variableScope
     uint32_t cfi_count    = 0xA5A5A5A5U;
 
     if (status == BchStatus::kOk) {

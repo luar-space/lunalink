@@ -1,0 +1,19 @@
+#!/bin/bash
+#
+# Pre-push hook for lunalink.
+# Runs coverage threshold check before pushing.
+#
+
+set -e
+
+echo "Running pre-push checks (coverage threshold)..."
+echo ""
+
+if ! task pre-push; then
+  echo ""
+  echo "Pre-push checks failed. Run 'task pre-push' to reproduce."
+  exit 1
+fi
+
+echo ""
+echo "All pre-push checks passed."

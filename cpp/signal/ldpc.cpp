@@ -122,6 +122,7 @@ inline int16_t sat_sub(int16_t a, int16_t b) noexcept {
     bool ok = (m.num_rows <= out.size());
     uint32_t ops_count = 0;
     for (uint16_t r = 0; r < m.num_rows && ok; ++r) {
+        // cppcheck-suppress variableScope
         uint8_t acc = 0;
         const uint32_t start = m.row_ptr[r];
         const uint32_t end = m.row_ptr[r + 1];
@@ -374,6 +375,7 @@ void compute_cv_messages(
             else { parity ^= p1[mD.col_indices[i]]; }
         }
         if (ok && r < p2.size()) { parity ^= p2[r]; }
+        // cppcheck-suppress duplicateConditionalAssign
         else if (ok) { ok = false; }
         if (ok && (parity & 1U) != 0U) { ok = false; }
     }

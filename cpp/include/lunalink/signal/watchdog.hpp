@@ -120,11 +120,19 @@ class WindowedWatchdog {
 
 /**
  * @brief Register a watchdog instance to receive optional global notifications.
- * Pass nullptr to uninstall. NOT thread-safe; call only during initialisation.
- * This is a hook for integrators; the Digital Twin does not install a global watchdog
- * by default — watchdog instances are used explicitly by the frame loop owner.
+ * Pass nullptr to uninstall. NOT thread-safe; call only during initialisation,
+ * before lock_watchdog_config() is called.
+ *
+ * @return true if the pointer was accepted; false if configuration is locked.
  */
-void install_watchdog(WindowedWatchdog* wdog) noexcept;
+[[nodiscard]] bool install_watchdog(WindowedWatchdog* wdog) noexcept;
+
+/**
+ * @brief Lock the watchdog configuration. After this call, install_watchdog()
+ * will reject further writes. Called by POST after init-phase setup is complete.
+ * Irreversible until the next cold boot.
+ */
+void lock_watchdog_config() noexcept;
 
 /**
  * @brief Retrieve the currently installed global watchdog (may be nullptr).

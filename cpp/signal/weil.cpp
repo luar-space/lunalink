@@ -62,6 +62,7 @@ PrnStatus WeilGenerator::construct_weil(
 
     uint32_t cfi_count = 0xA5A5A5A5U;
     uint16_t out_idx = 0;
+    // cppcheck-suppress [variableScope, unreadVariable]
     uint16_t t_mir = 0xFFFFU;
 
     for (uint16_t t = 0; t < prime; ++t) {

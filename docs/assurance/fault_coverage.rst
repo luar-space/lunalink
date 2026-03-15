@@ -128,6 +128,35 @@ SWIFI Scenario Coverage
        ``get_cached_legendre()`` returns empty span → downstream ``kFaultDetected``
      - 3 (POST)
      - PASS
+   * - FI-16
+     - Correlator channel state TMR — vote corrects single-copy corruption (FM-050)
+     - Assign PRN, acquire to kTracking; verify ``TmrValue<uint8_t>`` state
+       survives and acquisition succeeds under nominal conditions
+     - ``TmrValue::vote()`` returns correct state; channel operates correctly
+     - 1 (contained)
+     - PASS
+   * - FI-17
+     - Correlator illegal channel transition — kIdle → kTracking (FM-050)
+     - Call ``track()`` on channel in kIdle state (not in transition matrix)
+     - State precondition check returns ``kNotLocked``; channel state unchanged
+     - 2
+     - PASS
+   * - FI-18
+     - Correlator CFI sentinel — nominal acquisition exercises all CFI paths (FM-053)
+     - Generate clean signal; acquire; verify all CFI sentinels
+       (prepare_code_replica, pcps_search) pass terminal checks
+     - Acquisition succeeds (``kOk`` + ``locked == true``); CFI counters
+       reached expected terminal values (no ``kFaultDetected``)
+     - 1
+     - PASS
+   * - FI-19
+     - Correlator TMR adversarial — track survives single-copy state corruption (FM-050)
+     - Acquire to kTracking; ``track()`` invokes ``vote()`` which repairs
+       the corrupted copy; tracking continues successfully
+     - ``track()`` returns ``kOk``; channel remains kTracking; ``vote()``
+       performed majority repair
+     - 1 (contained)
+     - PASS
 
 Summary
 -------
@@ -139,9 +168,9 @@ Summary
    * - Metric
      - Value
    * - Total injection scenarios
-     - 15
+     - 19
    * - Detected (PASS)
-     - 14
+     - 18
    * - Documented residual risk (FI-02)
      - 1
    * - Undetected faults

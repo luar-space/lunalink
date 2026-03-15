@@ -23,6 +23,7 @@ CrcStatus crc24_calculate(
     uint32_t register_state = 0U; // Seed is 0 per Appendix H
 
     // Mirrored loop index
+    // cppcheck-suppress [variableScope, unreadVariable]
     size_t i_mir = 0xFFFFFFFFFFFFFFFFULL;
 
     for (size_t i = 0; i < in.size(); ++i) {

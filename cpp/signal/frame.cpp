@@ -145,6 +145,7 @@ constexpr uint32_t kCfiMagicFrame = 0x4B4B4B4BU;
   }
 
   // Step 2: Compute CRC-24Q over data and append.
+  // cppcheck-suppress duplicateCondition
   if (ok) {
     const auto crc_status = crc24_calculate(data, crc);
     if (crc_status != CrcStatus::kOk) [[unlikely]] {

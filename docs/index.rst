@@ -25,6 +25,7 @@ LunaLink AFS reference implementation with C++ core and pybind11 bindings.
    gateway0
    gateway1
    gateway2
+   gateway3
    gateway4
 
 .. toctree::
@@ -54,6 +55,8 @@ LunaLink AFS reference implementation with C++ core and pybind11 bindings.
    assurance/praca
    assurance/svd
    assurance/wcet_profile
+   assurance/c_plus_plus_guidelines
+   assurance/test_procedures
    signal/compliance_matrix
    signal/spec_findings_report
    signal/validation_plan

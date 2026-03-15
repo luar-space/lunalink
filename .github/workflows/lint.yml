@@ -38,16 +38,14 @@ jobs:
         if: always()
         run: |
           mkdir -p docs/assurance
-          cppcheck --enable=all --inconclusive \
+          cppcheck --enable=all --inconclusive --inline-suppr \
             --suppress=missingIncludeSystem \
             --suppress=missingInclude \
             --suppress=unusedFunction \
-            --suppress=variableScope \
-            --suppress=unreadVariable \
-            --suppress=duplicateConditionalAssign \
             --suppress=useStlAlgorithm \
-            --suppress=constVariableReference \
             --suppress=checkersReport \
+            --suppress=normalCheckLevelMaxBranches \
+            --suppress=unmatchedSuppression \
             cpp/include/ cpp/signal/ 2>&1 | tee /tmp/cppcheck_output.txt || true
           python3 - <<'EOF'
           import datetime

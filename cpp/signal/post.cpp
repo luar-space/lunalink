@@ -5,6 +5,7 @@
 #include "lunalink/signal/legendre.hpp"
 #include "lunalink/signal/prn.hpp"
 #include "lunalink/signal/safety.hpp"
+#include "lunalink/signal/watchdog.hpp"
 #include "lunalink/signal/codebook_checksums.hpp"
 
 #include <array>
@@ -92,6 +93,9 @@ PostResult run_post() noexcept {
     if (!guard.verify()) {
         return {PostStatus::kFaultDetected, 5};  // FIZ-3
     }
+
+    // Lock init-phase configuration to prevent post-boot mutation.
+    lock_watchdog_config();
 
     return {PostStatus::kPass, 0};
 }

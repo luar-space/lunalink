@@ -8,6 +8,7 @@ InterleaverStatus block_interleave(
     std::span<uint8_t>       out) noexcept {
 
     InterleaverStatus status = InterleaverStatus::kOk;
+    // cppcheck-suppress variableScope
     uint32_t cfi_count = 0xA5A5A5A5U;
 
     if (in.size() < kInterleaverSize) {
@@ -67,6 +68,7 @@ InterleaverStatus block_deinterleave(
     std::span<uint8_t>       out) noexcept {
 
     InterleaverStatus status = InterleaverStatus::kOk;
+    // cppcheck-suppress variableScope
     uint32_t cfi_count = 0xA5A5A5A5U;
 
     if (in.size() < kInterleaverSize) {

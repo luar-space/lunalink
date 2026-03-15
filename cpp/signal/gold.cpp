@@ -37,6 +37,7 @@ PrnStatus GoldGenerator::generate(PrnId prn_id, std::span<uint8_t> out) noexcept
     PrnStatus status = PrnStatus::kOk;
     
     // CFI: Magic start sentinel
+    // cppcheck-suppress variableScope
     uint32_t cfi_count = 0xA5A5A5A5U;
 
     if (!prn_id.valid()) {
@@ -52,6 +53,7 @@ PrnStatus GoldGenerator::generate(PrnId prn_id, std::span<uint8_t> out) noexcept
         g2_reg_ = kGoldG2Init.at(idx);
 
         // Mirrored loop counter.
+        // cppcheck-suppress [variableScope, unreadVariable]
         uint32_t i_mir = 0xFFFFFFFFU;
 
         for (uint16_t i = 0; i < kGoldChipLength; ++i) {

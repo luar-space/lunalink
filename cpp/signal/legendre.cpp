@@ -68,6 +68,7 @@ LegendreStatus generate_legendre_sequence(
     std::span<uint8_t> out) noexcept {
 
     LegendreStatus status = LegendreStatus::kOk;
+    // cppcheck-suppress variableScope
     uint32_t cfi_count = 0xA5A5A5A5U;
 
     if (out.size() < prime) {
@@ -78,6 +79,7 @@ LegendreStatus generate_legendre_sequence(
 
     if (status == LegendreStatus::kOk) {
         std::fill(out.begin(), out.end(), 0U);
+        // cppcheck-suppress [variableScope, unreadVariable]
         uint32_t x_mir = 0xFFFFFFFFU;
         const auto limit = static_cast<uint16_t>((prime >> 1U) + 1U);
 
