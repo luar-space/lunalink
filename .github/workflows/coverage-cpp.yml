@@ -15,7 +15,7 @@ jobs:
       LINE_COVERAGE_MIN: "90"
       MCDC_COVERAGE_MIN: "30"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Install LLVM ${{ env.LLVM_VERSION }} + tools
@@ -117,7 +117,7 @@ jobs:
           exit $FAIL
 
       - name: Upload coverage artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: mcdc-coverage
           path: |

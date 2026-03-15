@@ -14,7 +14,7 @@ jobs:
     name: WCET benchmark profile
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Install tools
@@ -44,7 +44,7 @@ jobs:
             --console /tmp/wcet_console.txt \
             --output docs/assurance/wcet_profile.rst
       - name: Upload WCET report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: wcet-profile
           path: docs/assurance/wcet_profile.rst

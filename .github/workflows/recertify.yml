@@ -46,7 +46,7 @@ jobs:
     name: "Gate: Lint / Static Analysis"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.ref }}
           fetch-depth: 0
@@ -76,7 +76,7 @@ jobs:
     name: "Gate: C++ Unit Tests"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.ref }}
           fetch-depth: 0
@@ -92,7 +92,7 @@ jobs:
     name: "Gate: SWIFI Fault Injection"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.ref }}
           fetch-depth: 0
@@ -112,7 +112,7 @@ jobs:
     name: "Gate: Sanitizers (ASan + UBSan)"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.ref }}
           fetch-depth: 0
@@ -128,7 +128,7 @@ jobs:
     name: "Gate: C++ Line Coverage"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.ref }}
           fetch-depth: 0
@@ -150,7 +150,7 @@ jobs:
     env:
       LLVM_VERSION: "19"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.ref }}
           fetch-depth: 0
@@ -205,7 +205,7 @@ jobs:
     name: "Gate: clang-tidy Analysis"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.ref }}
           fetch-depth: 0
@@ -226,7 +226,7 @@ jobs:
     name: "Gate: WCET Benchmark Profile"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.ref }}
           fetch-depth: 0
@@ -297,7 +297,7 @@ jobs:
     name: "Gate: Python Tests"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.ref }}
           fetch-depth: 0
@@ -315,7 +315,7 @@ jobs:
     name: "Gate: Documentation Build"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.ref }}
           fetch-depth: 0
@@ -346,7 +346,7 @@ jobs:
       - gate-docs
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.ref }}
           fetch-depth: 0
@@ -428,7 +428,7 @@ jobs:
           cat docs/assurance/recertification_record.rst
 
       - name: Upload recertification record
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: >-
             recertification-record-${{ github.event.inputs.milestone }}-${{ steps.meta.outputs.short }}
