@@ -185,10 +185,25 @@ def generate_rst(
     return "\n".join(lines)
 
 
+def parse_history(path: str) -> list[dict]:
+    """Parse benchmark-action data.js and return list of runs (newest first)."""
+    with open(path) as f:
+        text = f.read()
+    # Strip JS wrapper: "window.BENCHMARK_DATA = {...}"
+    prefix = "window.BENCHMARK_DATA = "
+    if text.startswith(prefix):
+        text = text[len(prefix) :]
+    data = json.loads(text)
+    runs = data.get("entries", {}).get("Benchmark", [])
+    return list(reversed(runs))
+
+
 def generate_summary(
     entries: list[BenchmarkEntry],
     verdicts: list[str],
     sha: str,
+    history: list[dict] | None = None,
+    max_history: int = 10,
 ) -> str:
     """Generate a GitHub Actions step summary (markdown)."""
     lines = [
@@ -216,8 +231,49 @@ def generate_summary(
             f"| {status} |"
         )
 
+    if history:
+        lines += _trend_table(history, max_history)
+
     lines.append("")
     return "\n".join(lines)
+
+
+def _trend_table(history: list[dict], max_history: int) -> list[str]:
+    """Build a trend table from benchmark-action history."""
+    recent = history[:max_history]
+
+    # Collect all function names (preserving order from most recent run).
+    func_names: list[str] = []
+    for run in recent:
+        for b in run.get("benches", []):
+            if b["name"] not in func_names:
+                func_names.append(b["name"])
+
+    # Build header: Function | commit1 | commit2 | ...
+    commits = [r["commit"]["id"][:7] for r in recent]
+    header = "| Function | " + " | ".join(f"`{c}`" for c in commits) + " |"
+    sep = "|----------|" + "|".join("------:" for _ in commits) + "|"
+
+    lines = [
+        "",
+        f"### Trend (last {len(recent)} commits)",
+        "",
+        header,
+        sep,
+    ]
+
+    for name in func_names:
+        row = f"| {name} "
+        for run in recent:
+            val = next(
+                (b["value"] for b in run.get("benches", []) if b["name"] == name),
+                None,
+            )
+            row += f"| {format_time(val)} " if val is not None else "| — "
+        row += "|"
+        lines.append(row)
+
+    return lines
 
 
 def main() -> None:  # noqa: D103
@@ -228,6 +284,9 @@ def main() -> None:  # noqa: D103
     parser.add_argument("--console", required=True, help="Path to console output")
     parser.add_argument("--output", required=True, help="Output RST path")
     parser.add_argument("--bench-json", help="Output JSON for benchmark-action")
+    parser.add_argument(
+        "--history", help="Path to data.js from gh-pages for trend table"
+    )
     args = parser.parse_args()
 
     entries = parse_xml(args.xml)
@@ -260,9 +319,13 @@ def main() -> None:  # noqa: D103
         with open(args.bench_json, "w") as f:
             json.dump(bench_data, f, indent=2)
 
+    history = None
+    if args.history and os.path.exists(args.history):
+        history = parse_history(args.history)
+
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary_path:
-        md = generate_summary(entries, verdicts, sha)
+        md = generate_summary(entries, verdicts, sha, history)
         with open(summary_path, "a") as f:
             f.write(md)
 

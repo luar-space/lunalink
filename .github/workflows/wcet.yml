@@ -41,13 +41,17 @@ jobs:
         run: |
           build/wcet/test_lunalink "[performance]~[benchmark]" \
             --reporter console::out=/tmp/ber_console.txt
+      - name: Fetch benchmark history
+        run: |
+          git show origin/gh-pages:dev/bench/data.js > /tmp/history.js 2>/dev/null || true
       - name: Parse results and generate RST artifact
         run: |
           python3 scripts/wcet_report.py \
             --xml /tmp/wcet_results.xml \
             --console /tmp/wcet_console.txt \
             --output /tmp/wcet_profile.rst \
-            --bench-json /tmp/bench.json
+            --bench-json /tmp/bench.json \
+            --history /tmp/history.js
       - name: Upload WCET report
         uses: actions/upload-artifact@v5
         with:
