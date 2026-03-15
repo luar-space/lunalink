@@ -43,6 +43,10 @@ inline constexpr uint16_t kSb4MsgBits  = 870;
 /// SB4 encoded length (LDPC SF4 output, rate 1/2; reuses SF3 matrices).
 inline constexpr uint16_t kSb4Length   = 1740;
 
+/// Sync pattern: 68 unpacked binary symbols (LSIS V1.0 §2.4.1, Table 12).
+/// Defined in frame.cpp with constinit + section pinning.
+extern const std::array<uint8_t, kSyncLength> kSyncPattern;
+
 /// Symbol rate: 500 sps.
 inline constexpr uint16_t kSymbolRate = 500;
 

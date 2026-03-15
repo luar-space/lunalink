@@ -6,6 +6,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from lunalink.afs._afs import BCH_CODEWORD_LENGTH as BCH_CODEWORD_LENGTH
+from lunalink.afs._afs import DEFAULT_SYNC_THRESHOLD as DEFAULT_SYNC_THRESHOLD
 from lunalink.afs._afs import EPOCHS_PER_FRAME as EPOCHS_PER_FRAME
 from lunalink.afs._afs import FRAME_DURATION_S as FRAME_DURATION_S
 from lunalink.afs._afs import FRAME_LENGTH as FRAME_LENGTH
@@ -36,6 +37,8 @@ from lunalink.afs._afs import LdpcEncodeWorkspace as LdpcEncodeWorkspace
 from lunalink.afs._afs import LdpcStatus as LdpcStatus
 from lunalink.afs._afs import LdpcSubframe as LdpcSubframe
 from lunalink.afs._afs import LdpcWorkspace as LdpcWorkspace
+from lunalink.afs._afs import SyncDetectorStatus as SyncDetectorStatus
+from lunalink.afs._afs import SyncResult as SyncResult
 from lunalink.afs._afs import Toi as Toi
 from lunalink.afs._afs import bch_codebook_checksum as _bch_codebook_checksum
 from lunalink.afs._afs import bch_decode as _bch_decode
@@ -55,6 +58,7 @@ from lunalink.afs._afs import prn_code as _prn_code
 from lunalink.afs._afs import subframe_build_sb2 as _subframe_build_sb2
 from lunalink.afs._afs import subframe_build_sb3 as _subframe_build_sb3
 from lunalink.afs._afs import subframe_build_sb4 as _subframe_build_sb4
+from lunalink.afs._afs import sync_detect as _sync_detect
 from lunalink.afs._afs import weil1500_code as _weil1500_code
 from lunalink.afs._afs import weil10230_code as _weil10230_code
 
@@ -109,6 +113,10 @@ __all__ = [
     "SB4_DATA_BITS",
     "SB4_MSG_BITS",
     "SB4_LENGTH",
+    "DEFAULT_SYNC_THRESHOLD",
+    "SyncDetectorStatus",
+    "SyncResult",
+    "sync_detect",
 ]
 
 
@@ -239,3 +247,24 @@ def subframe_build_sb3(data: NDArray[np.uint8]) -> NDArray[np.uint8]:
 def subframe_build_sb4(data: NDArray[np.uint8]) -> NDArray[np.uint8]:
     """Build Subframe 4: CRC-24 + LDPC SF4 encode (§2.4)."""
     return _subframe_build_sb4(data)
+
+
+def sync_detect(
+    rx_symbols: NDArray[np.float32],
+    threshold: float = 0.0,
+) -> tuple[SyncResult, SyncDetectorStatus]:
+    """Detect the 68-symbol sync pattern in a stream of soft symbols.
+
+    Parameters
+    ----------
+    rx_symbols : array of float32
+        Bipolar soft-decision symbols (+1.0 = bit 0, -1.0 = bit 1).
+    threshold : float, optional
+        Detection threshold. 0 uses the default (50.0).
+
+    Returns
+    -------
+    tuple[SyncResult, SyncDetectorStatus]
+        Detection result and status code.
+    """
+    return _sync_detect(rx_symbols, threshold)

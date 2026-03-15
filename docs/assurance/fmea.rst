@@ -462,6 +462,86 @@ FMEA Table — Software Correlator (``correlator.cpp``)
        Bounded wrapping via ``std::fmod`` replaces unbounded ``while`` loop.
 
 
+FMEA Table — Sync Pattern Detector (``sync_detector.cpp``)
+-----------------------------------------------------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 5 25 20 15 8 12 15
+
+   * - ID
+     - Failure Mode
+     - Effect on System
+     - Detection Mechanism
+     - Severity
+     - FIZ Zone
+     - Mitigation
+   * - FM-055
+     - SEU corrupts TMR peak offset register during cross-correlation search
+     - Frame boundary detected at wrong offset; downstream parser extracts
+       garbled subframes; navigation message decode fails
+     - D-SWIFI: TMR majority vote on ``peak_offset_tmr_`` detects single-copy
+       corruption; two correct copies repair the third.  Adversarial SWIFI
+       test FI-21 injects single-copy fault via ``inject_tmr_fault()`` and
+       verifies repair.
+     - S3
+     - Zone 1
+     - ``TmrValue<uint16_t>`` on peak offset (member variable); majority vote
+       before populating ``SyncResult::frame_offset``; single-copy corruption
+       repaired by ``vote()``.  SWIFI-verified via ``inject_tmr_fault()``.
+   * - FM-056
+     - SEU skips CFI milestone in ``detect()`` (3-milestone counter)
+     - One or more detection stages skipped; result populated from incomplete
+       search; wrong frame boundary or missed detection
+     - D-SWIFI: CFI sentinel terminal check (``cfi_count != Magic + 3``) fires
+       ``kFaultDetected``; FaultPacket emitted via telemetry HAL.
+     - S3
+     - Zone 1
+     - ``volatile uint32_t cfi_count`` with unique magic pattern
+       (0x7E7E7E7E); milestone incremented after input validation, search
+       completion, and result population; terminal check before ``kOk``
+       promotion.  Output scrubbed on failure.
+   * - FM-057
+     - SEU corrupts sync reference pattern (``sync_ref_`` array) in RAM
+     - Cross-correlation matches wrong pattern; sync detected at wrong offset
+       or not detected at all; navigation service outage
+     - D-CBIT: Periodic re-computation of sync reference from ``kSyncPattern``
+       can detect mismatch.  D-POST: ``kSyncPattern`` covered by LUT CRC in
+       frame.cpp.
+     - S2
+     - Zone 2
+     - ``kSyncPattern`` source array is ``constinit`` in pinned LUT section;
+       ``sync_ref_`` recomputed at construction from ROM source.  Residual
+       risk: runtime corruption of ``sync_ref_`` between construction and use.
+       Mitigation: periodic CBIT re-check of reference pattern.
+   * - FM-058
+     - False sync detection (noise correlation exceeds threshold)
+     - Parser attempts to decode noise as navigation data; CRC-24 check on
+       subframes will reject; single-frame outage
+     - D-FRAME: CRC-24Q on decoded subframes catches false-sync data.
+     - S3
+     - Zone 2
+     - Default threshold (50.0) gives >11 dB margin for 68-symbol pattern.
+       Second-peak metric enables discrimination ratio check.  Downstream
+       CRC-24Q acts as secondary gate.
+   * - FM-059
+     - SEU corrupts ``best_corr`` or ``second_best_corr`` accumulator
+       during cross-correlation search (stack-resident float)
+     - Peak metric reports wrong value; could cause false detection or
+       missed detection depending on corruption direction; discrimination
+       ratio (``second_peak``) unreliable
+     - D-THRESHOLD: Threshold margin (50.0 vs 68.0 max) absorbs moderate
+       corruption.  D-FRAME: downstream CRC-24Q rejects garbled data from
+       false sync.  No direct detection of accumulator SEU.
+     - S4
+     - Zone 2
+     - Residual risk accepted.  ``best_corr`` is a transient stack variable
+       recomputed on every frame; corruption affects at most one 12-second
+       frame.  TMR on the peak *offset* (FM-055) protects the safety-critical
+       output (frame boundary); the metric is informational.  Mitigation:
+       downstream CRC-24Q acts as secondary gate.
+
+
 Open FMEA Items
 ---------------
 

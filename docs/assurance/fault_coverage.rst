@@ -158,6 +158,36 @@ SWIFI Scenario Coverage
      - 1 (contained)
      - PASS
 
+   * - FI-20
+     - Sync Detector CFI skip — injected milestone skip fires
+       ``kFaultDetected`` + FaultPacket (FM-056)
+     - ``SyncDetector::inject_cfi_skip(1)``; call ``detect()`` on clean
+       signal that would normally succeed
+     - CFI terminal check fires (``cfi_count != Magic + 3``);
+       ``kFaultDetected`` returned; FaultPacket emitted (``capture.count()
+       == 1``); output scrubbed (all result fields zeroed)
+     - 1
+     - PASS
+   * - FI-21
+     - Sync Detector TMR peak offset — single-copy corruption repaired
+       by majority vote (FM-055)
+     - Clean ``detect()`` at offset 500 populates TMR [500, 500, 500];
+       ``inject_tmr_fault(0, 9999)`` corrupts one copy to [9999, 500, 500];
+       ``voted_peak_offset()`` asserts majority vote returns 500
+     - ``TmrValue<uint16_t>::vote()`` returns correct offset despite
+       single-copy corruption; repair exercised directly without reset
+     - 1 (contained)
+     - PASS
+   * - FI-22
+     - Sync Detector CFI recovery — clean detection succeeds after
+       injected fault (FM-056)
+     - ``inject_cfi_skip(1)`` + ``detect()`` → ``kFaultDetected``; then
+       second ``detect()`` with no injection → ``kOk``
+     - First call: ``kFaultDetected`` + 1 FaultPacket; second call:
+       ``kOk`` + no additional FaultPacket; one-shot injection verified
+     - 1
+     - PASS
+
 Summary
 -------
 
@@ -168,9 +198,9 @@ Summary
    * - Metric
      - Value
    * - Total injection scenarios
-     - 19
+     - 22
    * - Detected (PASS)
-     - 18
+     - 21
    * - Documented residual risk (FI-02)
      - 1
    * - Undetected faults

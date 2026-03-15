@@ -7,6 +7,7 @@
 #include "lunalink/signal/modulator.hpp"
 #include "lunalink/signal/prn.hpp"
 #include "lunalink/signal/matched_code.hpp"
+#include "lunalink/signal/sync_detector.hpp"
 #include <cstdint>
 #include <span>
 #include <pybind11/numpy.h>
@@ -376,4 +377,48 @@ PYBIND11_MODULE(_afs, m) {
   m.attr("SB4_DATA_BITS") = kSb4DataBits;
   m.attr("SB4_MSG_BITS") = kSb4MsgBits;
   m.attr("SB4_LENGTH") = kSb4Length;
+  m.attr("DEFAULT_SYNC_THRESHOLD") = kDefaultSyncThreshold;
+
+  py::enum_<SyncDetectorStatus>(m, "SyncDetectorStatus")
+      .value("OK", SyncDetectorStatus::kOk)
+      .value("INVALID_INPUT", SyncDetectorStatus::kInvalidInput)
+      .value("NOT_DETECTED", SyncDetectorStatus::kNotDetected)
+      .value("FAULT_DETECTED", SyncDetectorStatus::kFaultDetected)
+      .export_values();
+
+  py::class_<SyncResult>(m, "SyncResult")
+      .def_readonly("frame_offset", &SyncResult::frame_offset)
+      .def_readonly("peak_metric", &SyncResult::peak_metric)
+      .def_readonly("second_peak", &SyncResult::second_peak)
+      .def_readonly("detected", &SyncResult::detected);
+
+  m.def("sync_detect", [](py::array_t<float, py::array::c_style | py::array::forcecast> rx_symbols,
+                           float threshold) {
+    NullTelemetryHal hal;
+    SyncDetector det(hal);
+    if (threshold > 0.0F) {
+        if (!det.set_threshold(threshold)) {
+            throw py::value_error("Invalid threshold");
+        }
+    }
+    SyncResult result{};
+    auto status = det.detect(
+        std::span<const float>(rx_symbols.data(), static_cast<size_t>(rx_symbols.size())),
+        result);
+    return py::make_tuple(result, status);
+  }, py::arg("rx_symbols"), py::arg("threshold") = 0.0F,
+     R"(Detect the 68-symbol sync pattern in a stream of soft symbols.
+
+Parameters
+----------
+rx_symbols : array of float
+    Bipolar soft-decision symbols (+1.0 = bit 0, -1.0 = bit 1).
+threshold : float, optional
+    Detection threshold (default: 50.0). Set to 0 to use default.
+
+Returns
+-------
+tuple[SyncResult, SyncDetectorStatus]
+    Detection result and status code.
+)");
 }

@@ -37,7 +37,17 @@ autodoc_default_options = {
     "show-inheritance": True,
 }
 
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    # Draft docs not yet in a toctree — exclude to prevent -W failures.
+    "assurance/README.rst",
+    "assurance/build_policy.rst",
+    "assurance/configuration_baseline.rst",
+    "assurance/tool_confidence.rst",
+    "assurance/traceability_matrix.rst",
+]
 
 html_theme = "furo"
 

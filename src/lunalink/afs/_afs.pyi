@@ -143,3 +143,21 @@ SB3_LENGTH: int
 SB4_DATA_BITS: int
 SB4_MSG_BITS: int
 SB4_LENGTH: int
+DEFAULT_SYNC_THRESHOLD: float
+
+class SyncDetectorStatus(IntEnum):
+    OK = 0x5A
+    INVALID_INPUT = 0xA5
+    NOT_DETECTED = 0x33
+    FAULT_DETECTED = 0xCC
+
+class SyncResult:
+    frame_offset: int
+    peak_metric: float
+    second_peak: float
+    detected: bool
+
+def sync_detect(
+    rx_symbols: NDArray[np.float32],
+    threshold: float = 0.0,
+) -> tuple[SyncResult, SyncDetectorStatus]: ...

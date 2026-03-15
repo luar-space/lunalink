@@ -21,5 +21,5 @@ lunalink.afs.signal
 
 .. automodule:: lunalink.afs.signal
    :members:
-   :exclude-members: FrameStatus, BchResult, bch_decode, BchStatus, Fid, Toi, LdpcStatus, LdpcSubframe, LdpcWorkspace
+   :exclude-members: FrameStatus, BchResult, bch_decode, BchStatus, Fid, Toi, LdpcStatus, LdpcSubframe, LdpcWorkspace, LdpcEncodeWorkspace, SyncDetectorStatus, SyncResult
    :show-inheritance:

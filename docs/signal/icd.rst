@@ -95,6 +95,25 @@ All public functions and types are declared in headers under
      - ``Result<T&>`` on read; ``kBoundsViolation`` if ``idx >= N``
      - ``kBoundsViolation``
      - Thread-hostile
+   * - ``Correlator``
+     - ``class Correlator``
+     - Constructed with ``DopplerPrior&``, ``ITelemetryHal&``;
+       ``assign_channel(ch, prn_id)``, ``acquire(ch, rx, result)``,
+       ``track(ch, rx)``, ``pseudorange(ch, out)``
+     - ``AcquisitionResult`` struct; ``TrackingState`` struct;
+       ``ChannelState`` enum; pseudorange in meters
+     - ``CorrelatorStatus::kInvalidInput``, ``kAcqFailed``,
+       ``kNotLocked``, ``kFaultDetected``
+     - Thread-hostile; non-reentrant (shared scratch buffer)
+   * - ``SyncDetector``
+     - ``class SyncDetector``
+     - Constructed with ``ITelemetryHal&``; ``set_threshold(float)``;
+       ``detect(rx_symbols, result)``
+     - ``SyncResult`` struct (frame_offset, peak_metric, second_peak,
+       detected)
+     - ``SyncDetectorStatus::kInvalidInput``, ``kNotDetected``,
+       ``kFaultDetected``
+     - Thread-hostile
    * - ``CfiGuard<T>``
      - ``template<typename T> class CfiGuard``
      - Wraps enum ``T``; stores complement-pair; ``get()`` validates both copies

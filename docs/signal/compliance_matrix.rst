@@ -163,4 +163,31 @@ Gateway 7: Validation & Utilities
      - Verified in spreading tests
 
 
-(Additional Gateways G5-G8 to be populated as implementation proceeds)
+Gateway 5: Frame Sync & Decoding
+---------------------------------
+.. list-table::
+   :widths: 15 60 10 15
+   :header-rows: 1
+
+   * - ID
+     - Requirement
+     - Status
+     - Notes
+   * - LSIS-701
+     - Software Correlator — PCPS Acquisition (2048-pt FFT)
+     - ✅
+     - Implemented [Hardened] in ``correlator.cpp``; DLL+PLL tracking
+   * - LSIS-702
+     - Channel Assignment — PRN to tracking channel mapping
+     - ✅
+     - 6 channels; TMR state; transition matrix
+   * - LSIS-703
+     - Pseudorange Output — code-phase to meters conversion
+     - ✅
+     - Ring buffer history; kNotLocked guard
+   * - LSIS-710
+     - Sync Pattern Detection — 68-symbol cross-correlation
+     - ✅
+     - Implemented [Hardened] in ``sync_detector.cpp``; TMR peak; CFI
+
+(Additional Gateways G6-G8 to be populated as implementation proceeds)

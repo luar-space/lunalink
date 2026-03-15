@@ -4,12 +4,16 @@ import numpy as np
 import pytest
 
 from lunalink.afs import (
+    DEFAULT_SYNC_THRESHOLD,
     EPOCHS_PER_FRAME,
+    FRAME_LENGTH,
     INTERIM_ASSIGNMENT_MAX_PRN,
     SECONDARY_CODE_COUNT,
     SECONDARY_CODE_LENGTH,
+    SYNC_LENGTH,
     TERTIARY_CODE_LENGTH,
     BchStatus,
+    SyncDetectorStatus,
     bch_decode,
     bch_encode,
     frame_build_partial,
@@ -19,6 +23,7 @@ from lunalink.afs import (
     modulate_q,
     multiplex_iq,
     prn_code,
+    sync_detect,
     weil1500_code,
     weil10230_code,
 )
@@ -411,3 +416,61 @@ class TestBchDecode:
         chk = bch_codebook_checksum()
         assert isinstance(chk, int)
         assert chk != 0
+
+
+class TestSyncDetect:
+    """Tests for sync pattern detector (GD5.2)."""
+
+    def test_perfect_sync_detected(self):
+        """Sync pattern at known offset is detected with high confidence."""
+        frame = frame_build_partial(0, 69)
+        assert frame.shape == (FRAME_LENGTH,)
+        # Convert binary {0,1} to bipolar {+1,-1}: bit 0 -> +1, bit 1 -> -1
+        bipolar = np.where(frame == 0, 1.0, -1.0).astype(np.float32)
+        result, status = sync_detect(bipolar)
+        assert status == SyncDetectorStatus.OK
+        assert result.detected is True
+        assert result.frame_offset == 0
+        assert result.peak_metric > DEFAULT_SYNC_THRESHOLD
+
+    def test_sync_at_offset(self):
+        """Sync pattern embedded at a non-zero offset is found correctly."""
+        frame = frame_build_partial(0, 69)
+        bipolar = np.where(frame == 0, 1.0, -1.0).astype(np.float32)
+        # Prepend 200 random symbols
+        offset = 200
+        rng = np.random.default_rng(42)
+        noise = rng.choice([-1.0, 1.0], size=offset).astype(np.float32)
+        stream = np.concatenate([noise, bipolar])
+        result, status = sync_detect(stream)
+        assert status == SyncDetectorStatus.OK
+        assert result.detected is True
+        assert result.frame_offset == offset
+
+    def test_noise_only_not_detected(self):
+        """Pure noise does not trigger false detection."""
+        rng = np.random.default_rng(123)
+        noise = rng.standard_normal(FRAME_LENGTH).astype(np.float32)
+        result, status = sync_detect(noise)
+        assert status == SyncDetectorStatus.NOT_DETECTED
+        assert result.detected is False
+
+    def test_input_too_short(self):
+        """Input shorter than sync length returns INVALID_INPUT."""
+        short = np.ones(SYNC_LENGTH - 1, dtype=np.float32)
+        result, status = sync_detect(short)
+        assert status == SyncDetectorStatus.INVALID_INPUT
+
+    def test_custom_threshold(self):
+        """Custom threshold is respected."""
+        frame = frame_build_partial(0, 69)
+        bipolar = np.where(frame == 0, 1.0, -1.0).astype(np.float32)
+        # Very high threshold — should not detect
+        result, status = sync_detect(bipolar, threshold=1000.0)
+        assert result.detected is False
+
+    def test_constants(self):
+        """Sync-related constants have expected values."""
+        assert SYNC_LENGTH == 68
+        assert FRAME_LENGTH == 6000
+        assert DEFAULT_SYNC_THRESHOLD > 0.0
