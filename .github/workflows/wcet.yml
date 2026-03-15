@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   wcet:
     name: WCET benchmark profile
@@ -44,3 +48,15 @@ jobs:
         with:
           name: wcet-profile
           path: docs/assurance/wcet_profile.rst
+      - name: Track benchmark history
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: catch2
+          output-file-path: /tmp/wcet_console.txt
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: dev/bench
+          auto-push: ${{ github.ref == 'refs/heads/main' }}
+          alert-threshold: "200%"
+          comment-on-alert: true
+          fail-on-alert: false
+          github-token: ${{ secrets.GITHUB_TOKEN }}
