@@ -46,13 +46,13 @@ jobs:
           python3 scripts/wcet_report.py \
             --xml /tmp/wcet_results.xml \
             --console /tmp/wcet_console.txt \
-            --output docs/assurance/wcet_profile.rst \
+            --output /tmp/wcet_profile.rst \
             --bench-json /tmp/bench.json
       - name: Upload WCET report
         uses: actions/upload-artifact@v5
         with:
           name: wcet-profile
-          path: docs/assurance/wcet_profile.rst
+          path: /tmp/wcet_profile.rst
       - name: Track benchmark history
         uses: benchmark-action/github-action-benchmark@v1
         with:
