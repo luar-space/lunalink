@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import os
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -183,6 +184,41 @@ def generate_rst(
     return "\n".join(lines)
 
 
+def generate_summary(
+    entries: list[BenchmarkEntry],
+    verdicts: list[str],
+    sha: str,
+) -> str:
+    """Generate a GitHub Actions step summary (markdown)."""
+    lines = [
+        "## WCET Profile",
+        "",
+        f"**Commit:** `{sha}` | **Benchmarks:** {len(entries)}",
+        "",
+        "| Function | Mean | Std Dev | 95% CI | Verdict |",
+        "|----------|------|---------|--------|---------|",
+    ]
+
+    for e, v in zip(entries, verdicts):
+        ci_spread_pct = (
+            (e.high_mean_ns - e.low_mean_ns) / e.mean_ns * 100.0
+            if e.mean_ns > 0
+            else 0.0
+        )
+        status = "PASS" if v.startswith("PASS") else "WARN"
+        lines.append(
+            f"| {e.name} "
+            f"| {format_time(e.mean_ns)} "
+            f"| {format_time(e.stddev_ns)} "
+            f"| {format_time(e.low_mean_ns)}–{format_time(e.high_mean_ns)}"
+            f" ({ci_spread_pct:.1f}%) "
+            f"| {status} |"
+        )
+
+    lines.append("")
+    return "\n".join(lines)
+
+
 def main() -> None:  # noqa: D103
     parser = argparse.ArgumentParser(
         description="Generate WCET RST report from Catch2 XML"
@@ -214,6 +250,12 @@ def main() -> None:  # noqa: D103
     rst = generate_rst(entries, verdicts, console_text, sha, today)
     with open(args.output, "w") as f:
         f.write(rst)
+
+    summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary_path:
+        md = generate_summary(entries, verdicts, sha)
+        with open(summary_path, "a") as f:
+            f.write(md)
 
     print(f"WCET report: {len(entries)} benchmarks parsed")
     for v in verdicts:
