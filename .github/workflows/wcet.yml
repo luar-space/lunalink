@@ -32,11 +32,15 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release
       - name: Build
         run: cmake --build build/wcet --parallel
-      - name: Run performance benchmarks
+      - name: Run BENCHMARK tests (timing only)
         run: |
-          build/wcet/test_lunalink "[performance]" \
+          build/wcet/test_lunalink "[benchmark]" \
             --reporter console::out=/tmp/wcet_console.txt \
             --reporter xml::out=/tmp/wcet_results.xml
+      - name: Run BER simulations
+        run: |
+          build/wcet/test_lunalink "[performance]~[benchmark]" \
+            --reporter console::out=/tmp/ber_console.txt
       - name: Parse results and generate RST artifact
         run: |
           python3 scripts/wcet_report.py \

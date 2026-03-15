@@ -34,7 +34,7 @@ void prepare_soft_symbols(LdpcSubframe type,
 }
 } // namespace
 
-TEST_CASE("Gateway 2: WCET Analysis", "[performance]") {
+TEST_CASE("Gateway 2: WCET Analysis", "[performance][benchmark]") {
     std::array<uint8_t, 1200> msg_sf2{};
     std::array<uint8_t, 2400> encoded_sf2{};
     std::array<float, 2400> soft_sf2{};
@@ -60,7 +60,7 @@ TEST_CASE("Gateway 2: WCET Analysis", "[performance]") {
     };
 }
 
-TEST_CASE("Gateway 5: Sync Detector WCET", "[performance]") {
+TEST_CASE("Gateway 5: Sync Detector WCET", "[performance][benchmark]") {
     NullTelemetryHal hal;
     SyncDetector det(hal);
 
@@ -78,7 +78,7 @@ TEST_CASE("Gateway 5: Sync Detector WCET", "[performance]") {
     };
 }
 
-TEST_CASE("Gateway 2: LDPC Decode Throughput", "[performance]") {
+TEST_CASE("Gateway 2: LDPC Decode Throughput", "[performance][benchmark]") {
     SECTION("SF2 — alpha sweep throughput") {
         std::array<float, 2400> soft{};
         prepare_soft_symbols(LdpcSubframe::kSF2, soft);
