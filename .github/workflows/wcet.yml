@@ -30,111 +30,15 @@ jobs:
         run: cmake --build build/wcet --parallel
       - name: Run performance benchmarks
         run: |
-          build/wcet/test_lunalink "[performance]" --reporter console \
-            2>&1 | tee /tmp/wcet_raw.txt
-      - name: Check WCET tolerance and generate RST artifact
+          build/wcet/test_lunalink "[performance]" \
+            --reporter console::out=/tmp/wcet_console.txt \
+            --reporter xml::out=/tmp/wcet_results.xml
+      - name: Parse results and generate RST artifact
         run: |
-          python3 - <<'EOF'
-          import datetime, re, subprocess, sys
-
-          with open('/tmp/wcet_raw.txt') as f:
-              raw = f.read()
-
-          today = datetime.date.today()
-          sha = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode().strip()
-
-          # --- Parse [performance]-tagged Catch2 benchmark output ---
-          # Catch2 BENCHMARK output lines look like:
-          #   fn_name                   100 ns   <...>
-          # Collect (name -> list of mean_ns) to detect multi-class variants.
-          timing_pattern = re.compile(
-              r'^\s*([\w_]+(?:\s+[\w_]+)*?)\s+(\d+(?:\.\d+)?)\s+(ns|us|ms)\s', re.MULTILINE)
-          timings: dict[str, list[float]] = {}
-          for m in timing_pattern.finditer(raw):
-              name = m.group(1).strip()
-              val  = float(m.group(2))
-              unit = m.group(3)
-              if unit == 'us':
-                  val *= 1_000
-              elif unit == 'ms':
-                  val *= 1_000_000
-              timings.setdefault(name, []).append(val)
-
-          # --- Evaluate ±2% tolerance per function ---
-          verdicts: list[str] = []
-          ci_failed = False
-          for fn, vals in sorted(timings.items()):
-              if len(vals) < 2:
-                  verdicts.append(f'WARN  {fn}: only one timing sample; tolerance check skipped')
-              else:
-                  lo, hi = min(vals), max(vals)
-                  pct = (hi - lo) / lo * 100.0 if lo > 0 else 0.0
-                  if pct > 2.0:
-                      verdicts.append(f'FAIL  {fn}: deviation {pct:.1f}% exceeds ±2% limit')
-                      ci_failed = True
-                  else:
-                      verdicts.append(f'PASS  {fn}: deviation {pct:.1f}% within ±2%')
-
-          verdict_block = '\n'.join(verdicts) if verdicts else '(no [performance] benchmarks found)'
-
-          content = (
-              'WCET Profile\n'
-              '============\n'
-              '\n'
-              f'**Document ID**: LUNALINK-WCET-001\n'
-              f'**Revision**: CI-generated — {today} ({sha})\n'
-              '**Specification Reference**: Safety Plan §Acceptance Criteria 4\n'
-              '\n'
-              '.. note::\n'
-              '   Generated automatically by the ``wcet`` CI workflow.\n'
-              '\n'
-              'Measurement Environment\n'
-              '-----------------------\n'
-              '\n'
-              '.. list-table::\n'
-              '   :header-rows: 1\n'
-              '   :widths: 30 70\n'
-              '\n'
-              '   * - Parameter\n'
-              '     - Value\n'
-              '   * - Runner\n'
-              '     - GitHub Actions ``ubuntu-latest``\n'
-              '   * - Compiler\n'
-              '     - GCC (Release, ``-O2``, ``-fno-fast-math``)\n'
-              '   * - Timing method\n'
-              '     - Catch2 ``BENCHMARK`` macro (nanosecond resolution)\n'
-              '   * - Git SHA\n'
-              f'     - {sha}\n'
-              '\n'
-              'WCET Measurements\n'
-              '-----------------\n'
-              '\n'
-              '.. code-block:: text\n'
-              '\n'
-          )
-          for line in raw.splitlines():
-              content += f'   {line}\n'
-
-          content += (
-              '\n'
-              'Compliance Status\n'
-              '-----------------\n'
-              '\n'
-              'Per-function PASS/WARN/FAIL verdicts (±2% band, Safety Plan Acceptance Criteria 4):\n'
-              '\n'
-              '.. code-block:: text\n'
-              '\n'
-          )
-          for v in (verdicts if verdicts else ['(no benchmark data)']):
-              content += f'   {v}\n'
-
-          with open('docs/assurance/wcet_profile.rst', 'w') as f:
-              f.write(content)
-          print('WCET RST written.')
-          if ci_failed:
-              print('ERROR: one or more functions exceeded the ±2% WCET tolerance band.', file=sys.stderr)
-              sys.exit(1)
-          EOF
+          python3 scripts/wcet_report.py \
+            --xml /tmp/wcet_results.xml \
+            --console /tmp/wcet_console.txt \
+            --output docs/assurance/wcet_profile.rst
       - name: Upload WCET report
         uses: actions/upload-artifact@v4
         with:
