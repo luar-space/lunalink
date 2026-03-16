@@ -360,7 +360,7 @@ Cross-Cutting: Coherency & Round-Trip Tests
 --------------------------------------------
 
 Coherency test (``cpp/tests/signal/test_coherency.cpp``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Verifies primary/secondary/tertiary phase alignment (LSIS-172) over a full
 6000-epoch frame.  Confirms that epoch boundaries align correctly and that

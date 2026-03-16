@@ -4,7 +4,15 @@ on:
   push:
     branches: [main]
     tags: ["v*"]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '*.rst'
   pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '*.rst'
 
 jobs:
   test:
@@ -18,11 +26,19 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+      - name: Install Ninja
+        run: sudo apt-get install -y ninja-build
+      - uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: python-${{ matrix.python-version }}
       - uses: arduino/setup-task@v2
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: ${{ matrix.python-version }}
       - run: uv sync --group test
+        env:
+          CMAKE_C_COMPILER_LAUNCHER: ccache
+          CMAKE_CXX_COMPILER_LAUNCHER: ccache
       - run: task test-py
 
       - name: Generate coverage JSON

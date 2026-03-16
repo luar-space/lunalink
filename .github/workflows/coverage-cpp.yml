@@ -4,7 +4,15 @@ on:
   push:
     branches: [main]
     tags: ["v*"]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '*.rst'
   pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '*.rst'
 
 jobs:
   coverage-mcdc:
@@ -18,15 +26,27 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+      - name: Cache LLVM ${{ env.LLVM_VERSION }}
+        id: cache-llvm
+        uses: actions/cache@v4
+        with:
+          path: /usr/lib/llvm-${{ env.LLVM_VERSION }}
+          key: llvm-${{ env.LLVM_VERSION }}-${{ runner.os }}
       - name: Install LLVM ${{ env.LLVM_VERSION }} + tools
+        if: steps.cache-llvm.outputs.cache-hit != 'true'
         run: |
           wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
           CODENAME=$(lsb_release -cs)
           echo "deb http://apt.llvm.org/${CODENAME}/ llvm-toolchain-${CODENAME}-${LLVM_VERSION} main" \
             | sudo tee /etc/apt/sources.list.d/llvm.list
           sudo apt-get update
-          sudo apt-get install -y ninja-build \
+          sudo apt-get install -y \
             clang-${LLVM_VERSION} llvm-${LLVM_VERSION} lld-${LLVM_VERSION}
+      - name: Install Ninja
+        run: sudo apt-get install -y ninja-build
+      - uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: coverage-mcdc
       - uses: arduino/setup-task@v2
       - uses: astral-sh/setup-uv@v5
         with:
@@ -36,6 +56,9 @@ jobs:
         run: |
           export PATH="/usr/lib/llvm-${LLVM_VERSION}/bin:${PATH}"
           task coverage-cpp
+        env:
+          CMAKE_C_COMPILER_LAUNCHER: ccache
+          CMAKE_CXX_COMPILER_LAUNCHER: ccache
 
       - name: Extract coverage metrics
         id: coverage

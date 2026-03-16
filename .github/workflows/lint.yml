@@ -4,7 +4,15 @@ on:
   push:
     branches: [main]
     tags: ["v*"]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '*.rst'
   pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '*.rst'
 
 jobs:
   lint:
@@ -21,6 +29,9 @@ jobs:
       - run: uv sync --group dev
       - name: Install cppcheck
         run: sudo apt-get install -y cppcheck
+      - uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: lint
       - name: Run lint checks
         run: task lint-check
       - name: Check build flags (S10 gate)
@@ -31,7 +42,9 @@ jobs:
             -DBUILD_PYTHON_BINDINGS=OFF \
             -DBUILD_TESTING=ON \
             -DCMAKE_BUILD_TYPE=Debug \
-            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build build/flags --parallel
           uv run python scripts/check_build_flags.py build/flags/compile_commands.json
       - name: Capture cppcheck report

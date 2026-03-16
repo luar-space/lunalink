@@ -248,7 +248,7 @@ Cross-Cutting: Integration and Assurance Tests
 -----------------------------------------------
 
 Coherency test (``cpp/tests/signal/test_coherency.cpp``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Verifies primary/secondary/tertiary phase alignment (LSIS-172) over a full
 6000-epoch frame.  This is the upstream prerequisite for GD4: if matched-code

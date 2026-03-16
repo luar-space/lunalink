@@ -4,7 +4,15 @@ on:
   push:
     branches: [main]
     tags: ["v*"]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '*.rst'
   pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '*.rst'
 
 jobs:
   sanitize:
@@ -16,5 +24,11 @@ jobs:
           fetch-depth: 0
       - name: Install Ninja
         run: sudo apt-get install -y ninja-build
+      - uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: sanitize
       - uses: arduino/setup-task@v2
       - run: task sanitize
+        env:
+          CMAKE_C_COMPILER_LAUNCHER: ccache
+          CMAKE_CXX_COMPILER_LAUNCHER: ccache

@@ -4,7 +4,15 @@ on:
   push:
     branches: [main]
     tags: ["v*"]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '*.rst'
   pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '*.rst'
 
 jobs:
   tidy:
@@ -16,10 +24,16 @@ jobs:
           fetch-depth: 0
       - name: Install tools
         run: sudo apt-get install -y ninja-build clang clang-tidy
+      - uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: tidy
       - uses: arduino/setup-task@v2
       - run: clang-tidy --version
       - name: Run clang-tidy
         run: CC=clang CXX=clang++ task tidy 2>&1 | tee /tmp/clang_tidy_output.txt
+        env:
+          CMAKE_C_COMPILER_LAUNCHER: ccache
+          CMAKE_CXX_COMPILER_LAUNCHER: ccache
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"

@@ -4,7 +4,17 @@ on:
   push:
     branches: [main]
     tags: ["v*"]
+    paths:
+      - 'cpp/**'
+      - 'docs/**'
+      - 'scripts/verify_traceability.py'
+      - '.github/workflows/traceability.yml'
   pull_request:
+    paths:
+      - 'cpp/**'
+      - 'docs/**'
+      - 'scripts/verify_traceability.py'
+      - '.github/workflows/traceability.yml'
 
 jobs:
   traceability:
