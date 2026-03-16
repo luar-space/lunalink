@@ -9,14 +9,16 @@ InterleaverStatus block_interleave(
 
     InterleaverStatus status = InterleaverStatus::kOk;
     // cppcheck-suppress variableScope
-    uint32_t cfi_count = 0xA5A5A5A5U;
+    volatile uint32_t cfi_count = 0xA5A5A5A5U;
 
     if (in.size() < kInterleaverSize) {
         status = InterleaverStatus::kInputTooSmall;
     } else if (out.size() < kInterleaverSize) {
         status = InterleaverStatus::kOutputTooSmall;
-    } else if (in.data() == out.data()) {
-        status = InterleaverStatus::kFaultDetected;  // FIZ-1
+    } else if (spans_overlap(
+                   static_cast<const void*>(in.data()), in.size_bytes(),
+                   static_cast<const void*>(out.data()), out.size_bytes())) {
+        status = InterleaverStatus::kFaultDetected;  // FIZ-1 [MA §11]
     }
 
     if (status == InterleaverStatus::kOk) {
@@ -39,7 +41,7 @@ InterleaverStatus block_interleave(
 
                 out[out_idx] = in[in_idx];
                 in_idx_acc++;
-                cfi_count++;
+                cfi_count = cfi_count + 1U;
                 wip_tick();
             }
             if (status != InterleaverStatus::kOk) {
@@ -69,14 +71,16 @@ InterleaverStatus block_deinterleave(
 
     InterleaverStatus status = InterleaverStatus::kOk;
     // cppcheck-suppress variableScope
-    uint32_t cfi_count = 0xA5A5A5A5U;
+    volatile uint32_t cfi_count = 0xA5A5A5A5U;
 
     if (in.size() < kInterleaverSize) {
         status = InterleaverStatus::kInputTooSmall;
     } else if (out.size() < kInterleaverSize) {
         status = InterleaverStatus::kOutputTooSmall;
-    } else if (in.data() == out.data()) {
-        status = InterleaverStatus::kFaultDetected;  // FIZ-1
+    } else if (spans_overlap(
+                   static_cast<const void*>(in.data()), in.size_bytes(),
+                   static_cast<const void*>(out.data()), out.size_bytes())) {
+        status = InterleaverStatus::kFaultDetected;  // FIZ-1 [MA §11]
     }
 
     if (status == InterleaverStatus::kOk) {
@@ -96,7 +100,65 @@ InterleaverStatus block_deinterleave(
 
                 out[out_idx] = in[in_idx];
                 in_idx_acc++;
-                cfi_count++;
+                cfi_count = cfi_count + 1U;
+                wip_tick();
+            }
+            if (status != InterleaverStatus::kOk) {
+                break;
+            }
+        }
+
+        if (status == InterleaverStatus::kOk) {
+            if (cfi_count != (0xA5A5A5A5U + kInterleaverSize) ||
+                in_idx_acc != kInterleaverSize) [[unlikely]] {
+                status = InterleaverStatus::kFaultDetected;  // FIZ-1
+            }
+        }
+    }
+
+    if (status != InterleaverStatus::kOk) {
+        secure_scrub(out);
+    }
+
+    return status;
+}
+
+// [LSIS-AFS-471]
+InterleaverStatus block_deinterleave_soft(
+    std::span<const float> in,
+    std::span<float>       out) noexcept {
+
+    InterleaverStatus status = InterleaverStatus::kOk;
+    // cppcheck-suppress variableScope
+    volatile uint32_t cfi_count = 0xA5A5A5A5U;
+
+    if (in.size() < kInterleaverSize) {
+        status = InterleaverStatus::kInputTooSmall;
+    } else if (out.size() < kInterleaverSize) {
+        status = InterleaverStatus::kOutputTooSmall;
+    } else if (spans_overlap(
+                   static_cast<const void*>(in.data()), in.size_bytes(),
+                   static_cast<const void*>(out.data()), out.size_bytes())) {
+        status = InterleaverStatus::kFaultDetected;  // FIZ-1 [MA §11]
+    }
+
+    if (status == InterleaverStatus::kOk) {
+        // Write column-wise, read row-wise (same permutation as hard deinterleave)
+        size_t in_idx_acc = 0;
+
+        for (uint16_t c = 0; c < kInterleaverCols; ++c) {
+            for (uint16_t r = 0; r < kInterleaverRows; ++r) {
+                const size_t in_idx  = (static_cast<size_t>(c) * kInterleaverRows) + r;
+                const size_t out_idx = (static_cast<size_t>(r) * kInterleaverCols) + c;
+
+                if (in_idx != in_idx_acc) [[unlikely]] {
+                    status = InterleaverStatus::kFaultDetected;  // FIZ-1
+                    break;
+                }
+
+                out[out_idx] = in[in_idx];
+                in_idx_acc++;
+                cfi_count = cfi_count + 1U;
                 wip_tick();
             }
             if (status != InterleaverStatus::kOk) {

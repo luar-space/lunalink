@@ -187,6 +187,16 @@ SWIFI Scenario Coverage
        ``kOk`` + no additional FaultPacket; one-shot injection verified
      - 1
      - PASS
+   * - FI-23
+     - Frame Decode CFI skip — injected milestone skip fires
+       ``kFaultDetected`` + FaultPacket (FM-060)
+     - ``workspace.cfi_skip_inject = 1``; call ``frame_decode()`` on
+       noiseless signal that would normally succeed
+     - CFI terminal check fires (``cfi_count != 0x7E7E7E7E + 6``);
+       ``kFaultDetected`` returned; FaultPacket emitted
+       (``capture.count() == 1``); workspace temporaries scrubbed
+     - 1
+     - PASS
 
 Summary
 -------
@@ -198,9 +208,9 @@ Summary
    * - Metric
      - Value
    * - Total injection scenarios
-     - 22
+     - 23
    * - Detected (PASS)
-     - 21
+     - 22
    * - Documented residual risk (FI-02)
      - 1
    * - Undetected faults

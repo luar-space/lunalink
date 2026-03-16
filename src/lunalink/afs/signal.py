@@ -5,15 +5,20 @@ from __future__ import annotations
 import numpy as np
 from numpy.typing import NDArray
 
+from lunalink.afs._afs import AFS_I_CODE_LENGTH as AFS_I_CODE_LENGTH
 from lunalink.afs._afs import BCH_CODEWORD_LENGTH as BCH_CODEWORD_LENGTH
+from lunalink.afs._afs import CODE_PERIOD_S as CODE_PERIOD_S
 from lunalink.afs._afs import DEFAULT_SYNC_THRESHOLD as DEFAULT_SYNC_THRESHOLD
 from lunalink.afs._afs import EPOCHS_PER_FRAME as EPOCHS_PER_FRAME
+from lunalink.afs._afs import FFT_SIZE as FFT_SIZE
 from lunalink.afs._afs import FRAME_DURATION_S as FRAME_DURATION_S
 from lunalink.afs._afs import FRAME_LENGTH as FRAME_LENGTH
 from lunalink.afs._afs import INTERIM_ASSIGNMENT_MAX_PRN as INTERIM_ASSIGNMENT_MAX_PRN
 from lunalink.afs._afs import IQ_SAMPLES_PER_EPOCH as IQ_SAMPLES_PER_EPOCH
 from lunalink.afs._afs import IQ_UPSAMPLE_FACTOR as IQ_UPSAMPLE_FACTOR
+from lunalink.afs._afs import MAX_CHANNELS as MAX_CHANNELS
 from lunalink.afs._afs import PAYLOAD_LENGTH as PAYLOAD_LENGTH
+from lunalink.afs._afs import SAMPLE_RATE_HZ as SAMPLE_RATE_HZ
 from lunalink.afs._afs import SB1_LENGTH as SB1_LENGTH
 from lunalink.afs._afs import SB2_DATA_BITS as SB2_DATA_BITS
 from lunalink.afs._afs import SB2_LENGTH as SB2_LENGTH
@@ -29,22 +34,32 @@ from lunalink.afs._afs import SECONDARY_CODE_LENGTH as SECONDARY_CODE_LENGTH
 from lunalink.afs._afs import SYMBOL_RATE as SYMBOL_RATE
 from lunalink.afs._afs import SYNC_LENGTH as SYNC_LENGTH
 from lunalink.afs._afs import TERTIARY_CODE_LENGTH as TERTIARY_CODE_LENGTH
+from lunalink.afs._afs import AcquisitionResult as AcquisitionResult
 from lunalink.afs._afs import BchResult as BchResult
 from lunalink.afs._afs import BchStatus as BchStatus
+from lunalink.afs._afs import ChannelState as ChannelState
+from lunalink.afs._afs import Correlator as Correlator
+from lunalink.afs._afs import CorrelatorStatus as CorrelatorStatus
 from lunalink.afs._afs import Fid as Fid
+from lunalink.afs._afs import FrameDecodeResult as FrameDecodeResult
+from lunalink.afs._afs import FrameDecodeStatus as FrameDecodeStatus
 from lunalink.afs._afs import FrameStatus as FrameStatus
 from lunalink.afs._afs import LdpcEncodeWorkspace as LdpcEncodeWorkspace
 from lunalink.afs._afs import LdpcStatus as LdpcStatus
 from lunalink.afs._afs import LdpcSubframe as LdpcSubframe
 from lunalink.afs._afs import LdpcWorkspace as LdpcWorkspace
+from lunalink.afs._afs import SubframeDecodeResult as SubframeDecodeResult
 from lunalink.afs._afs import SyncDetectorStatus as SyncDetectorStatus
 from lunalink.afs._afs import SyncResult as SyncResult
 from lunalink.afs._afs import Toi as Toi
+from lunalink.afs._afs import TrackingState as TrackingState
+from lunalink.afs._afs import UniformPrior as UniformPrior
 from lunalink.afs._afs import bch_codebook_checksum as _bch_codebook_checksum
 from lunalink.afs._afs import bch_decode as _bch_decode
 from lunalink.afs._afs import bch_encode as _bch_encode
 from lunalink.afs._afs import frame_build as _frame_build
 from lunalink.afs._afs import frame_build_partial as _frame_build_partial
+from lunalink.afs._afs import frame_decode as _frame_decode
 from lunalink.afs._afs import ldpc_decode as _ldpc_decode
 from lunalink.afs._afs import ldpc_encode as _ldpc_encode
 from lunalink.afs._afs import matched_code_epoch as _matched_code_epoch
@@ -117,6 +132,21 @@ __all__ = [
     "SyncDetectorStatus",
     "SyncResult",
     "sync_detect",
+    "FrameDecodeStatus",
+    "FrameDecodeResult",
+    "SubframeDecodeResult",
+    "frame_decode",
+    "CorrelatorStatus",
+    "ChannelState",
+    "AcquisitionResult",
+    "TrackingState",
+    "UniformPrior",
+    "Correlator",
+    "AFS_I_CODE_LENGTH",
+    "FFT_SIZE",
+    "SAMPLE_RATE_HZ",
+    "CODE_PERIOD_S",
+    "MAX_CHANNELS",
 ]
 
 
@@ -268,3 +298,34 @@ def sync_detect(
         Detection result and status code.
     """
     return _sync_detect(rx_symbols, threshold)
+
+
+def frame_decode(
+    rx_symbols: NDArray[np.float32],
+    ldpc_iterations: int = 50,
+    sync_threshold: float = 0.0,
+) -> tuple[
+    FrameDecodeResult,
+    NDArray[np.uint8],
+    NDArray[np.uint8],
+    NDArray[np.uint8],
+    FrameDecodeStatus,
+]:
+    """Decode a complete AFS navigation frame from soft-decision symbols.
+
+    Parameters
+    ----------
+    rx_symbols : array of float32
+        Bipolar soft-decision symbols (+1.0 = bit 0, -1.0 = bit 1).
+        Must contain at least kFrameLength (6000) symbols after the sync offset.
+    ldpc_iterations : int, optional
+        LDPC BP iteration count (default: 50).
+    sync_threshold : float, optional
+        Sync detection threshold (default: 50.0). Set to 0 to use default.
+
+    Returns
+    -------
+    tuple[FrameDecodeResult, ndarray, ndarray, ndarray, FrameDecodeStatus]
+        (result, sb2_data, sb3_data, sb4_data, status)
+    """
+    return _frame_decode(rx_symbols, ldpc_iterations, sync_threshold)

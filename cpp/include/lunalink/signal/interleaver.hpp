@@ -23,7 +23,7 @@ inline constexpr uint16_t kInterleaverSize = kInterleaverRows * kInterleaverCols
  * @brief 60x98 Block Interleaver. [LSIS-FID0-470]
  * Write row-wise, read column-wise.
  *
- * Uses Class A Hardening: CFI sentinels and mirrored calculation.
+ * Hardened with CFI sentinels and mirrored index calculation.
  */
 [[nodiscard]] InterleaverStatus block_interleave(
     std::span<const uint8_t> in,
@@ -32,9 +32,22 @@ inline constexpr uint16_t kInterleaverSize = kInterleaverRows * kInterleaverCols
 /**
  * @brief 60x98 Block De-interleaver. [LSIS-FID0-470]
  * Write column-wise, read row-wise.
+ *
+ * Hardened with CFI sentinels and mirrored index calculation.
  */
 [[nodiscard]] InterleaverStatus block_deinterleave(
     std::span<const uint8_t> in,
     std::span<uint8_t>       out) noexcept;
+
+/**
+ * @brief Soft-decision 60x98 Block De-interleaver. [LSIS-AFS-471]
+ *
+ * Identical permutation to block_deinterleave() but operates on float
+ * soft-decision values (LLRs) to preserve soft information for FEC decoding.
+ * Hardened with CFI sentinels and mirrored index calculation.
+ */
+[[nodiscard]] InterleaverStatus block_deinterleave_soft(
+    std::span<const float> in,
+    std::span<float>       out) noexcept;
 
 } // namespace lunalink::signal

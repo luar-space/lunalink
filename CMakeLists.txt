@@ -110,6 +110,7 @@ add_library(lunalink_core
     cpp/signal/watchdog.cpp
     cpp/signal/correlator.cpp
     cpp/signal/sync_detector.cpp
+    cpp/signal/frame_decode.cpp
 )
 target_include_directories(lunalink_core PUBLIC cpp/include)
 target_include_directories(lunalink_core PRIVATE ${CMAKE_BINARY_DIR}/generated)
@@ -177,6 +178,8 @@ if(BUILD_TESTING)
         cpp/tests/test_correlator.cpp
         cpp/tests/test_correlator_perf.cpp
         cpp/tests/test_sync_detector.cpp
+        cpp/tests/test_frame_roundtrip_e2e.cpp
+        cpp/tests/test_sync_detection_rate.cpp
     )
     target_link_libraries(test_lunalink PRIVATE lunalink_core Catch2::Catch2WithMain)
     target_compile_options(test_lunalink PRIVATE ${LUNALINK_WARNING_FLAGS})

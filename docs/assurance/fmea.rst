@@ -542,6 +542,93 @@ FMEA Table — Sync Pattern Detector (``sync_detector.cpp``)
        downstream CRC-24Q acts as secondary gate.
 
 
+FMEA Table — RX Pipeline & Frame Decode (``frame_decode.cpp``, ``interleaver.cpp`` soft path)
+-----------------------------------------------------------------------------------------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 5 25 20 15 8 12 15
+
+   * - ID
+     - Failure Mode
+     - Effect on System
+     - Detection Mechanism
+     - Severity
+     - FIZ Zone
+     - Mitigation
+   * - FM-060
+     - SEU skips CFI milestone in ``frame_decode()`` (6-milestone counter)
+     - One or more RX pipeline stages skipped; decoded navigation data incomplete
+       or corrupted
+     - D-SWIFI: CFI sentinel terminal check (``cfi_count != 0x7E7E7E7E + 6``)
+       fires ``kFaultDetected``; FaultPacket emitted via telemetry HAL.
+     - S3
+     - Zone 1
+     - ``volatile uint32_t cfi_count`` with unique magic (0x7E7E7E7E); milestone
+       incremented after each stage (input validation, sync, BCH, deinterleave,
+       LDPC, CRC); terminal check before ``kOk`` promotion.  All workspace
+       temporaries scrubbed on failure.
+   * - FM-061
+     - SEU corrupts ``rx_symbols`` pointer causing aliasing with workspace
+     - ``frame_decode()`` reads corrupted symbols while writing workspace; data
+       integrity lost
+     - D-SWIFI: ``spans_overlap()`` runtime guard at function entry.
+     - S2
+     - Zone 1
+     - Pointer-range aliasing check between ``rx_symbols`` and ``workspace`` at
+       entry; ``kFaultDetected`` returned if overlap detected.
+   * - FM-062
+     - LDPC decoder fails to converge on one or more subframes (channel noise)
+     - Subframe navigation data not decodable; single-frame outage for affected
+       subframes
+     - D-FRAME: ``ldpc_converged`` flag set per subframe; downstream CRC-24Q
+       rejects unconverged output.  Overall status → ``kLdpcFailed``.
+     - S3
+     - Zone 2
+     - Per-subframe convergence tracking.  Overall status demoted to
+       ``kLdpcFailed`` if any subframe unconverged.  Workspace scrubbed.
+   * - FM-063
+     - CRC-24Q verification fails on decoded subframe (residual bit errors)
+     - Navigation data rejected; single-frame outage for affected subframe
+     - D-FRAME: ``crc24_verify()`` returns false; output data buffer scrubbed
+       for failing subframe.  Overall status → ``kCrcFailed``.
+     - S3
+     - Zone 2
+     - CRC-24Q gate per subframe.  Failing data buffers scrubbed.  Status demoted
+       to ``kCrcFailed``.
+   * - FM-064
+     - SEU corrupts index counter in ``block_deinterleave_soft()``
+     - Soft-decision symbols permuted incorrectly; LDPC decoder receives garbled
+       LLRs; all three subframes fail to converge
+     - D-SWIFI: CFI sentinel + mirrored index accumulator detects counter
+       corruption.
+     - S3
+     - Zone 1
+     - ``in_idx_acc`` sequential accumulator cross-checked against computed index;
+       ``cfi_count`` sentinel verified at loop exit.  On mismatch →
+       ``kFaultDetected``; output scrubbed.
+   * - FM-065
+     - Sync pattern not detected (severe channel degradation or wrong frequency)
+     - No frame boundary found; RX pipeline returns ``kSyncNotFound``; no
+       navigation data available this epoch
+     - D-FRAME: ``SyncDetector::detect()`` reports no detection; ``frame_decode``
+       returns ``kSyncNotFound``.
+     - S3
+     - Zone 2
+     - Sync detection threshold (default 50.0) provides >11 dB margin.
+       ``kSyncNotFound`` status propagated to caller for retry or outage handling.
+   * - FM-066
+     - ``strip_crc_copy()`` bounds violation (SEU corrupts size parameter)
+     - Out-of-bounds read from message buffer or write to data buffer
+     - D-SWIFI: Bounds validation in ``strip_crc_copy()`` returns false →
+       ``kFaultDetected``.
+     - S2
+     - Zone 1
+     - ``strip_crc_copy()`` validates both source and destination spans against
+       ``n_data`` before any copy.  Returns false on violation; caller escalates
+       to ``kFaultDetected``.
+
+
 Open FMEA Items
 ---------------
 

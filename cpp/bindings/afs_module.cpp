@@ -1,5 +1,7 @@
 #include "lunalink/signal/bch.hpp"
+#include "lunalink/signal/correlator.hpp"
 #include "lunalink/signal/crc.hpp"
+#include "lunalink/signal/frame_decode.hpp"
 #include "lunalink/signal/interleaver.hpp"
 #include "lunalink/signal/ldpc.hpp"
 #include "lunalink/signal/frame.hpp"
@@ -421,4 +423,152 @@ Returns
 tuple[SyncResult, SyncDetectorStatus]
     Detection result and status code.
 )");
+
+  // ── Frame Decode (RX Pipeline) ──────────────────────────────────────────
+
+  py::enum_<FrameDecodeStatus>(m, "FrameDecodeStatus")
+      .value("OK", FrameDecodeStatus::kOk)
+      .value("SYNC_NOT_FOUND", FrameDecodeStatus::kSyncNotFound)
+      .value("BCH_FAILED", FrameDecodeStatus::kBchFailed)
+      .value("LDPC_FAILED", FrameDecodeStatus::kLdpcFailed)
+      .value("CRC_FAILED", FrameDecodeStatus::kCrcFailed)
+      .value("INVALID_INPUT", FrameDecodeStatus::kInvalidInput)
+      .value("FAULT_DETECTED", FrameDecodeStatus::kFaultDetected)
+      .export_values();
+
+  py::class_<SubframeDecodeResult>(m, "SubframeDecodeResult")
+      .def_readonly("ldpc_converged", &SubframeDecodeResult::ldpc_converged)
+      .def_readonly("crc_ok", &SubframeDecodeResult::crc_ok);
+
+  py::class_<FrameDecodeResult>(m, "FrameDecodeResult")
+      .def_readonly("status", &FrameDecodeResult::status)
+      .def_readonly("sync", &FrameDecodeResult::sync)
+      .def_readonly("bch", &FrameDecodeResult::bch)
+      .def_readonly("sb2", &FrameDecodeResult::sb2)
+      .def_readonly("sb3", &FrameDecodeResult::sb3)
+      .def_readonly("sb4", &FrameDecodeResult::sb4);
+
+  m.def("frame_decode", [](py::array_t<float, py::array::c_style | py::array::forcecast> rx_symbols,
+                            uint8_t ldpc_iterations,
+                            float sync_threshold) {
+    NullTelemetryHal hal;
+    FrameDecodeResult result{};
+    auto workspace = std::make_unique<FrameDecodeWorkspace>();
+
+    const auto status = frame_decode(
+        std::span<const float>(rx_symbols.data(), static_cast<size_t>(rx_symbols.size())),
+        result, *workspace, hal, ldpc_iterations, sync_threshold);
+
+    // Copy decoded data into numpy arrays — only when overall status is kOk
+    // AND the individual subframe CRC passed.  On any fault, workspace data
+    // buffers have been scrubbed by frame_decode() and must not be copied.
+    auto sb2 = py::array_t<uint8_t>(static_cast<ssize_t>(kSb2DataBits));
+    auto sb3 = py::array_t<uint8_t>(static_cast<ssize_t>(kSb3DataBits));
+    auto sb4 = py::array_t<uint8_t>(static_cast<ssize_t>(kSb4DataBits));
+
+    if (status == FrameDecodeStatus::kOk && result.sb2.crc_ok) {
+        auto* dst = sb2.mutable_data();
+        for (size_t i = 0; i < kSb2DataBits; ++i) { dst[i] = workspace->sb2_data[i]; }
+    }
+    if (status == FrameDecodeStatus::kOk && result.sb3.crc_ok) {
+        auto* dst = sb3.mutable_data();
+        for (size_t i = 0; i < kSb3DataBits; ++i) { dst[i] = workspace->sb3_data[i]; }
+    }
+    if (status == FrameDecodeStatus::kOk && result.sb4.crc_ok) {
+        auto* dst = sb4.mutable_data();
+        for (size_t i = 0; i < kSb4DataBits; ++i) { dst[i] = workspace->sb4_data[i]; }
+    }
+
+    return py::make_tuple(result, sb2, sb3, sb4, status);
+  }, py::arg("rx_symbols"),
+     py::arg("ldpc_iterations") = kFrameDecodeLdpcIterations,
+     py::arg("sync_threshold") = 0.0F,
+     R"(Decode a complete AFS navigation frame from soft-decision symbols.
+
+Parameters
+----------
+rx_symbols : array of float
+    Bipolar soft-decision symbols (+1.0 = bit 0, -1.0 = bit 1).
+    Must contain at least kFrameLength (6000) symbols after the sync offset.
+ldpc_iterations : int, optional
+    LDPC BP iteration count (default: 50).
+sync_threshold : float, optional
+    Sync detection threshold (default: 50.0). Set to 0 to use default.
+
+Returns
+-------
+tuple[FrameDecodeResult, ndarray, ndarray, ndarray, FrameDecodeStatus]
+    (result, sb2_data, sb3_data, sb4_data, status)
+)");
+
+  // ─── Correlator bindings ───────────────────────────────────────────────────
+
+  py::enum_<CorrelatorStatus>(m, "CorrelatorStatus")
+      .value("OK",             CorrelatorStatus::kOk)
+      .value("INVALID_INPUT",  CorrelatorStatus::kInvalidInput)
+      .value("ACQ_FAILED",     CorrelatorStatus::kAcqFailed)
+      .value("FAULT_DETECTED", CorrelatorStatus::kFaultDetected)
+      .value("NOT_LOCKED",     CorrelatorStatus::kNotLocked)
+      .value("TIMEOUT",        CorrelatorStatus::kTimeout);
+
+  py::enum_<ChannelState>(m, "ChannelState")
+      .value("IDLE",      ChannelState::kIdle)
+      .value("ACQUIRING", ChannelState::kAcquiring)
+      .value("TRACKING",  ChannelState::kTracking)
+      .value("LOST",      ChannelState::kLost);
+
+  py::class_<AcquisitionResult>(m, "AcquisitionResult")
+      .def_readonly("code_delay",   &AcquisitionResult::code_delay)
+      .def_readonly("doppler_hz",   &AcquisitionResult::doppler_hz)
+      .def_readonly("peak_metric",  &AcquisitionResult::peak_metric)
+      .def_readonly("locked",       &AcquisitionResult::locked);
+
+  py::class_<TrackingState>(m, "TrackingState")
+      .def_readonly("code_phase_chips",  &TrackingState::code_phase_chips)
+      .def_readonly("carrier_phase_rad", &TrackingState::carrier_phase_rad)
+      .def_readonly("doppler_hz",        &TrackingState::doppler_hz)
+      .def_readonly("dll_discriminator", &TrackingState::dll_discriminator)
+      .def_readonly("pll_discriminator", &TrackingState::pll_discriminator)
+      .def_readonly("cn0_estimate",      &TrackingState::cn0_estimate);
+
+  py::class_<UniformPrior>(m, "UniformPrior")
+      .def(py::init<>());
+
+  py::class_<Correlator>(m, "Correlator")
+      .def(py::init([](UniformPrior& prior) {
+          static NullTelemetryHal hal;
+          return std::make_unique<Correlator>(prior, hal);
+      }), py::arg("prior"), py::keep_alive<1, 2>(),
+         "Construct a correlator with a UniformPrior.")
+      .def("assign_channel", [](Correlator& self, uint8_t ch_idx, uint8_t prn_id) {
+          return self.assign_channel(ch_idx, PrnId{prn_id});
+      }, py::arg("ch_idx"), py::arg("prn_id"))
+      .def("acquire", [](Correlator& self, uint8_t ch_idx,
+                         py::array_t<std::complex<float>, py::array::c_style | py::array::forcecast> rx) {
+          AcquisitionResult result{};
+          auto status = self.acquire(ch_idx,
+              std::span<const std::complex<float>>(rx.data(), static_cast<size_t>(rx.size())), result);
+          return py::make_tuple(result, status);
+      }, py::arg("ch_idx"), py::arg("rx"))
+      .def("track", [](Correlator& self, uint8_t ch_idx,
+                        py::array_t<std::complex<float>, py::array::c_style | py::array::forcecast> rx) {
+          return self.track(ch_idx,
+              std::span<const std::complex<float>>(rx.data(), static_cast<size_t>(rx.size())));
+      }, py::arg("ch_idx"), py::arg("rx"))
+      .def("pseudorange", [](const Correlator& self, uint8_t ch_idx) {
+          double meters = 0.0;
+          auto status = self.pseudorange(ch_idx, meters);
+          return py::make_tuple(meters, status);
+      }, py::arg("ch_idx"))
+      .def("channel_state", &Correlator::channel_state, py::arg("ch_idx"))
+      .def("tracking_state", &Correlator::tracking_state, py::arg("ch_idx"))
+      .def("data_symbol", &Correlator::data_symbol, py::arg("ch_idx"),
+           "Return the soft data symbol (prompt.real()) after the last track() call.")
+      .def("reset_channel", &Correlator::reset_channel, py::arg("ch_idx"));
+
+  m.attr("AFS_I_CODE_LENGTH") = kAfsICodeLength;
+  m.attr("FFT_SIZE") = kFftSize;
+  m.attr("SAMPLE_RATE_HZ") = kSampleRateHz;
+  m.attr("CODE_PERIOD_S") = kCodePeriodS;
+  m.attr("MAX_CHANNELS") = kMaxChannels;
 }

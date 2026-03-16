@@ -3,7 +3,10 @@
 #include <vector>
 
 #include "lunalink/signal/bch.hpp"
+#include "lunalink/signal/frame.hpp"
+#include "lunalink/signal/frame_decode.hpp"
 #include "lunalink/signal/ldpc.hpp"
+#include <random>
 #include "lunalink/signal/sync_detector.hpp"
 #include "lunalink/signal/telemetry.hpp"
 
@@ -109,6 +112,72 @@ TEST_CASE("Gateway 2: LDPC Decode Throughput", "[performance][benchmark]") {
 
         BENCHMARK("LDPC decode SF3 alpha=0.75") {
             return ldpc_decode(LdpcSubframe::kSF3, soft, 50, decoded, ws);
+        };
+    }
+}
+
+TEST_CASE("Gateway 5: frame_decode WCET", "[performance][benchmark]") {
+    // Multi-class WCET benchmark per MA §2: all-zeros, all-ones, pseudo-random.
+    // Timing spread across input classes detects data-dependent branches.
+
+    auto build_rx = [](std::span<uint8_t, kSb2DataBits> sb2,
+                       std::span<uint8_t, kSb3DataBits> sb3,
+                       std::span<uint8_t, kSb4DataBits> sb4,
+                       std::span<float> out) {
+        std::array<uint8_t, kFrameLength> tx{};
+        LdpcEncodeWorkspace enc_ws{};
+        (void)frame_build(Fid{0}, Toi{42}, sb2, sb3, sb4, tx, enc_ws);
+        for (size_t i = 0; i < kFrameLength; ++i) {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+            out[i] = (tx[i] == 0U) ? 1.0F : -1.0F;
+        }
+    };
+
+    NullTelemetryHal hal;
+    auto workspace = std::make_unique<FrameDecodeWorkspace>();
+    FrameDecodeResult result{};
+
+    // Class 1: all-zeros nav data
+    {
+        std::array<uint8_t, kSb2DataBits> sb2{};
+        std::array<uint8_t, kSb3DataBits> sb3{};
+        std::array<uint8_t, kSb4DataBits> sb4{};
+        std::array<float, kFrameLength> rx{};
+        build_rx(sb2, sb3, sb4, rx);
+        BENCHMARK("frame_decode (all-zeros)") {
+            return frame_decode(rx, result, *workspace, hal);
+        };
+    }
+
+    // Class 2: all-ones nav data
+    {
+        std::array<uint8_t, kSb2DataBits> sb2{};
+        std::array<uint8_t, kSb3DataBits> sb3{};
+        std::array<uint8_t, kSb4DataBits> sb4{};
+        for (auto& b : sb2) { b = 1; }
+        for (auto& b : sb3) { b = 1; }
+        for (auto& b : sb4) { b = 1; }
+        std::array<float, kFrameLength> rx{};
+        build_rx(sb2, sb3, sb4, rx);
+        BENCHMARK("frame_decode (all-ones)") {
+            return frame_decode(rx, result, *workspace, hal);
+        };
+    }
+
+    // Class 3: pseudo-random nav data
+    {
+        std::mt19937 rng(42);  // NOLINT(cert-msc51-cpp) deterministic seed for reproducible benchmark
+        auto dist = std::uniform_int_distribution<uint32_t>(0, 1);
+        std::array<uint8_t, kSb2DataBits> sb2{};
+        std::array<uint8_t, kSb3DataBits> sb3{};
+        std::array<uint8_t, kSb4DataBits> sb4{};
+        for (auto& b : sb2) { b = static_cast<uint8_t>(dist(rng)); }
+        for (auto& b : sb3) { b = static_cast<uint8_t>(dist(rng)); }
+        for (auto& b : sb4) { b = static_cast<uint8_t>(dist(rng)); }
+        std::array<float, kFrameLength> rx{};
+        build_rx(sb2, sb3, sb4, rx);
+        BENCHMARK("frame_decode (pseudo-random)") {
+            return frame_decode(rx, result, *workspace, hal);
         };
     }
 }

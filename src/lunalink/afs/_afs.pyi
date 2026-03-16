@@ -161,3 +161,86 @@ def sync_detect(
     rx_symbols: NDArray[np.float32],
     threshold: float = 0.0,
 ) -> tuple[SyncResult, SyncDetectorStatus]: ...
+
+class FrameDecodeStatus(IntEnum):
+    OK = 0x5A
+    SYNC_NOT_FOUND = 0xA5
+    BCH_FAILED = 0x33
+    LDPC_FAILED = 0xCC
+    CRC_FAILED = 0x0F
+    INVALID_INPUT = 0x66
+    FAULT_DETECTED = 0x99
+
+class SubframeDecodeResult:
+    ldpc_converged: bool
+    crc_ok: bool
+
+class FrameDecodeResult:
+    status: FrameDecodeStatus
+    sync: SyncResult
+    bch: BchResult
+    sb2: SubframeDecodeResult
+    sb3: SubframeDecodeResult
+    sb4: SubframeDecodeResult
+
+def frame_decode(
+    rx_symbols: NDArray[np.float32],
+    ldpc_iterations: int = 50,
+    sync_threshold: float = 0.0,
+) -> tuple[
+    FrameDecodeResult,
+    NDArray[np.uint8],
+    NDArray[np.uint8],
+    NDArray[np.uint8],
+    FrameDecodeStatus,
+]: ...
+
+class CorrelatorStatus(IntEnum):
+    OK = 0x5A
+    INVALID_INPUT = 0xA5
+    ACQ_FAILED = 0x33
+    FAULT_DETECTED = 0xCC
+    NOT_LOCKED = 0x99
+    TIMEOUT = 0x66
+
+class ChannelState(IntEnum):
+    IDLE = 0x1E
+    ACQUIRING = 0x69
+    TRACKING = 0x96
+    LOST = 0xE1
+
+class AcquisitionResult:
+    code_delay: float
+    doppler_hz: float
+    peak_metric: float
+    locked: bool
+
+class TrackingState:
+    code_phase_chips: float
+    carrier_phase_rad: float
+    doppler_hz: float
+    dll_discriminator: float
+    pll_discriminator: float
+    cn0_estimate: float
+
+class UniformPrior:
+    def __init__(self) -> None: ...
+
+class Correlator:
+    def __init__(self, prior: UniformPrior) -> None: ...
+    def assign_channel(self, ch_idx: int, prn_id: int) -> CorrelatorStatus: ...
+    def acquire(
+        self, ch_idx: int, rx: NDArray[np.complex64]
+    ) -> tuple[AcquisitionResult, CorrelatorStatus]: ...
+    def track(self, ch_idx: int, rx: NDArray[np.complex64]) -> CorrelatorStatus: ...
+    def pseudorange(self, ch_idx: int) -> tuple[float, CorrelatorStatus]: ...
+    def channel_state(self, ch_idx: int) -> ChannelState: ...
+    def tracking_state(self, ch_idx: int) -> TrackingState: ...
+    def data_symbol(self, ch_idx: int) -> float: ...
+    def reset_channel(self, ch_idx: int) -> None: ...
+
+AFS_I_CODE_LENGTH: int
+FFT_SIZE: int
+SAMPLE_RATE_HZ: float
+CODE_PERIOD_S: float
+MAX_CHANNELS: int
