@@ -406,7 +406,7 @@ Beyond the per-component unit tests, the following integration tests
 cover GD2 end-to-end paths.
 
 Round-trip tests (``cpp/tests/signal/test_roundtrip.cpp``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. list-table::
    :header-rows: 1
@@ -420,7 +420,7 @@ Round-trip tests (``cpp/tests/signal/test_roundtrip.cpp``)
      - encode → decode with no channel noise recovers all message bits for SF2, SF3, SF4
 
 Safety & fault-tolerance test (``cpp/tests/signal/test_safety_extended.cpp``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 *Gateway 2: Safety & Fault Tolerance* covers: TMR majority voting under
 simulated single-bit corruption; CFI detection via ``bch_decode``; and

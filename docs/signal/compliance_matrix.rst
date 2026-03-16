@@ -1,10 +1,13 @@
 Compliance Matrix
 =================
 
-This matrix tracks the implementation status of every requirement in the LSIS-AFS Specification (LSIS V1.0), organized by the competition's 8-Gateway structure.
+This matrix tracks the implementation status of every requirement in the
+LSIS-AFS Specification (LSIS V1.0), organized by the competition's
+8-Gateway structure.
 
 Gateway 1: Spreading Code Generation
-------------------------------------
+-------------------------------------
+
 .. list-table::
    :widths: 15 60 10 15
    :header-rows: 1
@@ -25,7 +28,6 @@ Gateway 1: Spreading Code Generation
      - Weil-1500 Spreading Codes (210 IDs)
      - ✅
      - Hardened C++ Generator (``weil.cpp``) + Packed LUTs
-
    * - LSIS-140
      - Matched-Code Combination (Primary XOR Secondary XOR Tertiary)
      - ✅
@@ -36,7 +38,8 @@ Gateway 1: Spreading Code Generation
      - Implemented [Hardened] in ``matched_code.cpp``
 
 Gateway 2: Forward Error Correction
------------------------------------
+------------------------------------
+
 .. list-table::
    :widths: 15 60 10 15
    :header-rows: 1
@@ -54,20 +57,29 @@ Gateway 2: Forward Error Correction
      - ✅
      - Implemented [Hardened]; ML verified
    * - LSIS-320
-     - LDPC(1200,600) for SB2-SB4 (SF2, SF3, SF4)
+     - LDPC(1200,600) Encoder for SB2-SB4 (SF2, SF3, SF4)
      - ✅
-     - Implemented [Hardened] encoder
+     - Implemented [Hardened]; CSR-hardened; H·c=0 self-check
+   * - LSIS-321
+     - LDPC(1200,600) Decoder (Layered NMS BP, Q8.7 fixed-point)
+     - ✅
+     - Implemented [Hardened]; NMS α=0.75; BER waterfall verified
    * - LSIS-330
-     - Interleaving for SB2-SB4
+     - Block Interleaving for SB2-SB4 (60×98)
      - ✅
-     - Implemented [Hardened] 60x98 block interleaver
+     - Implemented [Hardened] in ``interleaver.cpp``; CFI sentinels
+   * - LSIS-331
+     - Block De-interleaving (soft LLR, 60×98 column-to-row transpose)
+     - ✅
+     - Implemented [Hardened] in ``interleaver.cpp``; volatile CFI
    * - LSIS-340
      - CRC-24 for Message Integrity
      - ✅
      - Implemented [Hardened] CRC-24Q (0x864CFB)
 
 Gateway 3: Message Framing
---------------------------
+---------------------------
+
 .. list-table::
    :widths: 15 60 10 15
    :header-rows: 1
@@ -85,12 +97,13 @@ Gateway 3: Message Framing
      - ✅
      - Implemented in ``frame.cpp``
    * - LSIS-FID0-470
-     - 60x98 Block Interleaver for symbols 121-6000
-     - TODO
-     - GD3.2
+     - 60×98 Block Interleaver for symbols 121–6000
+     - ✅
+     - Implemented [Hardened] in ``interleaver.cpp``
 
 Gateway 4: Baseband Signal Generation
--------------------------------------
+--------------------------------------
+
 .. list-table::
    :widths: 15 60 10 15
    :header-rows: 1
@@ -124,47 +137,9 @@ Gateway 4: Baseband Signal Generation
      - ✅
      - Implemented in ``matched_code.cpp``
 
-Gateway 6: Message Parsing & Time
----------------------------------
-.. list-table::
-   :widths: 15 60 10 15
-   :header-rows: 1
-
-   * - ID
-     - Requirement
-     - Status
-     - Notes
-   * - LSIS-720
-     - Calculate Time of Transmission (ToT)
-     - TODO
-     - GD6.2
-   * - LSIS-FIG6
-     - MSB-first bit and byte ordering
-     - ✅
-     - Verified in serialization tests
-
-Gateway 7: Validation & Utilities
----------------------------------
-.. list-table::
-   :widths: 15 60 10 15
-   :header-rows: 1
-
-   * - ID
-     - Requirement
-     - Status
-     - Notes
-   * - LSIS-SISE
-     - Implement SISE position/velocity error calc
-     - TODO
-     - GD7.2
-   * - LSIS-TABLE11
-     - All 12 interim test codes working (PRN 1-12)
-     - ✅
-     - Verified in spreading tests
-
-
 Gateway 5: Frame Sync & Decoding
 ---------------------------------
+
 .. list-table::
    :widths: 15 60 10 15
    :header-rows: 1
@@ -189,5 +164,79 @@ Gateway 5: Frame Sync & Decoding
      - Sync Pattern Detection — 68-symbol cross-correlation
      - ✅
      - Implemented [Hardened] in ``sync_detector.cpp``; TMR peak; CFI
+   * - LSIS-711
+     - Frame Decode Orchestrator (sync → BCH → deinterleave → LDPC → CRC)
+     - ✅
+     - Implemented [Hardened] in ``frame_decode.cpp``; 6-milestone CFI
 
-(Additional Gateways G6-G8 to be populated as implementation proceeds)
+Gateway 6: Message Parsing & Time
+----------------------------------
+
+.. list-table::
+   :widths: 15 60 10 15
+   :header-rows: 1
+
+   * - ID
+     - Requirement
+     - Status
+     - Notes
+   * - LSIS-601
+     - Message Parsers (8 spec-defined + 14 SISICD types)
+     - TODO
+     - GD6.1
+   * - LSIS-720
+     - Calculate Time of Transmission (ToT)
+     - TODO
+     - GD6.2
+   * - LSIS-FIG6
+     - MSB-first bit and byte ordering
+     - ✅
+     - Verified in serialization tests
+
+Gateway 7: Validation & Utilities
+----------------------------------
+
+.. list-table::
+   :widths: 15 60 10 15
+   :header-rows: 1
+
+   * - ID
+     - Requirement
+     - Status
+     - Notes
+   * - LSIS-SISE
+     - Implement SISE position/velocity error calc
+     - TODO
+     - GD7.2
+   * - LSIS-TABLE11
+     - All 12 interim test codes working (PRN 1-12)
+     - ✅
+     - Verified in spreading tests
+
+Gateway 8: Documentation & Examples
+------------------------------------
+
+.. list-table::
+   :widths: 15 60 10 15
+   :header-rows: 1
+
+   * - ID
+     - Requirement
+     - Status
+     - Notes
+   * - LSIS-DOC-API
+     - API Reference (Sphinx + Doxygen)
+     - Partial
+     - Ongoing; Sphinx deployed to gh-pages
+   * - LSIS-DOC-EXAMPLES
+     - Usage Examples (Notebooks)
+     - TODO
+     - GD8.2
+   * - LSIS-DOC-COMPLIANCE
+     - Final Compliance Matrix
+     - Partial
+     - This document
+   * - LSIS-DOC-FINDINGS
+     - Spec Findings Report
+     - Partial
+     - ``spec_findings_report.rst``

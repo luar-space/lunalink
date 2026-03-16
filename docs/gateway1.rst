@@ -360,14 +360,14 @@ Cross-Cutting: Coherency & Round-Trip Tests
 --------------------------------------------
 
 Coherency test (``cpp/tests/signal/test_coherency.cpp``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Verifies primary/secondary/tertiary phase alignment (LSIS-172) over a full
 6000-epoch frame.  Confirms that epoch boundaries align correctly and that
 the tertiary code advances once every four epochs.
 
 Round-trip test (``cpp/tests/signal/test_roundtrip.cpp``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The full TX |rarr| RX round-trip encodes a matched-code epoch through the
 complete signal chain (spreading |rarr| modulation |rarr| IQ multiplexing)
@@ -472,6 +472,6 @@ Related documents:
 -  :doc:`signal/architecture` --- module-to-gateway mapping
 -  :doc:`signal/signal_chain` --- transmitter block diagram
 -  :doc:`signal/validation_plan` --- five-level test hierarchy
--  :doc:`assurance/mission_assurance` --- TMR, CFI, CheckedRange patterns
+-  :doc:`assurance/public/mission_assurance` --- TMR, CFI, CheckedRange patterns
 -  :doc:`assurance/private/fmea` --- PRN generator failure modes
 -  :doc:`assurance/private/fault_coverage` --- SWIFI scenario catalogue

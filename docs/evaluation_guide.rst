@@ -17,7 +17,7 @@ deliverables to the **ESA-CCSDS Delivery Outline** requirements.
 🛠️ Protocol Implementation (Milestone 2)
 ----------------------------------------
 
-*   **Mission Assurance**: See :doc:`assurance/mission_assurance` for our 
+*   **Mission Assurance**: See :doc:`assurance/public/mission_assurance` for our 
     implementation of NASA, ESA, and JAXA high-reliability patterns 
     (Soft-TMR, CFI, etc.).
 *   **BCH Decoding**: See :doc:`signal/bch_decoder_design` for the rationale 

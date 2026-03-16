@@ -248,21 +248,21 @@ Cross-Cutting: Integration and Assurance Tests
 -----------------------------------------------
 
 Coherency test (``cpp/tests/signal/test_coherency.cpp``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Verifies primary/secondary/tertiary phase alignment (LSIS-172) over a full
 6000-epoch frame.  This is the upstream prerequisite for GD4: if matched-code
 epochs are phase-incorrect, the modulated IQ stream carries the error.
 
 Round-trip test (``cpp/tests/signal/test_roundtrip.cpp``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The TX round-trip encodes through the full signal chain: matched-code epoch
 generation (G1) |rarr| BPSK modulation (G4) |rarr| IQ multiplexing (G4),
 verifying that the complete baseband output is reconstructable.
 
 SWIFI fault injection (``cpp/tests/signal/test_fault_injection.cpp``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. list-table::
    :header-rows: 1
@@ -379,6 +379,6 @@ Related documents:
 -  :doc:`signal/architecture` --- module-to-gateway mapping
 -  :doc:`signal/signal_chain` --- transmitter block diagram with chip rates and data types
 -  :doc:`signal/icd` --- formal interface control document
--  :doc:`assurance/mission_assurance` --- branchless, CFI, scrubbing patterns
+-  :doc:`assurance/public/mission_assurance` --- branchless, CFI, scrubbing patterns
 -  :doc:`assurance/private/fmea` --- modulator and IQ mux failure modes
 -  :doc:`assurance/private/fault_coverage` --- SWIFI scenario catalogue

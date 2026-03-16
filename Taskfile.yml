@@ -419,6 +419,67 @@ tasks:
     desc: Export an open-source-clean copy of the repository.
     cmd: uv run python scripts/export_oss.py --output-dir build/oss-export
 
+  validate-export:
+    desc: Export and validate the OSS-clean copy (no private content, Sphinx builds clean).
+    cmds:
+      - task: export-oss
+      - |
+        echo "=== Validating OSS export ==="
+        EXPORT_DIR="build/oss-export"
+
+        # No private/ directories
+        if find "$EXPORT_DIR" -type d -name private 2>/dev/null | grep -q .; then
+          echo "FAIL: private/ directories found in export"
+          find "$EXPORT_DIR" -type d -name private
+          exit 1
+        fi
+        echo "PASS: no private/ directories"
+
+        # No confidential markers
+        MARKER='[[Confidential - Not for OpenSource]]'
+        if grep -rF "$MARKER" "$EXPORT_DIR/" --include='*.rst' --include='*.md' --include='*.py' --include='*.yml' --include='*.toml' --include='*.hpp' --include='*.cpp' 2>/dev/null; then
+          echo "FAIL: confidential markers found"
+          exit 1
+        fi
+        echo "PASS: no confidential markers"
+
+        # No private-begin/end blocks
+        if grep -r '\[\[private-begin\]\]' "$EXPORT_DIR/" 2>/dev/null || \
+           grep -r '\[\[private-end\]\]' "$EXPORT_DIR/" 2>/dev/null; then
+          echo "FAIL: private block markers found"
+          exit 1
+        fi
+        echo "PASS: no private block markers"
+
+        # No CLAUDE.md
+        if find "$EXPORT_DIR" -name "CLAUDE.md" | grep -q .; then
+          echo "FAIL: CLAUDE.md found in export"
+          exit 1
+        fi
+        echo "PASS: no CLAUDE.md"
+
+        # No shaping/ docs
+        if find "$EXPORT_DIR" -type d -name shaping | grep -q .; then
+          echo "FAIL: shaping/ directories found"
+          exit 1
+        fi
+        echo "PASS: no shaping/ directories"
+
+        # README.md exists
+        if [ ! -f "$EXPORT_DIR/README.md" ]; then
+          echo "FAIL: README.md not found"
+          exit 1
+        fi
+        echo "PASS: README.md present"
+
+        echo "=== All export validation checks passed ==="
+      - |
+        echo "Building Sphinx docs in exported tree..."
+        cd build/oss-export
+        uv sync --group dev
+        uv run python -m sphinx -b html docs/ docs/_build/html -W
+        echo "PASS: Sphinx build succeeded (zero warnings)"
+
   # [[private-begin]]
   # --- Private tasks (not included in OSS export) ---
   # inference-test:

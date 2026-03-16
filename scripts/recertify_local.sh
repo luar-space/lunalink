@@ -13,8 +13,8 @@
 # Environment overrides (alternative to flags):
 #   MILESTONE, REASON, AUTHORITY, PROJECT
 #
-# The MC/DC coverage gate is always SKIPPED locally — it requires a specific
-# LLVM toolchain setup.  All other gates run regardless of each other's outcome.
+# The MC/DC coverage gate is auto-detected — it runs if LLVM is installed
+# locally, otherwise SKIPPED.  All gates run regardless of each other's outcome.
 # Exit code is 1 if any gate FAILs; 0 if all PASS or only SKIP.
 #
 # Reuse:
@@ -101,8 +101,15 @@ GATE_LABELS=(
 )
 
 # Gates that are structurally skipped in local runs.
-# coverage-mcdc requires a specific LLVM toolchain; skip locally.
-GATE_SKIP="coverage-mcdc"
+# coverage-mcdc requires LLVM — auto-detect; skip only if missing.
+if command -v llvm-profdata >/dev/null 2>&1 || \
+   [ -x /opt/homebrew/opt/llvm/bin/llvm-profdata ] || \
+   [ -x /usr/local/opt/llvm/bin/llvm-profdata ]; then
+    GATE_SKIP=""
+    GATE_COMMANDS[coverage-mcdc]="task coverage-cpp"  # reuses LLVM coverage task
+else
+    GATE_SKIP="coverage-mcdc"
+fi
 
 # ---------------------------------------------------------------------------
 # Gate commands (associative array: key → bash command)

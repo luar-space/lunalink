@@ -48,7 +48,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.inputs.ref }}
+          ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
       - uses: arduino/setup-task@v2
       - uses: astral-sh/setup-uv@v5
@@ -78,7 +78,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.inputs.ref }}
+          ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
       - name: Install ninja
         run: sudo apt-get install -y ninja-build
@@ -94,7 +94,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.inputs.ref }}
+          ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
       - name: Install ninja
         run: sudo apt-get install -y ninja-build
@@ -114,7 +114,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.inputs.ref }}
+          ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
       - name: Install ninja
         run: sudo apt-get install -y ninja-build
@@ -130,7 +130,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.inputs.ref }}
+          ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
       - name: Install ninja
         run: sudo apt-get install -y ninja-build
@@ -152,7 +152,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.inputs.ref }}
+          ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
       - name: Install LLVM ${{ env.LLVM_VERSION }} + ninja
         run: |
@@ -207,7 +207,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.inputs.ref }}
+          ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
       - name: Install clang + clang-tidy + ninja
         run: sudo apt-get install -y ninja-build clang clang-tidy
@@ -228,7 +228,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.inputs.ref }}
+          ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
       - name: Install ninja
         run: sudo apt-get install -y ninja-build
@@ -299,7 +299,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.inputs.ref }}
+          ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
       - uses: arduino/setup-task@v2
       - uses: astral-sh/setup-uv@v5
@@ -317,7 +317,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.inputs.ref }}
+          ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
       - uses: arduino/setup-task@v2
       - uses: astral-sh/setup-uv@v5
@@ -348,7 +348,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.inputs.ref }}
+          ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
 
       - name: Resolve ref metadata
@@ -397,9 +397,9 @@ jobs:
             --doc-id    "LUNALINK-RCERT-001" \
             --ref       "${{ steps.meta.outputs.full }}" \
             --ref-name  "${{ steps.meta.outputs.ref_name }}" \
-            --milestone "${{ github.event.inputs.milestone }}" \
-            --reason    "${{ github.event.inputs.reason }}" \
-            --authority "${{ github.event.inputs.authority }}" \
+            --milestone "${{ github.event.inputs.milestone || 'Periodic' }}" \
+            --reason    "${{ github.event.inputs.reason || 'Weekly scheduled recertification' }}" \
+            --authority "${{ github.event.inputs.authority || 'GitHub Actions (scheduled)' }}" \
             --timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --gate "lint=$(map_result "${RESULT_LINT}")" \
             --gate "test-cpp=$(map_result "${RESULT_TEST_CPP}")" \
@@ -431,6 +431,6 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: >-
-            recertification-record-${{ github.event.inputs.milestone }}-${{ steps.meta.outputs.short }}
+            recertification-record-${{ github.event.inputs.milestone || 'Periodic' }}-${{ steps.meta.outputs.short }}
           path: docs/assurance/private/recertification_record.rst
           if-no-files-found: error
