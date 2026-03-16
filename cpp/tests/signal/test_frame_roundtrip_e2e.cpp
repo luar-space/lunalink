@@ -46,7 +46,7 @@ void random_bits(std::span<uint8_t> out, std::mt19937& rng) {
 
 } // namespace
 
-TEST_CASE("E2E round-trip: TX → AWGN → RX → bit-exact recovery", "[e2e][gd5.3]") {
+TEST_CASE("[LSIS-AFS-720] E2E round-trip: TX → AWGN → RX → bit-exact recovery", "[e2e][gd5.3]") {
     std::mt19937 rng(42);
 
     // Generate random navigation data for all subframes
@@ -63,8 +63,9 @@ TEST_CASE("E2E round-trip: TX → AWGN → RX → bit-exact recovery", "[e2e][gd
     // ── TX: Build frame ──────────────────────────────────────────────────
     std::array<uint8_t, kFrameLength> tx_frame{};
     LdpcEncodeWorkspace enc_ws{};
+    FrameBuildWorkspace fbw{};
     const auto build_status = frame_build(
-        fid, toi, sb2_data, sb3_data, sb4_data, tx_frame, enc_ws);
+        fid, toi, sb2_data, sb3_data, sb4_data, tx_frame, enc_ws, fbw);
     REQUIRE(build_status == FrameStatus::kOk);
 
     // ── Channel: binary → bipolar → AWGN at Eb/N0 = 3 dB ────────────────
@@ -135,6 +136,7 @@ TEST_CASE("Gateway 5: frame-level FER sweep", "[e2e][gd5.3][performance]") {
     NullTelemetryHal hal;
     auto workspace = std::make_unique<FrameDecodeWorkspace>();
     LdpcEncodeWorkspace enc_ws{};
+    FrameBuildWorkspace fbw{};
 
     for (const auto& pt : kPoints) {
         size_t frame_errors = 0;
@@ -154,7 +156,7 @@ TEST_CASE("Gateway 5: frame-level FER sweep", "[e2e][gd5.3][performance]") {
 
             std::array<uint8_t, kFrameLength> tx{};
             REQUIRE(frame_build(Fid{0}, Toi{static_cast<uint8_t>(trial % 100)},
-                                sb2, sb3, sb4, tx, enc_ws) == FrameStatus::kOk);
+                                sb2, sb3, sb4, tx, enc_ws, fbw) == FrameStatus::kOk);
 
             std::array<float, kFrameLength> rx{};
             binary_to_bipolar(tx, rx);
@@ -220,8 +222,9 @@ TEST_CASE("E2E round-trip: FID=0 TOI=99 with random offset", "[e2e][gd5.3]") {
 
     std::array<uint8_t, kFrameLength> tx_frame{};
     LdpcEncodeWorkspace enc_ws{};
+    FrameBuildWorkspace fbw{};
     REQUIRE(frame_build(fid, toi, sb2_data, sb3_data, sb4_data,
-                        tx_frame, enc_ws) == FrameStatus::kOk);
+                        tx_frame, enc_ws, fbw) == FrameStatus::kOk);
 
     // Place frame at a random offset within a larger buffer
     constexpr size_t kPadding = 200;
@@ -272,8 +275,9 @@ TEST_CASE("E2E: noiseless round-trip (Eb/N0 = infinity)", "[e2e][gd5.3]") {
 
     std::array<uint8_t, kFrameLength> tx_frame{};
     LdpcEncodeWorkspace enc_ws{};
+    FrameBuildWorkspace fbw{};
     REQUIRE(frame_build(Fid{2}, Toi{50}, sb2_data, sb3_data, sb4_data,
-                        tx_frame, enc_ws) == FrameStatus::kOk);
+                        tx_frame, enc_ws, fbw) == FrameStatus::kOk);
 
     std::array<float, kFrameLength> rx_symbols{};
     binary_to_bipolar(tx_frame, rx_symbols);
@@ -322,8 +326,9 @@ TEST_CASE("E2E: CRC rejects corrupted subframe payload", "[e2e][gd5.3]") {
 
     std::array<uint8_t, kFrameLength> tx_frame{};
     LdpcEncodeWorkspace enc_ws{};
+    FrameBuildWorkspace fbw{};
     REQUIRE(frame_build(Fid{1}, Toi{77}, sb2_data, sb3_data, sb4_data,
-                        tx_frame, enc_ws) == FrameStatus::kOk);
+                        tx_frame, enc_ws, fbw) == FrameStatus::kOk);
 
     // Convert to bipolar (noiseless)
     std::array<float, kFrameLength> rx_clean{};
@@ -402,7 +407,8 @@ TEST_CASE("E2E: frame_decode completes in < 1 second", "[e2e][gd5.3]") {
 
     std::array<uint8_t, kFrameLength> tx{};
     LdpcEncodeWorkspace enc_ws{};
-    REQUIRE(frame_build(Fid{0}, Toi{1}, sb2, sb3, sb4, tx, enc_ws)
+    FrameBuildWorkspace fbw{};
+    REQUIRE(frame_build(Fid{0}, Toi{1}, sb2, sb3, sb4, tx, enc_ws, fbw)
             == FrameStatus::kOk);
 
     // Noiseless bipolar symbols (worst-case for LDPC: instant convergence,

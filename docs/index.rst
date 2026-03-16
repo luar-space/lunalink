@@ -41,23 +41,24 @@ LunaLink AFS reference implementation with C++ core and pybind11 bindings.
    :maxdepth: 2
    :caption: Mission Assurance:
 
-   assurance/mission_assurance
-   assurance/fmea
-   assurance/fault_coverage
-   assurance/safety_plan
-   assurance/oss_assessment
-   assurance/certification_delta
-   assurance/ecss_tailoring
-   assurance/recertification_record
-   assurance/static_analysis_report
-   assurance/cppcheck_report
-   assurance/srs
-   assurance/metrics_plan
-   assurance/praca
-   assurance/svd
-   assurance/wcet_profile
-   assurance/c_plus_plus_guidelines
-   assurance/test_procedures
+   assurance/public/mission_assurance
+   assurance/public/c_plus_plus_guidelines
+   assurance/private/fmea
+   assurance/private/fault_coverage
+   assurance/private/safety_plan
+   assurance/private/oss_assessment
+   assurance/private/certification_delta
+   assurance/private/ecss_tailoring
+   assurance/private/recertification_record
+   assurance/private/static_analysis_report
+   assurance/private/cppcheck_report
+   assurance/private/srs
+   assurance/private/metrics_plan
+   assurance/private/praca
+   assurance/private/svd
+   assurance/private/wcet_profile
+   assurance/private/test_procedures
+   assurance/private/traceability_matrix
    signal/compliance_matrix
    signal/spec_findings_report
    signal/validation_plan

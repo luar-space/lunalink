@@ -392,7 +392,7 @@ Hardening
 Unit Tests
 ----------
 
-Run: ``task test-cpp`` (file: ``cpp/tests/test_frame.cpp``)
+Run: ``task test-cpp`` (file: ``cpp/tests/signal/test_frame.cpp``)
 
 .. list-table::
    :header-rows: 1
@@ -430,7 +430,7 @@ Run: ``task test-cpp`` (file: ``cpp/tests/test_frame.cpp``)
 
 .. |isin| unicode:: U+2208
 
-SWIFI fault injection (``cpp/tests/test_fault_injection.cpp``)
+SWIFI fault injection (``cpp/tests/signal/test_fault_injection.cpp``)
 
 .. list-table::
    :header-rows: 1
@@ -573,5 +573,5 @@ Related documents:
 -  :doc:`signal/signal_chain` --- transmitter block diagram
 -  :doc:`signal/icd` --- formal interface control document
 -  :doc:`assurance/mission_assurance` --- CFI, secure scrub, pessimistic default
--  :doc:`assurance/fmea` --- frame builder failure modes (FM-005)
--  :doc:`assurance/fault_coverage` --- SWIFI scenario catalogue (FI-13, FI-14)
+-  :doc:`assurance/private/fmea` --- frame builder failure modes (FM-005)
+-  :doc:`assurance/private/fault_coverage` --- SWIFI scenario catalogue (FI-13, FI-14)

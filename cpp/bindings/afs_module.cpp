@@ -234,7 +234,8 @@ PYBIND11_MODULE(_afs, m) {
 
   m.def("frame_build_partial", [](uint8_t fid, uint8_t toi) {
     auto out = py::array_t<uint8_t>(6000);
-    if (frame_build_partial(static_cast<Fid>(fid), Toi(toi), std::span<uint8_t, 6000>(out.mutable_data(), 6000)) != FrameStatus::kOk)
+    FrameBuildWorkspace fbw{};
+    if (frame_build_partial(static_cast<Fid>(fid), Toi(toi), std::span<uint8_t, 6000>(out.mutable_data(), 6000), fbw) != FrameStatus::kOk)
       throw py::value_error("Frame build failed");
     return out;
   });
@@ -248,13 +249,14 @@ PYBIND11_MODULE(_afs, m) {
     if (sb4_data.size() != kSb4DataBits) throw py::value_error("SB4 data must be 846 bits");
     auto out = py::array_t<uint8_t>(static_cast<ssize_t>(kFrameLength));
     LdpcEncodeWorkspace ws{};
+    FrameBuildWorkspace fbw{};
     auto status = frame_build(
         static_cast<Fid>(fid), Toi(toi),
         std::span<const uint8_t, kSb2DataBits>(sb2_data.data(), kSb2DataBits),
         std::span<const uint8_t, kSb3DataBits>(sb3_data.data(), kSb3DataBits),
         std::span<const uint8_t, kSb4DataBits>(sb4_data.data(), kSb4DataBits),
         std::span<uint8_t, kFrameLength>(out.mutable_data(), kFrameLength),
-        ws);
+        ws, fbw);
     if (status != FrameStatus::kOk) throw py::value_error("Frame build failed");
     return out;
   });

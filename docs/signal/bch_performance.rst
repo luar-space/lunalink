@@ -195,6 +195,6 @@ Test Methodology
   waterfall sweep (characterizes the hard/soft gap), operating point
   (proves zero errors at spec SNR)
 - **Seeds are fixed** (42, 77, 99, 137) for full reproducibility
-- **Test file:** ``cpp/tests/test_bch_ber.cpp``
+- **Test file:** ``cpp/tests/signal/test_bch_ber.cpp``
 - **All tests tagged** ``[performance]`` — excluded from default CTest runs;
   run explicitly with ``task test-performance``

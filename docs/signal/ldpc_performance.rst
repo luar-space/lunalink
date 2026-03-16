@@ -286,4 +286,4 @@ Test Methodology
 - **Three-zone waterfall:** Noise floor (proves channel is real),
   waterfall (characterizes the knee), operating point (proves spec compliance)
 - **Seeds are fixed** (42, 77, 99, 137, 211) for full reproducibility
-- **Test file:** ``cpp/tests/test_ldpc_ber.cpp``
+- **Test file:** ``cpp/tests/signal/test_ldpc_ber.cpp``

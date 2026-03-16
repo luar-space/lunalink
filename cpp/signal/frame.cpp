@@ -20,7 +20,8 @@ alignas(64) LUNALINK_LUT_SECTION constinit const std::array<uint8_t, kSyncLength
 FrameStatus frame_build_partial(
     Fid                        fid,
     Toi                        toi,
-    std::span<uint8_t, 6000ULL> out) noexcept {
+    std::span<uint8_t, 6000ULL> out,
+    FrameBuildWorkspace&        workspace) noexcept {
 
   // [LSIS-AFS-601] CFI sentinel for partial frame builder (§5).
   constexpr uint32_t kCfiMagicPartial = 0xD2D2D2D2U;
@@ -29,8 +30,16 @@ FrameStatus frame_build_partial(
   volatile uint32_t cfi_count = kCfiMagicPartial;
   bool ok = true;
 
-  // ESA Safety Policy: Zero-initialise entire frame.
-  std::ranges::fill(out, 0U);
+  // Aliasing check: caller-provided staging must not overlap output frame.
+  if (spans_overlap(workspace.staging.data(), workspace.staging.size(),
+                    out.data(), out.size_bytes())) {
+    ok = false;
+  }
+
+  // ESA Safety Policy: Zero-initialise entire frame (skip if aliasing detected).
+  if (ok) {
+    std::ranges::fill(out, 0U);
+  }
 
   // 1. Sync pattern: 68 symbols.
   std::ranges::copy(kSyncPattern, out.begin());
@@ -56,12 +65,11 @@ FrameStatus frame_build_partial(
   // Note: Builders for SB2-SB4 are implemented in Gateway 3.
   // We apply the interleaver to the zeroed buffer to ensure the structure is ready.
   if (ok) {
-      // Temporary staging buffer for non-interleaved data (SB2+SB3+SB4)
-      // Mandate: Zero dynamic allocation. Use stack.
-      alignas(16) std::array<uint8_t, kPayloadLength> staging{};
-      std::ranges::fill(staging, 0U);
+      // Staging buffer for non-interleaved data (SB2+SB3+SB4).
+      // Caller-allocated via FrameBuildWorkspace to keep stack bounded.
+      std::ranges::fill(workspace.staging, 0U);
 
-      const auto int_status = block_interleave(staging,
+      const auto int_status = block_interleave(workspace.staging,
           out.subspan<kSyncLength + static_cast<size_t>(kSb1Length),
                        kPayloadLength>());
       if (int_status != InterleaverStatus::kOk) [[unlikely]] {
@@ -70,8 +78,10 @@ FrameStatus frame_build_partial(
       } else {
           cfi_count = cfi_count + 1U;  // milestone 3: interleave done
       }
-      secure_scrub(staging);
   }
+  // Always scrub caller-owned staging (§7) — unconditional to prevent
+  // leaking intermediate data from prior calls on error paths.
+  secure_scrub(workspace.staging);
 
   // CFI terminal check: all 3 milestones must have been reached (§5).
   if (ok) {
@@ -227,7 +237,8 @@ FrameStatus frame_build(
     std::span<const uint8_t, kSb3DataBits> sb3_data,
     std::span<const uint8_t, kSb4DataBits> sb4_data,
     std::span<uint8_t, kFrameLength>       out,
-    LdpcEncodeWorkspace&                   workspace) noexcept {
+    LdpcEncodeWorkspace&                   ldpc_workspace,
+    FrameBuildWorkspace&                   frame_workspace) noexcept {
 
   FrameStatus status = FrameStatus::kFaultDetected;  // Pessimistic default
   volatile uint32_t cfi_count = kCfiMagicFrame;
@@ -243,8 +254,18 @@ FrameStatus frame_build(
     ok = false;
   }
 
-  // ESA Safety Policy: Zero-initialise entire frame.
-  std::ranges::fill(out, 0U);
+  // Aliasing check: caller-provided workspaces must not overlap output frame.
+  if (spans_overlap(frame_workspace.staging.data(), frame_workspace.staging.size(),
+                    out.data(), out.size_bytes()) ||
+      spans_overlap(&ldpc_workspace, sizeof(ldpc_workspace),
+                    out.data(), out.size_bytes())) {
+    ok = false;
+  }
+
+  // ESA Safety Policy: Zero-initialise entire frame (skip if aliasing detected).
+  if (ok) {
+    std::ranges::fill(out, 0U);
+  }
 
   // Step 1: Sync pattern (68 symbols, Table 12).
   std::ranges::copy(kSyncPattern, out.begin());
@@ -268,14 +289,16 @@ FrameStatus frame_build(
 
   // Steps 3-5: Build SB2, SB3, SB4 into staging buffer.
   // Staging is pre-interleave: SB2(2400) + SB3(1740) + SB4(1740) = 5880.
-  // Mandate: Zero dynamic allocation — use stack (§1).
-  alignas(16) std::array<uint8_t, kPayloadLength> staging{};
+  // Caller-allocated via FrameBuildWorkspace to keep stack bounded.
+  // Mandate: zero dynamic allocation — workspace must be stack or static (§1).
+  auto& staging = frame_workspace.staging;
 
   if (ok) {
+    std::ranges::fill(staging, 0U);
     const auto sb2_s = subframe_build_ldpc(
         LdpcSubframe::kSF2, sb2_data,
         std::span(staging).subspan(0, kSb2Length),
-        workspace, kSb2DataBits, kSb2MsgBits, kSb2Length);
+        ldpc_workspace, kSb2DataBits, kSb2MsgBits, kSb2Length);
     if (sb2_s != FrameStatus::kOk) [[unlikely]] {
       ok = false;
       status = sb2_s;  // FIZ-2: propagate block-level error
@@ -288,7 +311,7 @@ FrameStatus frame_build(
     const auto sb3_s = subframe_build_ldpc(
         LdpcSubframe::kSF3, sb3_data,
         std::span(staging).subspan(kSb2Length, kSb3Length),
-        workspace, kSb3DataBits, kSb3MsgBits, kSb3Length);
+        ldpc_workspace, kSb3DataBits, kSb3MsgBits, kSb3Length);
     if (sb3_s != FrameStatus::kOk) [[unlikely]] {
       ok = false;
       status = sb3_s;  // FIZ-2
@@ -302,7 +325,7 @@ FrameStatus frame_build(
         LdpcSubframe::kSF4, sb4_data,
         std::span(staging).subspan(
             static_cast<size_t>(kSb2Length) + kSb3Length, kSb4Length),
-        workspace, kSb4DataBits, kSb4MsgBits, kSb4Length);
+        ldpc_workspace, kSb4DataBits, kSb4MsgBits, kSb4Length);
     if (sb4_s != FrameStatus::kOk) [[unlikely]] {
       ok = false;
       status = sb4_s;  // FIZ-2

@@ -279,7 +279,39 @@ tasks:
     cmds:
       - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DLUNALINK_FAULT_INJECTION=ON
       - cmake --build {{.BUILD_DIR}} --parallel
-      - ctest --test-dir {{.BUILD_DIR}} -L swifi --output-on-failure --parallel
+      - "{{.BUILD_DIR}}/lunalink_swifi_tests --reporter junit::out={{.BUILD_DIR}}/swifi_results.xml --reporter console"
+      - python3 scripts/swifi_report.py --xml {{.BUILD_DIR}}/swifi_results.xml
+    silent: false
+
+  traceability:
+    desc: Verify requirement-to-test traceability (LSIS-AFS / SW-SAF tags).
+    cmd: python3 scripts/verify_traceability.py
+    silent: false
+
+  stack-usage:
+    desc: Build with -fstack-usage and generate stack usage evidence artifact.
+    vars:
+      GENERATOR:
+        sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
+      BUILD_DIR:
+        sh: which ninja >/dev/null 2>&1 && echo "build/stack-usage-ninja" || echo "build/stack-usage-make"
+    cmds:
+      - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release -DENABLE_STACK_USAGE=ON
+      - cmake --build {{.BUILD_DIR}} --parallel
+      - python3 scripts/stack_usage_report.py --build-dir {{.BUILD_DIR}} --max-single 4096
+    silent: false
+
+  build-manifest:
+    desc: Generate build manifest with binary hashes, compiler info, and flags.
+    vars:
+      GENERATOR:
+        sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
+      BUILD_DIR:
+        sh: which ninja >/dev/null 2>&1 && echo "build/cpp-tests-ninja" || echo "build/cpp-tests-make"
+    cmds:
+      - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+      - cmake --build {{.BUILD_DIR}} --parallel
+      - python3 scripts/build_manifest.py --build-dir {{.BUILD_DIR}}
     silent: false
 
   check-flags:
@@ -370,7 +402,7 @@ tasks:
   recertify:
     desc: >-
       Run all recertification gates locally and write
-      docs/assurance/recertification_record.rst.
+      docs/assurance/private/recertification_record.rst.
       Override defaults with: MILESTONE=PDR REASON="..." AUTHORITY="..."
     vars:
       MILESTONE: '{{default "Periodic" .MILESTONE}}'
@@ -382,6 +414,20 @@ tasks:
       --reason "{{.REASON}}"
       --authority "{{.AUTHORITY}}"
     silent: false
+
+  export-oss:
+    desc: Export an open-source-clean copy of the repository.
+    cmd: uv run python scripts/export_oss.py --output-dir build/oss-export
+
+  # [[private-begin]]
+  # --- Private tasks (not included in OSS export) ---
+  # inference-test:
+  #   desc: Run inference engine tests.
+  #   cmd: echo "Not yet implemented"
+  # integrity-test:
+  #   desc: Run integrity monitoring tests.
+  #   cmd: echo "Not yet implemented"
+  # [[private-end]]
 
   default:
     desc: Run all quality checks (lint, test, docs).

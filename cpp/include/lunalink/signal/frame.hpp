@@ -47,6 +47,13 @@ inline constexpr uint16_t kSb4Length   = 1740;
 /// Defined in frame.cpp with constinit + section pinning.
 extern const std::array<uint8_t, kSyncLength> kSyncPattern;
 
+/// Caller-allocated workspace for frame building functions.
+/// Holds the interleaver staging buffer (5880 bytes) to keep it off the stack.
+/// Same pattern as LdpcEncodeWorkspace — allocate once, reuse across calls.
+struct FrameBuildWorkspace {
+  alignas(16) std::array<uint8_t, kPayloadLength> staging{};
+};
+
 /// Symbol rate: 500 sps.
 inline constexpr uint16_t kSymbolRate = 500;
 
@@ -76,9 +83,10 @@ enum class FrameStatus : uint8_t {
  *   - 52-symbol BCH-encoded SB1 header (FID + TOI)
  *   - 5880 symbols of zero padding (SB2-SB4 placeholder)
  *
- * @param fid  Frame ID (0-3).
- * @param toi  Time of Interval (0-99).
- * @param out  Buffer to populate (exactly 6000 symbols).
+ * @param fid       Frame ID (0-3).
+ * @param toi       Time of Interval (0-99).
+ * @param out       Buffer to populate (exactly 6000 symbols).
+ * @param workspace Interleaver staging scratchpad (caller-allocated).
  *
  * @pre fid <= 3
  * @pre toi <= 99
@@ -89,7 +97,8 @@ enum class FrameStatus : uint8_t {
 [[nodiscard]] FrameStatus frame_build_partial(
     Fid                        fid,
     Toi                        toi,
-    std::span<uint8_t, 6000ULL> out) noexcept;
+    std::span<uint8_t, 6000ULL> out,
+    FrameBuildWorkspace&        workspace) noexcept;
 
 /**
  * @brief Ergonomic overload for frame_build_partial that deduces from arrays/fixed-spans.
@@ -98,8 +107,9 @@ template <typename T>
 [[nodiscard]] inline FrameStatus frame_build_partial(
     Fid fid,
     Toi toi,
-    T&& out) noexcept {
-  return frame_build_partial(fid, toi, std::span<uint8_t, 6000ULL>(out));
+    T&& out,
+    FrameBuildWorkspace& workspace) noexcept {
+  return frame_build_partial(fid, toi, std::span<uint8_t, 6000ULL>(out), workspace);
 }
 
 /**
@@ -177,13 +187,14 @@ template <typename T>
  *
  * Pipeline: data → CRC-24 → LDPC encode → concatenate → block interleave.
  *
- * @param fid       Frame ID (0-3).
- * @param toi       Time of Interval (0-99).
- * @param sb2_data  Subframe 2 navigation data (1176 bits).
- * @param sb3_data  Subframe 3 navigation data (846 bits).
- * @param sb4_data  Subframe 4 navigation data (846 bits).
- * @param out       Buffer to populate (exactly 6000 symbols).
- * @param workspace LDPC encoder scratchpad (caller-allocated, reused across subframes).
+ * @param fid             Frame ID (0-3).
+ * @param toi             Time of Interval (0-99).
+ * @param sb2_data        Subframe 2 navigation data (1176 bits).
+ * @param sb3_data        Subframe 3 navigation data (846 bits).
+ * @param sb4_data        Subframe 4 navigation data (846 bits).
+ * @param out             Buffer to populate (exactly 6000 symbols).
+ * @param ldpc_workspace  LDPC encoder scratchpad (caller-allocated, reused across subframes).
+ * @param frame_workspace Interleaver staging scratchpad (caller-allocated).
  * @return FrameStatus::kOk or an error code.
  */
 [[nodiscard]] FrameStatus frame_build(
@@ -193,6 +204,7 @@ template <typename T>
     std::span<const uint8_t, kSb3DataBits> sb3_data,
     std::span<const uint8_t, kSb4DataBits> sb4_data,
     std::span<uint8_t, kFrameLength>       out,
-    LdpcEncodeWorkspace&                   workspace) noexcept;
+    LdpcEncodeWorkspace&                   ldpc_workspace,
+    FrameBuildWorkspace&                   frame_workspace) noexcept;
 
 } // namespace lunalink::signal

@@ -7,7 +7,7 @@
 
 using namespace lunalink::signal;
 
-TEST_CASE("CheckedRange: saturation boundaries") {
+TEST_CASE("[SW-SAF-02] CheckedRange: saturation boundaries") {
   // Constructor saturation
   CheckedRange<uint8_t, 10, 20> r1(25);
   CHECK(r1.value() == 20);
@@ -38,7 +38,7 @@ TEST_CASE("CheckedRange: saturation boundaries") {
   CHECK(val == 19);
 }
 
-TEST_CASE("TmrValue: voting logic (2-of-3) and active repair") {
+TEST_CASE("[SW-SAF-02] TmrValue: voting logic (2-of-3) and active repair") {
   TmrValue<uint8_t> v(100);
   CHECK(v.peek() == 100);
   
@@ -96,7 +96,7 @@ TEST_CASE("Fid/Toi/PrnId: repair coverage") {
     CHECK(p.storage.v1 == 42);
 }
 
-TEST_CASE("secure_scrub: verify memory is zeroed") {
+TEST_CASE("[SW-SAF-02] secure_scrub: verify memory is zeroed") {
     std::array<uint8_t, 16> data{};
     std::ranges::fill(data, 0xAAU);
     secure_scrub(data);

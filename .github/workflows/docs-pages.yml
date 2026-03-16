@@ -28,19 +28,19 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: static-analysis-report
-          path: docs/assurance/
+          path: docs/assurance/private/
         continue-on-error: true
       - name: Download cppcheck artifact
         uses: actions/download-artifact@v4
         with:
           name: cppcheck-report
-          path: docs/assurance/
+          path: docs/assurance/private/
         continue-on-error: true
       - name: Download WCET profile artifact
         uses: actions/download-artifact@v4
         with:
           name: wcet-profile
-          path: docs/assurance/
+          path: docs/assurance/private/
         continue-on-error: true
       - run: task docs-build
       - uses: actions/upload-pages-artifact@v3

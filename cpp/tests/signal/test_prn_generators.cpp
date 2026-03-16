@@ -7,7 +7,7 @@
 
 using namespace lunalink::signal;
 
-TEST_CASE("PRN Generators: Exhaustive validation against Annex 3") {
+TEST_CASE("[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3") {
     GoldGenerator gold_gen;
     WeilGenerator weil_gen;
     

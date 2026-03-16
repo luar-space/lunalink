@@ -8,6 +8,7 @@ option(ENABLE_COVERAGE "Enable coverage reporting" OFF)
 option(ENABLE_SANITIZERS "Enable sanitizers" OFF)
 option(LUNALINK_FAULT_INJECTION "Enable fault-injection APIs for SWIFI tests" OFF)
 option(ENABLE_LLVM_COVERAGE "Enable LLVM source-based coverage (MC/DC, requires Clang)" OFF)
+option(ENABLE_STACK_USAGE "Enable -fstack-usage to produce .su files for stack analysis" OFF)
 
 # --- SCI Header Generation ---
 # Inject git SHA, build timestamp (seconds since J2000), and pre-computed CRC-32
@@ -156,30 +157,30 @@ if(BUILD_TESTING)
     enable_testing()
 
     add_executable(test_lunalink
-        cpp/tests/test_prn.cpp
-        cpp/tests/test_modulator.cpp
-        cpp/tests/test_matched_code.cpp
-        cpp/tests/test_iq_mux.cpp
-        cpp/tests/test_bch.cpp
-        cpp/tests/test_frame.cpp
-        cpp/tests/test_coverage_gap.cpp
-        cpp/tests/test_safety.cpp
-        cpp/tests/test_ldpc.cpp
-        cpp/tests/test_safety_extended.cpp
-        cpp/tests/test_interleaver.cpp
-        cpp/tests/test_crc.cpp
-        cpp/tests/test_performance.cpp
-        cpp/tests/test_roundtrip.cpp
-        cpp/tests/test_ldpc_ber.cpp
-        cpp/tests/test_bch_ber.cpp
-        cpp/tests/test_prn_generators.cpp
-        cpp/tests/test_coverage_booster.cpp
-        cpp/tests/test_coherency.cpp
-        cpp/tests/test_correlator.cpp
-        cpp/tests/test_correlator_perf.cpp
-        cpp/tests/test_sync_detector.cpp
-        cpp/tests/test_frame_roundtrip_e2e.cpp
-        cpp/tests/test_sync_detection_rate.cpp
+        cpp/tests/signal/test_prn.cpp
+        cpp/tests/signal/test_modulator.cpp
+        cpp/tests/signal/test_matched_code.cpp
+        cpp/tests/signal/test_iq_mux.cpp
+        cpp/tests/signal/test_bch.cpp
+        cpp/tests/signal/test_frame.cpp
+        cpp/tests/signal/test_coverage_gap.cpp
+        cpp/tests/signal/test_safety.cpp
+        cpp/tests/signal/test_ldpc.cpp
+        cpp/tests/signal/test_safety_extended.cpp
+        cpp/tests/signal/test_interleaver.cpp
+        cpp/tests/signal/test_crc.cpp
+        cpp/tests/signal/test_performance.cpp
+        cpp/tests/signal/test_roundtrip.cpp
+        cpp/tests/signal/test_ldpc_ber.cpp
+        cpp/tests/signal/test_bch_ber.cpp
+        cpp/tests/signal/test_prn_generators.cpp
+        cpp/tests/signal/test_coverage_booster.cpp
+        cpp/tests/signal/test_coherency.cpp
+        cpp/tests/signal/test_correlator.cpp
+        cpp/tests/signal/test_correlator_perf.cpp
+        cpp/tests/signal/test_sync_detector.cpp
+        cpp/tests/signal/test_frame_roundtrip_e2e.cpp
+        cpp/tests/signal/test_sync_detection_rate.cpp
     )
     target_link_libraries(test_lunalink PRIVATE lunalink_core Catch2::Catch2WithMain)
     target_compile_options(test_lunalink PRIVATE ${LUNALINK_WARNING_FLAGS})
@@ -195,7 +196,7 @@ if(BUILD_TESTING)
 
     # --- SWIFI (fault injection) test suite ---
     add_executable(lunalink_swifi_tests
-        cpp/tests/test_fault_injection.cpp
+        cpp/tests/signal/test_fault_injection.cpp
     )
     target_link_libraries(lunalink_swifi_tests PRIVATE lunalink_core Catch2::Catch2WithMain)
     # -Wno-c2y-extensions: Catch2 TEST_CASE macro uses __COUNTER__ which newer
@@ -254,3 +255,16 @@ if(ENABLE_SANITIZERS AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(lunalink_swifi_tests PRIVATE ${SANITIZE_FLAGS})
     target_link_options(lunalink_swifi_tests PRIVATE ${SANITIZE_FLAGS})
 endif()
+
+# --- Stack Usage Analysis ---
+if(ENABLE_STACK_USAGE AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(lunalink_core PRIVATE -fstack-usage)
+endif()
+
+# [[private-begin]]
+# --- Proprietary Subsystems (not included in OSS export) ---
+# add_subdirectory(cpp/inference)
+# add_subdirectory(cpp/integrity)
+# add_subdirectory(cpp/hal)
+# add_subdirectory(cpp/fpga)
+# [[private-end]]

@@ -23,7 +23,7 @@ Usage (CI or local)::
         --gate swifi=PASS \
         --gate-label "lint=Lint / Static Analysis (SWE-108, SWE-117)" \
         --gate-label "test-cpp=C++ Unit Tests (SWE-127)" \
-        --out docs/assurance/recertification_record.rst
+        --out docs/assurance/private/recertification_record.rst
 
 Verdict strings accepted: PASS, FAIL, CANCELLED, SKIPPED.
 Overall verdict: PASS only when every gate is PASS;
@@ -82,7 +82,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument(
         "--out",
-        default="docs/assurance/recertification_record.rst",
+        default="docs/assurance/private/recertification_record.rst",
         help="Output RST file path",
     )
     return p

@@ -5,7 +5,7 @@
 
 using namespace lunalink::signal;
 
-TEST_CASE("BCH decoder: zero errors") {
+TEST_CASE("[LSIS-AFS-501] BCH decoder: zero errors") {
   std::array<uint8_t, kBchCodewordLength> codeword{};
   
   // Test some sample FID/TOI pairs
@@ -24,7 +24,7 @@ TEST_CASE("BCH decoder: zero errors") {
   }
 }
 
-TEST_CASE("BCH decoder: single error correction") {
+TEST_CASE("[LSIS-AFS-501] BCH decoder: single error correction") {
   std::array<uint8_t, kBchCodewordLength> codeword{};
   const Fid fid = Fid::kNode3();
   const Toi toi{42};
@@ -44,7 +44,7 @@ TEST_CASE("BCH decoder: single error correction") {
   }
 }
 
-TEST_CASE("BCH decoder: double error correction") {
+TEST_CASE("[LSIS-AFS-501] BCH decoder: double error correction") {
   std::array<uint8_t, kBchCodewordLength> codeword{};
   const Fid fid = Fid::kNode2();
   const Toi toi{99};
@@ -87,7 +87,7 @@ TEST_CASE("BCH decoder: ambiguity detection") {
   CHECK(result.status != BchStatus::kOk);
 }
 
-TEST_CASE("BCH codebook exhaustive check") {
+TEST_CASE("[LSIS-AFS-501] BCH codebook exhaustive check") {
   std::array<uint8_t, kBchCodewordLength> codeword{};
   for (uint32_t f_idx = 0; f_idx < 4; ++f_idx) {
     for (uint32_t t_idx = 0; t_idx < 100; ++t_idx) {
@@ -111,7 +111,7 @@ TEST_CASE("BCH codebook checksum") {
   CHECK(bch_codebook_checksum() == checksum);
 }
 
-TEST_CASE("BCH soft decoder: clean symbols") {
+TEST_CASE("[LSIS-AFS-501] BCH soft decoder: clean symbols") {
   // Perfect BPSK: bit=0 → LLR=+1, bit=1 → LLR=-1
   std::array<uint8_t, kBchCodewordLength> codeword{};
   const Fid fid = Fid::kNode3();
@@ -130,7 +130,7 @@ TEST_CASE("BCH soft decoder: clean symbols") {
   CHECK(result.toi.value() == toi.value());
 }
 
-TEST_CASE("BCH soft decoder: noisy symbols corrected") {
+TEST_CASE("[LSIS-AFS-501] BCH soft decoder: noisy symbols corrected") {
   // Add small perturbation — soft decoder should still recover
   std::array<uint8_t, kBchCodewordLength> codeword{};
   const Fid fid = Fid::kNode2();
@@ -155,7 +155,7 @@ TEST_CASE("BCH soft decoder: noisy symbols corrected") {
   CHECK(result.toi.value() == toi.value());
 }
 
-TEST_CASE("BCH soft decoder: exhaustive codebook") {
+TEST_CASE("[LSIS-AFS-501] BCH soft decoder: exhaustive codebook") {
   std::array<uint8_t, kBchCodewordLength> codeword{};
   for (uint32_t f_idx = 0; f_idx < 4; ++f_idx) {
     for (uint32_t t_idx = 0; t_idx < 100; ++t_idx) {

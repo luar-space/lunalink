@@ -34,13 +34,13 @@ PrnCode get_weil1500(uint8_t prn_id) {
 
 // --- Gold-2046 (AFS-I primary code) ---
 
-TEST_CASE("gold_prn PRN 1 has binary chip values") {
+TEST_CASE("[LSIS-AFS-101] gold_prn PRN 1 has binary chip values") {
   const auto packed = get_gold(1);
   for (uint16_t i = 0; i < kGoldChipLength; ++i)
     REQUIRE(read_chip(packed, i) <= 1u);
 }
 
-TEST_CASE("gold_prn returns distinct sequences for different PRNs") {
+TEST_CASE("[LSIS-AFS-101] gold_prn returns distinct sequences for different PRNs") {
   const auto p1 = get_gold(1);
   const auto p2 = get_gold(2);
   bool differ = false;
@@ -54,7 +54,7 @@ TEST_CASE("gold_prn returns distinct sequences for different PRNs") {
   REQUIRE(differ);
 }
 
-TEST_CASE("gold_prn PRN 1 first byte matches reference") {
+TEST_CASE("[LSIS-AFS-101] gold_prn PRN 1 first byte matches reference") {
   const auto packed = get_gold(1);
   REQUIRE(packed.data[0] == 0x5Du);
   // Verify individual chips
@@ -63,7 +63,7 @@ TEST_CASE("gold_prn PRN 1 first byte matches reference") {
     REQUIRE(read_chip(packed, i) == expected[i]);
 }
 
-TEST_CASE("gold_prn all 210 PRNs have binary chip values") {
+TEST_CASE("[LSIS-AFS-101] gold_prn all 210 PRNs have binary chip values") {
   for (uint8_t prn = 1; prn <= kPrnCount; ++prn) {
     const auto packed = get_gold(prn);
     for (uint16_t i = 0; i < kGoldChipLength; ++i)
@@ -73,13 +73,13 @@ TEST_CASE("gold_prn all 210 PRNs have binary chip values") {
 
 // --- Weil-10230 (AFS-Q primary code) ---
 
-TEST_CASE("weil10230_prn PRN 1 has binary chip values") {
+TEST_CASE("[LSIS-AFS-102] weil10230_prn PRN 1 has binary chip values") {
   const auto packed = get_weil10230(1);
   for (uint16_t i = 0; i < kWeil10230ChipLength; ++i)
     REQUIRE(read_chip(packed, i) <= 1u);
 }
 
-TEST_CASE("weil10230_prn returns distinct sequences for different PRNs") {
+TEST_CASE("[LSIS-AFS-102] weil10230_prn returns distinct sequences for different PRNs") {
   const auto p1 = get_weil10230(1);
   const auto p2 = get_weil10230(2);
   bool differ = false;
@@ -93,7 +93,7 @@ TEST_CASE("weil10230_prn returns distinct sequences for different PRNs") {
   REQUIRE(differ);
 }
 
-TEST_CASE("weil10230_prn PRN 1 first chips match reference") {
+TEST_CASE("[LSIS-AFS-102] weil10230_prn PRN 1 first chips match reference") {
   const auto packed = get_weil10230(1);
   const uint8_t expected[14] = {0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1};
   for (uint16_t i = 0; i < 14; ++i)
@@ -102,13 +102,13 @@ TEST_CASE("weil10230_prn PRN 1 first chips match reference") {
 
 // --- Weil-1500 (AFS-Q tertiary code) ---
 
-TEST_CASE("weil1500_prn PRN 1 has binary chip values") {
+TEST_CASE("[LSIS-AFS-102] weil1500_prn PRN 1 has binary chip values") {
   const auto packed = get_weil1500(1);
   for (uint16_t i = 0; i < kWeil1500ChipLength; ++i)
     REQUIRE(read_chip(packed, i) <= 1u);
 }
 
-TEST_CASE("weil1500_prn returns distinct sequences for different PRNs") {
+TEST_CASE("[LSIS-AFS-102] weil1500_prn returns distinct sequences for different PRNs") {
   const auto p1 = get_weil1500(1);
   const auto p2 = get_weil1500(2);
   bool differ = false;
@@ -122,7 +122,7 @@ TEST_CASE("weil1500_prn returns distinct sequences for different PRNs") {
   REQUIRE(differ);
 }
 
-TEST_CASE("weil1500_prn PRN 1 first byte matches reference") {
+TEST_CASE("[LSIS-AFS-102] weil1500_prn PRN 1 first byte matches reference") {
   const auto packed = get_weil1500(1);
   REQUIRE(packed.data[0] == 0xE4u);
   const uint8_t expected[8] = {1, 1, 1, 0, 0, 1, 0, 0};

@@ -105,7 +105,7 @@ Hardening
 Unit tests
 ~~~~~~~~~~
 
-Run: ``task test-cpp`` (file: ``cpp/tests/test_modulator.cpp``)
+Run: ``task test-cpp`` (file: ``cpp/tests/signal/test_modulator.cpp``)
 
 .. list-table::
    :header-rows: 1
@@ -221,7 +221,7 @@ Hardening
 Unit tests
 ~~~~~~~~~~
 
-Run: ``task test-cpp`` (file: ``cpp/tests/test_iq_mux.cpp``)
+Run: ``task test-cpp`` (file: ``cpp/tests/signal/test_iq_mux.cpp``)
 
 .. list-table::
    :header-rows: 1
@@ -247,21 +247,21 @@ Run: ``task test-cpp`` (file: ``cpp/tests/test_iq_mux.cpp``)
 Cross-Cutting: Integration and Assurance Tests
 -----------------------------------------------
 
-Coherency test (``cpp/tests/test_coherency.cpp``)
+Coherency test (``cpp/tests/signal/test_coherency.cpp``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Verifies primary/secondary/tertiary phase alignment (LSIS-172) over a full
 6000-epoch frame.  This is the upstream prerequisite for GD4: if matched-code
 epochs are phase-incorrect, the modulated IQ stream carries the error.
 
-Round-trip test (``cpp/tests/test_roundtrip.cpp``)
+Round-trip test (``cpp/tests/signal/test_roundtrip.cpp``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The TX round-trip encodes through the full signal chain: matched-code epoch
 generation (G1) |rarr| BPSK modulation (G4) |rarr| IQ multiplexing (G4),
 verifying that the complete baseband output is reconstructable.
 
-SWIFI fault injection (``cpp/tests/test_fault_injection.cpp``)
+SWIFI fault injection (``cpp/tests/signal/test_fault_injection.cpp``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. list-table::
@@ -380,5 +380,5 @@ Related documents:
 -  :doc:`signal/signal_chain` --- transmitter block diagram with chip rates and data types
 -  :doc:`signal/icd` --- formal interface control document
 -  :doc:`assurance/mission_assurance` --- branchless, CFI, scrubbing patterns
--  :doc:`assurance/fmea` --- modulator and IQ mux failure modes
--  :doc:`assurance/fault_coverage` --- SWIFI scenario catalogue
+-  :doc:`assurance/private/fmea` --- modulator and IQ mux failure modes
+-  :doc:`assurance/private/fault_coverage` --- SWIFI scenario catalogue

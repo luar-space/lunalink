@@ -42,11 +42,13 @@ exclude_patterns = [
     "Thumbs.db",
     ".DS_Store",
     # Draft docs not yet in a toctree — exclude to prevent -W failures.
-    "assurance/README.rst",
-    "assurance/build_policy.rst",
-    "assurance/configuration_baseline.rst",
-    "assurance/tool_confidence.rst",
-    "assurance/traceability_matrix.rst",
+    "assurance/public/README.rst",
+    "assurance/public/build_policy.rst",
+    "assurance/private/configuration_baseline.rst",
+    "assurance/public/tool_confidence.rst",
+    # [[private-begin]]
+    # Private assurance docs are excluded from OSS Sphinx builds.
+    # [[private-end]]
 ]
 
 html_theme = "furo"

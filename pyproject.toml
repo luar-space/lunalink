@@ -41,6 +41,11 @@ dev = [
     "gcovr>=7.0",
 ]
 
+# [[private-begin]]
+[project.optional-dependencies]
+private = []
+# [[private-end]]
+
 [tool.setuptools_scm]
 fallback_version = "0.0.0.dev0"
 
@@ -64,7 +69,7 @@ show_missing = true
 [tool.ruff]
 line-length = 88
 target-version = "py312"
-exclude = ["docs/conf.py", ".claude/"]
+exclude = ["docs/conf.py", ".claude/", "build/", ".venv/"]
 
 [tool.ruff.lint]
 select = [

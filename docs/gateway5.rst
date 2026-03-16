@@ -135,7 +135,7 @@ Hardening
 
 .. |rarr| unicode:: U+2192
 
-FMEA (``docs/assurance/fmea.rst``):
+FMEA (``docs/assurance/private/fmea.rst``):
 
 -  **FM-050**: SEU corrupts channel state TMR triple
 -  **FM-051**: Illegal state transition (e.g. kIdle |rarr| kTracking)
@@ -146,7 +146,7 @@ FMEA (``docs/assurance/fmea.rst``):
 Unit tests
 ~~~~~~~~~~
 
-Run: ``task test-cpp`` (file: ``cpp/tests/test_correlator.cpp``, 18 tests)
+Run: ``task test-cpp`` (file: ``cpp/tests/signal/test_correlator.cpp``, 18 tests)
 
 .. list-table::
    :header-rows: 1
@@ -191,7 +191,7 @@ Run: ``task test-cpp`` (file: ``cpp/tests/test_correlator.cpp``, 18 tests)
    * - UniformPrior returns full 40-bin range
      - Covers |pm|\ 10 kHz in 500 Hz bins
 
-SWIFI scenarios (``cpp/tests/test_fault_injection.cpp``):
+SWIFI scenarios (``cpp/tests/signal/test_fault_injection.cpp``):
 
 -  **FI-16**: Channel state TMR vote corrects single-copy corruption
 -  **FI-17**: Illegal transition (kIdle |rarr| kTracking) returns ``kNotLocked``
@@ -275,7 +275,7 @@ Hardening
    * - Secure scrub
      - ``SyncResult`` zeroed on fault path
 
-FMEA (``docs/assurance/fmea.rst``):
+FMEA (``docs/assurance/private/fmea.rst``):
 
 -  **FM-055**: SEU skips CFI milestone in sync detector
 -  **FM-056**: TMR peak offset corrupted
@@ -286,7 +286,7 @@ FMEA (``docs/assurance/fmea.rst``):
 Unit tests
 ~~~~~~~~~~
 
-Run: ``task test-cpp`` (file: ``cpp/tests/test_sync_detector.cpp``, 13 tests)
+Run: ``task test-cpp`` (file: ``cpp/tests/signal/test_sync_detector.cpp``, 13 tests)
 
 .. list-table::
    :header-rows: 1
@@ -321,7 +321,7 @@ Run: ``task test-cpp`` (file: ``cpp/tests/test_sync_detector.cpp``, 13 tests)
    * - All-ones (bipolar +1.0) input
      - ``kNotDetected`` (partial correlation only)
 
-SWIFI scenarios (``cpp/tests/test_fault_injection.cpp``):
+SWIFI scenarios (``cpp/tests/signal/test_fault_injection.cpp``):
 
 -  **FI-20**: CFI adversarial --- ``inject_cfi_skip(1)`` fires ``kFaultDetected``
    + FaultPacket; output scrubbed
@@ -460,7 +460,7 @@ Hardening
    * - Telemetry on fault
      - ``FaultPacket`` emitted via HAL on CFI violation
 
-FMEA (``docs/assurance/fmea.rst``):
+FMEA (``docs/assurance/private/fmea.rst``):
 
 -  **FM-060**: SEU skips CFI milestone in ``frame_decode()`` (6-milestone counter)
 -  **FM-061**: SEU corrupts ``rx_symbols`` pointer causing aliasing with workspace
@@ -716,7 +716,7 @@ Related documents:
 -  :doc:`signal/compliance_matrix` --- LSIS-AFS-701 through 710
 -  :doc:`signal/architecture` --- module-to-gateway mapping
 -  :doc:`signal/icd` --- formal interface control document
--  :doc:`assurance/mission_assurance` --- CFI, TMR, scrubbing patterns
--  :doc:`assurance/fmea` --- FM-050 to FM-066 (correlator, sync, frame decode)
--  :doc:`assurance/fault_coverage` --- FI-16 to FI-23 SWIFI catalogue
--  :doc:`assurance/safety_plan` --- subsystem safety analysis
+-  :doc:`assurance/public/mission_assurance` --- CFI, TMR, scrubbing patterns
+-  :doc:`assurance/private/fmea` --- FM-050 to FM-066 (correlator, sync, frame decode)
+-  :doc:`assurance/private/fault_coverage` --- FI-16 to FI-23 SWIFI catalogue
+-  :doc:`assurance/private/safety_plan` --- subsystem safety analysis

@@ -126,7 +126,8 @@ TEST_CASE("Gateway 5: frame_decode WCET", "[performance][benchmark]") {
                        std::span<float> out) {
         std::array<uint8_t, kFrameLength> tx{};
         LdpcEncodeWorkspace enc_ws{};
-        (void)frame_build(Fid{0}, Toi{42}, sb2, sb3, sb4, tx, enc_ws);
+        FrameBuildWorkspace fbw{};
+        (void)frame_build(Fid{0}, Toi{42}, sb2, sb3, sb4, tx, enc_ws, fbw);
         for (size_t i = 0; i < kFrameLength; ++i) {
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
             out[i] = (tx[i] == 0U) ? 1.0F : -1.0F;

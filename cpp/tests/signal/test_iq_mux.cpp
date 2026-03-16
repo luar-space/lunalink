@@ -7,7 +7,7 @@
 
 using namespace lunalink::signal;
 
-TEST_CASE("multiplex_iq upsamples I by factor 5") {
+TEST_CASE("[LSIS-AFS-301] multiplex_iq upsamples I by factor 5") {
   // PrnId 1
   std::array<uint8_t, kGoldChipLength> i_chips{};
   PrnCode u_i;
@@ -39,7 +39,7 @@ TEST_CASE("multiplex_iq upsamples I by factor 5") {
   }
 }
 
-TEST_CASE("multiplex_iq Q channel passes through at chip rate") {
+TEST_CASE("[LSIS-AFS-301] multiplex_iq Q channel passes through at chip rate") {
   std::array<uint8_t, kGoldChipLength> i_chips{};
   PrnCode u_i;
   REQUIRE(gold_prn_packed(PrnId{1}, u_i) == PrnStatus::kOk);
@@ -65,12 +65,12 @@ TEST_CASE("multiplex_iq Q channel passes through at chip rate") {
   }
 }
 
-TEST_CASE("multiplex_iq output length is 2 * 10230 interleaved") {
+TEST_CASE("[LSIS-AFS-301] multiplex_iq output length is 2 * 10230 interleaved") {
   CHECK(kIqSamplesPerEpoch == 10230);
   CHECK(kIqUpsampleFactor == 5);
 }
 
-TEST_CASE("multiplex_iq 50/50 power: I and Q have equal amplitude") {
+TEST_CASE("[LSIS-AFS-301] multiplex_iq 50/50 power: I and Q have equal amplitude") {
   std::array<int8_t, 2046> i_s; i_s.fill(1);
   std::array<int8_t, 10230> q_s; q_s.fill(-1);
   std::array<int16_t, 20460> out;
@@ -81,7 +81,7 @@ TEST_CASE("multiplex_iq 50/50 power: I and Q have equal amplitude") {
   CHECK(out[1] == -1);
 }
 
-TEST_CASE("multiplex_iq rejects undersized inputs and outputs") {
+TEST_CASE("[LSIS-AFS-301] multiplex_iq rejects undersized inputs and outputs") {
   std::array<int8_t, 2046> i_ok{};
   std::array<int8_t, 10230> q_ok{};
   std::array<int16_t, 20460> out_ok{};
@@ -96,7 +96,7 @@ TEST_CASE("multiplex_iq rejects undersized inputs and outputs") {
   CHECK(multiplex_iq(i_ok, q_ok, out_short) == IqMuxStatus::kOutputTooSmall);
 }
 
-TEST_CASE("multiplex_iq rejects invalid sample values") {
+TEST_CASE("[LSIS-AFS-301] multiplex_iq rejects invalid sample values") {
   std::array<int8_t, 2046> i_samples{};
   std::array<int8_t, 10230> q_samples{};
   std::array<int16_t, 20460> out{};

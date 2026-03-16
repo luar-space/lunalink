@@ -110,7 +110,7 @@ Hardening
 Unit tests
 ~~~~~~~~~~
 
-Run: ``task test-cpp``  (file: ``cpp/tests/test_bch.cpp``)
+Run: ``task test-cpp``  (file: ``cpp/tests/signal/test_bch.cpp``)
 
 .. list-table::
    :header-rows: 1
@@ -142,7 +142,7 @@ Run: ``task test-cpp``  (file: ``cpp/tests/test_bch.cpp``)
 Performance tests (``task test-performance``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-File: ``cpp/tests/test_bch_ber.cpp``.  BPSK AWGN simulation comparing
+File: ``cpp/tests/signal/test_bch_ber.cpp``.  BPSK AWGN simulation comparing
 hard ML vs soft ML over 1,000–10,000 frames per Eb/N0 point.
 
 .. list-table::
@@ -281,7 +281,7 @@ Hardening
 Unit tests
 ~~~~~~~~~~
 
-Run: ``task test-cpp``  (file: ``cpp/tests/test_ldpc.cpp``)
+Run: ``task test-cpp``  (file: ``cpp/tests/signal/test_ldpc.cpp``)
 
 .. list-table::
    :header-rows: 1
@@ -347,7 +347,7 @@ CFI sentinels and mirrored address calculation (Category B hardening):
 the output index is computed twice via independent paths; a mismatch
 triggers ``kFaultDetected`` before any write.
 
-Unit tests (file: ``cpp/tests/test_interleaver.cpp``)
+Unit tests (file: ``cpp/tests/signal/test_interleaver.cpp``)
 
 .. list-table::
    :header-rows: 1
@@ -382,7 +382,7 @@ Hardening
 CFI counter verifies the full 24-bit output loop ran without skip;
 ``kFaultDetected`` returned on mismatch.
 
-Unit tests (file: ``cpp/tests/test_crc.cpp``)
+Unit tests (file: ``cpp/tests/signal/test_crc.cpp``)
 
 .. list-table::
    :header-rows: 1
@@ -405,7 +405,7 @@ Cross-Cutting: Integration and Assurance Tests
 Beyond the per-component unit tests, the following integration tests
 cover GD2 end-to-end paths.
 
-Round-trip tests (``cpp/tests/test_roundtrip.cpp``)
+Round-trip tests (``cpp/tests/signal/test_roundtrip.cpp``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. list-table::
@@ -419,7 +419,7 @@ Round-trip tests (``cpp/tests/test_roundtrip.cpp``)
    * - Gateway 2: LDPC Round-trip
      - encode → decode with no channel noise recovers all message bits for SF2, SF3, SF4
 
-Safety & fault-tolerance test (``cpp/tests/test_safety_extended.cpp``)
+Safety & fault-tolerance test (``cpp/tests/signal/test_safety_extended.cpp``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 *Gateway 2: Safety & Fault Tolerance* covers: TMR majority voting under

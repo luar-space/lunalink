@@ -219,7 +219,7 @@ struct TmrValue {
 #ifdef LUNALINK_FAULT_INJECTION
   /**
    * @brief Single-copy fault injection: corrupt one TMR copy by index (0=v1, 1=v2, 2=v3).
-   * Only available when LUNALINK_FAULT_INJECTION=1.
+   * Only available when LUNALINK_FAULT_INJECTION=1. [SW-SAF-06]
    */
   void inject_fault(uint8_t copy_index, T corrupted_value) noexcept {
     if (copy_index == 0U) { v1 = corrupted_value; }

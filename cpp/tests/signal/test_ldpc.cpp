@@ -6,7 +6,7 @@
 
 using namespace lunalink::signal;
 
-TEST_CASE("LDPC Encoder: basic execution") {
+TEST_CASE("[LSIS-AFS-320] LDPC Encoder: basic execution") {
     // SF2: 1200 bits
     std::array<uint8_t, 1200> msg_sf2{};
     msg_sf2[0] = 1;
@@ -36,7 +36,7 @@ TEST_CASE("LDPC Encoder: basic execution") {
     }
 }
 
-TEST_CASE("LDPC Encoder: error paths") {
+TEST_CASE("[LSIS-AFS-320] LDPC Encoder: error paths") {
     std::array<uint8_t, 1199> short_msg{};
     std::array<uint8_t, 2400> out{};
     LdpcEncodeWorkspace enc_ws{};
@@ -108,7 +108,7 @@ TEST_CASE("LDPC: Matrix dimension consistency") {
     }
 }
 
-TEST_CASE("LDPC: Subframe types coverage") {
+TEST_CASE("[LSIS-AFS-320] LDPC: Subframe types coverage") {
     std::array<uint8_t, 1200> msg_sf2{};
     std::array<uint8_t, 870> msg_sf3{};
     std::array<uint8_t, 2400> out_sf2{};

@@ -421,16 +421,16 @@ jobs:
             --gate-label "wcet=WCET Benchmark Profile (Safety Plan §4)" \
             --gate-label "test-python=Python Tests (SWE-128)" \
             --gate-label "docs=Documentation Build (SWE-104)" \
-            --out docs/assurance/recertification_record.rst
+            --out docs/assurance/private/recertification_record.rst
 
           echo ""
           echo "=== Recertification Record ==="
-          cat docs/assurance/recertification_record.rst
+          cat docs/assurance/private/recertification_record.rst
 
       - name: Upload recertification record
         uses: actions/upload-artifact@v5
         with:
           name: >-
             recertification-record-${{ github.event.inputs.milestone }}-${{ steps.meta.outputs.short }}
-          path: docs/assurance/recertification_record.rst
+          path: docs/assurance/private/recertification_record.rst
           if-no-files-found: error

@@ -125,7 +125,7 @@ TEST_CASE("SyncDetector: accepts input exactly sync length", "[sync_detector]") 
 
 // ─── Detection Tests ────────────────────────────────────────────────────────
 
-TEST_CASE("SyncDetector: detects sync pattern at start of frame", "[sync_detector]") {
+TEST_CASE("[LSIS-AFS-710] SyncDetector: detects sync pattern at start of frame", "[sync_detector]") {
     SyncDetector det(g_null_hal);
     SyncResult result{};
 
@@ -140,7 +140,7 @@ TEST_CASE("SyncDetector: detects sync pattern at start of frame", "[sync_detecto
     REQUIRE_THAT(static_cast<double>(result.peak_metric), WithinAbs(68.0, 0.01));
 }
 
-TEST_CASE("SyncDetector: detects sync pattern at arbitrary offset", "[sync_detector]") {
+TEST_CASE("[LSIS-AFS-710] SyncDetector: detects sync pattern at arbitrary offset", "[sync_detector]") {
     SyncDetector det(g_null_hal);
     SyncResult result{};
 
@@ -174,7 +174,7 @@ TEST_CASE("SyncDetector: detects sync at end of buffer", "[sync_detector]") {
 
 // ─── Noise Robustness Tests ─────────────────────────────────────────────────
 
-TEST_CASE("SyncDetector: detects sync in moderate noise", "[sync_detector]") {
+TEST_CASE("[LSIS-AFS-710] SyncDetector: detects sync in moderate noise", "[sync_detector]") {
     SyncDetector det(g_null_hal);
     SyncResult result{};
 

@@ -542,6 +542,7 @@ test = [
 ]
 
 [package.metadata]
+provides-extras = ["private"]
 
 [package.metadata.requires-dev]
 dev = [

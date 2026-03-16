@@ -166,9 +166,9 @@ ECSS-Q-HB-80-03A Rev.1 — Software Dependability and Safety
 
 Directly relevant to LunaLink's:
 
-* ``docs/assurance/fmea.rst`` — Failure Mode and Effects Analysis.
-* ``docs/assurance/safety_plan.rst`` — Software Safety Plan.
-* ``docs/assurance/fault_coverage.rst`` — SWIFI fault coverage matrix.
+* ``docs/assurance/private/fmea.rst`` — Failure Mode and Effects Analysis.
+* ``docs/assurance/private/safety_plan.rst`` — Software Safety Plan.
+* ``docs/assurance/private/fault_coverage.rst`` — SWIFI fault coverage matrix.
 
 
 ECSS-Q-HB-80-04A — Software Metrication Handbook
@@ -180,7 +180,7 @@ ECSS-Q-HB-80-04A — Software Metrication Handbook
           programme — goal specification, metric selection, data collection,
           analysis, and continuous improvement.
 
-Relevant to LunaLink's ``docs/assurance/metrics_plan.rst``.
+Relevant to LunaLink's ``docs/assurance/private/metrics_plan.rst``.
 
 
 NPR 7150.2D to ECSS Cross-Reference
@@ -208,7 +208,7 @@ Category B requires:
 * FMEA and software safety analysis.
 
 LunaLink's current assurance infrastructure satisfies or exceeds these
-requirements.  See ``docs/assurance/ecss_tailoring.rst`` for the full tailoring
+requirements.  See ``docs/assurance/private/ecss_tailoring.rst`` for the full tailoring
 record.
 
 

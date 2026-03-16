@@ -150,7 +150,7 @@ Hardening
 Unit tests
 ~~~~~~~~~~
 
-Run: ``task test-cpp`` (file: ``cpp/tests/test_prn.cpp``)
+Run: ``task test-cpp`` (file: ``cpp/tests/signal/test_prn.cpp``)
 
 .. list-table::
    :header-rows: 1
@@ -180,7 +180,7 @@ Run: ``task test-cpp`` (file: ``cpp/tests/test_prn.cpp``)
 .. |isin| unicode:: U+2208
 .. |ne| unicode:: U+2260
 
-Generator validation (file: ``cpp/tests/test_prn_generators.cpp``)
+Generator validation (file: ``cpp/tests/signal/test_prn_generators.cpp``)
 
 .. list-table::
    :header-rows: 1
@@ -306,7 +306,7 @@ Hardening
 Unit tests
 ~~~~~~~~~~
 
-Run: ``task test-cpp`` (file: ``cpp/tests/test_matched_code.cpp``)
+Run: ``task test-cpp`` (file: ``cpp/tests/signal/test_matched_code.cpp``)
 
 .. list-table::
    :header-rows: 1
@@ -339,7 +339,7 @@ Run: ``task test-cpp`` (file: ``cpp/tests/test_matched_code.cpp``)
    * - checked matched helper APIs: saturating logic
      - TMR fault injection bypassed; CheckedRange saturates on out-of-bound read
 
-SWIFI fault injection (file: ``cpp/tests/test_fault_injection.cpp``)
+SWIFI fault injection (file: ``cpp/tests/signal/test_fault_injection.cpp``)
 
 .. list-table::
    :header-rows: 1
@@ -359,14 +359,14 @@ SWIFI fault injection (file: ``cpp/tests/test_fault_injection.cpp``)
 Cross-Cutting: Coherency & Round-Trip Tests
 --------------------------------------------
 
-Coherency test (``cpp/tests/test_coherency.cpp``)
+Coherency test (``cpp/tests/signal/test_coherency.cpp``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Verifies primary/secondary/tertiary phase alignment (LSIS-172) over a full
 6000-epoch frame.  Confirms that epoch boundaries align correctly and that
 the tertiary code advances once every four epochs.
 
-Round-trip test (``cpp/tests/test_roundtrip.cpp``)
+Round-trip test (``cpp/tests/signal/test_roundtrip.cpp``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The full TX |rarr| RX round-trip encodes a matched-code epoch through the
@@ -473,5 +473,5 @@ Related documents:
 -  :doc:`signal/signal_chain` --- transmitter block diagram
 -  :doc:`signal/validation_plan` --- five-level test hierarchy
 -  :doc:`assurance/mission_assurance` --- TMR, CFI, CheckedRange patterns
--  :doc:`assurance/fmea` --- PRN generator failure modes
--  :doc:`assurance/fault_coverage` --- SWIFI scenario catalogue
+-  :doc:`assurance/private/fmea` --- PRN generator failure modes
+-  :doc:`assurance/private/fault_coverage` --- SWIFI scenario catalogue

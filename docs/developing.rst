@@ -94,7 +94,7 @@ Run ``task --list`` to see all tasks. The most common ones are:
      - Full local CI suite: build, lint, flags, test-cpp, swifi, coverage, tidy, test-py, sanitize, docs.
    * - ``task recertify``
      - Run all recertification gates locally and write
-       ``docs/assurance/recertification_record.rst``.
+       ``docs/assurance/private/recertification_record.rst``.
        Override defaults: ``task recertify MILESTONE=PDR REASON="..." AUTHORITY="..."``
 
 Daily Workflow
@@ -271,7 +271,7 @@ toolchain):
     task recertify MILESTONE=PDR REASON="Pre-PDR baseline" AUTHORITY="Your Name"
 
 Runs all gates sequentially, prints a coloured per-gate summary, and
-writes ``docs/assurance/recertification_record.rst``.  Exit code is non-zero
+writes ``docs/assurance/private/recertification_record.rst``.  Exit code is non-zero
 if any gate fails.  Per-gate logs are written to ``build/recertify-logs/``.
 
 **Running in CI** (all 10 gates in parallel):
@@ -305,7 +305,7 @@ artifact:
 
     recertification-record-<MILESTONE>-<short-SHA>
 
-**The record document** (``docs/assurance/recertification_record.rst``)
+**The record document** (``docs/assurance/private/recertification_record.rst``)
 contains:
 
 * Document ID, certified ref (branch + full SHA), milestone, timestamp,
@@ -319,7 +319,7 @@ contains:
 To commit the record alongside a release tag::
 
     task recertify MILESTONE=Flight REASON="Flight baseline v1.0.0" AUTHORITY="M. Rossi"
-    git add docs/assurance/recertification_record.rst
+    git add docs/assurance/private/recertification_record.rst
     git commit -m "assurance: add Flight recertification record for v1.0.0"
     git tag -s v1.0.0
 

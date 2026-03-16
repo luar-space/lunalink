@@ -6,7 +6,7 @@
 
 using namespace lunalink::signal;
 
-TEST_CASE("secondary_code_index cycles through S0-S3") {
+TEST_CASE("[LSIS-AFS-401] secondary_code_index cycles through S0-S3") {
   uint8_t idx = 0;
   CHECK(secondary_code_index_checked(PrnId{1}, idx) == MatchedCodeStatus::kOk);
   CHECK(idx == 0);
@@ -20,7 +20,7 @@ TEST_CASE("secondary_code_index cycles through S0-S3") {
   CHECK(idx == 0);
 }
 
-TEST_CASE("secondary codes match spec Table 10") {
+TEST_CASE("[LSIS-AFS-401] secondary codes match spec Table 10") {
   CHECK(kSecondaryCodes[0][0] == 1);
   CHECK(kSecondaryCodes[0][1] == 1);
   CHECK(kSecondaryCodes[0][2] == 1);
@@ -31,7 +31,7 @@ TEST_CASE("secondary codes match spec Table 10") {
   CHECK(kSecondaryCodes[1][3] == 1);
 }
 
-TEST_CASE("matched_code_epoch produces binary chip values") {
+TEST_CASE("[LSIS-AFS-401] matched_code_epoch produces binary chip values") {
   std::array<uint8_t, kWeil10230ChipLength> out{};
   REQUIRE(matched_code_epoch(PrnId{1}, 0, out) == MatchedCodeStatus::kOk);
   for (const auto chip : out) {
@@ -39,7 +39,7 @@ TEST_CASE("matched_code_epoch produces binary chip values") {
   }
 }
 
-TEST_CASE("matched_code_epoch equals primary XOR secondary XOR tertiary") {
+TEST_CASE("[LSIS-AFS-401] matched_code_epoch equals primary XOR secondary XOR tertiary") {
   std::array<uint8_t, kWeil10230ChipLength> out{};
   REQUIRE(matched_code_epoch(PrnId{1}, 0, out) == MatchedCodeStatus::kOk);
 
@@ -63,7 +63,7 @@ TEST_CASE("matched_code_epoch equals primary XOR secondary XOR tertiary") {
   }
 }
 
-TEST_CASE("matched_code_epoch differs across secondary code boundary") {
+TEST_CASE("[LSIS-AFS-401] matched_code_epoch differs across secondary code boundary") {
   std::array<uint8_t, kWeil10230ChipLength> e0{};
   std::array<uint8_t, kWeil10230ChipLength> e3{};
   
@@ -75,7 +75,7 @@ TEST_CASE("matched_code_epoch differs across secondary code boundary") {
   }
 }
 
-TEST_CASE("matched_code_epoch changes across tertiary chip boundary") {
+TEST_CASE("[LSIS-AFS-401] matched_code_epoch changes across tertiary chip boundary") {
   std::array<uint8_t, kWeil10230ChipLength> e0{};
   std::array<uint8_t, kWeil10230ChipLength> e4{};
 
@@ -92,7 +92,7 @@ TEST_CASE("matched_code_epoch changes across tertiary chip boundary") {
   }
 }
 
-TEST_CASE("matched_code_epoch different PRNs produce different sequences") {
+TEST_CASE("[LSIS-AFS-401] matched_code_epoch different PRNs produce different sequences") {
   std::array<uint8_t, kWeil10230ChipLength> out1{};
   std::array<uint8_t, kWeil10230ChipLength> out2{};
   std::array<uint8_t, kWeil10230ChipLength> out{};
@@ -109,7 +109,7 @@ TEST_CASE("kEpochsPerFrame is 6000") {
   CHECK(kEpochsPerFrame == 6000);
 }
 
-TEST_CASE("default interim mapping only applies to PRN 1-12") {
+TEST_CASE("[LSIS-AFS-401] default interim mapping only applies to PRN 1-12") {
   MatchedCodeAssignment a{};
   CHECK(default_matched_assignment_checked(PrnId{1}, a) == MatchedCodeStatus::kOk);
   CHECK(default_matched_assignment_checked(PrnId{12}, a) == MatchedCodeStatus::kOk);
@@ -117,7 +117,7 @@ TEST_CASE("default interim mapping only applies to PRN 1-12") {
   CHECK(default_matched_assignment_checked(PrnId{13}, a) == MatchedCodeStatus::kInvalidPrn);
 }
 
-TEST_CASE("matched_code_epoch_checked rejects invalid inputs") {
+TEST_CASE("[LSIS-AFS-401] matched_code_epoch_checked rejects invalid inputs") {
   std::array<uint8_t, kWeil10230ChipLength> out{};
   std::array<uint8_t, 100> short_out{};
   MatchedCodeAssignment a{};
@@ -129,7 +129,7 @@ TEST_CASE("matched_code_epoch_checked rejects invalid inputs") {
           MatchedCodeStatus::kOutputTooSmall);
 }
 
-TEST_CASE("matched_code_epoch_checked supports tertiary phase offset") {
+TEST_CASE("[LSIS-AFS-401] matched_code_epoch_checked supports tertiary phase offset") {
   std::array<uint8_t, kWeil10230ChipLength> out0{};
   std::array<uint8_t, kWeil10230ChipLength> out1{};
   MatchedCodeAssignment a0{}, a1{};

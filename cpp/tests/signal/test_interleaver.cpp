@@ -5,7 +5,7 @@
 
 using namespace lunalink::signal;
 
-TEST_CASE("Block Interleaver: Round-trip correctness") {
+TEST_CASE("[LSIS-AFS-471] Block Interleaver: Round-trip correctness") {
     // std::iota wraps at 256: positions i and i+256 carry the same value,
     // hiding transpositions between those pairs.  Use XOR of low and high
     // index bytes instead: original[i] = (i&0xFF) ^ ((i>>8)&0xFF), which
