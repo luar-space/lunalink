@@ -1,0 +1,8 @@
+# Tool validation .clang-tidy — inherits all checks from root config but
+# does NOT promote warnings to errors, so all diagnostics are collected.
+
+InheritParentConfig: true
+
+WarningsAsErrors: ""
+
+HeaderFilterRegex: ".*"

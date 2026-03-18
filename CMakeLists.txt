@@ -182,6 +182,8 @@ if(BUILD_TESTING)
         cpp/tests/platform/test_safety.cpp
         # integration/
         cpp/tests/integration/test_e2e.cpp
+        # tool_validation/
+        cpp/tests/tool_validation/test_coverage_canary.cpp
         # performance/
         cpp/tests/performance/test_bch_ber.cpp
         cpp/tests/performance/test_ldpc_ber.cpp
@@ -190,6 +192,7 @@ if(BUILD_TESTING)
         cpp/tests/performance/test_wcet.cpp
     )
     target_link_libraries(test_lunalink PRIVATE lunalink_core Catch2::Catch2WithMain)
+    target_include_directories(test_lunalink PRIVATE cpp/tests)
     target_compile_options(test_lunalink PRIVATE ${LUNALINK_WARNING_FLAGS})
 
     include(Catch OPTIONAL RESULT_VARIABLE CATCH_MODULE_FOUND)

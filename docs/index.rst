@@ -54,6 +54,7 @@ LunaLink AFS reference implementation with C++ core and pybind11 bindings.
    assurance/private/certification_delta
    assurance/private/ecss_tailoring
    assurance/private/recertification_record
+   assurance/private/misra_cpp2023_gcs
    assurance/private/static_analysis_report
    assurance/private/cppcheck_report
    assurance/private/srs

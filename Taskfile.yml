@@ -114,21 +114,24 @@ tasks:
     silent: false
 
   cppcheck:
-    desc: Run cppcheck static analysis on C++ core.
+    desc: Run cppcheck static analysis on C++ core (ECSS-Q-ST-80C §5.5 evidence).
     cmds:
       - |
         if ! command -v cppcheck >/dev/null 2>&1; then
           echo "ERROR: cppcheck not found. Install it: brew install cppcheck"
           exit 1
         fi
-        cppcheck --enable=all --inconclusive --inline-suppr --error-exitcode=1 \
-          --suppress=missingIncludeSystem \
-          --suppress=missingInclude \
-          --suppress=unusedFunction \
-          --suppress=useStlAlgorithm \
-          --suppress=checkersReport \
-          --suppress=normalCheckLevelMaxBranches \
-          --suppress=unmatchedSuppression \
+        echo "=== Cppcheck Static Analysis (ECSS-Q-ST-80C §5.5) ==="
+        echo "Suppressions: cppcheck.suppressions"
+        echo ""
+        cppcheck --std=c++20 --platform=unix64 \
+          --enable=all \
+          --inconclusive \
+          --inline-suppr \
+          --error-exitcode=1 \
+          --suppressions-list=cppcheck.suppressions \
+          --template='{file}:{line}: [{severity}] {id}: {message}' \
+          --quiet \
           cpp/include/ cpp/codes/ cpp/encoding/ cpp/messages/ cpp/signal/ cpp/platform/
     silent: false
 
@@ -353,6 +356,48 @@ tasks:
       - python3 scripts/build_manifest.py --build-dir {{.BUILD_DIR}}
     silent: false
 
+  validate-tidy:
+    desc: Run tool validation suite — prove clang-tidy catches claimed MISRA violations (ECSS-Q-ST-80C §5.5).
+    vars:
+      CLANG_TIDY:
+        sh: |
+          if command -v clang-tidy >/dev/null 2>&1; then
+            command -v clang-tidy
+          elif [ -x /opt/homebrew/opt/llvm/bin/clang-tidy ]; then
+            echo /opt/homebrew/opt/llvm/bin/clang-tidy
+          elif [ -x /usr/local/opt/llvm/bin/clang-tidy ]; then
+            echo /usr/local/opt/llvm/bin/clang-tidy
+          fi
+    cmds:
+      - |
+        if [ -z "{{.CLANG_TIDY}}" ]; then
+          echo "clang-tidy not found; skipping. Install LLVM: brew install llvm"
+          exit 0
+        fi
+        python3 scripts/validate_tidy.py --clang-tidy "{{.CLANG_TIDY}}"
+    silent: false
+
+  validate-coverage:
+    desc: Run coverage tool validation — prove llvm-cov correctly reports known gaps (ECSS-Q-ST-80C §5.5).
+    vars:
+      LLVM_DIR:
+        sh: |
+          if command -v llvm-cov >/dev/null 2>&1; then
+            dirname "$(command -v llvm-cov)"
+          elif [ -x /opt/homebrew/opt/llvm/bin/llvm-cov ]; then
+            echo /opt/homebrew/opt/llvm/bin
+          elif [ -x /usr/local/opt/llvm/bin/llvm-cov ]; then
+            echo /usr/local/opt/llvm/bin
+          fi
+    cmds:
+      - |
+        if [ -z "{{.LLVM_DIR}}" ]; then
+          echo "LLVM not found; skipping. Install LLVM: brew install llvm"
+          exit 0
+        fi
+        python3 scripts/validate_coverage.py --llvm-dir "{{.LLVM_DIR}}"
+    silent: false
+
   check-flags:
     desc: Verify required/forbidden compiler flags in compile_commands.json (S10 gate).
     vars:
@@ -435,6 +480,8 @@ tasks:
       - task: traceability
       - task: coverage-cpp
       - task: tidy
+      - task: validate-tidy
+      - task: validate-coverage
       - task: test-py
       - task: sanitize
       - task: docs-build

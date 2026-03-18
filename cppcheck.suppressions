@@ -1,0 +1,44 @@
+// cppcheck.suppressions — Cppcheck suppression list for LunaLink.
+//
+// Each suppression must have a justification comment.
+// Suppressions are reviewed as part of the MISRA GCS (LUNALINK-MISRA-GCS-001).
+//
+// Format: <suppression-id>[:<file>:<line>]
+
+// ── Global suppressions (apply to all files) ────────────────────────
+
+// missingIncludeSystem: System headers are resolved by the compiler, not cppcheck.
+// Cppcheck cannot locate platform SDK headers (e.g., <cstdint>).
+missingIncludeSystem
+
+// missingInclude: Project headers require CMake include paths not available to
+// standalone cppcheck. False positives on #include "lunalink/..." paths.
+missingInclude
+
+// unusedFunction: Flight library exports functions consumed by Python bindings
+// and test harnesses. Cppcheck cannot see cross-TU usage without whole-program
+// analysis mode, which is impractical in CI.
+unusedFunction
+
+// useStlAlgorithm: Advisory suggestion to replace loops with STL algorithms.
+// Flight code intentionally uses explicit loops for determinism, debuggability,
+// and WCET analysis (bounded loop requirement per Power of Ten Rule 2).
+useStlAlgorithm
+
+// checkersReport: Informational output about which checkers ran. Not a diagnostic.
+checkersReport
+
+// normalCheckLevelMaxBranches: Informational: branch exploration limit reached.
+// Not a diagnostic — cppcheck's analysis is still sound within its limits.
+normalCheckLevelMaxBranches
+
+// unmatchedSuppression: Suppress warnings about suppressions that don't match
+// any diagnostic. This occurs when code changes eliminate a previously-suppressed
+// issue, which is the desired outcome.
+unmatchedSuppression
+
+// ── Per-file suppressions ───────────────────────────────────────────
+// Add file-specific suppressions here with justification.
+// Format: <id>:<filename>:<line>
+// Example:
+// uninitMemberVar:cpp/signal/correlator.cpp:42  // Initialized in init() per two-phase pattern

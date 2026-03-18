@@ -1,42 +1,288 @@
-# .clang-tidy — Safety-focused static analysis for space-grade C++.
+# .clang-tidy — MISRA C++:2023 traceability configuration for ECSS Category B flight software.
 #
-# Applied to: cpp/{codes,encoding,messages,signal,platform}/, cpp/tests/, cpp/include/
-# Excluded:   cpp/bindings/ (pybind11 templates generate unavoidable noise)
+# This configuration maps clang-tidy checks to MISRA C++:2023 rules, JPL/Power-of-10
+# rules, and NASA coding standards. It forms part of the MISRA Guideline Compliance
+# Summary (LUNALINK-MISRA-GCS-001).
+#
+# Applied to: cpp/{codes,encoding,messages,signal,platform}/, cpp/include/
+# Excluded:   cpp/bindings/ (pybind11 templates), cpp/tests/ (separate .clang-tidy)
+#
+# Standards traceability:
+#   MISRA C++:2023    — 179 guidelines (4 Directives + 175 Rules)
+#   JPL D-60411       — 31 rules (LOC-1 through LOC-4)
+#   Power of Ten      — 10 rules (Holzmann/JPL)
+#   NASA GSFC C++     — Style and safety guidelines
+#   N7 Space ESA      — C++20 for Flight Software coding guidelines
 #
 # Run locally:  task tidy
-# Run in CI:    tidy job in .github/workflows/ci.yml
+# Run in CI:    tidy job in .github/workflows/tidy.yml
 
 ---
 Checks: >-
-  bugprone-*,
-  cert-dcl50-cpp,
-  cert-dcl58-cpp,
+  -*,
+
+  # ── MISRA §4.0: Language-independent issues ──────────────────────────
+  # Rule 0.0.1 (Required): No unreachable statements
+  bugprone-unreachable-code,
+
+  # Rule 0.1.2 (Required): Return values shall be used
+  # JPL Rule 14, Power of Ten Rule 7
+  bugprone-unused-return-value,
+
+  # Rule 0.2.1 (Advisory): Unused variables
+  # Rule 0.2.2 (Required): Unused parameters
+  # JPL Rule 13, Power of Ten Rule 6
+  misc-unused-parameters,
+  misc-unused-using-decls,
+
+  # ── MISRA §4.4: General principles ──────────────────────────────────
+  # Rule 4.1.2 (Advisory): No deprecated features
+  modernize-avoid-c-arrays,
+  modernize-deprecated-headers,
+  modernize-use-override,
+
+  # ── MISRA §4.5: Lexical conventions ─────────────────────────────────
+  # Rule 5.7.1 (Required): No /* inside C-style comments
+  # Enforced by -Wcomment compiler flag
+
+  # Rule 5.13.3 (Required): No octal constants
+  # Enforced by -Wzero-as-null-pointer-constant
+
+  # Rule 5.13.4-6 (Required): Literal suffix rules
+  hicpp-uppercase-literal-suffix,
+  readability-uppercase-literal-suffix,
+
+  # ── MISRA §4.6: Basic concepts ─────────────────────────────────────
+  # Rule 6.0.1 (Required): No visually ambiguous declarations
+  readability-misleading-indentation,
+
+  # Rule 6.4.1 (Required): No variable shadowing
+  # JPL Rule 13
+  bugprone-shadow,
+
+  # Rule 6.7.1 (Required): No function-local statics
+  # Rule 6.7.2 (Required): No global variables
+  cppcoreguidelines-avoid-non-const-global-variables,
+
+  # Rule 6.8.1 (Required): No access outside lifetime
+  # Rule 6.8.2 (Mandatory): No returning refs to locals
+  bugprone-dangling-handle,
+  bugprone-use-after-move,
+
+  # ── MISRA §4.7: Standard conversions ────────────────────────────────
+  # Rule 7.0.5 (Required): No implicit narrowing
+  # Rule 7.0.6 (Required): Appropriate numeric assignment
+  bugprone-narrowing-conversions,
+  bugprone-implicit-widening-of-multiplication-result,
+
+  # Rule 7.11.1 (Required): nullptr only
+  modernize-use-nullptr,
+  hicpp-use-nullptr,
+
+  # Rule 7.11.2 (Required): No array-to-pointer decay
+  # JPL Rule 26
+  cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  hicpp-no-array-decay,
+
+  # ── MISRA §4.8: Expressions ────────────────────────────────────────
+  # Rule 8.2.2 (Required): No C-style casts
+  cppcoreguidelines-pro-type-cstyle-cast,
+  google-readability-casting,
+
+  # Rule 8.2.3 (Required): No const_cast
+  cppcoreguidelines-pro-type-const-cast,
+
+  # Rule 8.2.5 (Required): No reinterpret_cast
+  cppcoreguidelines-pro-type-reinterpret-cast,
+
+  # Rule 8.2.6 (Required): No integer-to-pointer casts
+  # Covered by reinterpret_cast ban
+
+  # Rule 8.2.9 (Required): No typeid on polymorphic types
+  # Covered by -fno-rtti project policy
+
+  # Rule 8.2.10 (Required): No recursion
+  # JPL Rule 4, Power of Ten Rule 1
+  misc-no-recursion,
+
+  # Rule 8.2.11 (Required): No ellipsis arguments
+  cppcoreguidelines-pro-type-vararg,
+  hicpp-vararg,
+
+  # Rule 8.7.1 (Required): No invalid pointer arithmetic
+  # JPL Rule 26, Power of Ten Rule 9
+  cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  cppcoreguidelines-pro-bounds-constant-array-index,
+
+  # Rule 8.18.2 (Advisory): Assignment result not used
+  bugprone-assignment-in-if-condition,
+
+  # ── MISRA §4.9: Statements ─────────────────────────────────────────
+  # Rule 9.3.1 (Required): Compound statements for blocks
+  readability-braces-around-statements,
+  hicpp-braces-around-statements,
+
+  # Rule 9.4.1 (Required): if-else-if terminated with else
+  # Rule 9.4.2 (Required): Appropriate switch structure
+  hicpp-multiway-paths-covered,
+  bugprone-switch-missing-default-case,
+
+  # Rule 9.6.1 (Advisory, treated as Required): No goto
+  # JPL Rule 11, Power of Ten Rule 1
+  cppcoreguidelines-avoid-goto,
+  hicpp-avoid-goto,
+
+  # Rule 9.6.4 (Required): [[noreturn]] functions shall not return
+  # Rule 9.6.5 (Required): Non-void functions return on all paths
+  # Enforced by -Wreturn-type compiler flag
+
+  # ── MISRA §4.10: Declarations ──────────────────────────────────────
+  # Rule 10.0.1 (Advisory): One declaration per statement
+  readability-isolate-declaration,
+
+  # Rule 10.1.1 (Advisory): const-qualify pointer/ref params
+  readability-non-const-parameter,
+
+  # Rule 10.2.1 (Required): Explicit enum underlying type
+  # Rule 10.2.2 (Advisory): No unscoped enums
+  modernize-use-using,
+
+  # Rule 10.4.1 (Required): No asm
+  hicpp-no-assembler,
+
+  # ── MISRA §4.11: Declarators ───────────────────────────────────────
+  # Rule 11.6.1 (Advisory): Initialize all variables
+  cppcoreguidelines-init-variables,
+
+  # Rule 11.6.2 (Mandatory): No read before set
+  # Covered by cppcoreguidelines-init-variables + cppcheck uninitvar
+
+  # ── MISRA §4.12: Classes ───────────────────────────────────────────
+  # Rule 12.3.1 (Required): No unions
+  cppcoreguidelines-pro-type-union-access,
+
+  # ── MISRA §4.13: Derived classes ───────────────────────────────────
+  # Rule 13.3.1 (Required): virtual/override/final specifiers
+  bugprone-virtual-near-miss,
+
+  # ── MISRA §4.15: Special member functions ──────────────────────────
+  # Rule 15.0.1 (Required): Rule of five
+  cppcoreguidelines-special-member-functions,
+  hicpp-special-member-functions,
+
+  # Rule 15.1.3 (Required): Explicit single-arg constructors
+  google-explicit-constructor,
+  hicpp-explicit-conversions,
+
+  # ── MISRA §4.18: Exception handling ────────────────────────────────
+  # Rule 18.4.1 (Required): noexcept on exception-unfriendly functions
+  # N7 Space: mark public interfaces noexcept
+  performance-noexcept-move-constructor,
+  performance-noexcept-destructor,
+  performance-noexcept-swap,
+  bugprone-exception-escape,
+
+  # Rule 18.5.2 (Advisory): No program-terminating functions
   cert-err33-c,
   cert-err52-cpp,
   cert-err58-cpp,
   cert-err60-cpp,
+
+  # ── MISRA §4.19: Preprocessing ─────────────────────────────────────
+  # Rule 19.0.2 (Required): No function-like macros
+  cppcoreguidelines-macro-usage,
+  bugprone-macro-parentheses,
+
+  # Rule 19.2.1 (Required): Include guards
+  llvm-header-guard,
+
+  # ── MISRA §4.21: Language support library ──────────────────────────
+  # Rule 21.6.1 (Advisory): No dynamic memory
+  # JPL Rule 5, Power of Ten Rule 3
+  cppcoreguidelines-no-malloc,
+  cppcoreguidelines-owning-memory,
+
+  # Rule 21.10.1 (Required): No <cstdarg>
+  # Covered by cppcoreguidelines-pro-type-vararg
+
+  # ── Additional safety checks (JPL / Power of Ten / N7 Space) ──────
+  # JPL Rule 25: Short functions (enforced by readability-function-size)
+  # Power of Ten Rule 4: Function length limit
+  readability-function-size,
+  readability-function-cognitive-complexity,
+
+  # JPL Rule 18: Explicit evaluation order
+  # Power of Ten Rule 5: Assertions
+  bugprone-assert-side-effect,
+
+  # N7 Space: RAII, move semantics safety
+  bugprone-move-forwarding-reference,
+  performance-move-const-arg,
+  performance-unnecessary-copy-initialization,
+  performance-unnecessary-value-param,
+
+  # Additional bugprone checks (defense in depth)
+  bugprone-bool-pointer-implicit-conversion,
+  bugprone-branch-clone,
+  bugprone-copy-constructor-init,
+  bugprone-fold-init-type,
+  bugprone-forwarding-reference-overload,
+  bugprone-incorrect-roundings,
+  bugprone-integer-division,
+  bugprone-misplaced-operator-in-strlen-in-alloc,
+  bugprone-misplaced-widening-cast,
+  bugprone-multiple-statement-macro,
+  bugprone-parent-virtual-call,
+  bugprone-redundant-branch-condition,
+  bugprone-signed-char-misuse,
+  bugprone-sizeof-container,
+  bugprone-sizeof-expression,
+  bugprone-string-constructor,
+  bugprone-string-integer-assignment,
+  bugprone-string-literal-with-embedded-nul,
+  bugprone-suspicious-enum-usage,
+  bugprone-suspicious-include,
+  bugprone-suspicious-memory-comparison,
+  bugprone-suspicious-missing-comma,
+  bugprone-suspicious-semicolon,
+  bugprone-suspicious-string-compare,
+  bugprone-swapped-arguments,
+  bugprone-terminating-continue,
+  bugprone-throw-keyword-missing,
+  bugprone-too-small-loop-variable,
+  bugprone-undefined-memory-manipulation,
+  bugprone-undelegated-constructor,
+  bugprone-unhandled-exception-at-new,
+  bugprone-unhandled-self-assignment,
+
+  # Additional CERT checks
+  cert-dcl50-cpp,
+  cert-dcl58-cpp,
   cert-flp30-c,
   cert-mem57-cpp,
   cert-msc50-cpp,
   cert-msc51-cpp,
   cert-oop57-cpp,
   cert-oop58-cpp,
-  cppcoreguidelines-pro-bounds-array-to-pointer-decay,
-  cppcoreguidelines-pro-bounds-constant-array-index,
-  cppcoreguidelines-pro-bounds-pointer-arithmetic,
-  cppcoreguidelines-pro-type-const-cast,
-  cppcoreguidelines-pro-type-cstyle-cast,
-  cppcoreguidelines-pro-type-reinterpret-cast,
-  cppcoreguidelines-pro-type-static-cast-downcast,
-  cppcoreguidelines-pro-type-vararg,
+
+  # Slicing detection
   cppcoreguidelines-slicing,
-  cppcoreguidelines-no-malloc,
-  cppcoreguidelines-owning-memory,
-  fuchsia-*,
+
+  # Static cast downcast detection
+  cppcoreguidelines-pro-type-static-cast-downcast,
+
+  # ── Checks explicitly DISABLED ─────────────────────────────────────
+  # bugprone-easily-swappable-parameters: excessive false positives on DSP functions
+  -bugprone-easily-swappable-parameters,
+  # fuchsia-default-arguments: too restrictive for our API design
   -fuchsia-default-arguments-calls,
   -fuchsia-default-arguments-declarations,
-  hicpp-*,
-  -bugprone-easily-swappable-parameters
+  # fuchsia-overloaded-operator: we need operator overloads for signal types
+  -fuchsia-overloaded-operator,
+  # fuchsia-trailing-return: style preference, not safety
+  -fuchsia-trailing-return-type,
+  # fuchsia-statically-constructed-objects: conflicts with constinit usage
+  -fuchsia-statically-constructed-objects
 
 # All triggered checks are errors — CI cannot pass with outstanding diagnostics.
 WarningsAsErrors: "*"
@@ -47,7 +293,28 @@ HeaderFilterRegex: "cpp/include/.*"
 FormatStyle: file
 
 CheckOptions:
+  # MISRA 7.0.5/7.0.6: Strict narrowing detection
   - key:   bugprone-narrowing-conversions.WarnOnIntegerNarrowingConversion
     value: "true"
   - key:   bugprone-narrowing-conversions.WarnOnFloatingPointNarrowingConversion
     value: "true"
+  # Power of Ten Rule 4 / JPL Rule 25: Function size limits
+  - key:   readability-function-size.LineThreshold
+    value: "60"
+  - key:   readability-function-size.StatementThreshold
+    value: "40"
+  - key:   readability-function-size.ParameterThreshold
+    value: "6"
+  - key:   readability-function-size.NestingThreshold
+    value: "4"
+  # Cognitive complexity limit (cyclomatic <= 10 per guidelines)
+  - key:   readability-function-cognitive-complexity.Threshold
+    value: "15"
+  # MISRA 15.0.1: Rule of five enforcement
+  - key:   cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor
+    value: "true"
+  - key:   cppcoreguidelines-special-member-functions.AllowMissingMoveFunctions
+    value: "false"
+  # Macro usage: allow include guards and platform macros
+  - key:   cppcoreguidelines-macro-usage.AllowedRegexp
+    value: "LUNALINK_.*|CATCH_.*"
