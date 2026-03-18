@@ -51,6 +51,8 @@ EXPECTED_RE = re.compile(r"Expected diagnostic:\s+(\S+)")
 
 @dataclass
 class ValidationResult:
+    """Result of running clang-tidy on one deliberate-violation file."""
+
     file: str
     misra_rule: str
     expected_check: str
@@ -79,7 +81,11 @@ def find_clang_tidy(hint: str | None = None) -> str | None:
                 timeout=5,
             )
             return c
-        except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+        except (
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            subprocess.TimeoutExpired,
+        ):
             continue
     return None
 
@@ -106,7 +112,9 @@ def parse_violation_file(path: Path) -> tuple[str, str]:
 
     match = EXPECTED_RE.search(text)
     if not match:
-        print(f"ERROR: {path.name} has no 'Expected diagnostic:' comment", file=sys.stderr)
+        print(
+            f"ERROR: {path.name} has no 'Expected diagnostic:' comment", file=sys.stderr
+        )
         sys.exit(1)
     return misra_rule, match.group(1)
 
@@ -115,7 +123,9 @@ def get_checks_from_config(clang_tidy: str, build_dir: str) -> str:
     """Extract the effective Checks string from the root .clang-tidy config."""
     result = subprocess.run(
         [clang_tidy, "--dump-config", "-p", build_dir],
-        capture_output=True, text=True, timeout=10,
+        capture_output=True,
+        text=True,
+        timeout=10,
         cwd=Path(".").resolve(),  # Use root dir to pick up root .clang-tidy
     )
     for line in result.stdout.split("\n"):
@@ -135,7 +145,8 @@ def run_tidy(
     """Run clang-tidy on a single source file, return (exit_code, combined_output)."""
     cmd = [
         clang_tidy,
-        "-p", build_dir,
+        "-p",
+        build_dir,
         # Override checks from root config but with NO warnings-as-errors
         f"--checks={checks_override}" if checks_override else "--checks=*",
         "--warnings-as-errors=",
@@ -150,7 +161,9 @@ def run_tidy(
     try:
         sdk = subprocess.run(
             ["xcrun", "--show-sdk-path"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         if sdk.returncode == 0:
             env["SDKROOT"] = sdk.stdout.strip()
@@ -214,14 +227,13 @@ CHECK_ALIASES: dict[str, set[str]] = {
     "readability-uppercase-literal-suffix": {"hicpp-uppercase-literal-suffix"},
     "cppcoreguidelines-pro-bounds-array-to-pointer-decay": {"hicpp-no-array-decay"},
     "hicpp-no-array-decay": {"cppcoreguidelines-pro-bounds-array-to-pointer-decay"},
-    "bugprone-narrowing-conversions": {"cppcoreguidelines-narrowing-conversions"},
-    "cppcoreguidelines-narrowing-conversions": {"bugprone-narrowing-conversions"},
-    # Compiler diagnostics that cover the same rule as tidy checks
-    "bugprone-shadow": {"clang-diagnostic-shadow"},
     "bugprone-narrowing-conversions": {
         "cppcoreguidelines-narrowing-conversions",
         "clang-diagnostic-implicit-int-conversion",
     },
+    "cppcoreguidelines-narrowing-conversions": {"bugprone-narrowing-conversions"},
+    # Compiler diagnostics that cover the same rule as tidy checks
+    "bugprone-shadow": {"clang-diagnostic-shadow"},
     "cppcoreguidelines-pro-type-cstyle-cast": {
         "google-readability-casting",
         "clang-diagnostic-old-style-cast",
@@ -242,7 +254,8 @@ def write_rst_report(results: list[ValidationResult], clang_tidy_version: str) -
         "Tool Validation Report — clang-tidy MISRA Enforcement",
         "======================================================",
         "",
-        f".. note:: Generated on {datetime.date.today()} by ``scripts/validate_tidy.py``.",
+        f".. note:: Generated on {datetime.date.today()}"
+        " by ``scripts/validate_tidy.py``.",
         "",
         "Purpose",
         "-------",
@@ -264,7 +277,9 @@ def write_rst_report(results: list[ValidationResult], clang_tidy_version: str) -
     ]
 
     if failed > 0:
-        lines.append(f".. warning:: {failed} check(s) did NOT detect their expected violation.")
+        lines.append(
+            f".. warning:: {failed} check(s) did NOT detect their expected violation."
+        )
         lines.append("   This is a tool confidence deficiency that must be resolved.")
         lines.append("")
 
@@ -285,7 +300,9 @@ def write_rst_report(results: list[ValidationResult], clang_tidy_version: str) -
 
     for r in results:
         status = "PASS" if r.detected else "**FAIL**"
-        actuals = ", ".join(sorted(set(r.actual_checks[:3]))) if r.actual_checks else "—"
+        actuals = (
+            ", ".join(sorted(set(r.actual_checks[:3]))) if r.actual_checks else "—"
+        )
         lines.append(f"   * - ``{r.file}``")
         lines.append(f"     - {r.misra_rule}")
         lines.append(f"     - ``{r.expected_check}``")
@@ -305,7 +322,8 @@ def write_rst_report(results: list[ValidationResult], clang_tidy_version: str) -
         "The validation runner (``scripts/validate_tidy.py``) executes clang-tidy",
         "on each file using the project's ``.clang-tidy`` configuration and verifies",
         "that the expected diagnostic appears in the output. A PASS means the tool",
-        "correctly identifies the violation. A FAIL means the tool has a false negative",
+        "correctly identifies the violation. A FAIL means the tool has a"
+        " false negative",
         "— the violation exists but was not detected.",
         "",
     ]
@@ -338,10 +356,39 @@ def write_json_report(results: list[ValidationResult]) -> str:
     return str(path)
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Validate clang-tidy MISRA enforcement (tool qualification).",
+def _ensure_compile_commands(build_dir: str) -> None:
+    """Generate compile_commands.json if it doesn't exist."""
+    cc_json = Path(build_dir) / "compile_commands.json"
+    if cc_json.exists():
+        return
+    print(f"Generating compile_commands.json in {build_dir}...")
+    gen = (
+        "Ninja"
+        if os.path.exists("/usr/bin/ninja") or os.path.exists("/opt/homebrew/bin/ninja")
+        else "Unix Makefiles"
     )
+    subprocess.run(
+        [
+            "cmake",
+            "-B",
+            build_dir,
+            "-S",
+            ".",
+            "-G",
+            gen,
+            "-DBUILD_PYTHON_BINDINGS=OFF",
+            "-DBUILD_TESTING=ON",
+            "-DCMAKE_BUILD_TYPE=Debug",
+            "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+        ],
+        check=True,
+        capture_output=True,
+    )
+
+
+def main() -> int:
+    """Validate clang-tidy MISRA enforcement (tool qualification)."""
+    parser = argparse.ArgumentParser(description=main.__doc__)
     parser.add_argument("--clang-tidy", help="Path to clang-tidy binary")
     parser.add_argument(
         "--build-dir",
@@ -357,27 +404,14 @@ def main() -> int:
 
     # Get version
     ver = subprocess.run(
-        [clang_tidy, "--version"], capture_output=True, text=True, timeout=5,
+        [clang_tidy, "--version"],
+        capture_output=True,
+        text=True,
+        timeout=5,
     )
     version_line = ver.stdout.strip().split("\n")[0] if ver.stdout else "unknown"
 
-    # Ensure compile_commands.json exists
-    cc_json = Path(args.build_dir) / "compile_commands.json"
-    if not cc_json.exists():
-        print(f"Generating compile_commands.json in {args.build_dir}...")
-        gen = "Ninja" if os.path.exists("/usr/bin/ninja") or os.path.exists("/opt/homebrew/bin/ninja") else "Unix Makefiles"
-        subprocess.run(
-            [
-                "cmake", "-B", args.build_dir, "-S", ".",
-                "-G", gen,
-                "-DBUILD_PYTHON_BINDINGS=OFF",
-                "-DBUILD_TESTING=ON",
-                "-DCMAKE_BUILD_TYPE=Debug",
-                "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
-            ],
-            check=True,
-            capture_output=True,
-        )
+    _ensure_compile_commands(args.build_dir)
 
     # Discover violation files
     if not VIOLATIONS_DIR.exists():
@@ -389,7 +423,7 @@ def main() -> int:
         print(f"ERROR: No .cpp files found in {VIOLATIONS_DIR}")
         return 1
 
-    print(f"=== Tool Validation Suite (ECSS-Q-ST-80C §5.5) ===")
+    print("=== Tool Validation Suite (ECSS-Q-ST-80C §5.5) ===")
     print(f"clang-tidy: {version_line}")
     print(f"Violations: {len(violation_files)} test cases")
     print()

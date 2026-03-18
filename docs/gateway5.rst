@@ -47,8 +47,10 @@ Architecture
        cross-correlation of received signal with local code replica;
        Doppler search over |pm|\ 10 kHz in 500 Hz bins
    * - DLL
-     - First-order loop filter (1 Hz bandwidth); Early-Minus-Late
-       discriminator with 0.5-chip spacing
+     - Second-order PI loop filter (1 Hz bandwidth); Early-Minus-Late
+       discriminator with 0.5-chip spacing; integrator saturation
+       (±100 chips/s, FMEA FM-068); tracks SCO up to 50 ppm
+       at Ec/N0 = 10 dB (8 Hz BW)
    * - PLL
      - Second-order loop filter (15 Hz bandwidth); Costas discriminator;
        integrator saturation at |pm|\ 2\ |x|\ Doppler range
@@ -197,6 +199,38 @@ SWIFI scenarios (``cpp/tests/signal/test_fault_injection.cpp``):
 -  **FI-17**: Illegal transition (kIdle |rarr| kTracking) returns ``kNotLocked``
 -  **FI-18**: CFI nominal --- all sentinels pass under clean signal
 -  **FI-19**: TMR adversarial --- track survives single-copy state corruption
+
+Channel Impairment Tests
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Run: ``./build/cpp-tests/test_lunalink "[impairment]"``
+(file: ``cpp/tests/signal/test_channel_impairments.cpp``)
+
+.. list-table::
+   :header-rows: 1
+   :widths: 35 65
+
+   * - Impairment
+     - Validation
+   * - SCO (0--50 ppm)
+     - Second-order DLL tracks constant-rate clock drift; parametric sweep
+       at 0, 1, 5, 10, 20, 50 ppm × 200 epochs; lock maintained, max DLL
+       discriminator < 0.4 chips
+   * - Phase noise (Wiener)
+     - PLL tracks oscillator jitter (variance sweep 0--1e-3 rad²/sample);
+       lock maintained for variance |le|\ 5e-4; combined with 5 kHz Doppler
+   * - Quantization (int16/int8)
+     - Acquisition metric comparison (int16 > 90% of float32, int8 > 80%);
+       200-epoch int8 tracking stability; implementation loss sweep
+
+.. |le| unicode:: U+2264
+
+E2E impairment tests (``cpp/tests/integration/test_e2e_impairments.cpp``):
+int16 and int8 quantized soft symbols through the full
+TX |rarr| sync |rarr| frame_decode |rarr| LDPC |rarr| CRC pipeline.
+
+FMEA: **FM-068** --- DLL integrator runaway (SEU corrupts
+``LoopFilter1::integrator``); mitigated by ``std::clamp`` saturation.
 
 ----
 

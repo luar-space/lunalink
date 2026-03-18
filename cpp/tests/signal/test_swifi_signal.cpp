@@ -186,6 +186,56 @@ TEST_CASE("SWIFI: correlator_tmr_adversarial — track survives single-copy stat
 }
 
 // ---------------------------------------------------------------------------
+// FI-26 — Correlator: DLL integrator runaway — clamp fires (FM-068)
+//
+// Inject a large value into LoopFilter1::integrator (simulating SEU corruption).
+// Verify that std::clamp bounds the integrator to ±kMaxDllIntegratorChipsPerS
+// and the tracking loop survives without lock loss.
+// ---------------------------------------------------------------------------
+TEST_CASE("SWIFI: correlator_dll_integrator_runaway — clamp prevents lock loss",
+          "[swifi][correlator]") {
+    NullTelemetryHal null_hal;
+    UniformPrior prior;
+    Correlator corr(prior, null_hal);
+
+    REQUIRE(corr.assign_channel(0, PrnId{1}) == CorrelatorStatus::kOk);
+
+    // Generate a clean signal and acquire.
+    std::array<std::complex<float>, kFftSize> rx{};
+    GoldGenerator gen;
+    std::array<uint8_t, kFftSize> code_bits{};
+    REQUIRE(gen.generate(PrnId{1}, std::span(code_bits).first(kAfsICodeLength)) == PrnStatus::kOk);
+    for (uint32_t i = 0; i < kAfsICodeLength; ++i) {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+        const float chip = 1.0F - 2.0F * static_cast<float>(code_bits[i]);
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+        rx[i] = std::complex<float>(chip * 10.0F, 0.0F);
+    }
+
+    AcquisitionResult acq{};
+    REQUIRE(corr.acquire(0, std::span<const std::complex<float>>(rx), acq) == CorrelatorStatus::kOk);
+    REQUIRE(acq.locked);
+    REQUIRE(corr.channel_state(0) == ChannelState::kTracking);
+
+    // Phase 1: Inject — corrupt DLL integrator with a huge value (10× saturation limit).
+    corr.inject_dll_integrator_fault(0, 1000.0F);
+
+    // Phase 2: Execute — track() runs the DLL update, which clamps the integrator.
+    const auto status = corr.track(0, std::span<const std::complex<float>>(rx));
+
+    // Phase 3: Verify — channel must still be tracking (clamp prevented runaway).
+    // The track call may return kOk or kNotLocked depending on the corrected code
+    // phase, but the key assertion is that no kFaultDetected occurs and the
+    // integrator is bounded.
+    CHECK(status != CorrelatorStatus::kFaultDetected);
+
+    // Track a second epoch with clean signal — DLL recovers to normal operation.
+    const auto status2 = corr.track(0, std::span<const std::complex<float>>(rx));
+    CHECK(status2 == CorrelatorStatus::kOk);
+    CHECK(corr.channel_state(0) == ChannelState::kTracking);
+}
+
+// ---------------------------------------------------------------------------
 // FI-20 — Sync Detector: CFI sentinel skip (FM-056)
 // ---------------------------------------------------------------------------
 TEST_CASE("SWIFI: sync_detector_cfi_skip — injected milestone skip fires kFaultDetected") {

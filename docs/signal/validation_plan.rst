@@ -54,16 +54,21 @@ The baseband signal generator (G4) includes a "Reference Channel Model" to test 
    * Sweep carrier frequency offsets from -10 kHz to +10 kHz.
    * Requirement: Acquisition and tracking must remain stable (G5 success metric).
 
-2. **Clock Drift (SCO):**
+2. **Clock Drift (SCO):** — *Implemented*
    * Simulate sample clock offsets up to 50 ppm.
    * Requirement: Code phase tracking (DLL) must compensate for timing drift.
+   * Test: ``test_channel_impairments.cpp`` — parametric sweep 0–50 ppm, 200 epochs each.
+   * DLL upgraded to second-order PI filter for zero steady-state error.
 
-3. **Quantization Loss:**
+3. **Quantization Loss:** — *Implemented*
    * Compare decoding success rates between ``float32``, ``int16``, and ``int8`` I/Q formats.
    * Document implementation loss (Target: < 0.2 dB).
+   * Test: ``test_channel_impairments.cpp`` — acquisition metric comparison + tracking stability.
+   * E2E test: ``test_e2e_impairments.cpp`` — full TX→RX pipeline at int16/int8.
 
-4. **Phase Noise:**
+4. **Phase Noise:** — *Implemented*
    * Inject oscillator phase noise per standard PNT models to test Costas loop (PLL) jitter.
+   * Test: ``test_channel_impairments.cpp`` — Wiener process model, parametric sweep 0–1e-3 rad²/sample.
 
 Standardized Test Scenarios (G7)
 --------------------------------

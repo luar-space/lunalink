@@ -40,6 +40,8 @@ REPORT_DIR = Path("build/reports")
 
 @dataclass
 class CanaryCheck:
+    """Single canary check: expected vs actual coverage measurement."""
+
     name: str
     description: str
     check_type: str  # "line", "branch", "mcdc", "function"
@@ -65,7 +67,11 @@ def find_llvm_tool(tool: str, hint: str | None = None) -> str | None:
         try:
             subprocess.run([c, "--version"], capture_output=True, check=True, timeout=5)
             return c
-        except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+        except (
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            subprocess.TimeoutExpired,
+        ):
             continue
     return None
 
@@ -75,20 +81,32 @@ def build_coverage(build_dir: str, llvm_dir: str | None) -> bool:
     clang = f"{llvm_dir}/clang" if llvm_dir else "clang"
     clangxx = f"{llvm_dir}/clang++" if llvm_dir else "clang++"
 
-    gen = "Ninja" if any(
-        Path(p).exists() for p in ["/usr/bin/ninja", "/opt/homebrew/bin/ninja"]
-    ) else "Unix Makefiles"
+    gen = (
+        "Ninja"
+        if any(Path(p).exists() for p in ["/usr/bin/ninja", "/opt/homebrew/bin/ninja"])
+        else "Unix Makefiles"
+    )
 
     print("Building with coverage instrumentation...")
     result = subprocess.run(
         [
-            "cmake", "-B", build_dir, "-S", ".", "-G", gen,
-            "-DBUILD_PYTHON_BINDINGS=OFF", "-DBUILD_TESTING=ON",
-            "-DCMAKE_BUILD_TYPE=Debug", "-DENABLE_LLVM_COVERAGE=ON",
+            "cmake",
+            "-B",
+            build_dir,
+            "-S",
+            ".",
+            "-G",
+            gen,
+            "-DBUILD_PYTHON_BINDINGS=OFF",
+            "-DBUILD_TESTING=ON",
+            "-DCMAKE_BUILD_TYPE=Debug",
+            "-DENABLE_LLVM_COVERAGE=ON",
             f"-DCMAKE_C_COMPILER={clang}",
             f"-DCMAKE_CXX_COMPILER={clangxx}",
         ],
-        capture_output=True, text=True, timeout=120,
+        capture_output=True,
+        text=True,
+        timeout=120,
     )
     if result.returncode != 0:
         print(f"CMake configure failed:\n{result.stderr}", file=sys.stderr)
@@ -96,7 +114,9 @@ def build_coverage(build_dir: str, llvm_dir: str | None) -> bool:
 
     result = subprocess.run(
         ["cmake", "--build", build_dir, "--parallel"],
-        capture_output=True, text=True, timeout=300,
+        capture_output=True,
+        text=True,
+        timeout=300,
     )
     if result.returncode != 0:
         print(f"Build failed:\n{result.stderr}", file=sys.stderr)
@@ -117,13 +137,16 @@ def run_canary_tests(build_dir: str) -> bool:
 
     result = subprocess.run(
         [f"{build_dir}/test_lunalink", "[canary]", "--reporter", "console"],
-        capture_output=True, text=True, timeout=60, env=env,
+        capture_output=True,
+        text=True,
+        timeout=60,
+        env=env,
     )
     if result.returncode != 0:
         print(f"Tests failed:\n{result.stdout}\n{result.stderr}", file=sys.stderr)
         return False
 
-    print(f"  Tests passed.")
+    print("  Tests passed.")
     return True
 
 
@@ -135,10 +158,12 @@ def merge_profile(build_dir: str, llvm_profdata: str) -> bool:
         return False
 
     result = subprocess.run(
-        [llvm_profdata, "merge", "-sparse"] +
-        [str(f) for f in profraw_files] +
-        ["-o", f"{build_dir}/canary.profdata"],
-        capture_output=True, text=True, timeout=30,
+        [llvm_profdata, "merge", "-sparse"]
+        + [str(f) for f in profraw_files]
+        + ["-o", f"{build_dir}/canary.profdata"],
+        capture_output=True,
+        text=True,
+        timeout=30,
     )
     return result.returncode == 0
 
@@ -150,14 +175,17 @@ def get_line_coverage(build_dir: str, llvm_cov: str) -> dict[int, int]:
     """
     result = subprocess.run(
         [
-            llvm_cov, "export",
+            llvm_cov,
+            "export",
             f"{build_dir}/test_lunalink",
             f"-instr-profile={build_dir}/canary.profdata",
             "-format=text",
             f"-sources={CANARY_FILE}",
             f"-path-equivalence={build_dir},{Path('.').resolve()}",
         ],
-        capture_output=True, text=True, timeout=30,
+        capture_output=True,
+        text=True,
+        timeout=30,
     )
     if result.returncode != 0:
         return {}
@@ -185,14 +213,17 @@ def get_function_coverage(build_dir: str, llvm_cov: str) -> dict[str, int]:
     """
     result = subprocess.run(
         [
-            llvm_cov, "export",
+            llvm_cov,
+            "export",
             f"{build_dir}/test_lunalink",
             f"-instr-profile={build_dir}/canary.profdata",
             "-format=text",
             f"-sources={CANARY_FILE}",
             f"-path-equivalence={build_dir},{Path('.').resolve()}",
         ],
-        capture_output=True, text=True, timeout=30,
+        capture_output=True,
+        text=True,
+        timeout=30,
     )
     if result.returncode != 0:
         return {}
@@ -214,7 +245,8 @@ def get_coverage_report_text(build_dir: str, llvm_cov: str) -> str:
     cwd = str(Path(".").resolve())
     result = subprocess.run(
         [
-            llvm_cov, "show",
+            llvm_cov,
+            "show",
             f"{build_dir}/test_lunalink",
             f"-instr-profile={build_dir}/canary.profdata",
             f"-sources={CANARY_FILE}",
@@ -223,13 +255,16 @@ def get_coverage_report_text(build_dir: str, llvm_cov: str) -> str:
             "-show-mcdc",
             f"-path-equivalence={build_dir},{cwd}",
         ],
-        capture_output=True, text=True, timeout=30,
+        capture_output=True,
+        text=True,
+        timeout=30,
     )
     return result.stdout
 
 
 def validate_canaries(
-    build_dir: str, llvm_cov: str,
+    build_dir: str,
+    llvm_cov: str,
 ) -> list[CanaryCheck]:
     """Run all canary validations."""
     checks: list[CanaryCheck] = []
@@ -246,7 +281,8 @@ def validate_canaries(
     )
     # Find any function containing "line_coverage_canary" with count > 0
     canary1_called = any(
-        count > 0 for name, count in func_counts.items()
+        count > 0
+        for name, count in func_counts.items()
         if "line_coverage_canary" in name
     )
     c1.passed = canary1_called
@@ -258,16 +294,21 @@ def validate_canaries(
     # line_coverage_canary: "result = -1" (else branch) should be uncovered
     c2 = CanaryCheck(
         name="Uncovered line reported as uncovered",
-        description="line_coverage_canary: else branch (result = -1) shows 0 count in report",
+        description=(
+            "line_coverage_canary: else branch (result = -1) shows 0 count in report"
+        ),
         check_type="line",
     )
     # Look for "result = -1" line being uncovered in the annotated report
     c2.passed = "result = -1;" in report_text and (
         "0|" in report_text.split("result = -1;")[0].split("\n")[-1]
-        if "result = -1;" in report_text else False
+        if "result = -1;" in report_text
+        else False
     )
     c2.expected = "else branch line shows 0 execution count"
-    c2.actual = "line uncovered in report" if c2.passed else "could not verify from report"
+    c2.actual = (
+        "line uncovered in report" if c2.passed else "could not verify from report"
+    )
     checks.append(c2)
 
     # ── Check 3: Covered branch reported ──────────────────────────────
@@ -278,7 +319,8 @@ def validate_canaries(
         check_type="branch",
     )
     canary2_called = any(
-        count > 0 for name, count in func_counts.items()
+        count > 0
+        for name, count in func_counts.items()
         if "branch_coverage_canary" in name
     )
     c3.passed = canary2_called
@@ -296,10 +338,13 @@ def validate_canaries(
     # Look for "result = 40" (case 3) being uncovered
     c4.passed = "result = 40;" in report_text and (
         "0|" in report_text.split("result = 40;")[0].split("\n")[-1]
-        if "result = 40;" in report_text else False
+        if "result = 40;" in report_text
+        else False
     )
     c4.expected = "case 3 line shows 0 execution count"
-    c4.actual = "case 3 uncovered in report" if c4.passed else "could not verify from report"
+    c4.actual = (
+        "case 3 uncovered in report" if c4.passed else "could not verify from report"
+    )
     checks.append(c4)
 
     # ── Check 5: MC/DC full coverage reported ─────────────────────────
@@ -309,7 +354,11 @@ def validate_canaries(
         check_type="mcdc",
     )
     # MC/DC sections in the report contain "MC/DC" keyword near the function
-    mcdc_section = report_text.split("mcdc_full_canary")[-1].split("mcdc_partial_canary")[0] if "mcdc_full_canary" in report_text else ""
+    mcdc_section = (
+        report_text.split("mcdc_full_canary")[-1].split("mcdc_partial_canary")[0]
+        if "mcdc_full_canary" in report_text
+        else ""
+    )
     c5.passed = "MC/DC" in mcdc_section or "Condition" in mcdc_section
     c5.expected = "MC/DC annotation present for mcdc_full_canary"
     c5.actual = "MC/DC section found" if c5.passed else "no MC/DC section in report"
@@ -318,7 +367,10 @@ def validate_canaries(
     # ── Check 6: MC/DC partial coverage reported ──────────────────────
     c6 = CanaryCheck(
         name="Partial MC/DC reported for partially-tested decision",
-        description="mcdc_partial_canary: (p && q) with only (T,T) tested shows incomplete MC/DC",
+        description=(
+            "mcdc_partial_canary: (p && q) with only (T,T) tested"
+            " shows incomplete MC/DC"
+        ),
         check_type="mcdc",
     )
     # Look for the MC/DC Decision Region near mcdc_partial_canary
@@ -335,8 +387,10 @@ def validate_canaries(
     c6.passed = c6_found_mcdc and c6_shows_partial
     c6.expected = "MC/DC annotation with partial coverage (not covered / 0%)"
     c6.actual = (
-        "MC/DC section found with partial coverage" if c6.passed
-        else "MC/DC found but no partial" if c6_found_mcdc
+        "MC/DC section found with partial coverage"
+        if c6.passed
+        else "MC/DC found but no partial"
+        if c6_found_mcdc
         else "no MC/DC section in report"
     )
     checks.append(c6)
@@ -356,9 +410,11 @@ def validate_canaries(
         "fully_uncovered_canary" in name for name in func_counts
     )
     c7.expected = "function count == 0"
-    c7.actual = f"count = {uncovered_count}" if any(
-        "fully_uncovered_canary" in n for n in func_counts
-    ) else "function not found in coverage data"
+    c7.actual = (
+        f"count = {uncovered_count}"
+        if any("fully_uncovered_canary" in n for n in func_counts)
+        else "function not found in coverage data"
+    )
     checks.append(c7)
 
     return checks
@@ -376,7 +432,8 @@ def write_rst_report(checks: list[CanaryCheck], llvm_version: str) -> str:
         "Tool Validation Report — llvm-cov Coverage Measurement",
         "=======================================================",
         "",
-        f".. note:: Generated on {datetime.date.today()} by ``scripts/validate_coverage.py``.",
+        f".. note:: Generated on {datetime.date.today()}"
+        " by ``scripts/validate_coverage.py``.",
         "",
         "Purpose",
         "-------",
@@ -401,7 +458,9 @@ def write_rst_report(checks: list[CanaryCheck], llvm_version: str) -> str:
 
     if failed > 0:
         lines.append(f".. warning:: {failed} check(s) did NOT match expected coverage.")
-        lines.append("   This is a tool confidence deficiency that must be investigated.")
+        lines.append(
+            "   This is a tool confidence deficiency that must be investigated."
+        )
         lines.append("")
 
     lines += [
@@ -431,7 +490,8 @@ def write_rst_report(checks: list[CanaryCheck], llvm_version: str) -> str:
         "",
         "Canary Functions",
         "----------------",
-        "The canary functions are defined in ``cpp/tests/tool_validation/coverage_canary.hpp``:",
+        "The canary functions are defined in"
+        " ``cpp/tests/tool_validation/coverage_canary.hpp``:",
         "",
         "1. **line_coverage_canary** — if/else with only true branch tested",
         "2. **branch_coverage_canary** — switch with 3/5 cases tested",
@@ -469,12 +529,26 @@ def write_json_report(checks: list[CanaryCheck]) -> str:
     return str(path)
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Validate llvm-cov coverage measurement (tool qualification).",
+def _get_tool_version(tool_path: str) -> str:
+    """Extract version string from an LLVM tool."""
+    ver = subprocess.run(
+        [tool_path, "--version"],
+        capture_output=True,
+        text=True,
+        timeout=5,
     )
+    for line in ver.stdout.split("\n"):
+        if "version" in line.lower():
+            return line.strip()
+    return ver.stdout.strip().split("\n")[0]
+
+
+def main() -> int:
+    """Validate llvm-cov coverage measurement (tool qualification)."""
+    parser = argparse.ArgumentParser(description=main.__doc__)
     parser.add_argument(
-        "--build-dir", default="build/coverage-validation",
+        "--build-dir",
+        default="build/coverage-validation",
         help="Build directory for coverage validation",
     )
     parser.add_argument("--llvm-dir", help="Path to LLVM bin directory")
@@ -485,22 +559,13 @@ def main() -> int:
     llvm_profdata = find_llvm_tool("llvm-profdata", args.llvm_dir)
 
     if not llvm_cov or not llvm_profdata:
-        print("ERROR: llvm-cov/llvm-profdata not found. Install LLVM: brew install llvm")
+        print(
+            "ERROR: llvm-cov/llvm-profdata not found. Install LLVM: brew install llvm"
+        )
         return 1
 
-    # Get version
-    ver = subprocess.run(
-        [llvm_cov, "--version"], capture_output=True, text=True, timeout=5,
-    )
-    version_line = ""
-    for line in ver.stdout.split("\n"):
-        if "version" in line.lower():
-            version_line = line.strip()
-            break
-    if not version_line:
-        version_line = ver.stdout.strip().split("\n")[0]
-
-    print(f"=== Coverage Tool Validation (ECSS-Q-ST-80C §5.5) ===")
+    version_line = _get_tool_version(llvm_cov)
+    print("=== Coverage Tool Validation (ECSS-Q-ST-80C §5.5) ===")
     print(f"llvm-cov: {version_line}")
     print()
 

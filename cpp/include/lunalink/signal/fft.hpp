@@ -143,7 +143,13 @@ private:
     }
 };
 
-/// Convenience alias for 2048-pt FFT used in PCPS acquisition.
+/// Convenience alias for 2048-pt FFT (EPL correlator integration length).
 using Fft2048 = Fft<2048>;
+
+/// 4096-pt FFT for unambiguous PCPS acquisition.
+/// Zero-padding the 2046-chip code + 2048-sample received signal to 4096
+/// gives linear (not circular) cross-correlation, eliminating the code-phase
+/// ambiguity from the 2048/2046 mismatch (spec finding SF-004).
+using Fft4096 = Fft<4096>;
 
 }  // namespace lunalink::signal
