@@ -40,7 +40,7 @@ via its favourable autocorrelation properties.
    * - Encoding
      - None (LSIS-340: uncoded)
 
-Implementation: ``cpp/signal/frame.cpp`` --- ``kSyncPattern`` array,
+Implementation: ``cpp/messages/frame.cpp`` --- ``kSyncPattern`` array,
 ``constinit``, ``alignas(64)``, placed in ``LUNALINK_LUT_SECTION``.
 
 ----
@@ -93,7 +93,7 @@ Implementation files:
 
 -  ``cpp/include/lunalink/signal/bch.hpp`` --- ``Fid``, ``Toi`` (TMR-hardened),
    ``bch_encode()``, ``bch_decode()``
--  ``cpp/signal/bch.cpp`` --- encoder/decoder, codebook LUT
+-  ``cpp/encoding/bch.cpp`` --- encoder/decoder, codebook LUT
 
 Spec test vector (Figure 8): FID=0, TOI=69 (0x045) |rarr| encoded = 0x229f61dbb84a0.
 Verified in ``test_frame.cpp``: ``frame_build_partial SB1 with spec test vector``.
@@ -142,7 +142,7 @@ Pipeline: ``subframe_build_sb2()`` |rarr| CRC-24Q append |rarr| LDPC SF2 encode 
 Implementation files:
 
 -  ``cpp/include/lunalink/signal/frame.hpp`` --- API, constants
--  ``cpp/signal/frame.cpp`` --- ``subframe_build_sb2()`` via ``subframe_build_ldpc()``
+-  ``cpp/messages/frame.cpp`` --- ``subframe_build_sb2()`` via ``subframe_build_ldpc()``
 -  ``cpp/include/lunalink/signal/crc.hpp`` --- ``crc24_calculate()``
 -  ``cpp/include/lunalink/signal/ldpc.hpp`` --- ``ldpc_encode()``
 
@@ -311,7 +311,7 @@ Block interleaver (Table 17)
    * - Read order
      - Column-wise (top to bottom, left to right)
 
-Implementation: ``cpp/signal/interleaver.cpp`` with CFI sentinels and
+Implementation: ``cpp/encoding/interleaver.cpp`` with CFI sentinels and
 mirrored calculation.
 
 API

@@ -122,8 +122,8 @@ def generate_family(family):
 
     # Generate CPP
     with cpp_path.open("w") as f:
-        f.write(f'#include "lunalink/signal/{family["header"]}"\n')
-        f.write('#include "lunalink/signal/safety.hpp"\n')
+        f.write(f'#include "lunalink/codes/{family["header"]}"\n')
+        f.write('#include "lunalink/core/safety.hpp"\n')
         f.write("#include <cstdint>\n")
         f.write("#include <array>\n\n")
         f.write("namespace lunalink::signal {\n\n")

@@ -31,7 +31,7 @@ def pack_bits_to_u64(bits):  # noqa: D103
     return val
 
 
-print('#include "lunalink/signal/bch_table.hpp"')
+print('#include "lunalink/encoding/bch_table.hpp"')
 print("#include <array>")
 print("")
 print("namespace lunalink::signal {")

@@ -350,7 +350,7 @@ Implementation files:
 
 -  ``cpp/include/lunalink/signal/frame_decode.hpp`` --- public API, types,
    workspace (~120 KB, static_assert < 200 KB budget)
--  ``cpp/signal/frame_decode.cpp`` --- pipeline orchestrator
+-  ``cpp/messages/frame_decode.cpp`` --- pipeline orchestrator
 
 Pipeline stages
 ~~~~~~~~~~~~~~~

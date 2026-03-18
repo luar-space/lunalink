@@ -3,9 +3,9 @@
 #include <cstdint>
 #include <span>
 
-#include "lunalink/signal/frame.hpp"
-#include "lunalink/signal/safety.hpp"
-#include "lunalink/signal/telemetry.hpp"
+#include "lunalink/messages/frame.hpp"
+#include "lunalink/core/safety.hpp"
+#include "lunalink/core/telemetry.hpp"
 
 namespace lunalink::signal {
 

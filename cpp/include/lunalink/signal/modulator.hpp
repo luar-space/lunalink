@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
-#include "lunalink/signal/prn.hpp"
-#include "lunalink/signal/safety.hpp"
+#include "lunalink/codes/prn.hpp"
+#include "lunalink/core/safety.hpp"
 #include <span>
 #include <algorithm> // for std::fill
 

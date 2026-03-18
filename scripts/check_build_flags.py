@@ -3,7 +3,8 @@
 check_build_flags.py — SWE-109 compile-flag gate.
 
 Reads compile_commands.json and verifies that every translation unit under
-cpp/signal/ carries required hardening flags and is free of forbidden flags.
+cpp/{codes,encoding,messages,signal,platform}/ carries required hardening flags
+and is free of forbidden flags.
 
 Usage:
     python scripts/check_build_flags.py [path/to/compile_commands.json]
@@ -51,8 +52,17 @@ def check_unit(entry: dict) -> list[str]:
     return violations
 
 
+CORE_SOURCE_DIRS = (
+    "cpp/codes/",
+    "cpp/encoding/",
+    "cpp/messages/",
+    "cpp/signal/",
+    "cpp/platform/",
+)
+
+
 def main() -> int:
-    """Run flag checks on all cpp/signal/ translation units."""
+    """Run flag checks on all core library translation units."""
     db_path_arg = sys.argv[1] if len(sys.argv) > 1 else "build/compile_commands.json"
     db_path = pathlib.Path(db_path_arg)
 
@@ -66,15 +76,15 @@ def main() -> int:
     with db_path.open(encoding="utf-8") as fh:
         commands = json.load(fh)
 
-    # Only check translation units under cpp/signal/
+    # Check translation units under any core source directory
     signal_units = [
         entry
         for entry in commands
-        if "cpp/signal/" in entry.get("file", "").replace("\\", "/")
+        if any(d in entry.get("file", "").replace("\\", "/") for d in CORE_SOURCE_DIRS)
     ]
 
     if not signal_units:
-        print("WARNING: No cpp/signal/ units found in compile_commands.json.")
+        print("WARNING: No core library units found in compile_commands.json.")
         print("         Ensure the build was configured with the core library.")
         return 1
 
@@ -91,7 +101,7 @@ def main() -> int:
             print(f"PASS: {file_name}")
 
     if all_pass:
-        print(f"\nAll {len(signal_units)} signal unit(s) passed flag checks.")
+        print(f"\nAll {len(signal_units)} core unit(s) passed flag checks.")
         return 0
 
     print(f"\nFlag check FAILED ({len(signal_units)} unit(s) checked).")

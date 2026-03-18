@@ -157,7 +157,7 @@ Adding a New C++ Function
 --------------------------
 
 1. Declare the function in an appropriate header under ``cpp/include/lunalink/``.
-2. Implement it in a corresponding source file under ``cpp/signal/`` (or other
+2. Implement it in a corresponding source file under the appropriate domain directory (e.g. ``cpp/codes/``, ``cpp/encoding/``, ``cpp/signal/``, or other
    module directory), and ensure it is included in ``lunalink_core`` sources in
    ``CMakeLists.txt``.
 3. Expose it via pybind11 in ``cpp/bindings/afs_module.cpp``.
@@ -231,7 +231,7 @@ independent workflows for granular status reporting.
        100% MC/DC on ``[LSIS-AFS-*]``-tagged functions required.
    * - **clang-tidy** (``tidy.yml``)
      - push, PR, tag
-     - Full HICPP clang-tidy analysis on all ``cpp/signal/`` sources;
+     - Full HICPP clang-tidy analysis on all core C++ sources;
        zero violations required.  Uploads ``static_analysis_report.rst``.
    * - **WCET Profile** (``wcet.yml``)
      - push, PR (main)

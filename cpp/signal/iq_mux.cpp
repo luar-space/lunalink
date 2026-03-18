@@ -1,7 +1,7 @@
 #include "lunalink/signal/iq_mux.hpp"
 
-#include "lunalink/signal/prn.hpp"
-#include "lunalink/signal/safety.hpp"
+#include "lunalink/codes/prn.hpp"
+#include "lunalink/core/safety.hpp"
 #include <algorithm> // for std::fill
 
 namespace lunalink::signal {

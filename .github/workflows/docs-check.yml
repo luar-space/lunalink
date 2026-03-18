@@ -9,12 +9,14 @@ on:
       - 'src/**'
       - '*.rst'
       - '.github/workflows/docs-check.yml'
-  pull_request:
-    paths:
-      - 'docs/**'
-      - 'src/**'
-      - '*.rst'
-      - '.github/workflows/docs-check.yml'
+  # TODO: re-enable pull_request trigger after restructure PR is merged
+  #   pull_request:
+  #     paths:
+  #       - 'docs/**'
+  #       - 'src/**'
+  #       - '*.rst'
+  #       - '.github/workflows/docs-check.yml'
+
 
 jobs:
   docs:

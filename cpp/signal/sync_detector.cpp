@@ -1,6 +1,6 @@
 #include "lunalink/signal/sync_detector.hpp"
 
-#include "lunalink/signal/safety.hpp"  // LUNALINK_CRITICAL_ENTER/EXIT, TmrValue, wip_tick, secure_scrub
+#include "lunalink/core/safety.hpp"  // LUNALINK_CRITICAL_ENTER/EXIT, TmrValue, wip_tick, secure_scrub
 
 #include <cmath>
 #include <limits>

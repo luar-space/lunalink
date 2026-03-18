@@ -1,0 +1,62 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '*.rst'
+  # TODO: re-enable pull_request trigger after restructure PR is merged
+  #   pull_request:
+  #     paths-ignore:
+  #       - 'docs/**'
+  #       - '*.md'
+  #       - '*.rst'
+
+
+jobs:
+  build:
+    name: Build (Debug)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Install Ninja
+        run: sudo apt-get install -y ninja-build
+      - uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: integration
+      - name: Configure & Build
+        run: |
+          cmake -B build -S . -G Ninja \
+            -DBUILD_PYTHON_BINDINGS=OFF \
+            -DBUILD_TESTING=ON \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake --build build --parallel
+      - name: Upload build
+        uses: actions/upload-artifact@v5
+        with:
+          name: cpp-debug-build-integration
+          path: build/test_lunalink
+          retention-days: 1
+
+  integration:
+    name: Integration Tests
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Download build
+        uses: actions/download-artifact@v5
+        with:
+          name: cpp-debug-build-integration
+          path: build/
+      - name: Run integration tests
+        run: |
+          chmod +x build/test_lunalink
+          build/test_lunalink "[e2e]" --reporter console

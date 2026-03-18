@@ -87,31 +87,36 @@ endif()
 
 # --- Core Library ---
 add_library(lunalink_core
-    cpp/signal/prn_table.cpp
-    cpp/signal/prn_table_weil10230.cpp
-    cpp/signal/prn_table_weil1500.cpp
-    cpp/signal/prn.cpp
+    # codes/ — Spreading code generation (Gateway 1)
+    cpp/codes/prn_table.cpp
+    cpp/codes/prn_table_weil10230.cpp
+    cpp/codes/prn_table_weil1500.cpp
+    cpp/codes/prn.cpp
+    cpp/codes/matched_code.cpp
+    cpp/codes/gold.cpp
+    cpp/codes/legendre.cpp
+    cpp/codes/weil.cpp
+    cpp/codes/weil_parameters.cpp
+    # encoding/ — Forward Error Correction (Gateway 2)
+    cpp/encoding/bch.cpp
+    cpp/encoding/bch_table.cpp
+    cpp/encoding/ldpc.cpp
+    cpp/encoding/ldpc_tables.cpp
+    cpp/encoding/crc.cpp
+    cpp/encoding/interleaver.cpp
+    # messages/ — Framing (Gateway 3)
+    cpp/messages/frame.cpp
+    cpp/messages/frame_decode.cpp
+    # signal/ — Baseband & RX (Gateway 4-5)
     cpp/signal/modulator.cpp
-    cpp/signal/matched_code.cpp
     cpp/signal/iq_mux.cpp
-    cpp/signal/bch.cpp
-    cpp/signal/bch_table.cpp
-    cpp/signal/frame.cpp
-    cpp/signal/ldpc.cpp
-    cpp/signal/ldpc_tables.cpp
-    cpp/signal/interleaver.cpp
-    cpp/signal/crc.cpp
-    cpp/signal/gold.cpp
-    cpp/signal/legendre.cpp
-    cpp/signal/weil.cpp
-    cpp/signal/weil_parameters.cpp
-    cpp/signal/sci_header.cpp
-    cpp/signal/post.cpp
-    cpp/signal/signal_chain_fsm.cpp
-    cpp/signal/watchdog.cpp
     cpp/signal/correlator.cpp
     cpp/signal/sync_detector.cpp
-    cpp/signal/frame_decode.cpp
+    # platform/ — System infrastructure
+    cpp/platform/sci_header.cpp
+    cpp/platform/post.cpp
+    cpp/platform/signal_chain_fsm.cpp
+    cpp/platform/watchdog.cpp
 )
 target_include_directories(lunalink_core PUBLIC cpp/include)
 target_include_directories(lunalink_core PRIVATE ${CMAKE_BINARY_DIR}/generated)
@@ -157,46 +162,52 @@ if(BUILD_TESTING)
     enable_testing()
 
     add_executable(test_lunalink
-        cpp/tests/signal/test_prn.cpp
+        # codes/
+        cpp/tests/codes/test_prn.cpp
+        cpp/tests/codes/test_prn_generators.cpp
+        cpp/tests/codes/test_matched_code.cpp
+        # encoding/
+        cpp/tests/encoding/test_bch.cpp
+        cpp/tests/encoding/test_ldpc.cpp
+        cpp/tests/encoding/test_crc.cpp
+        cpp/tests/encoding/test_interleaver.cpp
+        # messages/
+        cpp/tests/messages/test_frame.cpp
+        # signal/
         cpp/tests/signal/test_modulator.cpp
-        cpp/tests/signal/test_matched_code.cpp
         cpp/tests/signal/test_iq_mux.cpp
-        cpp/tests/signal/test_bch.cpp
-        cpp/tests/signal/test_frame.cpp
-        cpp/tests/signal/test_coverage_gap.cpp
-        cpp/tests/signal/test_safety.cpp
-        cpp/tests/signal/test_ldpc.cpp
-        cpp/tests/signal/test_safety_extended.cpp
-        cpp/tests/signal/test_interleaver.cpp
-        cpp/tests/signal/test_crc.cpp
-        cpp/tests/signal/test_performance.cpp
-        cpp/tests/signal/test_roundtrip.cpp
-        cpp/tests/signal/test_ldpc_ber.cpp
-        cpp/tests/signal/test_bch_ber.cpp
-        cpp/tests/signal/test_prn_generators.cpp
-        cpp/tests/signal/test_coverage_booster.cpp
-        cpp/tests/signal/test_coherency.cpp
         cpp/tests/signal/test_correlator.cpp
-        cpp/tests/signal/test_correlator_perf.cpp
         cpp/tests/signal/test_sync_detector.cpp
-        cpp/tests/signal/test_frame_roundtrip_e2e.cpp
-        cpp/tests/signal/test_sync_detection_rate.cpp
+        # platform/
+        cpp/tests/platform/test_safety.cpp
+        # integration/
+        cpp/tests/integration/test_e2e.cpp
+        # performance/
+        cpp/tests/performance/test_bch_ber.cpp
+        cpp/tests/performance/test_ldpc_ber.cpp
+        cpp/tests/performance/test_correlator_perf.cpp
+        cpp/tests/performance/test_sync_detection_rate.cpp
+        cpp/tests/performance/test_wcet.cpp
     )
     target_link_libraries(test_lunalink PRIVATE lunalink_core Catch2::Catch2WithMain)
     target_compile_options(test_lunalink PRIVATE ${LUNALINK_WARNING_FLAGS})
 
     include(Catch OPTIONAL RESULT_VARIABLE CATCH_MODULE_FOUND)
     if(CATCH_MODULE_FOUND)
-        # Exclude [performance] tests from default CTest runs.
-        # Run them explicitly with: task test-performance
-        catch_discover_tests(test_lunalink TEST_SPEC "~[performance]")
+        # Exclude slow test suites from default CTest runs.
+        # Run explicitly: task wcet / task ber / task performance / task integration
+        catch_discover_tests(test_lunalink TEST_SPEC "~[wcet]~[channel]~[e2e]")
     else()
         message(WARNING "Catch2 CMake module not found. CTest integration disabled.")
     endif()
 
     # --- SWIFI (fault injection) test suite ---
     add_executable(lunalink_swifi_tests
-        cpp/tests/signal/test_fault_injection.cpp
+        cpp/tests/platform/test_swifi_platform.cpp
+        cpp/tests/encoding/test_swifi_encoding.cpp
+        cpp/tests/signal/test_swifi_signal.cpp
+        cpp/tests/messages/test_swifi_messages.cpp
+        cpp/tests/codes/test_swifi_codes.cpp
     )
     target_link_libraries(lunalink_swifi_tests PRIVATE lunalink_core Catch2::Catch2WithMain)
     # -Wno-c2y-extensions: Catch2 TEST_CASE macro uses __COUNTER__ which newer

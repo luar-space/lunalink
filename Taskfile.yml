@@ -27,28 +27,60 @@ tasks:
     desc: Run Python tests.
     cmd: uv run python -m pytest
 
-  test-performance:
-    desc: Run [performance]-tagged C++ tests (BER simulations). Slow — run on demand only.
+  wcet:
+    desc: Run [wcet]-tagged timing benchmarks (Release), generate wcet_profile.rst + bench.json.
+    vars:
+      GENERATOR:
+        sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
+      BUILD_DIR: build/performance
+    cmds:
+      - mkdir -p {{.BUILD_DIR}}
+      - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release
+      - cmake --build {{.BUILD_DIR}} --parallel
+      - |
+        {{.BUILD_DIR}}/test_lunalink "[wcet]" \
+          --reporter "console::out={{.BUILD_DIR}}/wcet_console.txt" \
+          --reporter "xml::out={{.BUILD_DIR}}/wcet_results.xml"
+      - |
+        python3 scripts/performance_report.py \
+          --xml {{.BUILD_DIR}}/wcet_results.xml \
+          --console {{.BUILD_DIR}}/wcet_console.txt \
+          --output {{.BUILD_DIR}}/wcet_profile.rst \
+          --bench-json {{.BUILD_DIR}}/bench.json
+      - 'echo "WCET profile: {{.BUILD_DIR}}/wcet_profile.rst"'
+    silent: false
+
+  ber:
+    desc: Run [channel]-tagged simulations (BER/FER sweeps, Pd, Release). Fails on any assertion.
+    vars:
+      GENERATOR:
+        sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
+      BUILD_DIR: build/performance
+    cmds:
+      - mkdir -p {{.BUILD_DIR}}
+      - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release
+      - cmake --build {{.BUILD_DIR}} --parallel
+      - "{{.BUILD_DIR}}/test_lunalink [channel] --reporter console"
+    silent: false
+
+  integration:
+    desc: Run [e2e]-tagged integration tests (full TX→RX stack, Debug build).
     vars:
       GENERATOR:
         sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
       BUILD_DIR:
         sh: which ninja >/dev/null 2>&1 && echo "build/cpp-tests-ninja" || echo "build/cpp-tests-make"
     cmds:
-      - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release
+      - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug
       - cmake --build {{.BUILD_DIR}} --parallel
-      - "{{.BUILD_DIR}}/test_lunalink [performance] --reporter console"
+      - "{{.BUILD_DIR}}/test_lunalink [e2e] --reporter console"
     silent: false
 
-  wcet-profile:
-    desc: Run [performance] benchmarks and display WCET profile (Release build).
-    vars:
-      GENERATOR:
-        sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
+  performance:
+    desc: Run all performance tests — [wcet] timing report + [ber] channel simulations.
     cmds:
-      - cmake -B build/wcet -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release
-      - cmake --build build/wcet --parallel
-      - build/wcet/test_lunalink "[performance]" --reporter console
+      - task: wcet
+      - task: ber
     silent: false
 
   test-cpp:
@@ -97,7 +129,7 @@ tasks:
           --suppress=checkersReport \
           --suppress=normalCheckLevelMaxBranches \
           --suppress=unmatchedSuppression \
-          cpp/include/ cpp/signal/
+          cpp/include/ cpp/codes/ cpp/encoding/ cpp/messages/ cpp/signal/ cpp/platform/
     silent: false
 
   pyright:
@@ -137,14 +169,21 @@ tasks:
       - rm -f build/coverage/*.profraw build/coverage/*.profdata
       - LLVM_PROFILE_FILE="lunalink-%m.profraw" ctest --test-dir build/coverage --output-on-failure
       - "{{.LLVM_DIR}}/llvm-profdata merge -sparse build/coverage/*.profraw -o build/coverage/lunalink.profdata"
-      - "{{.LLVM_DIR}}/llvm-cov show build/coverage/test_lunalink -instr-profile=build/coverage/lunalink.profdata -format=html -output-dir=build/coverage/html -show-mcdc-summary -show-mcdc -ignore-filename-regex='_deps|tests' -path-equivalence=.,$(pwd)"
-      - "{{.LLVM_DIR}}/llvm-cov report build/coverage/test_lunalink -instr-profile=build/coverage/lunalink.profdata -show-mcdc-summary -ignore-filename-regex='_deps|tests' -path-equivalence=.,$(pwd)"
+      - |
+        {{.LLVM_DIR}}/llvm-cov show build/coverage/test_lunalink \
+          -object build/coverage/lunalink_swifi_tests \
+          -instr-profile=build/coverage/lunalink.profdata \
+          -format=html -output-dir=build/coverage/html \
+          -show-mcdc-summary -show-mcdc \
+          -ignore-filename-regex='_deps|tests' \
+          "-path-equivalence=build/coverage,$(pwd)"
+      - "{{.LLVM_DIR}}/llvm-cov report build/coverage/test_lunalink -object build/coverage/lunalink_swifi_tests -instr-profile=build/coverage/lunalink.profdata -show-mcdc-summary -ignore-filename-regex='_deps|tests'"
       - echo "MC/DC Coverage report generated at build/coverage/html/index.html"
       - |
         LINE_PCT=$({{.LLVM_DIR}}/llvm-cov report build/coverage/test_lunalink \
+          -object build/coverage/lunalink_swifi_tests \
           -instr-profile=build/coverage/lunalink.profdata \
-          -ignore-filename-regex='_deps|tests' \
-          -path-equivalence=.,$(pwd) 2>/dev/null | \
+          -ignore-filename-regex='_deps|tests' 2>/dev/null | \
           awk '/TOTAL/{for(i=1;i<=NF;i++) if($i ~ /%/) {gsub(/%/,"",$i); print $i; exit}}')
         echo "Line coverage: ${LINE_PCT}%"
         if [ "$(echo "$LINE_PCT < 90" | bc -l)" -eq 1 ]; then
@@ -249,7 +288,7 @@ tasks:
           exit 0
         fi
         # Collect staged .cpp source files (exclude bindings and tests)
-        STAGED=$(git diff --cached --name-only --diff-filter=ACM -- 'cpp/signal/*.cpp' 'cpp/include/*.hpp')
+        STAGED=$(git diff --cached --name-only --diff-filter=ACM -- 'cpp/codes/*.cpp' 'cpp/encoding/*.cpp' 'cpp/messages/*.cpp' 'cpp/signal/*.cpp' 'cpp/platform/*.cpp' 'cpp/include/*.hpp')
         if [ -z "$STAGED" ]; then
           echo "No staged C++ source files — skipping tidy."
           exit 0
@@ -385,18 +424,21 @@ tasks:
     silent: false
 
   ci-checks:
-    desc: Full CI checks including tidy, sanitizers, docs, SWIFI, and flag verification.
+    desc: Full CI gate — replaces all GitHub Actions workflows locally (excludes BER/WCET, run those with `task performance`).
     cmds:
       - task: build
       - task: lint-check
       - task: check-flags
       - task: test-cpp
+      - task: integration
       - task: swifi
+      - task: traceability
       - task: coverage-cpp
       - task: tidy
       - task: test-py
       - task: sanitize
       - task: docs-build
+      - task: validate-export
     silent: false
 
   recertify:

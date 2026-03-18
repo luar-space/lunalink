@@ -150,7 +150,7 @@ Chapter 4 — Software Engineering Life Cycle Requirements
      - ``signal/signal_chain.rst``, ``signal/algorithms.rst``
    * - SWE-060
      - Implement the software design into code
-     - ``cpp/signal/`` source tree
+     - core C++ source directories
    * - SWE-061
      - Select and adhere to coding methods, standards, and criteria
      - ``.clang-tidy``, ``pyproject.toml [tool.ruff]``

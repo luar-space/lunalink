@@ -157,8 +157,8 @@ def main():  # noqa: D103
 
     with open(OUT_CPP, "w") as f:
         f.write("// NOLINTBEGIN(hicpp-avoid-c-arrays,hicpp-signed-bitwise)\n")
-        f.write('#include "lunalink/signal/ldpc_tables.hpp"\n')
-        f.write('#include "lunalink/signal/safety.hpp"\n\n')
+        f.write('#include "lunalink/encoding/ldpc_tables.hpp"\n')
+        f.write('#include "lunalink/core/safety.hpp"\n\n')
         f.write("namespace lunalink::signal {\n\n")
 
         for m_id, res in results.items():

@@ -1,0 +1,24 @@
+# cpp/tests/.clang-tidy — Test-specific clang-tidy overrides.
+#
+# Inherits all checks from the root .clang-tidy and suppresses one known
+# false positive that arises specifically from Catch2's expression-decomposition
+# macros (REQUIRE, CHECK, etc.).
+#
+# Why bugprone-chained-comparison is disabled here:
+#
+#   Catch2 decomposes assertions like REQUIRE(a == b) using overloaded
+#   comparison operators on an intermediate ExpressionLhs<T> template object.
+#   The resulting macro expansion produces operator chains of the form
+#   (LHS_wrapper <= rhs_value) == true that clang-tidy mis-identifies as a
+#   user-written chained comparison (e.g. "a <= b == c").  There is no actual
+#   chained comparison in user code — the pattern is entirely internal to the
+#   Catch2 macro machinery and cannot be fixed at the call site.
+#
+# All other checks from the root configuration remain active and are enforced
+# at the same WarningsAsErrors level.  Bounds and pointer-arithmetic checks
+# are NOT disabled here; the two genuine suppression sites in SWIFI tests use
+# inline NOLINTNEXTLINE comments with explanations instead.
+
+InheritParentConfig: true
+
+Checks: "-bugprone-chained-comparison"

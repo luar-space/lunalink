@@ -1,0 +1,121 @@
+#pragma once
+#include <array>
+#include <cstdint>
+#include <span>
+
+#include "lunalink/encoding/bch.hpp"
+#include "lunalink/messages/frame.hpp"
+#include "lunalink/encoding/ldpc.hpp"
+#include "lunalink/signal/sync_detector.hpp"
+#include "lunalink/core/telemetry.hpp"
+
+namespace lunalink::signal {
+
+// ─── Status Codes ────────────────────────────────────────────────────────────
+// High Hamming distance for SEU resistance.
+
+enum class FrameDecodeStatus : uint8_t {
+    kOk             = 0x5AU,  // 01011010 — all subframes decoded and CRC-verified
+    kSyncNotFound   = 0xA5U,  // 10100101 — sync pattern not detected
+    kBchFailed      = 0x33U,  // 00110011 — SB1 BCH decode failed
+    kLdpcFailed     = 0xCCU,  // 11001100 — one or more LDPC subframes failed to converge
+    kCrcFailed      = 0x0FU,  // 00001111 — one or more CRC-24 checks failed
+    kInvalidInput   = 0x66U,  // 01100110 — input buffer too small
+    kFaultDetected  = 0x99U,  // 10011001 — CFI or integrity check failed
+};
+
+// ─── Result Structs ──────────────────────────────────────────────────────────
+
+/// Per-subframe decode status.
+struct SubframeDecodeResult {
+    bool ldpc_converged = false;  ///< true if LDPC decoder converged (H·c=0)
+    bool crc_ok         = false;  ///< true if CRC-24Q verified after LDPC decode
+};
+
+/// Full frame decode result. Navigation data is in the workspace buffers.
+struct FrameDecodeResult {
+    FrameDecodeStatus     status = FrameDecodeStatus::kFaultDetected;
+    SyncResult            sync{};
+    BchResult             bch{BchStatus::kFaultDetected, Fid{}, Toi{}, 0};
+    SubframeDecodeResult  sb2{};
+    SubframeDecodeResult  sb3{};
+    SubframeDecodeResult  sb4{};
+};
+
+// ─── Workspace ───────────────────────────────────────────────────────────────
+
+/// Caller-allocated scratchpad for frame_decode(). No heap allocation.
+/// Contains both internal temporaries and output data buffers.
+///
+/// After a successful frame_decode(), read decoded navigation data from:
+///   sb2_data[0..kSb2DataBits), sb3_data[0..kSb3DataBits), sb4_data[0..kSb4DataBits)
+///
+/// WARNING: ~120 KB total. Must be heap-allocated or placed in a dedicated
+/// memory section on flight hardware. Do NOT allocate on a task stack.
+struct FrameDecodeWorkspace {
+    // Internal temporaries
+    LdpcWorkspace                        ldpc_ws{};
+    std::array<float, kPayloadLength>    deinterleave_buf{};
+
+    // LDPC decoded message bits (includes CRC-24)
+    std::array<uint8_t, kSb2MsgBits>     sb2_msg{};
+    std::array<uint8_t, kSb3MsgBits>     sb3_msg{};
+    std::array<uint8_t, kSb4MsgBits>     sb4_msg{};
+
+    // Output: decoded navigation data (CRC-24 stripped)
+    std::array<uint8_t, kSb2DataBits>    sb2_data{};
+    std::array<uint8_t, kSb3DataBits>    sb3_data{};
+    std::array<uint8_t, kSb4DataBits>    sb4_data{};
+
+#ifdef LUNALINK_FAULT_INJECTION
+    /// SWIFI: number of CFI milestones to skip. Set before calling frame_decode().
+    uint32_t cfi_skip_inject = 0;
+#endif
+};
+
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+/// Default LDPC iteration count for frame_decode().
+inline constexpr uint8_t kFrameDecodeLdpcIterations = 50;
+
+/// Minimum input size: must contain at least one complete frame.
+inline constexpr size_t kFrameDecodeMinInput = kFrameLength;
+
+/// Workspace size for flight memory budgeting.
+/// ~120 KB — must be heap-allocated or placed in a dedicated memory section.
+inline constexpr size_t kFrameDecodeWorkspaceBytes = sizeof(FrameDecodeWorkspace);
+static_assert(kFrameDecodeWorkspaceBytes < 200'000,
+              "FrameDecodeWorkspace exceeds 200 KB budget");
+
+// ─── Frame Decoder ───────────────────────────────────────────────────────────
+
+/// Decode a complete AFS navigation frame from soft-decision symbols. [LSIS-AFS-720]
+///
+/// Orchestrates the full RX pipeline:
+///   1. Sync pattern detection (SyncDetector)
+///   2. SB1 region → soft BCH decode → FID, TOI
+///   3. Payload region → soft deinterleave → split SB2/SB3/SB4
+///   4. LDPC decode each subframe
+///   5. CRC-24Q validate each subframe
+///   6. Strip CRC, copy data to workspace output buffers
+///
+/// @param rx_symbols       Received soft symbols (bipolar: +1.0 = bit 0, −1.0 = bit 1).
+///                         Must contain at least kFrameLength symbols after the detected
+///                         sync offset. Recommended: pass >= kFrameLength symbols.
+/// @param result           Output: full decode result with per-subframe status.
+/// @param workspace        Caller-allocated scratchpad. After success, decoded data
+///                         is in workspace.sb2_data, sb3_data, sb4_data.
+/// @param hal              Telemetry HAL for fault reporting.
+/// @param ldpc_iterations  LDPC BP iteration count (default: 50).
+/// @param sync_threshold   Sync detection threshold (default: kDefaultSyncThreshold).
+///
+/// @return FrameDecodeStatus indicating overall decode outcome.
+[[nodiscard]] FrameDecodeStatus frame_decode(
+    std::span<const float>   rx_symbols,
+    FrameDecodeResult&       result,
+    FrameDecodeWorkspace&    workspace,
+    ITelemetryHal&           hal,
+    uint8_t                  ldpc_iterations = kFrameDecodeLdpcIterations,
+    float                    sync_threshold  = kDefaultSyncThreshold) noexcept;
+
+} // namespace lunalink::signal

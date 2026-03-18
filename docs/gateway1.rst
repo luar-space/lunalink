@@ -49,13 +49,13 @@ Code parameters
 Implementation files:
 
 -  ``cpp/include/lunalink/signal/prn.hpp`` --- public API (loaders, unpack, checksums)
--  ``cpp/signal/prn.cpp`` --- loader implementation
+-  ``cpp/codes/prn.cpp`` --- loader implementation
 -  ``cpp/include/lunalink/signal/gold.hpp`` --- Gold generator class
 -  ``cpp/include/lunalink/signal/weil.hpp`` --- Weil generator class
 -  ``cpp/include/lunalink/signal/legendre.hpp`` --- Legendre symbol calculator
--  ``cpp/signal/prn_table.cpp`` --- Gold-2046 packed LUT (52.5 KB, 210 PRNs)
--  ``cpp/signal/prn_table_weil10230.cpp`` --- Weil-10230 packed LUT (262.3 KB)
--  ``cpp/signal/prn_table_weil1500.cpp`` --- Weil-1500 packed LUT (38.6 KB)
+-  ``cpp/codes/prn_table.cpp`` --- Gold-2046 packed LUT (52.5 KB, 210 PRNs)
+-  ``cpp/codes/prn_table_weil10230.cpp`` --- Weil-10230 packed LUT (262.3 KB)
+-  ``cpp/codes/prn_table_weil1500.cpp`` --- Weil-1500 packed LUT (38.6 KB)
 
 Table generation
 ~~~~~~~~~~~~~~~~
@@ -215,7 +215,7 @@ The matched code combines three code tiers into a single 10230-chip epoch:
 Implementation files:
 
 -  ``cpp/include/lunalink/signal/matched_code.hpp`` --- public API
--  ``cpp/signal/matched_code.cpp`` --- epoch generation
+-  ``cpp/codes/matched_code.cpp`` --- epoch generation
 
 Secondary codes
 ~~~~~~~~~~~~~~~

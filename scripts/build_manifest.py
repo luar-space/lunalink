@@ -165,7 +165,19 @@ def parse_flags_from_cmake_cache(build_dir: str) -> dict:  # noqa: C901
             # Find a lunalink_core source file command
             for cmd in commands:
                 src = cmd.get("file", "")
-                if "cpp/signal/" in src and "test" not in src:
+                if (
+                    any(
+                        d in src
+                        for d in (
+                            "cpp/codes/",
+                            "cpp/encoding/",
+                            "cpp/messages/",
+                            "cpp/signal/",
+                            "cpp/platform/",
+                        )
+                    )
+                    and "test" not in src
+                ):
                     command_str = cmd.get("command", "")
                     # Extract safety-related flags
                     core_flags: list[str] = []

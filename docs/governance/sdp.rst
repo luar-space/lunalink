@@ -41,7 +41,7 @@ eight-gateway milestone sequence.  Each gateway constitutes a formal increment:
    * - Implementation
      - Design phase exit criterion met
      - All gateway functions implemented; pre-commit hook passes (full CI locally)
-     - Source code in ``cpp/signal/``; Python bindings; tests
+     - Source code in ``cpp/{codes,encoding,messages,signal,platform}/``; Python bindings; tests
    * - Verification
      - Implementation phase exit criterion met
      - All CI workflows green; SWIFI 100%; MC/DC 100%; zero static-analysis
@@ -153,7 +153,7 @@ normative requirements; the detailed rationale is in that document.
 
 **Static analysis gates** (blocking CI):
 
-*   Zero Clang-Tidy (HICPP) violations in ``cpp/signal/``.
+*   Zero Clang-Tidy (HICPP) violations in the core source directories.
 *   Zero Cppcheck errors or warnings at ``--enable=all``.
 *   No forbidden compiler flags (asserted by ``scripts/check_build_flags.py``).
 
@@ -232,7 +232,7 @@ all pull requests.  Workflows run in parallel for fast feedback:
    * - ``sanitize``
      - ASan + UBSan; zero errors required
    * - ``clang-tidy``
-     - Zero HICPP violations in ``cpp/signal/``
+     - Zero HICPP violations in the core source directories
    * - ``coverage-cpp``
      - gcov line coverage; ≥ 90% required
    * - ``docs``

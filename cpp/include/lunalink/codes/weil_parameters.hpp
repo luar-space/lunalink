@@ -1,0 +1,24 @@
+#pragma once
+#include <cstdint>
+#include <array>
+#include "lunalink/core/safety.hpp"
+
+namespace lunalink::signal {
+
+struct WeilParams { 
+    uint16_t k; 
+    uint16_t p; 
+};
+
+/**
+ * @brief Appendix D: Weil code parameters for PRN 1-210.
+ */
+extern const std::array<WeilParams, 210> kPrimaryWeilParams;
+
+/**
+ * @brief Appendix E: Tertiary Weil code indices for PRN 1-210.
+ * Tertiary insertion index is always 1 per Figure E-1 schematic.
+ */
+extern const std::array<uint16_t, 210> kTertiaryWeilIndices;
+
+} // namespace lunalink::signal

@@ -60,8 +60,8 @@ Code parameters
 Implementation files:
 
 - ``cpp/include/lunalink/signal/bch.hpp`` — public API
-- ``cpp/signal/bch.cpp`` — encoder, hard-ML decoder, soft-ML decoder
-- ``cpp/signal/bch_table.cpp`` — 400-entry codebook (packed 64-bit words)
+- ``cpp/encoding/bch.cpp`` — encoder, hard-ML decoder, soft-ML decoder
+- ``cpp/encoding/bch_table.cpp`` — 400-entry codebook (packed 64-bit words)
 
 Encoder (``bch_encode``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -238,8 +238,8 @@ Code parameters
 Implementation files:
 
 - ``cpp/include/lunalink/signal/ldpc.hpp`` — public API, workspace types
-- ``cpp/signal/ldpc.cpp`` — encoder (two-stage sparse), decoder (layered NMS-BP)
-- ``cpp/signal/ldpc_tables.cpp`` — 10 sparse parity matrices (CSR format)
+- ``cpp/encoding/ldpc.cpp`` — encoder (two-stage sparse), decoder (layered NMS-BP)
+- ``cpp/encoding/ldpc_tables.cpp`` — 10 sparse parity matrices (CSR format)
 
 Encoder (``ldpc_encode``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -338,7 +338,7 @@ Write row-wise, read column-wise (standard block interleaver permutation).
 Implementation files:
 
 - ``cpp/include/lunalink/signal/interleaver.hpp``
-- ``cpp/signal/interleaver.cpp``
+- ``cpp/encoding/interleaver.cpp``
 
 Hardening
 ~~~~~~~~~
@@ -374,7 +374,7 @@ Polynomial: G(X) = 0x864CFB (CRC-24Q), seed = 0, MSB-first bit ordering.
 Implementation files:
 
 - ``cpp/include/lunalink/signal/crc.hpp``
-- ``cpp/signal/crc.cpp``
+- ``cpp/encoding/crc.cpp``
 
 Hardening
 ~~~~~~~~~

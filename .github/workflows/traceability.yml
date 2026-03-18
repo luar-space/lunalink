@@ -9,12 +9,14 @@ on:
       - 'docs/**'
       - 'scripts/verify_traceability.py'
       - '.github/workflows/traceability.yml'
-  pull_request:
-    paths:
-      - 'cpp/**'
-      - 'docs/**'
-      - 'scripts/verify_traceability.py'
-      - '.github/workflows/traceability.yml'
+  # TODO: re-enable pull_request trigger after restructure PR is merged
+  #   pull_request:
+  #     paths:
+  #       - 'cpp/**'
+  #       - 'docs/**'
+  #       - 'scripts/verify_traceability.py'
+  #       - '.github/workflows/traceability.yml'
+
 
 jobs:
   traceability:

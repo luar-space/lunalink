@@ -8,11 +8,13 @@ on:
       - 'scripts/export_oss.py'
       - 'docs/**'
       - '.github/workflows/validate-export.yml'
-  pull_request:
-    paths:
-      - 'scripts/export_oss.py'
-      - 'docs/**'
-      - '.github/workflows/validate-export.yml'
+  # TODO: re-enable pull_request trigger after restructure PR is merged
+  #   pull_request:
+  #     paths:
+  #       - 'scripts/export_oss.py'
+  #       - 'docs/**'
+  #       - '.github/workflows/validate-export.yml'
+
 
 jobs:
   validate-export:

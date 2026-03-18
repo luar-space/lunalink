@@ -31,29 +31,29 @@ jobs:
       - run: uv sync --group dev
       - name: Configure (Release)
         run: |
-          cmake -B build/wcet -S . -G Ninja \
+          cmake -B build/performance -S . -G Ninja \
             -DBUILD_PYTHON_BINDINGS=OFF \
             -DBUILD_TESTING=ON \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       - name: Build
-        run: cmake --build build/wcet --parallel
+        run: cmake --build build/performance --parallel
       - name: Run BENCHMARK tests (timing only)
         run: |
-          build/wcet/test_lunalink "[benchmark]" \
+          build/performance/test_lunalink "[wcet]" \
             --reporter console::out=/tmp/wcet_console.txt \
             --reporter xml::out=/tmp/wcet_results.xml
       - name: Run BER simulations
         run: |
-          build/wcet/test_lunalink "[performance]~[benchmark]" \
+          build/performance/test_lunalink "[channel]" \
             --reporter console::out=/tmp/ber_console.txt
       - name: Fetch benchmark history
         run: |
           git show origin/gh-pages:dev/bench/data.js > /tmp/history.js 2>/dev/null || true
       - name: Parse results and generate RST artifact
         run: |
-          python3 scripts/wcet_report.py \
+          python3 scripts/performance_report.py \
             --xml /tmp/wcet_results.xml \
             --console /tmp/wcet_console.txt \
             --output /tmp/wcet_profile.rst \

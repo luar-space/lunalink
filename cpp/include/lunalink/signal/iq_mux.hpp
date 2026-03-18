@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <span>
 
-#include "lunalink/signal/prn.hpp"
+#include "lunalink/codes/prn.hpp"
 
 namespace lunalink::signal {
 

@@ -2,7 +2,7 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 #include "lunalink/signal/sync_detector.hpp"
-#include "lunalink/signal/telemetry.hpp"
+#include "lunalink/core/telemetry.hpp"
 
 #include <array>
 #include <cmath>

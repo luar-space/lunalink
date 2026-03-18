@@ -31,7 +31,7 @@ change control.  LunaLink SCIs are listed below.
      - Location
      - Description
    * - Signal core source
-     - ``cpp/signal/``, ``cpp/include/``
+     - ``cpp/{codes,encoding,messages,signal,platform}/``, ``cpp/include/``
      - Safety-critical C++ DSP functions; primary flight software deliverable
    * - Python bindings
      - ``cpp/bindings/``, ``src/lunalink/``
