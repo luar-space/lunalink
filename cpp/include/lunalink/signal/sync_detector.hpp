@@ -16,14 +16,12 @@ namespace lunalink::signal {
 /// Threshold of 50 gives ~11 dB margin for noise robustness.
 inline constexpr float kDefaultSyncThreshold = 50.0F;
 
-// ─── Status Codes ────────────────────────────────────────────────────────────
-// High Hamming distance for SEU resistance.
-
+/** @brief Status codes for 68-symbol sync pattern detection via cross-correlation. [LSIS-AFS-710] SEU-hardened with high Hamming distance bit patterns. */
 enum class SyncDetectorStatus : uint8_t {
-    kOk             = 0x5A,  // 01011010
-    kInvalidInput   = 0xA5,  // 10100101
-    kNotDetected    = 0x33,  // 00110011
-    kFaultDetected  = 0xCC,  // 11001100
+    kOk             = 0x5AU,  ///< Operation completed successfully.
+    kInvalidInput   = 0xA5U,  ///< Input parameters out of range or invalid.
+    kNotDetected    = 0x33U,  ///< Peak correlation below detection threshold.
+    kFaultDetected  = 0xCCU,  ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
 };
 
 // ─── Sync Detection Result ──────────────────────────────────────────────────

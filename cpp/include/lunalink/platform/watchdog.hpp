@@ -74,6 +74,8 @@ class WindowedWatchdog {
   [[nodiscard]] bool evaluate(ITelemetryHal& hal, uint32_t timestamp_ms) noexcept {
     const uint32_t n = count_;  // snapshot volatile before any emission
     if (n < t_min_) {
+      // fiz_level=2 records detection severity in telemetry; the caller's
+      // kSafeMode transition implements Zone 3 containment.
       const FaultPacket pkt{
           timestamp_ms,
           kWatchdogLowerBoundFaultCode,

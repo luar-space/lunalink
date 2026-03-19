@@ -37,7 +37,7 @@ PrnStatus GoldGenerator::generate(PrnId prn_id, std::span<uint8_t> out) noexcept
     PrnStatus status = PrnStatus::kOk;
     
     // CFI: Magic start sentinel
-    // cppcheck-suppress variableScope
+    // cppcheck-suppress variableScope -- CFI counter must be at function scope for terminal check
     uint32_t cfi_count = 0xA5A5A5A5U;
 
     if (!prn_id.valid()) {
@@ -49,16 +49,23 @@ PrnStatus GoldGenerator::generate(PrnId prn_id, std::span<uint8_t> out) noexcept
     if (status == PrnStatus::kOk) {
         // Initialize registers per LSIS Appendix C.
         g1_reg_ = 0x7FFU; // 11 ones
-        const size_t idx = static_cast<size_t>(prn_id.repair()) - 1U;
-        g2_reg_ = kGoldG2Init.at(idx);
+        const uint8_t repaired = prn_id.repair();
+        if (!prn_id.valid()) {
+            status = PrnStatus::kFaultDetected;
+        } else {
+            const size_t idx = static_cast<size_t>(repaired) - 1U;
+            g2_reg_ = kGoldG2Init.at(idx);
+        }
+    }
 
+    if (status == PrnStatus::kOk) {
         // Mirrored loop counter.
-        // cppcheck-suppress [variableScope, unreadVariable]
+        // cppcheck-suppress [variableScope, unreadVariable] -- mirror variable must be at function scope for fault detection
         uint32_t i_mir = 0xFFFFFFFFU;
 
         for (uint16_t i = 0; i < kGoldChipLength; ++i) {
             i_mir = ~static_cast<uint32_t>(i);
-            
+
             if (static_cast<uint32_t>(i) != (~i_mir)) [[unlikely]] {
                 status = PrnStatus::kFaultDetected;  // FIZ-1
                 break;

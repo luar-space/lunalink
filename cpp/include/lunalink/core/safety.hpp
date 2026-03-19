@@ -56,7 +56,7 @@ inline void secure_scrub(std::span<T> data) noexcept {
   }
   volatile T* p = data.data();
   for (size_t i = 0; i < data.size(); ++i) {
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    // Volatile pointer arithmetic required for DSE-proof scrubbing — NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     p[i] = T{0};
   }
 }
@@ -81,6 +81,13 @@ inline void secure_scrub(Container& c) noexcept {
 /**
  * @brief Temporal "Work-In-Progress" (WIP) tick for Watchdog feeding.
  * High-reliability loops should call this to prove progress.
+ *
+ * Wrap-around is acceptable for the mission profile: the 12 s frame period
+ * yields ~10 M ticks maximum per frame, well within the uint32_t 4 G limit.
+ * The watchdog only checks that the counter *changes* between polls, not
+ * monotonicity, so unsigned wrap at 2^32 is benign.  Saturating arithmetic
+ * is intentionally NOT used — a saturated counter would stop changing and
+ * falsely trigger the watchdog.
  */
 inline void wip_tick() noexcept {
   // Flight-specific WIP implementation (e.g., poke a hardware register or
@@ -90,19 +97,24 @@ inline void wip_tick() noexcept {
   wip_count = wip_count + 1U;
 }
 
-// Runtime aliasing check: returns true if two byte ranges overlap.
-// Used as a runtime guard replacing assert() for Class A compliance.
+/**
+ * @brief Runtime aliasing check: returns true if two byte ranges overlap.
+ *
+ * Used as a runtime guard replacing assert() for Class A compliance.
+ * Prevents undefined behaviour from overlapping input/output buffers
+ * in encoding and signal-processing functions.
+ */
 [[nodiscard]] inline bool spans_overlap(const void* a, size_t a_bytes,
                                         const void* b, size_t b_bytes) noexcept {
     const auto* ab = static_cast<const uint8_t*>(a);
     const auto* bb = static_cast<const uint8_t*>(b);
-    // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    // Pointer arithmetic needed for byte-level overlap comparison — NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return (ab < bb + b_bytes) && (bb < ab + a_bytes);
     // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 }
 
 // Convenience template overload for typed spans.
-// NOLINTNEXTLINE(fuchsia-trailing-return)
+// Template return type deduced by compiler — NOLINTNEXTLINE(fuchsia-trailing-return)
 template <typename T, typename U>
 [[nodiscard]] inline bool spans_overlap(std::span<T> a, std::span<U> b) noexcept {
     return spans_overlap(static_cast<const void*>(a.data()), a.size_bytes(),
@@ -124,7 +136,7 @@ class CheckedRange {
 
   explicit constexpr CheckedRange(T v) noexcept : value_(v) { saturate(); }
 
-  // NOLINTBEGIN(fuchsia-overloaded-operator)
+  // Value-type assignment operator required for saturating semantics — NOLINTBEGIN(fuchsia-overloaded-operator)
   constexpr CheckedRange& operator=(T v) noexcept {
     value_ = v;
     saturate();
@@ -132,6 +144,7 @@ class CheckedRange {
   }
   // NOLINTEND(fuchsia-overloaded-operator)
 
+  /// Return the current saturated value (passive read, no repair).
   [[nodiscard]] constexpr T value() const noexcept { return value_; }
 
   /**
@@ -205,7 +218,7 @@ struct TmrValue {
 
   constexpr void refresh(T v) noexcept { v1 = v2 = v3 = v; }
 
-  // NOLINTNEXTLINE(fuchsia-overloaded-operator)
+  // Value-type equality comparison required — NOLINTNEXTLINE(fuchsia-overloaded-operator)
   constexpr bool operator==(const TmrValue& other) const noexcept {
     return peek() == other.peek();
   }
@@ -247,6 +260,50 @@ struct TmrValue {
 };
 
 /**
+ * @brief Strong-typed TMR-protected identifier with compile-time range [Min, Max].
+ *
+ * Eliminates copy-paste boilerplate for Fid, Toi, PrnId and any future
+ * ranged identifiers.  Tag type provides nominal type safety (prevents
+ * Fid/Toi/PrnId confusion at compile time).
+ *
+ * Storage is `TmrValue<CheckedRange<uint8_t, Min, Max>>` — triple modular
+ * redundant with saturating logic.  `repair()` performs active TMR voting;
+ * `value()` is a passive majority peek.
+ */
+template <uint8_t Min, uint8_t Max, typename Tag>
+struct TmrCheckedId {
+  TmrValue<CheckedRange<uint8_t, Min, Max>> storage{CheckedRange<uint8_t, Min, Max>{Min}};
+
+  constexpr TmrCheckedId() noexcept = default;
+  explicit constexpr TmrCheckedId(uint8_t v) noexcept
+      : storage(CheckedRange<uint8_t, Min, Max>{v}) {}
+
+  [[nodiscard]] constexpr uint8_t value() const noexcept {
+    return static_cast<uint8_t>(storage.peek());
+  }
+
+  /**
+   * @brief Perform active repair of the TMR triplets.
+   * @return The repaired majority value.
+   */
+  uint8_t repair() const noexcept {
+    return static_cast<uint8_t>(storage.vote());
+  }
+
+  [[nodiscard]] constexpr bool valid() const noexcept {
+    const uint8_t v = value();
+    return v >= Min && v <= Max;
+  }
+
+  explicit constexpr operator uint8_t() const noexcept { return value(); }
+
+  // Value-type equality comparison required — NOLINTNEXTLINE(fuchsia-overloaded-operator)
+  constexpr bool operator==(const TmrCheckedId& other) const noexcept {
+    return value() == other.value();
+  }
+};
+
+/**
  * @brief Control-Flow Integrity guard: encapsulates volatile counter + expected terminal value.
  * New components (POST, FSM) use this class. Existing inline CFI sentinels in signal sources
  * are not refactored to avoid regression risk.
@@ -272,7 +329,7 @@ class CfiGuard {
 template <typename State, size_t N>
 class TransitionMatrix {
   struct Edge { uint8_t from; uint8_t to; };
-  // NOLINTNEXTLINE(hicpp-avoid-c-arrays)
+  // C-style array required for constexpr packed layout — NOLINTNEXTLINE(hicpp-avoid-c-arrays)
   Edge edges_[N]{};
   size_t count_{0};
 
@@ -281,7 +338,7 @@ class TransitionMatrix {
 
   constexpr void add(State from, State to) noexcept {
     if (count_ < N) {
-      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+      // Index bounds-checked by guard clause above — NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
       edges_[count_++] = {static_cast<uint8_t>(from), static_cast<uint8_t>(to)};
     }
   }
@@ -289,9 +346,9 @@ class TransitionMatrix {
   [[nodiscard]] bool is_legal(State from, State to) const noexcept {
     const auto f = static_cast<uint8_t>(from);
     const auto t = static_cast<uint8_t>(to);
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+    // Loop bound checked against count_ <= N — NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
     for (size_t i = 0; i < count_; ++i) {
-      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+      // Index bounded by count_ < N invariant — NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
       if (edges_[i].from == f && edges_[i].to == t) { return true; }
     }
     return false;

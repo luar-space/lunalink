@@ -32,7 +32,7 @@ public:
         for (uint32_t k = 0; k < N / 2U; ++k) {
             const auto angle = static_cast<float>(
                 -2.0 * std::numbers::pi * static_cast<double>(k) / static_cast<double>(N));
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+            // Index bounded by loop limit k < N/2 — NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
             twiddles_[k] = Complex(std::cos(angle), std::sin(angle));
         }
 
@@ -42,7 +42,7 @@ public:
             for (uint32_t b = 0; b < kLog2N; ++b) {
                 j |= ((i >> b) & 1U) << (kLog2N - 1U - b);
             }
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+            // Index bounded by loop limit i < N — NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
             bitrev_[i] = static_cast<uint16_t>(j);
         }
     }
@@ -91,7 +91,7 @@ private:
     /// Apply precomputed bit-reverse permutation.
     void bit_reverse_permute(std::span<Complex, N> buf) const noexcept {
         for (uint32_t i = 0; i < N; ++i) {
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+            // Index bounded by loop limit i < N — NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
             const auto j = static_cast<uint32_t>(bitrev_[i]);
             if (i < j) {
                 std::swap(buf[i], buf[j]);
@@ -103,9 +103,9 @@ private:
     /// Avoids std::complex multiply to help auto-vectorization.
     void butterfly(std::span<Complex, N> buf) const noexcept {
         // Reinterpret as interleaved float pairs [re0, im0, re1, im1, ...].
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast,hicpp-use-auto)
+        // Scalar float access for vectorizable butterfly; explicit type aids readability — NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast,hicpp-use-auto)
         float* const data = reinterpret_cast<float*>(buf.data());
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast,hicpp-use-auto)
+        // Scalar twiddle access for vectorizable butterfly; explicit type aids readability — NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast,hicpp-use-auto)
         const float* const tw = reinterpret_cast<const float*>(twiddles_.data());
 
         for (uint32_t half = 1; half < N; half <<= 1U) {
@@ -113,7 +113,7 @@ private:
             const uint32_t tw_stride = N / step;
 
             for (uint32_t group = 0; group < N; group += step) {
-                // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic,bugprone-implicit-widening-of-multiplication-result)
+                // Pointer arithmetic for scalar butterfly; widening is safe for N<=65536 — NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic,bugprone-implicit-widening-of-multiplication-result)
                 float* const p = data + (group << 1U);
                 for (uint32_t k = 0; k < half; ++k) {
                     const uint32_t tw_idx = (k * tw_stride) << 1U;

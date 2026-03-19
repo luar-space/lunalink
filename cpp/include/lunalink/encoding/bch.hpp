@@ -1,4 +1,5 @@
 #pragma once
+#include <concepts>
 #include <cstdint>
 #include <span>
 #include <type_traits>
@@ -6,53 +7,35 @@
 
 namespace lunalink::signal {
 
-/**
- * @brief Fault-tolerant status codes for BCH operations.
- * Non-contiguous bit patterns with high Hamming distance resist SEU bit-flips.
- */
+/** @brief Status codes for BCH(51,8) encode and maximum-likelihood decode. [LSIS-AFS-501] SEU-hardened with high Hamming distance bit patterns. */
 enum class BchStatus : uint8_t {
-  kOk             = 0x5AU,  // 01011010
-  kOutputTooSmall = 0xA5U,  // 10100101
-  kInvalidFid     = 0x33U,  // 00110011
-  kInvalidToi     = 0xCCU,  // 11001100
-  kNullOutput     = 0x99U,  // 10011001
-  kInvalidInput   = 0x66U,  // 01100110
-  kAmbiguousMatch = 0xF0U,  // 11110000
-  kFaultDetected  = 0x0FU,  // 00001111
+    kOk             = 0x5AU,  ///< Operation completed successfully.
+    kOutputTooSmall = 0xA5U,  ///< Output buffer too small for result.
+    kInvalidFid     = 0x33U,  ///< FID value exceeds kBchFidMax.
+    kInvalidToi     = 0xCCU,  ///< TOI value exceeds kBchToiMax.
+    kNullOutput     = 0x99U,  ///< Required buffer is null or empty.
+    kInvalidInput   = 0x66U,  ///< Input parameters out of range or invalid.
+    kAmbiguousMatch = 0xF0U,  ///< Multiple codewords at same Hamming distance.
+    kFaultDetected  = 0x0FU,  ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
 };
 
 /// BCH(51,8) encoder output length: 1 raw MSB + 51 LFSR symbols = 52 symbols.
 inline constexpr uint8_t kBchCodewordLength = 52;
+/// Maximum FID value (inclusive). LSIS §2.4.3.
 inline constexpr uint8_t kBchFidMax = 3;
+/// Maximum TOI value (inclusive). LSIS §2.4.3.
 inline constexpr uint8_t kBchToiMax = 99;
 
+/// Tag type for nominal type safety (prevents Fid/Toi confusion at compile time).
+struct FidTag {};
+/// Tag type for nominal type safety (prevents Fid/Toi confusion at compile time).
+struct ToiTag {};
+
 /**
- * @brief Triple Modular Redundant (TMR) type for Frequency ID [0, 3].
+ * @brief TMR-protected Frequency ID [0, 3] with LSIS node constants.
  */
-struct Fid {
-  TmrValue<CheckedRange<uint8_t, 0, 3>> storage{CheckedRange<uint8_t, 0, 3>{0U}};
-
-  constexpr Fid() noexcept = default;
-  explicit constexpr Fid(uint8_t v) noexcept : storage(CheckedRange<uint8_t, 0, 3>{v}) {}
-
-  [[nodiscard]] constexpr uint8_t value() const noexcept {
-    return static_cast<uint8_t>(storage.peek());
-  }
-
-  /**
-   * @brief Perform active repair of the TMR triplets.
-   * @return The repaired majority value.
-   */
-  uint8_t repair() const noexcept {
-    return static_cast<uint8_t>(storage.vote());
-  }
-
-  explicit constexpr operator uint8_t() const noexcept { return value(); }
-
-  // NOLINTNEXTLINE(fuchsia-overloaded-operator)
-  constexpr bool operator==(const Fid& other) const noexcept {
-    return value() == other.value();
-  }
+struct Fid : TmrCheckedId<0, kBchFidMax, FidTag> {
+  using TmrCheckedId::TmrCheckedId;
 
   // LSIS Node Constants
   static constexpr Fid kNode1() { return Fid{0}; }
@@ -62,33 +45,9 @@ struct Fid {
 };
 
 /**
- * @brief Triple Modular Redundant (TMR) type for Time of Interval [0, 99].
+ * @brief TMR-protected Time of Interval [0, 99].
  */
-struct Toi {
-  TmrValue<CheckedRange<uint8_t, 0, 99>> storage{CheckedRange<uint8_t, 0, 99>{0U}};
-
-  constexpr Toi() noexcept = default;
-  explicit constexpr Toi(uint8_t v) noexcept : storage(CheckedRange<uint8_t, 0, 99>{v}) {}
-
-  [[nodiscard]] constexpr uint8_t value() const noexcept {
-    return static_cast<uint8_t>(storage.peek());
-  }
-
-  /**
-   * @brief Perform active repair of the TMR triplets.
-   * @return The repaired majority value.
-   */
-  uint8_t repair() const noexcept {
-    return static_cast<uint8_t>(storage.vote());
-  }
-
-  explicit constexpr operator uint8_t() const noexcept { return value(); }
-
-  // NOLINTNEXTLINE(fuchsia-overloaded-operator)
-  constexpr bool operator==(const Toi& other) const noexcept {
-    return value() == other.value();
-  }
-};
+using Toi = TmrCheckedId<0, kBchToiMax, ToiTag>;
 
 /**
  * @brief Result of a BCH decoding operation.
@@ -125,15 +84,12 @@ struct alignas(8) BchResult {
  * @brief Ergonomic overload for fixed-size arrays.
  */
 template <typename T>
+    requires (!std::same_as<std::remove_cvref_t<T>, std::span<uint8_t, 52ULL>>)
 [[nodiscard]] inline BchStatus bch_encode(
     Fid fid,
     Toi toi,
     T&& out) noexcept {
-  if constexpr (std::is_same_v<std::remove_cvref_t<T>, std::span<uint8_t, 52ULL>>) {
-    return bch_encode(fid, toi, out);
-  } else {
-    return bch_encode(fid, toi, std::span<uint8_t, 52ULL>(out));
-  }
+  return bch_encode(fid, toi, std::span<uint8_t, 52ULL>(out));
 }
 
 /**

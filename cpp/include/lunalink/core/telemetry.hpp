@@ -24,7 +24,7 @@ static_assert(sizeof(FaultPacket) == 8U, "FaultPacket must be exactly 8 bytes");
  * @brief Telemetry Hardware Abstraction Layer interface.
  * Implementations deliver packets to flight software, ground links, or test harnesses.
  */
-// NOLINTBEGIN(hicpp-special-member-functions)
+// Interface class: only virtual dtor needed — NOLINTBEGIN(hicpp-special-member-functions)
 class ITelemetryHal {
  public:
     virtual void emit(const FaultPacket& pkt) noexcept = 0;
@@ -38,7 +38,7 @@ class ITelemetryHal {
  */
 class NullTelemetryHal final : public ITelemetryHal {
  public:
-    // NOLINTNEXTLINE(hicpp-named-parameter)
+    // Parameter intentionally unused in no-op stub — NOLINTNEXTLINE(hicpp-named-parameter)
     void emit(const FaultPacket& /*pkt*/) noexcept override {}
 };
 
@@ -57,7 +57,9 @@ class CaptureTelemetryHal final : public ITelemetryHal {
     [[nodiscard]] size_t count() const noexcept { return count_; }
 
     [[nodiscard]] const FaultPacket& packet(size_t idx) const noexcept {
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+        static constexpr FaultPacket kEmpty{};
+        if (idx >= count_ || idx >= N) { return kEmpty; }
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index) -- index validated above
         return packets_[idx];
     }
 

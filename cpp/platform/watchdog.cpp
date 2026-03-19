@@ -3,9 +3,9 @@
 namespace lunalink::signal {
 
 namespace {
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables) -- HAL callback, runtime-configured by target platform
 WindowedWatchdog* g_installed_wdog = nullptr;
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables) -- runtime lock state for watchdog configuration
 bool g_wdog_locked = false;
 }  // namespace
 

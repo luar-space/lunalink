@@ -60,19 +60,16 @@ inline constexpr uint16_t kSymbolRate = 500;
 /// Frame duration: 12.0 seconds.
 inline constexpr float kFrameDurationS = 12.0F;
 
-/**
- * @brief Fault-tolerant status codes for navigation frame building.
- * Non-contiguous bit patterns with high Hamming distance resist SEU bit-flips.
- */
+/** @brief Status codes for frame assembly (sync + SB1-SB4 + interleave). [LSIS-AFS-601] SEU-hardened with high Hamming distance bit patterns. */
 enum class FrameStatus : uint8_t {
-  kOk              = 0x5AU,  // 01011010
-  kOutputTooSmall  = 0xA5U,  // 10100101
-  kInvalidFid      = 0x33U,  // 00110011
-  kInvalidToi      = 0xCCU,  // 11001100
-  kBchFailed       = 0x0FU,  // 00001111
-  kFaultDetected   = 0x99U,  // 10011001
-  kLdpcFailed      = 0x3CU,  // 00111100 (HD≥4 from all existing)
-  kCrcFailed       = 0xC3U,  // 11000011 (HD≥4 from all existing)
+    kOk             = 0x5AU,  ///< Operation completed successfully.
+    kOutputTooSmall = 0xA5U,  ///< Output buffer too small for result.
+    kInvalidFid     = 0x33U,  ///< FID value exceeds kBchFidMax.
+    kInvalidToi     = 0xCCU,  ///< TOI value exceeds kBchToiMax.
+    kBchFailed      = 0x0FU,  ///< SB1 BCH decode failed.
+    kFaultDetected  = 0x99U,  ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
+    kLdpcFailed     = 0x3CU,  ///< One or more LDPC subframes did not converge.
+    kCrcFailed      = 0xC3U,  ///< One or more CRC-24Q verifications failed.
 };
 
 /**

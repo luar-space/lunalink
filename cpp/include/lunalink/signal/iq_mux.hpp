@@ -6,18 +6,15 @@
 
 namespace lunalink::signal {
 
-/**
- * @brief Fault-tolerant status codes for IQ Multiplexer operations.
- * Non-contiguous bit patterns with high Hamming distance resist SEU bit-flips.
- */
+/** @brief Status codes for AFS-I/Q IQ multiplexing at 5.115 MSPS. [LSIS-AFS-301] SEU-hardened with high Hamming distance bit patterns. */
 enum class IqMuxStatus : uint8_t {
-  kOk             = 0x5AU,  // 01011010
-  kInputTooSmall  = 0xA5U,  // 10100101
-  kOutputTooSmall = 0x33U,  // 00110011
-  kInvalidISample = 0xCCU,  // 11001100
-  kInvalidQSample = 0x0FU,  // 00001111
-  kNullInput      = 0xF0U,  // 11110000
-  kFaultDetected  = 0x99U,  // 10011001
+    kOk             = 0x5AU,  ///< Operation completed successfully.
+    kInputTooSmall  = 0xA5U,  ///< Input buffer smaller than required.
+    kOutputTooSmall = 0x33U,  ///< Output buffer too small for result.
+    kInvalidISample = 0xCCU,  ///< I-channel sample not in {-1, +1}.
+    kInvalidQSample = 0x0FU,  ///< Q-channel sample not in {-1, +1}.
+    kNullInput      = 0xF0U,  ///< Required buffer is null or empty.
+    kFaultDetected  = 0x99U,  ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
 };
 
 /// Samples per 2 ms AFS-I chip: 1.

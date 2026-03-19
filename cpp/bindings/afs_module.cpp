@@ -9,6 +9,7 @@
 #include "lunalink/signal/modulator.hpp"
 #include "lunalink/codes/prn.hpp"
 #include "lunalink/codes/matched_code.hpp"
+#include "lunalink/codes/legendre.hpp"
 #include "lunalink/signal/sync_detector.hpp"
 #include <cstdint>
 #include <span>
@@ -49,6 +50,12 @@ PYBIND11_MODULE(_afs, m) {
       .def(py::init<uint8_t>())
       .def_property("value", &Toi::value, [](Toi& self, uint8_t v) { self = Toi(v); })
       .def("__int__", [](const Toi& t) { return static_cast<uint8_t>(t); });
+
+  py::class_<PrnId>(m, "PrnId")
+      .def(py::init<uint8_t>())
+      .def_property_readonly("value", [](const PrnId& p) { return p.value(); })
+      .def("valid", [](const PrnId& p) { return p.valid(); })
+      .def("__int__", [](const PrnId& p) { return p.value(); });
 
   py::enum_<BchStatus>(m, "BchStatus")
       .value("OK", BchStatus::kOk)
@@ -202,6 +209,16 @@ PYBIND11_MODULE(_afs, m) {
     return out;
   });
 
+  m.def("block_deinterleave_soft", [](py::array_t<float, py::array::c_style | py::array::forcecast> in) {
+    auto out = py::array_t<float>(static_cast<ssize_t>(kInterleaverSize));
+    auto status = block_deinterleave_soft(
+        std::span<const float>(in.data(), static_cast<size_t>(in.size())),
+        std::span<float>(out.mutable_data(), kInterleaverSize));
+    if (status != InterleaverStatus::kOk)
+      throw py::value_error("block_deinterleave_soft failed");
+    return out;
+  });
+
   m.def("ldpc_encode", [](LdpcSubframe type, py::array_t<uint8_t> msg) {
     const size_t n_out = (type == LdpcSubframe::kSF2) ? 2400U : 1740U;
     auto out = py::array_t<uint8_t>(static_cast<ssize_t>(n_out));
@@ -259,6 +276,10 @@ PYBIND11_MODULE(_afs, m) {
         ws, fbw);
     if (status != FrameStatus::kOk) throw py::value_error("Frame build failed");
     return out;
+  });
+
+  m.def("commit_frame", [](py::array_t<uint8_t, py::array::c_style | py::array::forcecast> frame) {
+    return commit_frame(std::span<const uint8_t>(frame.data(), static_cast<size_t>(frame.size())));
   });
 
   m.def("subframe_build_sb2", [](py::array_t<uint8_t, py::array::c_style | py::array::forcecast> data) {
@@ -353,6 +374,17 @@ PYBIND11_MODULE(_afs, m) {
     auto out = py::array_t<uint8_t>(10230);
     if (matched_code_epoch_checked(a, static_cast<uint16_t>(epoch_idx), std::span<uint8_t>(out.mutable_data(), 10230)) != MatchedCodeStatus::kOk) throw py::value_error("Bad assignment");
     return out;
+  });
+
+  m.def("default_matched_assignment", [](int prn_id) {
+    MatchedCodeAssignment a{};
+    auto status = default_matched_assignment_checked(PrnId{static_cast<uint8_t>(prn_id)}, a);
+    if (status != MatchedCodeStatus::kOk) throw py::value_error("Invalid PRN for assignment");
+    return py::make_tuple(
+        static_cast<uint8_t>(a.primary_prn),
+        static_cast<uint8_t>(a.secondary_code_idx),
+        static_cast<uint8_t>(a.tertiary_prn),
+        static_cast<uint16_t>(a.tertiary_phase_offset));
   });
 
   m.attr("EPOCHS_PER_FRAME") = kEpochsPerFrame;
@@ -531,7 +563,8 @@ tuple[FrameDecodeResult, ndarray, ndarray, ndarray, FrameDecodeStatus]
       .def_readonly("doppler_hz",        &TrackingState::doppler_hz)
       .def_readonly("dll_discriminator", &TrackingState::dll_discriminator)
       .def_readonly("pll_discriminator", &TrackingState::pll_discriminator)
-      .def_readonly("cn0_estimate",      &TrackingState::cn0_estimate);
+      .def_readonly("cn0_estimate",      &TrackingState::cn0_estimate)
+      .def_readonly("cn0_smooth",        &TrackingState::cn0_smooth);
 
   py::class_<UniformPrior>(m, "UniformPrior")
       .def(py::init<>());
@@ -573,4 +606,26 @@ tuple[FrameDecodeResult, ndarray, ndarray, ndarray, FrameDecodeStatus]
   m.attr("SAMPLE_RATE_HZ") = kSampleRateHz;
   m.attr("CODE_PERIOD_S") = kCodePeriodS;
   m.attr("MAX_CHANNELS") = kMaxChannels;
+
+  // PRN code constants
+  m.attr("GOLD_CHIP_LENGTH") = kGoldChipLength;
+  m.attr("WEIL_10230_CHIP_LENGTH") = kWeil10230ChipLength;
+  m.attr("WEIL_1500_CHIP_LENGTH") = kWeil1500ChipLength;
+  m.attr("PRN_COUNT") = kPrnCount;
+  m.attr("CHIP_RATE_HZ") = kChipRateHz;
+  m.attr("DOPPLER_BIN_SPACING_HZ") = kDopplerBinSpacingHz;
+
+  // Legendre cache bindings
+  py::enum_<LegendreStatus>(m, "LegendreStatus")
+      .value("OK", LegendreStatus::kOk)
+      .value("OUTPUT_TOO_SMALL", LegendreStatus::kOutputTooSmall)
+      .value("INVALID_PRIME", LegendreStatus::kInvalidPrime)
+      .value("FAULT_DETECTED", LegendreStatus::kFaultDetected)
+      .export_values();
+
+  m.def("legendre_cache_init", []() {
+    return legendre_cache_init();
+  });
+  m.def("legendre_10223_checksum", &legendre_10223_checksum);
+  m.def("legendre_1499_checksum", &legendre_1499_checksum);
 }

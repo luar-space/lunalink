@@ -7,25 +7,20 @@
 
 namespace lunalink::signal {
 
-/**
- * @brief Fault-tolerant status codes for LDPC operations.
- */
+/** @brief Status codes for LDPC encode and layered NMS belief-propagation decode. [LSIS-AFS-320] SEU-hardened with high Hamming distance bit patterns. */
 enum class LdpcStatus : uint8_t {
-    kOk            = 0x5AU,  // 01011010
-    kInvalidInput  = 0xA5U,  // 10100101
-    kOutputTooSmall = 0x33U,  // 00110011
-    kFaultDetected = 0x99U,  // 10011001
-    kNotConverged  = 0x66U,  // 01100110
+    kOk             = 0x5AU,  ///< Operation completed successfully.
+    kInvalidInput   = 0xA5U,  ///< Input parameters out of range or invalid.
+    kOutputTooSmall = 0x33U,  ///< Output buffer too small for result.
+    kFaultDetected  = 0x99U,  ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
+    kNotConverged   = 0x66U,  ///< BP iterations exhausted without syndrome convergence.
 };
 
-/**
- * @brief LDPC Subframe types supported by LSIS-AFS.
- * Hardened with non-contiguous bit patterns.
- */
+/** @brief Subframe type selector for LDPC codec (SF2: rate-1/2 n=2400, SF3/SF4: rate-1/2 n=1740). [LSIS-AFS-321] SEU-hardened with high Hamming distance bit patterns. */
 enum class LdpcSubframe : uint8_t {
-    kSF2 = 0x5AU,
-    kSF3 = 0xA5U,
-    kSF4 = 0x33U  // SF4 reuses SF3 matrices
+    kSF2 = 0x5AU,  ///< Subframe 2: n=2400, k=1200, rate 1/2.
+    kSF3 = 0xA5U,  ///< Subframe 3: n=1740, k=870, rate 1/2.
+    kSF4 = 0x33U,  ///< Subframe 4: reuses SF3 matrices.
 };
 
 /**

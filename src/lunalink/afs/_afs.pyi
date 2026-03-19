@@ -71,6 +71,49 @@ class Toi:
     value: int
     def __init__(self, value: int) -> None: ...
 
+class PrnId:
+    value: int
+    def __init__(self, value: int) -> None: ...
+    def valid(self) -> bool: ...
+    def __int__(self) -> int: ...
+
+class PrnStatus(IntEnum):
+    OK = 0x5A
+    INVALID_PRN = 0xA5
+    NULL_OUTPUT = 0x33
+    INVALID_CHIP_INDEX = 0xCC
+    FAULT_DETECTED = 0x99
+
+class MatchedCodeStatus(IntEnum):
+    OK = 0x5A
+    INVALID_PRN = 0xA5
+    INVALID_EPOCH = 0x33
+    OUTPUT_TOO_SMALL = 0xCC
+    INVALID_ASSIGNMENT = 0x66
+    FAULT_DETECTED = 0x99
+
+class ModulationStatus(IntEnum):
+    OK = 0x5A
+    INVALID_SYMBOL = 0xA5
+    INVALID_CHIP_VALUE = 0x33
+    OUTPUT_TOO_SMALL = 0xCC
+    FAULT_DETECTED = 0x99
+
+class IqMuxStatus(IntEnum):
+    OK = 0x5A
+    INPUT_TOO_SMALL = 0xA5
+    OUTPUT_TOO_SMALL = 0x33
+    INVALID_I_SAMPLE = 0xCC
+    INVALID_Q_SAMPLE = 0x66
+    NULL_INPUT = 0x99
+    FAULT_DETECTED = 0x0F
+
+class LegendreStatus(IntEnum):
+    OK = 0x5A
+    OUTPUT_TOO_SMALL = 0xCC
+    INVALID_PRIME = 0x33
+    FAULT_DETECTED = 0x99
+
 class BchResult:
     status: BchStatus
     fid: Fid
@@ -87,6 +130,9 @@ def matched_code_epoch(prn_id: int, epoch: int) -> NDArray[np.uint8]: ...
 def matched_code_epoch_assigned(
     p_prn: int, s_idx: int, t_prn: int, t_phase: int, epoch: int
 ) -> NDArray[np.uint8]: ...
+def default_matched_assignment(
+    prn_id: int,
+) -> tuple[int, int, int, int]: ...
 def bch_encode(fid: int, toi: int) -> NDArray[np.uint8]: ...
 def bch_decode(codeword: NDArray[np.uint8]) -> BchResult: ...
 def bch_decode_soft(llr: NDArray[np.float32]) -> BchResult: ...
@@ -95,6 +141,8 @@ def crc24_calculate(data: NDArray[np.uint8]) -> NDArray[np.uint8]: ...
 def crc24_verify(data_with_crc: NDArray[np.uint8]) -> bool: ...
 def block_interleave(data: NDArray[np.uint8]) -> NDArray[np.uint8]: ...
 def block_deinterleave(data: NDArray[np.uint8]) -> NDArray[np.uint8]: ...
+def block_deinterleave_soft(data: NDArray[np.float32]) -> NDArray[np.float32]: ...
+def commit_frame(frame: NDArray[np.uint8]) -> FrameStatus: ...
 def ldpc_encode(type: LdpcSubframe, msg: NDArray[np.uint8]) -> NDArray[np.uint8]: ...
 def ldpc_decode(
     type: LdpcSubframe,
@@ -222,6 +270,7 @@ class TrackingState:
     dll_discriminator: float
     pll_discriminator: float
     cn0_estimate: float
+    cn0_smooth: float
 
 class UniformPrior:
     def __init__(self) -> None: ...
@@ -244,3 +293,13 @@ FFT_SIZE: int
 SAMPLE_RATE_HZ: float
 CODE_PERIOD_S: float
 MAX_CHANNELS: int
+GOLD_CHIP_LENGTH: int
+WEIL_10230_CHIP_LENGTH: int
+WEIL_1500_CHIP_LENGTH: int
+PRN_COUNT: int
+CHIP_RATE_HZ: float
+DOPPLER_BIN_SPACING_HZ: float
+
+def legendre_cache_init() -> LegendreStatus: ...
+def legendre_10223_checksum() -> int: ...
+def legendre_1499_checksum() -> int: ...

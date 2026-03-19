@@ -10,45 +10,23 @@ inline constexpr uint16_t kGoldChipLength      = 2046;
 inline constexpr uint16_t kWeil10230ChipLength = 10230;
 inline constexpr uint16_t kWeil1500ChipLength  = 1500;
 
+/// Tag type for nominal type safety via TmrCheckedId.
+struct PrnIdTag {};
+
 /**
- * @brief Triple Modular Redundant (TMR) type for PRN Identifiers [1, 210].
+ * @brief TMR-protected PRN Identifier [1, 210].
  * Prevents accidental arithmetic or mixing with data bytes.
- * Implements 2-of-3 voting on access (ESA/NASA Mission Assurance Pattern).
+ * Extends TmrCheckedId with size_t conversion and three-way comparison.
  */
-struct PrnId {
-  TmrValue<CheckedRange<uint8_t, 1, kPrnCount>> storage{CheckedRange<uint8_t, 1, kPrnCount>{1U}};
+struct PrnId : TmrCheckedId<1, kPrnCount, PrnIdTag> {
+  using TmrCheckedId::TmrCheckedId;
 
-  constexpr PrnId() noexcept = default;
-  explicit constexpr PrnId(uint8_t v) noexcept : storage(CheckedRange<uint8_t, 1, kPrnCount>{v}) {}
-
-  [[nodiscard]] constexpr uint8_t value() const noexcept {
-    return static_cast<uint8_t>(storage.peek());
-  }
-
-  /**
-   * @brief Perform active repair of the TMR triplets.
-   * @return The repaired majority value.
-   */
-  uint8_t repair() const noexcept {
-    return static_cast<uint8_t>(storage.vote());
-  }
-
-  [[nodiscard]] constexpr bool valid() const noexcept {
-    const uint8_t v = value();
-    return v >= 1U && v <= kPrnCount;
-  }
-
-  explicit constexpr operator uint8_t() const noexcept { return value(); }
   explicit constexpr operator size_t() const noexcept { return static_cast<size_t>(value()); }
 
-  // NOLINTBEGIN(fuchsia-overloaded-operator)
-  constexpr bool operator==(const PrnId& other) const noexcept {
-    return value() == other.value();
-  }
+  // Value-type three-way comparison required — NOLINTNEXTLINE(fuchsia-overloaded-operator)
   constexpr auto operator<=>(const PrnId& other) const noexcept {
     return value() <=> other.value();
   }
-  // NOLINTEND(fuchsia-overloaded-operator)
 };
 
 /**
@@ -60,16 +38,13 @@ struct PrnCode {
   uint16_t                 chip_length = 0;
 };
 
-/**
- * @brief Fault-tolerant status codes for PRN operations.
- * Non-contiguous bit patterns with high Hamming distance resist SEU bit-flips.
- */
+/** @brief Status codes for PRN code generation and lookup (Gold, Weil-10230, Weil-1500). SEU-hardened with high Hamming distance bit patterns. */
 enum class PrnStatus : uint8_t {
-  kOk               = 0x5AU,  // 01011010
-  kInvalidPrn       = 0xA5U,  // 10100101
-  kNullOutput       = 0x33U,  // 00110011
-  kInvalidChipIndex = 0xCCU,  // 11001100
-  kFaultDetected    = 0x99U,  // 10011001
+    kOk               = 0x5AU,  ///< Operation completed successfully.
+    kInvalidPrn       = 0xA5U,  ///< PRN ID out of valid range [1, 210].
+    kNullOutput       = 0x33U,  ///< Required buffer is null or empty.
+    kInvalidChipIndex = 0xCCU,  ///< Chip index exceeds code length.
+    kFaultDetected    = 0x99U,  ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
 };
 
 /// Get a view into the packed Gold-2046 code for a given PRN. [LSIS-AFS-101]

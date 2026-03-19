@@ -11,17 +11,15 @@
 
 namespace lunalink::signal {
 
-// ─── Status Codes ────────────────────────────────────────────────────────────
-// High Hamming distance for SEU resistance.
-
+/** @brief Status codes for the full RX decode pipeline: sync -> BCH -> deinterleave -> LDPC -> CRC. [LSIS-AFS-720] SEU-hardened with high Hamming distance bit patterns. */
 enum class FrameDecodeStatus : uint8_t {
-    kOk             = 0x5AU,  // 01011010 — all subframes decoded and CRC-verified
-    kSyncNotFound   = 0xA5U,  // 10100101 — sync pattern not detected
-    kBchFailed      = 0x33U,  // 00110011 — SB1 BCH decode failed
-    kLdpcFailed     = 0xCCU,  // 11001100 — one or more LDPC subframes failed to converge
-    kCrcFailed      = 0x0FU,  // 00001111 — one or more CRC-24 checks failed
-    kInvalidInput   = 0x66U,  // 01100110 — input buffer too small
-    kFaultDetected  = 0x99U,  // 10011001 — CFI or integrity check failed
+    kOk             = 0x5AU,  ///< All subframes decoded and CRC-verified.
+    kSyncNotFound   = 0xA5U,  ///< Sync pattern not detected above threshold.
+    kBchFailed      = 0x33U,  ///< SB1 BCH decode failed.
+    kLdpcFailed     = 0xCCU,  ///< One or more LDPC subframes did not converge.
+    kCrcFailed      = 0x0FU,  ///< One or more CRC-24Q verifications failed.
+    kInvalidInput   = 0x66U,  ///< Input parameters out of range or invalid.
+    kFaultDetected  = 0x99U,  ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
 };
 
 // ─── Result Structs ──────────────────────────────────────────────────────────

@@ -5,17 +5,20 @@
 
 namespace lunalink::signal {
 
-/**
- * @brief Fault-tolerant status for CRC operations.
- */
+/** @brief Status codes for CRC-24Q generation and verification. [LSIS-AFS-467] SEU-hardened with high Hamming distance bit patterns. */
 enum class CrcStatus : uint8_t {
-    kOk             = 0x5AU,
-    kNullInput      = 0xCCU,
-    kOutputTooSmall = 0x33U,
-    kFaultDetected  = 0x99U
+    kOk             = 0x5AU,  ///< Operation completed successfully.
+    kNullInput      = 0xCCU,  ///< Required buffer is null or empty.
+    kOutputTooSmall = 0x33U,  ///< Output buffer too small for result.
+    kFaultDetected  = 0x99U,  ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
 };
 
+/// CRC-24Q output length in bits.
 inline constexpr uint8_t kCrc24Bits = 24;
+
+// Note: LSIS-FID0-xxx tags reference the LSIS V1.0 "FID 0" requirement numbering
+// (data-link layer). LSIS-AFS-xxx tags reference AFS signal-layer requirements.
+// Both formats are correct per the spec.
 
 /**
  * @brief Calculate 24-bit CRC (CRC-24Q). [LSIS-FID0-467]

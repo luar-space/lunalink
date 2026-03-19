@@ -7,17 +7,33 @@
 
 namespace lunalink::signal {
 
-/**
- * @brief Fault-tolerant status codes for Modulation operations.
- * Non-contiguous bit patterns with high Hamming distance resist SEU bit-flips.
- */
+/** @brief Status codes for BPSK modulation (AFS-I data channel and AFS-Q pilot). [LSIS-AFS-201] SEU-hardened with high Hamming distance bit patterns. */
 enum class ModulationStatus : uint8_t {
-  kOk               = 0x5AU,  // 01011010
-  kInvalidSymbol    = 0xA5U,  // 10100101
-  kInvalidChipValue = 0x33U,  // 00110011
-  kOutputTooSmall   = 0xCCU,  // 11001100
-  kFaultDetected    = 0x99U,  // 10011001
+    kOk               = 0x5AU,  ///< Operation completed successfully.
+    kInvalidSymbol    = 0xA5U,  ///< Data symbol not in {-1, +1}.
+    kInvalidChipValue = 0x33U,  ///< Chip value not in {0, 1}.
+    kOutputTooSmall   = 0xCCU,  ///< Output buffer too small for result.
+    kFaultDetected    = 0x99U,  ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
 };
+
+/// @brief Validate modulation inputs: checks data symbol is +/-1, output span
+///        is large enough for the chip sequence, and input/output do not alias.
+[[nodiscard]] inline ModulationStatus validate_modulation_inputs(
+    std::span<const uint8_t> chips,
+    int8_t                   data_symbol,
+    std::span<int8_t>        out) noexcept {
+  if (data_symbol != 1 && data_symbol != -1) [[unlikely]] {
+    return ModulationStatus::kInvalidSymbol;
+  }
+  if (out.size() < chips.size()) [[unlikely]] {
+    return ModulationStatus::kOutputTooSmall;
+  }
+  if (spans_overlap(static_cast<const void*>(chips.data()), chips.size_bytes(),
+                    static_cast<const void*>(out.data()), out.size_bytes())) [[unlikely]] {
+    return ModulationStatus::kFaultDetected;  // FIZ-1
+  }
+  return ModulationStatus::kOk;
+}
 
 /**
  * @brief Internal generic BPSK modulator implementation. [LSIS-AFS-201]
@@ -27,28 +43,15 @@ enum class ModulationStatus : uint8_t {
     std::span<const uint8_t> chips,
     int8_t                   data_symbol,
     std::span<int8_t>        out) noexcept {
-  
-  ModulationStatus status = ModulationStatus::kOk;
 
   // ESA/JAXA Safety Policy: Pre-initialise buffer.
   if (!out.empty()) {
     secure_scrub(out);
   }
 
-  if (data_symbol != 1 && data_symbol != -1) [[unlikely]] {
-    status = ModulationStatus::kInvalidSymbol;
-  } else if (out.size() < chips.size()) [[unlikely]] {
-    status = ModulationStatus::kOutputTooSmall;
-  }
+  ModulationStatus status = validate_modulation_inputs(chips, data_symbol, out);
 
   if (status == ModulationStatus::kOk) {
-    // JAXA Safety: Aliasing Protection — runtime guard (assert() is disabled in release builds).
-    if (spans_overlap(static_cast<const void*>(chips.data()), chips.size_bytes(),
-                      static_cast<const void*>(out.data()), out.size_bytes())) [[unlikely]] {
-      secure_scrub(out);
-      return ModulationStatus::kFaultDetected;  // FIZ-1
-    }
-
     uint32_t loop_count = 0;
     for (std::size_t i = 0; i < chips.size(); ++i) {
       const uint8_t chip = chips[i];

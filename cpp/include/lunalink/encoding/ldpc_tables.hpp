@@ -10,9 +10,15 @@ namespace lunalink::signal {
 struct LdpcCsrMatrix {
     std::span<const uint16_t> col_indices;
     std::span<const uint32_t> row_ptr;
+    /// Total number of non-zero entries in the sparse matrix.
+    /// Invariant: must equal col_indices.size(). Checked at runtime by
+    /// verify_integrity() (CRC-32 over col_indices with length validation).
     uint32_t num_entries;
+    /// Number of check equations (rows).
     uint16_t num_rows;
+    /// Number of variable nodes (columns).
     uint16_t num_cols;
+    /// Build-time CRC-32; verified by verify_integrity() at runtime.
     uint32_t crc32;
 
     /**
@@ -43,6 +49,12 @@ struct LdpcCsrMatrix {
 #endif
 };
 
+/**
+ * LDPC parity-check matrix H = [A B; C D I] in CSR format.
+ * SF2: (n=2400, k=1200, rate 1/2).
+ * SF3/SF4: (n=1740, k=870, rate 1/2).
+ * [LSIS-AFS-320]
+ */
 extern const LdpcCsrMatrix kLdpc_sf2_a;
 extern const LdpcCsrMatrix kLdpc_sf2_b;
 extern const LdpcCsrMatrix kLdpc_sf2_b_inv;

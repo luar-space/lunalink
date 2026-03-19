@@ -37,13 +37,12 @@ FrameStatus frame_build_partial(
   }
 
   // ESA Safety Policy: Zero-initialise entire frame (skip if aliasing detected).
+  // 1. Sync pattern: 68 symbols (inside aliasing guard — P0-2).
   if (ok) {
     std::ranges::fill(out, 0U);
+    std::ranges::copy(kSyncPattern, out.begin());
+    cfi_count = cfi_count + 1U;  // milestone 1: sync copied
   }
-
-  // 1. Sync pattern: 68 symbols.
-  std::ranges::copy(kSyncPattern, out.begin());
-  cfi_count = cfi_count + 1U;  // milestone 1: sync copied
 
   // 2. SB1 (FID + TOI): 52 symbols BCH(51,8).
   {
@@ -118,6 +117,45 @@ namespace {
 // CFI magic patterns for subframe builder and frame assembler (§5).
 constexpr uint32_t kCfiMagicSb    = 0xB4B4B4B4U;
 constexpr uint32_t kCfiMagicFrame = 0x4B4B4B4BU;
+
+// Validate that input data and workspace buffers do not alias the output frame.
+[[nodiscard]] bool validate_frame_inputs(
+    std::span<const uint8_t> sb2_data,
+    std::span<const uint8_t> sb3_data,
+    std::span<const uint8_t> sb4_data,
+    std::span<uint8_t> out,
+    const FrameBuildWorkspace& frame_workspace,
+    const LdpcEncodeWorkspace& ldpc_workspace) noexcept {
+  if (spans_overlap(sb2_data.data(), sb2_data.size_bytes(),
+                    out.data(), out.size_bytes()) ||
+      spans_overlap(sb3_data.data(), sb3_data.size_bytes(),
+                    out.data(), out.size_bytes()) ||
+      spans_overlap(sb4_data.data(), sb4_data.size_bytes(),
+                    out.data(), out.size_bytes())) {
+    return false;
+  }
+  if (spans_overlap(frame_workspace.staging.data(), frame_workspace.staging.size(),
+                    out.data(), out.size_bytes()) ||
+      spans_overlap(&ldpc_workspace, sizeof(ldpc_workspace),
+                    out.data(), out.size_bytes())) {
+    return false;
+  }
+  return true;
+}
+
+// Encode BCH header. Returns true on success, sets status on failure.
+[[nodiscard]] bool encode_bch_header(Fid fid, Toi toi,
+                                     std::span<uint8_t> sb1_out,
+                                     FrameStatus& status) noexcept {
+  const auto bch_status = bch_encode(fid, toi, sb1_out);
+  if (bch_status == BchStatus::kOk) { return true; }
+  switch (bch_status) {
+    case BchStatus::kInvalidFid: status = FrameStatus::kInvalidFid; break;
+    case BchStatus::kInvalidToi: status = FrameStatus::kInvalidToi; break;
+    default:                     status = FrameStatus::kBchFailed;  break;
+  }
+  return false;
+}
 
 // Internal helper: CRC-24 + LDPC encode pipeline for SB2/SB3/SB4. [LSIS-AFS-610]
 // Single-exit pattern per mission assurance §3.
@@ -200,6 +238,38 @@ constexpr uint32_t kCfiMagicFrame = 0x4B4B4B4BU;
   return status;
 }
 
+// Subframe build parameters for the consolidated loop.
+struct SubframeBuildParams {
+    LdpcSubframe type;
+    std::span<const uint8_t> data;
+    size_t staging_offset;
+    uint16_t data_bits;
+    uint16_t msg_bits;
+    uint16_t out_len;
+};
+
+// Build SB2, SB3, SB4 into staging buffer. Returns true if all succeed.
+[[nodiscard]] bool build_subframes(
+    std::span<const SubframeBuildParams> params,
+    std::span<uint8_t> staging,
+    LdpcEncodeWorkspace& ldpc_workspace,
+    volatile uint32_t& cfi_count,
+    FrameStatus& status) noexcept {
+  for (size_t i = 0; i < params.size(); ++i) {
+    const auto& p = params[i];
+    const auto s = subframe_build_ldpc(
+        p.type, p.data,
+        staging.subspan(p.staging_offset, p.out_len),
+        ldpc_workspace, p.data_bits, p.msg_bits, p.out_len);
+    if (s != FrameStatus::kOk) [[unlikely]] {
+      status = s;
+      return false;
+    }
+    cfi_count = cfi_count + 1U;
+  }
+  return true;
+}
+
 }  // anonymous namespace
 
 // --- Public subframe builders ---
@@ -242,96 +312,40 @@ FrameStatus frame_build(
 
   FrameStatus status = FrameStatus::kFaultDetected;  // Pessimistic default
   volatile uint32_t cfi_count = kCfiMagicFrame;
-  bool ok = true;
-
-  // Aliasing check: input data buffers must not overlap output frame (§11).
-  if (spans_overlap(sb2_data.data(), sb2_data.size_bytes(),
-                    out.data(), out.size_bytes()) ||
-      spans_overlap(sb3_data.data(), sb3_data.size_bytes(),
-                    out.data(), out.size_bytes()) ||
-      spans_overlap(sb4_data.data(), sb4_data.size_bytes(),
-                    out.data(), out.size_bytes())) {
-    ok = false;
-  }
-
-  // Aliasing check: caller-provided workspaces must not overlap output frame.
-  if (spans_overlap(frame_workspace.staging.data(), frame_workspace.staging.size(),
-                    out.data(), out.size_bytes()) ||
-      spans_overlap(&ldpc_workspace, sizeof(ldpc_workspace),
-                    out.data(), out.size_bytes())) {
-    ok = false;
-  }
+  bool ok = validate_frame_inputs(sb2_data, sb3_data, sb4_data, out,
+                                  frame_workspace, ldpc_workspace);
 
   // ESA Safety Policy: Zero-initialise entire frame (skip if aliasing detected).
+  // Step 1: Sync pattern (68 symbols, Table 12) — inside aliasing guard (P0-3).
   if (ok) {
     std::ranges::fill(out, 0U);
+    std::ranges::copy(kSyncPattern, out.begin());
+    cfi_count = cfi_count + 1U;  // milestone 1: sync copied
   }
 
-  // Step 1: Sync pattern (68 symbols, Table 12).
-  std::ranges::copy(kSyncPattern, out.begin());
-  cfi_count = cfi_count + 1U;  // milestone 1: sync copied
-
   // Step 2: SB1 header — BCH(51,8) encode FID + TOI.
-  {
-    const auto bch_status = bch_encode(fid, toi,
-                                       out.subspan<kSyncLength, kSb1Length>());
-    if (bch_status != BchStatus::kOk) [[unlikely]] {
-      ok = false;
-      switch (bch_status) {
-        case BchStatus::kInvalidFid: status = FrameStatus::kInvalidFid; break;
-        case BchStatus::kInvalidToi: status = FrameStatus::kInvalidToi; break;
-        default:                     status = FrameStatus::kBchFailed;  break;
-      }
-    } else {
-      cfi_count = cfi_count + 1U;  // milestone 2: SB1 done
-    }
+  // cppcheck-suppress duplicateCondition ; single-exit accumulator pattern
+  if (ok) {
+    ok = encode_bch_header(fid, toi, out.subspan<kSyncLength, kSb1Length>(), status);
+    if (ok) { cfi_count = cfi_count + 1U; }  // milestone 2: SB1 done
   }
 
   // Steps 3-5: Build SB2, SB3, SB4 into staging buffer.
-  // Staging is pre-interleave: SB2(2400) + SB3(1740) + SB4(1740) = 5880.
-  // Caller-allocated via FrameBuildWorkspace to keep stack bounded.
-  // Mandate: zero dynamic allocation — workspace must be stack or static (§1).
   auto& staging = frame_workspace.staging;
 
   if (ok) {
     std::ranges::fill(staging, 0U);
-    const auto sb2_s = subframe_build_ldpc(
-        LdpcSubframe::kSF2, sb2_data,
-        std::span(staging).subspan(0, kSb2Length),
-        ldpc_workspace, kSb2DataBits, kSb2MsgBits, kSb2Length);
-    if (sb2_s != FrameStatus::kOk) [[unlikely]] {
-      ok = false;
-      status = sb2_s;  // FIZ-2: propagate block-level error
-    } else {
-      cfi_count = cfi_count + 1U;  // milestone 3: SB2 done
-    }
-  }
-
-  if (ok) {
-    const auto sb3_s = subframe_build_ldpc(
-        LdpcSubframe::kSF3, sb3_data,
-        std::span(staging).subspan(kSb2Length, kSb3Length),
-        ldpc_workspace, kSb3DataBits, kSb3MsgBits, kSb3Length);
-    if (sb3_s != FrameStatus::kOk) [[unlikely]] {
-      ok = false;
-      status = sb3_s;  // FIZ-2
-    } else {
-      cfi_count = cfi_count + 1U;  // milestone 4: SB3 done
-    }
-  }
-
-  if (ok) {
-    const auto sb4_s = subframe_build_ldpc(
-        LdpcSubframe::kSF4, sb4_data,
-        std::span(staging).subspan(
-            static_cast<size_t>(kSb2Length) + kSb3Length, kSb4Length),
-        ldpc_workspace, kSb4DataBits, kSb4MsgBits, kSb4Length);
-    if (sb4_s != FrameStatus::kOk) [[unlikely]] {
-      ok = false;
-      status = sb4_s;  // FIZ-2
-    } else {
-      cfi_count = cfi_count + 1U;  // milestone 5: SB4 done
-    }
+    const SubframeBuildParams sf_params[] = {
+      {LdpcSubframe::kSF2, sb2_data, 0,
+       kSb2DataBits, kSb2MsgBits, kSb2Length},
+      {LdpcSubframe::kSF3, sb3_data, kSb2Length,
+       kSb3DataBits, kSb3MsgBits, kSb3Length},
+      {LdpcSubframe::kSF4, sb4_data, static_cast<size_t>(kSb2Length) + kSb3Length,
+       kSb4DataBits, kSb4MsgBits, kSb4Length},
+    };
+    ok = build_subframes(std::span(sf_params),
+                         std::span(staging),
+                         ldpc_workspace, cfi_count, status);
   }
 
   // Step 6: 60×98 block interleave SB2+SB3+SB4 into frame payload.

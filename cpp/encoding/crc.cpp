@@ -1,6 +1,7 @@
-// NOLINTBEGIN(hicpp-use-auto)
+// NOLINTBEGIN(hicpp-use-auto) -- explicit types improve readability in CRC polynomial code
 #include "lunalink/encoding/crc.hpp"
 #include <algorithm>
+#include <limits>
 
 namespace lunalink::signal {
 
@@ -15,7 +16,13 @@ inline constexpr uint32_t kCrc24Poly = 0x864CFBU;
 CrcStatus crc24_calculate(
     std::span<const uint8_t> in,
     std::span<uint8_t, 24ULL> out_crc) noexcept {
-    
+
+    // P0-6: Reject inputs that would truncate the CFI counter cast to uint32_t.
+    if (in.size() > static_cast<size_t>(std::numeric_limits<uint32_t>::max())) [[unlikely]] {
+        secure_scrub(out_crc);
+        return CrcStatus::kFaultDetected;
+    }
+
     CrcStatus status = CrcStatus::kOk;
     uint32_t cfi_count = 0xA5A5A5A5U;
 
@@ -23,7 +30,7 @@ CrcStatus crc24_calculate(
     uint32_t register_state = 0U; // Seed is 0 per Appendix H
 
     // Mirrored loop index
-    // cppcheck-suppress [variableScope, unreadVariable]
+    // cppcheck-suppress [variableScope, unreadVariable] -- mirror variable must be at function scope for fault detection
     size_t i_mir = 0xFFFFFFFFFFFFFFFFULL;
 
     for (size_t i = 0; i < in.size(); ++i) {

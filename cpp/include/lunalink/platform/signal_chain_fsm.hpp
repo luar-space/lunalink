@@ -10,11 +10,11 @@ namespace lunalink::signal {
  * Non-contiguous bit patterns resist SEU-induced state confusion. [FM-031]
  */
 enum class SignalChainState : uint8_t {
-    kUninitialized = 0x11U,  // Before POST
-    kPostRunning   = 0x22U,  // POST in progress
-    kOperational   = 0x44U,  // Nominal operation
-    kFrameFault    = 0x55U,  // Zone 2: single frame fault
-    kSafeMode      = 0x99U,  // Zone 3: system-level halt
+    kUninitialized = 0x11U,  ///< Pre-POST: no subsystems initialised.
+    kPostRunning   = 0x22U,  ///< POST sequence in progress.
+    kOperational   = 0x44U,  ///< Nominal signal processing active.
+    kFrameFault    = 0x55U,  ///< Zone 2: single frame fault detected.
+    kSafeMode      = 0x99U,  ///< Zone 3: system halted, awaiting OBC restart.
 };
 
 /**

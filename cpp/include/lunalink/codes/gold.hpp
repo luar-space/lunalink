@@ -26,6 +26,7 @@ private:
     uint16_t g1_reg_ = 0x7FFU; // Initial: all ones
     uint16_t g2_reg_ = 0x7FFU;
 
+    /// Advance both LFSRs by one step and return the Gold chip (G1 XOR G2).
     [[nodiscard]] uint8_t shift() noexcept;
 };
 

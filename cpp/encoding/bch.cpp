@@ -1,4 +1,5 @@
 #include "lunalink/encoding/bch.hpp"
+#include "lunalink/core/crc32.hpp"
 #include "lunalink/encoding/bch_table.hpp"
 #include <algorithm>
 #include <array>
@@ -10,6 +11,75 @@ namespace lunalink::signal {
 namespace {
 /// Mask for the 52 active bits in the BCH codeword storage.
 inline constexpr uint64_t kCodewordMask = 0x000FFFFFFFFFFFFFULL;
+
+/// Number of TOI values: kBchToiMax + 1 (used as FID/TOI index stride).
+constexpr uint32_t kBchToiCount = kBchToiMax + 1U;
+
+// Hard ML search result.
+struct BchHardSearchResult {
+    uint32_t best_idx = 0;
+    uint32_t min_dist = 64;
+    uint32_t amb_mask = 0;
+    bool cfi_ok = false;
+};
+
+// Hard ML search: find minimum Hamming distance codeword.
+BchHardSearchResult bch_hard_search(uint64_t received) noexcept {
+    BchHardSearchResult res{};
+    uint32_t cfi_count = 0xA5A5A5A5U;
+
+    for (uint32_t i = 0; i < kBchCodebook.size(); ++i) {
+        const uint64_t codeword = kBchCodebook.at(i);
+        const auto dist = static_cast<uint32_t>(std::popcount((received ^ codeword) & kCodewordMask));
+
+        bool is_new_min = (dist < res.min_dist);
+        res.amb_mask = is_new_min ? 0U : (dist == res.min_dist ? 1U : res.amb_mask);
+        res.best_idx = is_new_min ? i : res.best_idx;
+        res.min_dist = is_new_min ? dist : res.min_dist;
+
+        cfi_count++;
+        wip_tick();
+    }
+    res.cfi_ok = (cfi_count == (0xA5A5A5A5U + static_cast<uint32_t>(kBchCodebook.size())));
+    return res;
+}
+
+// Soft ML search result.
+struct BchSoftSearchResult {
+    uint32_t best_idx = 0;
+    uint32_t best_idx_mir = ~0U;
+    float best_metric = -3.4e+38F;
+    bool cfi_ok = false;
+    bool mirror_ok = false;
+};
+
+// Soft ML search: find maximum correlation codeword.
+BchSoftSearchResult bch_soft_search(std::span<const float, 52ULL> llr) noexcept {
+    constexpr float kLlrClamp = 100.0F;
+    BchSoftSearchResult res{};
+    uint32_t cfi_count = 0xA5A5A5A5U;
+
+    for (uint32_t i = 0; i < kBchCodebook.size(); ++i) {
+        const uint64_t codeword = kBchCodebook.at(i);
+        float metric = 0.0F;
+        for (uint32_t j = 0; j < 52U; ++j) {
+            const float s  = 1.0F - 2.0F * static_cast<float>((codeword >> j) & 1ULL);
+            const float cl = std::clamp(llr[j], -kLlrClamp, kLlrClamp);
+            metric += cl * s;
+            wip_tick();
+        }
+        if (metric > res.best_metric) {
+            res.best_metric  = metric;
+            res.best_idx     = i;
+            res.best_idx_mir = ~i;
+        }
+        cfi_count++;
+    }
+
+    res.cfi_ok = (cfi_count == (0xA5A5A5A5U + static_cast<uint32_t>(kBchCodebook.size())));
+    res.mirror_ok = ((res.best_idx ^ res.best_idx_mir) == 0xFFFFFFFFU);
+    return res;
+}
 } // namespace
 
 BchStatus bch_encode(Fid fid, Toi toi, std::span<uint8_t, 52ULL> out) noexcept {
@@ -29,6 +99,8 @@ BchStatus bch_encode(Fid fid, Toi toi, std::span<uint8_t, 52ULL> out) noexcept {
         auto state = static_cast<uint8_t>(((static_cast<uint32_t>(fid_val) & 1U) << 7U) | 
                                          (static_cast<uint32_t>(toi_val) & 0x7FU));
 
+        // BCH(51,8) generator polynomial tap mask: feedback from register stages
+        // matching the primitive polynomial. [LSIS Appendix B]
         constexpr uint8_t kFeedbackMask = 0b11111001U;
         out[0] = bit0;
 
@@ -50,45 +122,25 @@ BchResult bch_decode(std::span<const uint8_t, 52ULL> in) noexcept {
         wip_tick();
     }
 
-    uint32_t min_dist = 64U;
-    uint32_t best_idx = 0U;
-    uint32_t amb_mask = 0U;
-    uint32_t cfi_count = 0xA5A5A5A5U;
-
-    for (uint32_t i = 0; i < kBchCodebook.size(); ++i) {
-        const uint64_t codeword = kBchCodebook.at(i);
-        const auto dist = static_cast<uint32_t>(std::popcount((received ^ codeword) & kCodewordMask));
-        
-        bool is_new_min = (dist < min_dist);
-        amb_mask = is_new_min ? 0U : (dist == min_dist ? 1U : amb_mask);
-        best_idx = is_new_min ? i : best_idx;
-        min_dist = is_new_min ? dist : min_dist;
-        
-        cfi_count++;
-        wip_tick();
-    }
+    const auto sr = bch_hard_search(received);
 
     // Single exit: CFI failure sets status rather than early-returning.
     BchStatus status = BchStatus::kOk;
-    if (cfi_count != (0xA5A5A5A5U + static_cast<uint32_t>(kBchCodebook.size()))) [[unlikely]] {
+    if (!sr.cfi_ok) [[unlikely]] {
         status = BchStatus::kFaultDetected;  // FIZ-1
-    } else if (amb_mask != 0U && min_dist != 0U) {
+    } else if (sr.amb_mask != 0U && sr.min_dist != 0U) {
         status = BchStatus::kAmbiguousMatch;
-    } else if (min_dist > 2U) {
+    } else if (sr.min_dist > 2U) {
         status = BchStatus::kNullOutput;
     }
 
     const bool fault = (status == BchStatus::kFaultDetected);
-    const auto fid = Fid(fault ? 0U : static_cast<uint8_t>(best_idx / 100U));
-    const auto toi = Toi(fault ? 0U : static_cast<uint8_t>(best_idx % 100U));
-    return BchResult(status, fid, toi, fault ? 255U : static_cast<uint8_t>(min_dist));
+    const auto fid = Fid(fault ? 0U : static_cast<uint8_t>(sr.best_idx / kBchToiCount));
+    const auto toi = Toi(fault ? 0U : static_cast<uint8_t>(sr.best_idx % kBchToiCount));
+    return BchResult(status, fid, toi, fault ? 255U : static_cast<uint8_t>(sr.min_dist));
 }
 
 BchResult bch_decode_soft(std::span<const float, 52ULL> llr) noexcept {
-    // Physical saturation limit: no BPSK AWGN channel produces |LLR| > 100.
-    // Clamping prevents float accumulation overflow over 52 additions.
-    constexpr float kLlrClamp = 100.0F;
-
     // Input validation: set status flag, do not early-return (single exit mandate).
     // IEEE NaN comparisons are always false; an unguarded NaN would silently bias
     // best_metric, returning an incorrect FID/TOI with kOk.
@@ -100,45 +152,23 @@ BchResult bch_decode_soft(std::span<const float, 52ULL> llr) noexcept {
         wip_tick();
     }
 
-    // cppcheck-suppress variableScope
-    float    best_metric  = -3.4e+38F; // -FLT_MAX without <cfloat>
-    uint32_t best_idx     = 0U;
-    uint32_t best_idx_mir = ~0U;  // MA §2 variable mirror: invariant best_idx ^ best_idx_mir == 0xFFFFFFFF
-    // cppcheck-suppress variableScope
-    uint32_t cfi_count    = 0xA5A5A5A5U;
-
+    BchSoftSearchResult sr{};
     if (status == BchStatus::kOk) {
-        for (uint32_t i = 0; i < kBchCodebook.size(); ++i) {
-            const uint64_t codeword = kBchCodebook.at(i);
-            float metric = 0.0F;
-            for (uint32_t j = 0; j < 52U; ++j) {
-                // BPSK mapping: bit=0 → +1, bit=1 → −1
-                const float s  = 1.0F - 2.0F * static_cast<float>((codeword >> j) & 1ULL);
-                const float cl = std::clamp(llr[j], -kLlrClamp, kLlrClamp);
-                metric += cl * s;
-                wip_tick();
-            }
-            if (metric > best_metric) {
-                best_metric  = metric;
-                best_idx     = i;
-                best_idx_mir = ~i;  // keep mirror in sync
-            }
-            cfi_count++;
-        }
+        sr = bch_soft_search(llr);
 
         // CFI Verification
-        if (cfi_count != (0xA5A5A5A5U + static_cast<uint32_t>(kBchCodebook.size()))) [[unlikely]] {
+        if (!sr.cfi_ok) [[unlikely]] {
             status = BchStatus::kFaultDetected;  // FIZ-1
         }
         // Variable mirror integrity check: detects SEU corruption of best_idx mid-loop.
-        if ((best_idx ^ best_idx_mir) != 0xFFFFFFFFU) [[unlikely]] {
+        if (!sr.mirror_ok) [[unlikely]] {
             status = BchStatus::kFaultDetected;  // FIZ-1
         }
     }
 
     const bool fault = (status == BchStatus::kFaultDetected);
-    const auto fid = Fid(fault ? 0U : static_cast<uint8_t>(best_idx / 100U));
-    const auto toi = Toi(fault ? 0U : static_cast<uint8_t>(best_idx % 100U));
+    const auto fid = Fid(fault ? 0U : static_cast<uint8_t>(sr.best_idx / kBchToiCount));
+    const auto toi = Toi(fault ? 0U : static_cast<uint8_t>(sr.best_idx % kBchToiCount));
     // 0xFF: soft-decode sentinel — hamming_distance is not a Hamming distance here.
     return BchResult(status, fid, toi, 0xFFU);
 }
@@ -147,10 +177,7 @@ uint64_t bch_codebook_checksum() noexcept {
     uint32_t crc = 0xFFFFFFFFU;
     for (const auto val : kBchCodebook) {
         for (uint32_t i = 0; i < 8U; i++) {
-            crc ^= static_cast<uint8_t>((val >> (i * 8U)) & 0xFFU);
-            for (uint32_t j = 0; j < 8U; j++) {
-                crc = (crc >> 1U) ^ (0xEDB88320U & (-(crc & 1U)));
-            }
+            crc = crc32_ieee_byte(crc, static_cast<uint8_t>((val >> (i * 8U)) & 0xFFU));
         }
         wip_tick();
     }

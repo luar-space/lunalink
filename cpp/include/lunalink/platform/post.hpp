@@ -3,13 +3,10 @@
 
 namespace lunalink::signal {
 
-/**
- * @brief Power-On Self-Test result status codes.
- * High Hamming distance patterns resist SEU bit-flips.
- */
+/** @brief Status codes for power-on self-test (POST). [SW-SAF-04] SEU-hardened with high Hamming distance bit patterns. */
 enum class PostStatus : uint8_t {
-    kPass         = 0x5AU,  // 01011010
-    kFaultDetected = 0x99U, // 10011001
+    kPass          = 0x5AU,  ///< All POST steps completed successfully.
+    kFaultDetected = 0x99U,  ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
 };
 
 /**

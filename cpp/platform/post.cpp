@@ -15,14 +15,14 @@ namespace lunalink::signal {
 
 namespace {
 
-// Step 3: Verify TMR mechanism with a fresh test triplet.
+/// POST Step 3: inject known TMR triplet and verify vote mechanism.
 [[nodiscard]] bool post_verify_tmr() noexcept {
     constexpr uint32_t kTestValue = 0xA5A5A5A5U;
     TmrValue<uint32_t> tmr(kTestValue);
     return tmr.vote() == kTestValue;
 }
 
-// Step 4: .rodata integrity sentinel.
+/// POST Step 4: verify .rodata sentinel integrity against SEU corruption.
 // constinit ensures zero-initialisation is never replaced by a runtime call,
 // placing this array in the .rodata (read-only data) segment.
 // This verifies that radiation events have not corrupted compile-time constants

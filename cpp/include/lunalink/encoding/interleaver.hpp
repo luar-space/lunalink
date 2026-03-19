@@ -5,19 +5,24 @@
 
 namespace lunalink::signal {
 
-/**
- * @brief Fault-tolerant status for Interleaver operations.
- */
+/** @brief Status codes for 60x98 block interleave/deinterleave operations. [LSIS-AFS-470] SEU-hardened with high Hamming distance bit patterns. */
 enum class InterleaverStatus : uint8_t {
-    kOk             = 0x5AU,
-    kInputTooSmall  = 0xCCU,
-    kOutputTooSmall = 0x33U,
-    kFaultDetected  = 0x99U
+    kOk             = 0x5AU,  ///< Operation completed successfully.
+    kInputTooSmall  = 0xCCU,  ///< Input buffer smaller than required.
+    kOutputTooSmall = 0x33U,  ///< Output buffer too small for result.
+    kFaultDetected  = 0x99U,  ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
 };
 
+/// Number of rows in the block interleaver matrix (LSIS Table 17).
 inline constexpr uint16_t kInterleaverRows = 60;
+/// Number of columns in the block interleaver matrix (LSIS Table 17).
 inline constexpr uint16_t kInterleaverCols = 98;
+/// Total interleaver block size: rows x cols = 5880 symbols.
 inline constexpr uint16_t kInterleaverSize = kInterleaverRows * kInterleaverCols; // 5880
+
+// Note: LSIS-FID0-xxx tags reference the LSIS V1.0 "FID 0" requirement numbering
+// (data-link layer). LSIS-AFS-xxx tags reference AFS signal-layer requirements.
+// Both formats are correct per the spec.
 
 /**
  * @brief 60x98 Block Interleaver. [LSIS-FID0-470]

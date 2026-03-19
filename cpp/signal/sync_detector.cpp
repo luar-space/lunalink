@@ -2,10 +2,44 @@
 
 #include "lunalink/core/safety.hpp"  // LUNALINK_CRITICAL_ENTER/EXIT, TmrValue, wip_tick, secure_scrub
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 
 namespace lunalink::signal {
+
+namespace {
+
+// Cross-correlation search result.
+struct SyncSearchResult {
+    uint16_t best_offset = 0;
+    float best_corr = -std::numeric_limits<float>::max();
+    float second_best_corr = -std::numeric_limits<float>::max();
+};
+
+// Search all valid offsets for the best sync pattern cross-correlation.
+SyncSearchResult sync_correlate_search(
+    std::span<const float> rx_symbols,
+    std::span<const float> sync_ref, uint32_t search_len) noexcept {
+    SyncSearchResult res{};
+    for (uint32_t offset = 0; offset < search_len; ++offset) {
+        float corr = 0.0F;
+        for (uint16_t i = 0; i < kSyncLength; ++i) {
+            corr += rx_symbols[static_cast<size_t>(offset) + i] * sync_ref[i];
+        }
+        if (corr > res.best_corr) {
+            res.second_best_corr = res.best_corr;
+            res.best_corr = corr;
+            res.best_offset = static_cast<uint16_t>(offset);
+        } else if (corr > res.second_best_corr) {
+            res.second_best_corr = corr;
+        }
+        wip_tick();
+    }
+    return res;
+}
+
+}  // namespace
 
 // ─── Construction ────────────────────────────────────────────────────────────
 
@@ -13,10 +47,8 @@ SyncDetector::SyncDetector(ITelemetryHal& hal) noexcept
     : hal_(hal), threshold_(kDefaultSyncThreshold) {
 
     // Precompute bipolar reference: bit 0 → +1.0, bit 1 → −1.0.
-    for (uint16_t i = 0; i < kSyncLength; ++i) {
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-        sync_ref_[i] = (kSyncPattern[i] == 0U) ? 1.0F : -1.0F;
-    }
+    std::ranges::transform(kSyncPattern, sync_ref_.begin(),
+        [](uint8_t b) noexcept { return (b == 0U) ? 1.0F : -1.0F; });
 }
 
 bool SyncDetector::set_threshold(float threshold) noexcept {
@@ -57,35 +89,13 @@ bool SyncDetector::set_threshold(float threshold) noexcept {
     LUNALINK_CRITICAL_EXIT;
 
     // ── Cross-correlation search ──
-    // Search window: every offset where a full sync pattern fits.
     const auto search_len = static_cast<uint32_t>(
         rx_symbols.size() - static_cast<size_t>(kSyncLength) + 1U);
 
-    // Reset TMR for peak tracking (member — enables SWIFI injection between calls).
-    peak_offset_tmr_.refresh(0U);
-    float best_corr = -std::numeric_limits<float>::max();
-    float second_best_corr = -std::numeric_limits<float>::max();
+    const auto search = sync_correlate_search(rx_symbols, std::span(sync_ref_), search_len);
 
-    // Bounded loop over all valid offsets (§2).
-    for (uint32_t offset = 0; offset < search_len; ++offset) {
-        // Compute dot product: sum of rx[offset+i] * sync_ref[i].
-        float corr = 0.0F;
-        for (uint16_t i = 0; i < kSyncLength; ++i) {
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-            corr += rx_symbols[static_cast<size_t>(offset) + i] * sync_ref_[i];
-        }
-
-        // Track best and second-best peaks.
-        if (corr > best_corr) {
-            second_best_corr = best_corr;
-            best_corr = corr;
-            peak_offset_tmr_.refresh(static_cast<uint16_t>(offset));
-        } else if (corr > second_best_corr) {
-            second_best_corr = corr;
-        }
-
-        wip_tick();  // Prove progress to watchdog (§9).
-    }
+    // Update TMR with search result (member — enables SWIFI injection between calls).
+    peak_offset_tmr_.refresh(search.best_offset);
 
     LUNALINK_CRITICAL_ENTER;
     cfi_count = cfi_count + 1U;  // milestone 2: search complete
@@ -94,9 +104,9 @@ bool SyncDetector::set_threshold(float threshold) noexcept {
     // ── Populate result ──
     const uint16_t best_offset = peak_offset_tmr_.vote();
     result.frame_offset = best_offset;
-    result.peak_metric = best_corr;
+    result.peak_metric = search.best_corr;
     // When only one offset was searched, no second peak exists; report 0.
-    result.second_peak = (search_len > 1U) ? second_best_corr : 0.0F;
+    result.second_peak = (search_len > 1U) ? search.second_best_corr : 0.0F;
 
     LUNALINK_CRITICAL_ENTER;
     cfi_count = cfi_count + 1U;  // milestone 3: result populated
@@ -113,7 +123,7 @@ bool SyncDetector::set_threshold(float threshold) noexcept {
 #endif
 
     // ── Threshold decision ──
-    if (best_corr >= threshold_) {
+    if (search.best_corr >= threshold_) {
         result.detected = true;
     } else {
         result.detected = false;
@@ -121,7 +131,7 @@ bool SyncDetector::set_threshold(float threshold) noexcept {
 
     // ── CFI terminal check: all 3 milestones must have been reached (§5) ──
     if (cfi_count == kCfiMagicSync + 3U) {
-        // cppcheck-suppress redundantInitialization
+        // cppcheck-suppress redundantInitialization -- pessimistic default overwritten only on success path
         status = result.detected
                      ? SyncDetectorStatus::kOk
                      : SyncDetectorStatus::kNotDetected;

@@ -8,22 +8,23 @@
 
 namespace lunalink::signal {
 
-/**
- * @brief Fault-tolerant status codes for Matched Code operations.
- * Non-contiguous bit patterns with high Hamming distance resist SEU bit-flips.
- */
+/** @brief Status codes for matched spreading code generation (Primary XOR Secondary XOR Tertiary). [LSIS-AFS-401] SEU-hardened with high Hamming distance bit patterns. */
 enum class MatchedCodeStatus : uint8_t {
-  kOk                = 0x5AU,  // 01011010
-  kInvalidPrn        = 0xA5U,  // 10100101
-  kInvalidEpoch      = 0x33U,  // 00110011
-  kOutputTooSmall    = 0xCCU,  // 11001100
-  kInvalidAssignment = 0x0FU,  // 00001111
-  kFaultDetected     = 0x99U,  // 10011001
+    kOk                = 0x5AU,  ///< Operation completed successfully.
+    kInvalidPrn        = 0xA5U,  ///< PRN ID out of valid range [1, 210].
+    kInvalidEpoch      = 0x33U,  ///< Epoch index exceeds kEpochsPerFrame.
+    kOutputTooSmall    = 0xCCU,  ///< Output buffer too small for result.
+    kInvalidAssignment = 0x0FU,  ///< Code assignment parameters invalid.
+    kFaultDetected     = 0x99U,  ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
 };
 
+/// Number of 2 ms primary code epochs per 12 s frame.
 inline constexpr uint16_t kEpochsPerFrame = 6000;
+/// Length of secondary spreading code (4 chips).
 inline constexpr uint8_t  kSecondaryCodeLength = 4;
+/// Number of distinct secondary codes (S0-S3, LSIS Table 10).
 inline constexpr uint8_t  kSecondaryCodeCount = 4;
+/// Maximum PRN ID for interim code assignments (LSIS Table 11).
 inline constexpr uint8_t  kInterimAssignmentMaxPrn = 12;
 
 /// Secondary codes S0-S3 (LSIS Table 10).
@@ -45,17 +46,22 @@ struct MatchedCodeAssignment {
 
 /// Validate if an assignment struct contains valid IDs and indices.
 [[nodiscard]] inline constexpr bool valid_matched_assignment(
-    const MatchedCodeAssignment& assignment) {
+    const MatchedCodeAssignment& assignment) noexcept {
   return assignment.primary_prn.valid() &&
          assignment.secondary_code_idx < 4 &&
          assignment.tertiary_prn.valid() &&
          assignment.tertiary_phase_offset < 1500;
 }
 
+/// Check if a PRN ID falls within the interim assignment range (1-12).
+/// Interim PRNs use a fixed primary/secondary/tertiary mapping per LSIS Table 11.
 [[nodiscard]] inline constexpr bool is_interim_prn(PrnId prn_id) noexcept {
   return prn_id.value() >= 1 && prn_id.value() <= kInterimAssignmentMaxPrn;
 }
 
+/// Compute the secondary code index for an interim PRN. [LSIS-AFS-401]
+/// Maps PRN ID to one of four secondary codes S0-S3 via (PRN-1) % 4.
+/// Returns kInvalidPrn if the PRN is outside the interim range (1-12).
 [[nodiscard]] inline constexpr MatchedCodeStatus secondary_code_index_checked(
     PrnId    prn_id,
     uint8_t& out_idx) noexcept {

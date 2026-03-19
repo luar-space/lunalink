@@ -1,4 +1,5 @@
 #include "lunalink/codes/legendre.hpp"
+#include "lunalink/core/crc32.hpp"
 #include "lunalink/core/safety.hpp"
 #include "lunalink/codes/codebook_checksums.hpp"
 #include <algorithm>
@@ -8,17 +9,10 @@ namespace lunalink::signal {
 
 namespace {
 
-// CRC-32 (IEEE 802.3, reflected) over a byte span.
-// Same algorithm as bch_codebook_checksum / weil*_codebook_checksum.
-uint64_t calculate_crc(std::span<const uint8_t> data) noexcept {
-    uint32_t crc = 0xFFFFFFFFU;
-    for (uint8_t val : data) {
-        crc ^= val;
-        for (uint32_t i = 0; i < 8U; i++) {
-            crc = (crc >> 1U) ^ (0xEDB88320U & (-(crc & 1U)));
-        }
-    }
-    return ~static_cast<uint64_t>(crc);
+/// CRC-32 over a byte span, returned as uint64_t for golden-checksum compatibility.
+/// Upper 32 bits are 0xFFFFFFFF (see codebook_checksums.hpp).
+uint64_t crc32_ieee_u64(std::span<const uint8_t> data) noexcept {
+    return ~static_cast<uint64_t>(~crc32_ieee(data));
 }
 
 // Legendre cache — file-scope, no hidden __cxa_guard initialization.
@@ -28,6 +22,12 @@ constexpr uint16_t kPrime1499  = 1499;
 
 alignas(64) std::array<uint8_t, kPrime10223> g_data10223{};
 alignas(64) std::array<uint8_t, kPrime1499>  g_data1499{};
+
+// P0-7: NOT atomic by design.  legendre_cache_init() must be called once from
+// Power-On Self-Test (POST) on the boot core *before* any concurrent reader
+// accesses get_cached_legendre().  All production call-sites satisfy this
+// precondition; the lazy-init fallback in get_cached_legendre() exists only as
+// a defensive backstop for unit-test harnesses that skip POST.
 bool g_initialized = false;
 
 } // namespace
@@ -51,8 +51,8 @@ LegendreStatus legendre_cache_init() noexcept {
     }
 
     // Verify against golden CRCs — reject corrupted generation.
-    if (calculate_crc(std::span(g_data10223)) != kLegendre10223Checksum ||
-        calculate_crc(std::span(g_data1499))  != kLegendre1499Checksum) {
+    if (crc32_ieee_u64(std::span(g_data10223)) != kLegendre10223Checksum ||
+        crc32_ieee_u64(std::span(g_data1499))  != kLegendre1499Checksum) {
         secure_scrub(g_data10223);
         secure_scrub(g_data1499);
         g_initialized = false;
@@ -68,7 +68,7 @@ LegendreStatus generate_legendre_sequence(
     std::span<uint8_t> out) noexcept {
 
     LegendreStatus status = LegendreStatus::kOk;
-    // cppcheck-suppress variableScope
+    // cppcheck-suppress variableScope -- CFI counter must be at function scope for terminal check
     uint32_t cfi_count = 0xA5A5A5A5U;
 
     if (out.size() < prime) {
@@ -79,7 +79,7 @@ LegendreStatus generate_legendre_sequence(
 
     if (status == LegendreStatus::kOk) {
         std::fill(out.begin(), out.end(), 0U);
-        // cppcheck-suppress [variableScope, unreadVariable]
+        // cppcheck-suppress [variableScope, unreadVariable] -- mirror variable must be at function scope for fault detection
         uint32_t x_mir = 0xFFFFFFFFU;
         const auto limit = static_cast<uint16_t>((prime >> 1U) + 1U);
 
@@ -119,8 +119,8 @@ LegendreStatus generate_legendre_sequence(
     }
 
     // Verify against golden CRCs on every access.
-    if (calculate_crc(std::span(g_data10223)) != kLegendre10223Checksum ||
-        calculate_crc(std::span(g_data1499))  != kLegendre1499Checksum) [[unlikely]] {
+    if (crc32_ieee_u64(std::span(g_data10223)) != kLegendre10223Checksum ||
+        crc32_ieee_u64(std::span(g_data1499))  != kLegendre1499Checksum) [[unlikely]] {
         return {};
     }
 
@@ -137,14 +137,14 @@ uint64_t legendre_10223_checksum() noexcept {
     if (!g_initialized) [[unlikely]] {
         (void)legendre_cache_init();
     }
-    return calculate_crc(std::span(g_data10223));
+    return crc32_ieee_u64(std::span(g_data10223));
 }
 
 uint64_t legendre_1499_checksum() noexcept {
     if (!g_initialized) [[unlikely]] {
         (void)legendre_cache_init();
     }
-    return calculate_crc(std::span(g_data1499));
+    return crc32_ieee_u64(std::span(g_data1499));
 }
 
 } // namespace lunalink::signal

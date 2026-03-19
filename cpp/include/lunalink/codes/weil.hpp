@@ -26,6 +26,11 @@ public:
 private:
     /**
      * @brief Internal core Weil construction logic.
+     *
+     * @param prime       Legendre sequence prime (10223 for primary, 1499 for tertiary).
+     * @param weil_index  Weil shift parameter w from LSIS Table 8/9.
+     * @param insertion_index  Bit insertion position for sequence extension (LSIS §2.3.5.2).
+     * @param out         Output buffer for the generated code chips.
      */
     [[nodiscard]] PrnStatus construct_weil(
         uint16_t           prime,

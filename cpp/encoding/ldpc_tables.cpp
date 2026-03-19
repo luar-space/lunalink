@@ -1,5 +1,10 @@
-// NOLINTBEGIN(hicpp-avoid-c-arrays,hicpp-signed-bitwise)
+/// @file ldpc_tables.cpp
+/// @brief LDPC parity-check sub-matrices in CSR format, generated from LSIS Annex G/H.
+/// Each matrix includes a build-time CRC-32 for CBIT verification. [LSIS-AFS-320]
+
+// NOLINTBEGIN(hicpp-avoid-c-arrays,hicpp-signed-bitwise) -- static const lookup tables with bit manipulation on promoted uint8_t
 #include "lunalink/encoding/ldpc_tables.hpp"
+#include "lunalink/core/crc32.hpp"
 #include "lunalink/core/safety.hpp"
 
 namespace lunalink::signal {
@@ -137,17 +142,6 @@ const LdpcCsrMatrix kLdpc_sf3_d = {
 } // namespace lunalink::signal
 
 namespace lunalink::signal {
-namespace {
-// NOLINTNEXTLINE(misc-no-recursion)
-uint32_t crc32_byte(uint32_t crc, uint8_t byte) noexcept {
-    static constexpr uint32_t kP = 0xEDB88320U;
-    crc ^= byte;
-    for (int b = 0; b < 8; ++b) {
-        crc = (crc >> 1U) ^ (kP & (0U - (crc & 1U)));
-    }
-    return crc;
-}
-} // namespace
 
 bool LdpcCsrMatrix::verify_integrity() const noexcept {
     if (col_indices.empty() || row_ptr.empty()) { return false; }
@@ -155,14 +149,14 @@ bool LdpcCsrMatrix::verify_integrity() const noexcept {
     if (col_indices.size() != num_entries) { return false; }
     uint32_t crc = 0xFFFFFFFFU;
     // C3: CRC covers metadata to detect SEU on dimension fields.
-    crc = crc32_byte(crc, static_cast<uint8_t>(num_entries & 0xFFU));
-    crc = crc32_byte(crc, static_cast<uint8_t>((num_entries >> 8U) & 0xFFU));
-    crc = crc32_byte(crc, static_cast<uint8_t>((num_entries >> 16U) & 0xFFU));
-    crc = crc32_byte(crc, static_cast<uint8_t>((num_entries >> 24U) & 0xFFU));
-    crc = crc32_byte(crc, static_cast<uint8_t>(num_rows & 0xFFU));
-    crc = crc32_byte(crc, static_cast<uint8_t>((num_rows >> 8U) & 0xFFU));
-    crc = crc32_byte(crc, static_cast<uint8_t>(num_cols & 0xFFU));
-    crc = crc32_byte(crc, static_cast<uint8_t>((num_cols >> 8U) & 0xFFU));
+    crc = crc32_ieee_byte(crc, static_cast<uint8_t>(num_entries & 0xFFU));
+    crc = crc32_ieee_byte(crc, static_cast<uint8_t>((num_entries >> 8U) & 0xFFU));
+    crc = crc32_ieee_byte(crc, static_cast<uint8_t>((num_entries >> 16U) & 0xFFU));
+    crc = crc32_ieee_byte(crc, static_cast<uint8_t>((num_entries >> 24U) & 0xFFU));
+    crc = crc32_ieee_byte(crc, static_cast<uint8_t>(num_rows & 0xFFU));
+    crc = crc32_ieee_byte(crc, static_cast<uint8_t>((num_rows >> 8U) & 0xFFU));
+    crc = crc32_ieee_byte(crc, static_cast<uint8_t>(num_cols & 0xFFU));
+    crc = crc32_ieee_byte(crc, static_cast<uint8_t>((num_cols >> 8U) & 0xFFU));
     for (size_t idx = 0; idx < col_indices.size(); ++idx) {
         const auto c = col_indices[idx];
         auto lo = static_cast<uint8_t>(c & 0xFFU);
@@ -170,18 +164,21 @@ bool LdpcCsrMatrix::verify_integrity() const noexcept {
 #ifdef LUNALINK_FAULT_INJECTION
         if (fi_active != 0U) {
             const size_t byte_base = idx * 2U;
-            if (fi_byte_offset == byte_base)      { lo = static_cast<uint8_t>(lo ^ fi_bit_mask); }
-            else if (fi_byte_offset == byte_base + 1U) { hi = static_cast<uint8_t>(hi ^ fi_bit_mask); }
+            const auto fi_xor = [this](uint8_t val) noexcept {
+                return static_cast<uint8_t>(val ^ fi_bit_mask);
+            };
+            if (fi_byte_offset == byte_base)           { lo = fi_xor(lo); }
+            else if (fi_byte_offset == byte_base + 1U) { hi = fi_xor(hi); }
         }
 #endif
-        crc = crc32_byte(crc, lo);
-        crc = crc32_byte(crc, hi);
+        crc = crc32_ieee_byte(crc, lo);
+        crc = crc32_ieee_byte(crc, hi);
     }
     for (const auto p : row_ptr) {
-        crc = crc32_byte(crc, static_cast<uint8_t>(p & 0xFFU));
-        crc = crc32_byte(crc, static_cast<uint8_t>((p >> 8U) & 0xFFU));
-        crc = crc32_byte(crc, static_cast<uint8_t>((p >> 16U) & 0xFFU));
-        crc = crc32_byte(crc, static_cast<uint8_t>((p >> 24U) & 0xFFU));
+        crc = crc32_ieee_byte(crc, static_cast<uint8_t>(p & 0xFFU));
+        crc = crc32_ieee_byte(crc, static_cast<uint8_t>((p >> 8U) & 0xFFU));
+        crc = crc32_ieee_byte(crc, static_cast<uint8_t>((p >> 16U) & 0xFFU));
+        crc = crc32_ieee_byte(crc, static_cast<uint8_t>((p >> 24U) & 0xFFU));
     }
     return (~crc) == crc32;
 }

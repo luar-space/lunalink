@@ -7,17 +7,21 @@ from numpy.typing import NDArray
 
 from lunalink.afs._afs import AFS_I_CODE_LENGTH as AFS_I_CODE_LENGTH
 from lunalink.afs._afs import BCH_CODEWORD_LENGTH as BCH_CODEWORD_LENGTH
+from lunalink.afs._afs import CHIP_RATE_HZ as CHIP_RATE_HZ
 from lunalink.afs._afs import CODE_PERIOD_S as CODE_PERIOD_S
 from lunalink.afs._afs import DEFAULT_SYNC_THRESHOLD as DEFAULT_SYNC_THRESHOLD
+from lunalink.afs._afs import DOPPLER_BIN_SPACING_HZ as DOPPLER_BIN_SPACING_HZ
 from lunalink.afs._afs import EPOCHS_PER_FRAME as EPOCHS_PER_FRAME
 from lunalink.afs._afs import FFT_SIZE as FFT_SIZE
 from lunalink.afs._afs import FRAME_DURATION_S as FRAME_DURATION_S
 from lunalink.afs._afs import FRAME_LENGTH as FRAME_LENGTH
+from lunalink.afs._afs import GOLD_CHIP_LENGTH as GOLD_CHIP_LENGTH
 from lunalink.afs._afs import INTERIM_ASSIGNMENT_MAX_PRN as INTERIM_ASSIGNMENT_MAX_PRN
 from lunalink.afs._afs import IQ_SAMPLES_PER_EPOCH as IQ_SAMPLES_PER_EPOCH
 from lunalink.afs._afs import IQ_UPSAMPLE_FACTOR as IQ_UPSAMPLE_FACTOR
 from lunalink.afs._afs import MAX_CHANNELS as MAX_CHANNELS
 from lunalink.afs._afs import PAYLOAD_LENGTH as PAYLOAD_LENGTH
+from lunalink.afs._afs import PRN_COUNT as PRN_COUNT
 from lunalink.afs._afs import SAMPLE_RATE_HZ as SAMPLE_RATE_HZ
 from lunalink.afs._afs import SB1_LENGTH as SB1_LENGTH
 from lunalink.afs._afs import SB2_DATA_BITS as SB2_DATA_BITS
@@ -34,6 +38,8 @@ from lunalink.afs._afs import SECONDARY_CODE_LENGTH as SECONDARY_CODE_LENGTH
 from lunalink.afs._afs import SYMBOL_RATE as SYMBOL_RATE
 from lunalink.afs._afs import SYNC_LENGTH as SYNC_LENGTH
 from lunalink.afs._afs import TERTIARY_CODE_LENGTH as TERTIARY_CODE_LENGTH
+from lunalink.afs._afs import WEIL_1500_CHIP_LENGTH as WEIL_1500_CHIP_LENGTH
+from lunalink.afs._afs import WEIL_10230_CHIP_LENGTH as WEIL_10230_CHIP_LENGTH
 from lunalink.afs._afs import AcquisitionResult as AcquisitionResult
 from lunalink.afs._afs import BchResult as BchResult
 from lunalink.afs._afs import BchStatus as BchStatus
@@ -44,10 +50,16 @@ from lunalink.afs._afs import Fid as Fid
 from lunalink.afs._afs import FrameDecodeResult as FrameDecodeResult
 from lunalink.afs._afs import FrameDecodeStatus as FrameDecodeStatus
 from lunalink.afs._afs import FrameStatus as FrameStatus
+from lunalink.afs._afs import IqMuxStatus as IqMuxStatus
 from lunalink.afs._afs import LdpcEncodeWorkspace as LdpcEncodeWorkspace
 from lunalink.afs._afs import LdpcStatus as LdpcStatus
 from lunalink.afs._afs import LdpcSubframe as LdpcSubframe
 from lunalink.afs._afs import LdpcWorkspace as LdpcWorkspace
+from lunalink.afs._afs import LegendreStatus as LegendreStatus
+from lunalink.afs._afs import MatchedCodeStatus as MatchedCodeStatus
+from lunalink.afs._afs import ModulationStatus as ModulationStatus
+from lunalink.afs._afs import PrnId as PrnId
+from lunalink.afs._afs import PrnStatus as PrnStatus
 from lunalink.afs._afs import SubframeDecodeResult as SubframeDecodeResult
 from lunalink.afs._afs import SyncDetectorStatus as SyncDetectorStatus
 from lunalink.afs._afs import SyncResult as SyncResult
@@ -57,11 +69,17 @@ from lunalink.afs._afs import UniformPrior as UniformPrior
 from lunalink.afs._afs import bch_codebook_checksum as _bch_codebook_checksum
 from lunalink.afs._afs import bch_decode as _bch_decode
 from lunalink.afs._afs import bch_encode as _bch_encode
+from lunalink.afs._afs import block_deinterleave_soft as _block_deinterleave_soft
+from lunalink.afs._afs import commit_frame as _commit_frame
+from lunalink.afs._afs import default_matched_assignment as _default_matched_assignment
 from lunalink.afs._afs import frame_build as _frame_build
 from lunalink.afs._afs import frame_build_partial as _frame_build_partial
 from lunalink.afs._afs import frame_decode as _frame_decode
 from lunalink.afs._afs import ldpc_decode as _ldpc_decode
 from lunalink.afs._afs import ldpc_encode as _ldpc_encode
+from lunalink.afs._afs import legendre_1499_checksum as _legendre_1499_checksum
+from lunalink.afs._afs import legendre_10223_checksum as _legendre_10223_checksum
+from lunalink.afs._afs import legendre_cache_init as _legendre_cache_init
 from lunalink.afs._afs import matched_code_epoch as _matched_code_epoch
 from lunalink.afs._afs import (
     matched_code_epoch_assigned as _matched_code_epoch_assigned,
@@ -147,6 +165,24 @@ __all__ = [
     "SAMPLE_RATE_HZ",
     "CODE_PERIOD_S",
     "MAX_CHANNELS",
+    "GOLD_CHIP_LENGTH",
+    "WEIL_10230_CHIP_LENGTH",
+    "WEIL_1500_CHIP_LENGTH",
+    "PRN_COUNT",
+    "CHIP_RATE_HZ",
+    "DOPPLER_BIN_SPACING_HZ",
+    "PrnId",
+    "PrnStatus",
+    "MatchedCodeStatus",
+    "ModulationStatus",
+    "IqMuxStatus",
+    "LegendreStatus",
+    "block_deinterleave_soft",
+    "commit_frame",
+    "default_matched_assignment",
+    "legendre_cache_init",
+    "legendre_10223_checksum",
+    "legendre_1499_checksum",
 ]
 
 
@@ -329,3 +365,40 @@ def frame_decode(
         (result, sb2_data, sb3_data, sb4_data, status)
     """
     return _frame_decode(rx_symbols, ldpc_iterations, sync_threshold)
+
+
+def block_deinterleave_soft(
+    data: NDArray[np.float32],
+) -> NDArray[np.float32]:
+    """Soft-decision 60x98 block de-interleaver for LLR values."""
+    return _block_deinterleave_soft(data)
+
+
+def commit_frame(frame: NDArray[np.uint8]) -> FrameStatus:
+    """CRC-24 post-generation safety gate (SW-SAF-01)."""
+    return _commit_frame(frame)
+
+
+def default_matched_assignment(
+    prn_id: int,
+) -> tuple[int, int, int, int]:
+    """Return the default interim matched-code assignment for a PRN ID.
+
+    Returns (primary_prn, secondary_code_idx, tertiary_prn, tertiary_phase_offset).
+    """
+    return _default_matched_assignment(prn_id)
+
+
+def legendre_cache_init() -> LegendreStatus:
+    """Initialise the Legendre sequence cache and verify golden CRCs."""
+    return _legendre_cache_init()
+
+
+def legendre_10223_checksum() -> int:
+    """Return CRC-32 checksum of the cached Legendre sequence for prime 10223."""
+    return _legendre_10223_checksum()
+
+
+def legendre_1499_checksum() -> int:
+    """Return CRC-32 checksum of the cached Legendre sequence for prime 1499."""
+    return _legendre_1499_checksum()

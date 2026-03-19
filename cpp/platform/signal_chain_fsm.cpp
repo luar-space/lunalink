@@ -83,12 +83,28 @@ bool SignalChainFsm::on_frame_fault() noexcept {
         return false;
     }
     // First frame fault → Zone 2. // FIZ-2
+    // Defence-in-depth: validate against transition matrix before direct assignment.
+    // Cannot use transition() here because it resets consecutive_fault_count_.
+    if (!kLegalTransitions.is_legal(state_, SignalChainState::kFrameFault)) {
+        const FaultPacket pkt{0U, static_cast<uint8_t>(SignalChainState::kSafeMode), 3U, 0U, 0U};
+        hal_.emit(pkt);
+        state_ = SignalChainState::kSafeMode;
+        consecutive_fault_count_ = 0U;
+        return false;
+    }
     state_ = SignalChainState::kFrameFault;
     return true;
 }
 
 void SignalChainFsm::on_frame_ok() noexcept {
-    consecutive_fault_count_ = 0U;
+    if (state_ == SignalChainState::kOperational ||
+        state_ == SignalChainState::kFrameFault) {
+        consecutive_fault_count_ = 0U;
+        if (state_ == SignalChainState::kFrameFault) {
+            (void)transition(SignalChainState::kOperational);
+        }
+    }
+    // If called from kSafeMode/kUninitialized, silently ignore (CFI diversion).
 }
 
 }  // namespace lunalink::signal

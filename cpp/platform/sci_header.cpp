@@ -1,4 +1,5 @@
 #include "lunalink/platform/sci_header.hpp"
+#include "lunalink/core/crc32.hpp"
 #include "sci_header_generated.hpp"
 
 #include <cstddef>
@@ -6,7 +7,7 @@
 
 namespace lunalink::signal {
 
-// NOLINTBEGIN(hicpp-avoid-c-arrays)
+// NOLINTBEGIN(hicpp-avoid-c-arrays) -- struct with char[] fields requires C-array layout
 LUNALINK_LUT_SECTION
 const SciHeader kSciHeader = {
     LUNALINK_GIT_SHA,
@@ -17,21 +18,9 @@ const SciHeader kSciHeader = {
 };
 // NOLINTEND(hicpp-avoid-c-arrays)
 
-namespace {
-// CRC-32 (IEEE 802.3, reflected polynomial 0xEDB88320).
-// Duplicated locally to avoid a dependency on ldpc_tables.cpp's internal helper.
-uint32_t sci_crc32_byte(uint32_t crc, uint8_t byte) noexcept {
-    crc ^= byte;
-    for (uint32_t j = 0U; j < 8U; ++j) {
-        crc = (crc >> 1U) ^ (0xEDB88320U & (-(crc & 1U)));
-    }
-    return crc;
-}
-} // namespace
-
 bool sci_header_verify() noexcept {
     // Compute CRC-32 over the first four fields of kSciHeader.
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast) -- byte-wise CRC over POD struct
     const auto* raw = reinterpret_cast<const uint8_t*>(&kSciHeader);
     constexpr size_t payload_len =
         sizeof(kSciHeader.git_sha) +
@@ -39,13 +28,8 @@ bool sci_header_verify() noexcept {
         sizeof(kSciHeader.version) +
         sizeof(kSciHeader.build_timestamp);
 
-    uint32_t crc = 0xFFFFFFFFU;
-    // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    for (size_t i = 0U; i < payload_len; ++i) {
-        crc = sci_crc32_byte(crc, raw[i]);
-    }
-    // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    crc = ~crc;
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic) -- constructing span from POD struct raw bytes
+    const auto crc = crc32_ieee({raw, payload_len});
     return crc == kSciHeader.header_crc32;  // FIZ-3
 }
 
