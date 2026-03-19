@@ -11,6 +11,7 @@ LUNALINK_LUT_SECTION
 const SciHeader kSciHeader = {
     LUNALINK_GIT_SHA,
     LUNALINK_LSIS_VERSION,
+    LUNALINK_VERSION,
     LUNALINK_BUILD_TIMESTAMP,
     LUNALINK_SCI_CRC32,
 };
@@ -29,12 +30,13 @@ uint32_t sci_crc32_byte(uint32_t crc, uint8_t byte) noexcept {
 } // namespace
 
 bool sci_header_verify() noexcept {
-    // Compute CRC-32 over the first three fields of kSciHeader.
+    // Compute CRC-32 over the first four fields of kSciHeader.
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     const auto* raw = reinterpret_cast<const uint8_t*>(&kSciHeader);
     constexpr size_t payload_len =
         sizeof(kSciHeader.git_sha) +
         sizeof(kSciHeader.lsis_version) +
+        sizeof(kSciHeader.version) +
         sizeof(kSciHeader.build_timestamp);
 
     uint32_t crc = 0xFFFFFFFFU;

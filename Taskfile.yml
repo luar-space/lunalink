@@ -579,6 +579,18 @@ tasks:
   #   cmd: echo "Not yet implemented"
   # [[private-end]]
 
+  version-tag:
+    desc: Create the next patch version tag (use BUMP=minor for minor bump, DRY_RUN=1 to preview).
+    vars:
+      BUMP: '{{default "patch" .BUMP}}'
+      DRY_RUN: '{{default "" .DRY_RUN}}'
+      PUSH: '{{default "" .PUSH}}'
+    cmd: >-
+      python3 scripts/version_tag.py
+      {{if eq .BUMP "minor"}}--minor{{end}}
+      {{if .DRY_RUN}}--dry-run{{end}}
+      {{if .PUSH}}--push{{end}}
+
   default:
     desc: Run all quality checks (lint, test, docs).
     cmds:

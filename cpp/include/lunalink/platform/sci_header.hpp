@@ -15,13 +15,14 @@ struct [[gnu::packed]] SciHeader {
     // cannot guarantee the same ABI without additional indirection.
     char     git_sha[41];       // null-terminated hex SHA-1 (40 chars + NUL)
     char     lsis_version[16];  // e.g. "LSIS-V1.0-2025\0\0"
+    char     version[24];       // git describe, e.g. "v0.1.8-47-gabcdef0\0..."
     // NOLINTEND(hicpp-avoid-c-arrays)
     uint32_t build_timestamp;   // seconds since J2000 (2000-01-01T12:00:00 UTC)
-    uint32_t header_crc32;      // CRC-32 (IEEE 802.3) of the preceding three fields
+    uint32_t header_crc32;      // CRC-32 (IEEE 802.3) of the preceding four fields
 };
 
-static_assert(sizeof(SciHeader) == 41U + 16U + 4U + 4U,
-              "SciHeader size must be exactly 65 bytes");
+static_assert(sizeof(SciHeader) == 41U + 16U + 24U + 4U + 4U,
+              "SciHeader size must be exactly 89 bytes");
 
 /// The SCI header is embedded in the binary via a dedicated linker section.
 LUNALINK_LUT_SECTION
