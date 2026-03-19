@@ -1,0 +1,10 @@
+# Cross-architecture build — exclude artefacts, keep .git/ for git describe
+build/
+.cache/
+docs/_build/
+*.profraw
+*.zip
+__pycache__/
+*.egg-info/
+.venv/
+.claude/

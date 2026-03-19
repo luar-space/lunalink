@@ -39,9 +39,13 @@ string(TIMESTAMP LUNALINK_BUILD_TIMESTAMP_UNIX "%s")
 math(EXPR LUNALINK_BUILD_TIMESTAMP_J2000 "${LUNALINK_BUILD_TIMESTAMP_UNIX} - 946728000")
 
 # Compute SCI header CRC-32 over (git_sha[41] + lsis_version[16] + version[24] + build_timestamp[4]).
+# Note: build_timestamp is serialised in *native* byte order to match the
+# in-memory layout that sci_header_verify() CRCs at runtime. We use
+# sys.byteorder to pick '<I' (LE) or '>I' (BE) so the CRC is consistent
+# across architectures. (Fixes: CRC mismatch on big-endian targets.)
 execute_process(
     COMMAND python3 -c
-        "import struct; v=b'${LUNALINK_VERSION}'[:23].ljust(24,b'\\x00'); d=b'${LUNALINK_GIT_SHA_RAW}'[:40]+b'\\x00'+b'LSIS-V1.0-2025\\x00\\x00'+v+struct.pack('<I',${LUNALINK_BUILD_TIMESTAMP_J2000}); c=0xFFFFFFFF;\nexec('for x in d:\\n  c^=x\\n  for _ in range(8):\\n    c=(c>>1)^(0xEDB88320 if c&1 else 0)'); print(hex(~c&0xFFFFFFFF))"
+        "import struct,sys; bo='<' if sys.byteorder=='little' else '>'; v=b'${LUNALINK_VERSION}'[:23].ljust(24,b'\\x00'); d=b'${LUNALINK_GIT_SHA_RAW}'[:40]+b'\\x00'+b'LSIS-V1.0-2025\\x00\\x00'+v+struct.pack(bo+'I',${LUNALINK_BUILD_TIMESTAMP_J2000}); c=0xFFFFFFFF;\nexec('for x in d:\\n  c^=x\\n  for _ in range(8):\\n    c=(c>>1)^(0xEDB88320 if c&1 else 0)'); print(hex(~c&0xFFFFFFFF))"
     OUTPUT_VARIABLE LUNALINK_SCI_CRC32_HEX
     OUTPUT_STRIP_TRAILING_WHITESPACE
     ERROR_QUIET

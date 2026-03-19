@@ -579,6 +579,14 @@ tasks:
   #   cmd: echo "Not yet implemented"
   # [[private-end]]
 
+  cross-arch:
+    desc: Build and test C++ core on arm64 + s390x via Docker buildx + QEMU emulation.
+    cmd: python3 scripts/cross_arch_test.py
+
+  cross-arch-quick:
+    desc: Quick ARM64-only cross-architecture test (skips big-endian).
+    cmd: python3 scripts/cross_arch_test.py --arch arm64
+
   version-tag:
     desc: Create the next patch version tag (use BUMP=minor for minor bump, DRY_RUN=1 to preview).
     vars:

@@ -1,0 +1,40 @@
+# Cross-architecture build & test for LunaLink C++ core.
+# Usage: docker buildx build --platform linux/arm64 --progress=plain -f Dockerfile.cross-arch .
+#
+# Targets: linux/arm64 (LE, strict alignment — Kria KR260 proxy)
+#          linux/s390x (BE, strict alignment — endianness validation)
+#
+# Tests run inside RUN directives — build success = tests pass.
+
+FROM ubuntu:24.04
+
+# Avoid interactive prompts during package install
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    g++ \
+    cmake \
+    ninja-build \
+    git \
+    python3 \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /src
+COPY . .
+
+# --- Build C++ core + unit tests + SWIFI tests ---
+# LUNALINK_FAULT_INJECTION: redundant (BUILD_TESTING implies it), but explicit
+# to self-document that SWIFI fault-injection tests are part of the cross-arch gate.
+RUN cmake -B build -S . -G Ninja \
+    -DBUILD_PYTHON_BINDINGS=OFF \
+    -DBUILD_TESTING=ON \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DLUNALINK_FAULT_INJECTION=ON \
+    && cmake --build build --parallel
+
+# --- Run unit tests (exclude timing/channel/e2e — meaningless under QEMU) ---
+RUN ./build/test_lunalink "~[wcet]~[channel]~[e2e]" --reporter console
+
+# --- Run SWIFI fault-injection tests (fault detection correctness is arch-relevant) ---
+RUN ./build/lunalink_swifi_tests --reporter console

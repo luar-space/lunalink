@@ -1,0 +1,36 @@
+name: Cross-Architecture
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'cpp/**'
+      - 'cmake/**'
+      - 'CMakeLists.txt'
+      - 'Dockerfile.cross-arch'
+      - '.github/workflows/cross-arch.yml'
+
+jobs:
+  cross-arch:
+    name: Test (${{ matrix.platform }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [linux/arm64, linux/s390x]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build & test (${{ matrix.platform }})
+        run: >
+          docker buildx build
+          --platform ${{ matrix.platform }}
+          --progress=plain
+          --no-cache
+          -f Dockerfile.cross-arch .
