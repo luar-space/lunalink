@@ -6,7 +6,7 @@
 std::jmp_buf tvs_jump_buffer;
 
 void tvs_setjmp_user() {
-    if (setjmp(tvs_jump_buffer) != 0) {  // Use of setjmp — target violation
-        return;
-    }
+  if (setjmp(tvs_jump_buffer) != 0) { // Use of setjmp — target violation
+    return;
+  }
 }

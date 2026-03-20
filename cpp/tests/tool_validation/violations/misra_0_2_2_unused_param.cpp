@@ -3,5 +3,5 @@
 // Expected diagnostic: misc-unused-parameters
 
 int tvs_unused_param(int x, int y) {
-    return x + 1;  // Parameter 'y' is unused — target violation
+  return x + 1; // Parameter 'y' is unused — target violation
 }

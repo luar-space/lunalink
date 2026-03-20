@@ -1,13 +1,14 @@
 #pragma once
-#include <cstdint>
-#include <array>
 #include "lunalink/core/safety.hpp"
+
+#include <array>
+#include <cstdint>
 
 namespace lunalink::signal {
 
-struct WeilParams { 
-    uint16_t k; 
-    uint16_t p; 
+struct WeilParams {
+  uint16_t k;
+  uint16_t p;
 };
 
 /**

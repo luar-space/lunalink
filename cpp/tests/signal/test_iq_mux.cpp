@@ -1,9 +1,11 @@
+#include "lunalink/codes/matched_code.hpp"
+#include "lunalink/codes/prn.hpp"
 #include "lunalink/signal/iq_mux.hpp"
 #include "lunalink/signal/modulator.hpp"
-#include "lunalink/codes/prn.hpp"
-#include "lunalink/codes/matched_code.hpp"
-#include <array>
+
 #include <catch2/catch_test_macros.hpp>
+
+#include <array>
 
 using namespace lunalink::signal;
 
@@ -16,7 +18,7 @@ TEST_CASE("[LSIS-AFS-301] multiplex_iq upsamples I by factor 5", "[iq_mux]") {
   for (size_t i = 0; i < kGoldChipLength; ++i) {
     REQUIRE(unpack_chip(u_i, static_cast<uint16_t>(i), i_chips[i]) == PrnStatus::kOk);
   }
-  
+
   std::array<int8_t, kGoldChipLength> i_samples{};
   REQUIRE(modulate_bpsk_i(i_chips, 1, i_samples) == ModulationStatus::kOk);
 
@@ -43,7 +45,7 @@ TEST_CASE("[LSIS-AFS-301] multiplex_iq Q channel passes through at chip rate", "
   std::array<uint8_t, kGoldChipLength> i_chips{};
   PrnCode u_i;
   REQUIRE(gold_prn_packed(PrnId{1}, u_i) == PrnStatus::kOk);
-  for (size_t i=0; i<kGoldChipLength; ++i) {
+  for (size_t i = 0; i < kGoldChipLength; ++i) {
     REQUIRE(unpack_chip(u_i, static_cast<uint16_t>(i), i_chips[i]) == PrnStatus::kOk);
   }
   std::array<int8_t, kGoldChipLength> i_samples{};
@@ -71,12 +73,14 @@ TEST_CASE("[LSIS-AFS-301] multiplex_iq output length is 2 * 10230 interleaved", 
 }
 
 TEST_CASE("[LSIS-AFS-301] multiplex_iq 50/50 power: I and Q have equal amplitude", "[iq_mux]") {
-  std::array<int8_t, 2046> i_s; i_s.fill(1);
-  std::array<int8_t, 10230> q_s; q_s.fill(-1);
+  std::array<int8_t, 2046> i_s;
+  i_s.fill(1);
+  std::array<int8_t, 10230> q_s;
+  q_s.fill(-1);
   std::array<int16_t, 20460> out;
-  
+
   REQUIRE(multiplex_iq(i_s, q_s, out) == IqMuxStatus::kOk);
-  
+
   CHECK(out[0] == 1);
   CHECK(out[1] == -1);
 }
@@ -85,7 +89,7 @@ TEST_CASE("[LSIS-AFS-301] multiplex_iq rejects undersized inputs and outputs", "
   std::array<int8_t, 2046> i_ok{};
   std::array<int8_t, 10230> q_ok{};
   std::array<int16_t, 20460> out_ok{};
-  
+
   std::array<int8_t, 10> i_short{};
   CHECK(multiplex_iq(i_short, q_ok, out_ok) == IqMuxStatus::kInputTooSmall);
 

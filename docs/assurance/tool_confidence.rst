@@ -71,6 +71,28 @@ Tool Records
        Reports: ``build/reports/coverage_validation_report.rst``
        (formal evidence), ``build/reports/coverage_validation_report.json``
        (machine-readable)
+   * - Clang Static Analyzer (scan-build)
+     - LLVM 19 (CI) / Homebrew (local)
+     - ``scan-build --status-bugs -enable-checker core,deadcode,security,
+       unix,cplusplus,nullability cmake --build ...``
+     - Path-sensitive static analysis (ECSS-Q-ST-80C §5.5)
+     - Detects null dereferences through conditional paths, use-after-free,
+       dead stores, and memory leaks that clang-tidy misses.
+       CI gate: ``tidy.yml`` (``clang-sa`` job); local: ``task clang-sa``
+   * - clang-format
+     - LLVM 19 (CI) / Homebrew (local)
+     - ``.clang-format`` in repo root; ``--dry-run --Werror``
+     - Code formatting enforcement
+     - LLVM-based style with flight-software adjustments (100-col,
+       Attach braces, no bin-packing). CI gate: ``lint.yml``;
+       local: ``task format-cpp-check``
+   * - include-what-you-use (IWYU)
+     - 0.25 (Homebrew / apt)
+     - ``cmake -DCMAKE_CXX_INCLUDE_WHAT_YOU_USE=...``
+     - Header hygiene analysis (advisory)
+     - Verifies minimal ``#include`` sets. Not a CI gate —
+       advisory only due to false positives on platform-specific
+       headers. Local: ``task iwyu``
    * - LLVM Coverage (llvm-cov)
      - LLVM 19 (CI) / Homebrew (local)
      - ``-fprofile-instr-generate -fcoverage-mapping -fcoverage-mcdc``;

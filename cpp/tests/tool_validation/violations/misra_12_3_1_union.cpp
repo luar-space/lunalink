@@ -4,12 +4,12 @@
 #include <cstdint>
 
 union TvsFloatBits {
-    float    f;
-    uint32_t u;
+  float f;
+  uint32_t u;
 };
 
 uint32_t tvs_union_float_to_bits(float val) {
-    TvsFloatBits fb;
-    fb.f = val;
-    return fb.u;  // Union access — target violation
+  TvsFloatBits fb;
+  fb.f = val;
+  return fb.u; // Union access — target violation
 }

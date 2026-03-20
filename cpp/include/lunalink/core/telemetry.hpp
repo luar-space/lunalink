@@ -10,13 +10,13 @@ namespace lunalink::signal {
  * 8-byte fixed width is enforced by static_assert. [SW-SAF-03]
  */
 struct FaultPacket {
-    uint32_t timestamp_ms;      // monotonic millisecond counter (HAL-provided)
-    uint8_t  fault_code;        // module-specific fault discriminator; FSM emits
-                                //   the destination state enum (e.g. kSafeMode = 0x99),
-                                //   watchdog emits kWatchdogLowerBoundFaultCode (0xCC)
-    uint8_t  fiz_level;         // 1, 2, or 3
-    uint8_t  originating_step;  // POST step (1-5), FSM state, or 0
-    uint8_t  reserved;          // padding; must be 0x00
+  uint32_t timestamp_ms;    // monotonic millisecond counter (HAL-provided)
+  uint8_t fault_code;       // module-specific fault discriminator; FSM emits
+                            //   the destination state enum (e.g. kSafeMode = 0x99),
+                            //   watchdog emits kWatchdogLowerBoundFaultCode (0xCC)
+  uint8_t fiz_level;        // 1, 2, or 3
+  uint8_t originating_step; // POST step (1-5), FSM state, or 0
+  uint8_t reserved;         // padding; must be 0x00
 };
 static_assert(sizeof(FaultPacket) == 8U, "FaultPacket must be exactly 8 bytes");
 
@@ -26,9 +26,9 @@ static_assert(sizeof(FaultPacket) == 8U, "FaultPacket must be exactly 8 bytes");
  */
 // Interface class: only virtual dtor needed — NOLINTBEGIN(hicpp-special-member-functions)
 class ITelemetryHal {
- public:
-    virtual void emit(const FaultPacket& pkt) noexcept = 0;
-    virtual ~ITelemetryHal() = default;
+public:
+  virtual void emit(const FaultPacket& pkt) noexcept = 0;
+  virtual ~ITelemetryHal() = default;
 };
 // NOLINTEND(hicpp-special-member-functions)
 
@@ -37,37 +37,42 @@ class ITelemetryHal {
  * Used as the default in non-flight stubs.
  */
 class NullTelemetryHal final : public ITelemetryHal {
- public:
-    // Parameter intentionally unused in no-op stub — NOLINTNEXTLINE(hicpp-named-parameter)
-    void emit(const FaultPacket& /*pkt*/) noexcept override {}
+public:
+  // Parameter intentionally unused in no-op stub — NOLINTNEXTLINE(hicpp-named-parameter)
+  void emit(const FaultPacket& /*pkt*/) noexcept override {}
 };
 
 /**
  * @brief Capture implementation: stores up to N packets for test assertions.
  */
-template <size_t N>
-class CaptureTelemetryHal final : public ITelemetryHal {
- public:
-    void emit(const FaultPacket& pkt) noexcept override {
-        if (count_ < N) {
-            packets_[count_++] = pkt;
-        }
+template <size_t N> class CaptureTelemetryHal final : public ITelemetryHal {
+public:
+  void emit(const FaultPacket& pkt) noexcept override {
+    if (count_ < N) {
+      packets_[count_++] = pkt;
     }
+  }
 
-    [[nodiscard]] size_t count() const noexcept { return count_; }
+  [[nodiscard]] size_t count() const noexcept {
+    return count_;
+  }
 
-    [[nodiscard]] const FaultPacket& packet(size_t idx) const noexcept {
-        static constexpr FaultPacket kEmpty{};
-        if (idx >= count_ || idx >= N) { return kEmpty; }
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index) -- index validated above
-        return packets_[idx];
+  [[nodiscard]] const FaultPacket& packet(size_t idx) const noexcept {
+    static constexpr FaultPacket kEmpty{};
+    if (idx >= count_ || idx >= N) {
+      return kEmpty;
     }
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index) -- index validated above
+    return packets_[idx];
+  }
 
-    void reset() noexcept { count_ = 0U; }
+  void reset() noexcept {
+    count_ = 0U;
+  }
 
- private:
-    std::array<FaultPacket, N> packets_{};
-    size_t count_{0};
+private:
+  std::array<FaultPacket, N> packets_{};
+  size_t count_{0};
 };
 
-}  // namespace lunalink::signal
+} // namespace lunalink::signal

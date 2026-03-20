@@ -5,5 +5,5 @@
 #include "misra_19_2_1_no_header_guard.hpp"
 
 int tvs_header_func(int x) {
-    return x + 1;
+  return x + 1;
 }

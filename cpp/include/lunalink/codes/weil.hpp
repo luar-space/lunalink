@@ -1,8 +1,9 @@
 #pragma once
-#include <cstdint>
-#include <span>
 #include "lunalink/codes/prn.hpp"
 #include "lunalink/core/safety.hpp"
+
+#include <cstdint>
+#include <span>
 
 namespace lunalink::signal {
 
@@ -11,32 +12,31 @@ namespace lunalink::signal {
  */
 class WeilGenerator {
 public:
-    WeilGenerator() noexcept = default;
+  WeilGenerator() noexcept = default;
 
-    /**
-     * @brief Generate Primary Weil code (10230 chips). [LSIS-AFS-102]
-     */
-    [[nodiscard]] PrnStatus generate_primary(PrnId prn_id, std::span<uint8_t> out) noexcept;
+  /**
+   * @brief Generate Primary Weil code (10230 chips). [LSIS-AFS-102]
+   */
+  [[nodiscard]] PrnStatus generate_primary(PrnId prn_id, std::span<uint8_t> out) noexcept;
 
-    /**
-     * @brief Generate Tertiary Weil code (1500 chips). [LSIS-AFS-102]
-     */
-    [[nodiscard]] PrnStatus generate_tertiary(PrnId prn_id, std::span<uint8_t> out) noexcept;
+  /**
+   * @brief Generate Tertiary Weil code (1500 chips). [LSIS-AFS-102]
+   */
+  [[nodiscard]] PrnStatus generate_tertiary(PrnId prn_id, std::span<uint8_t> out) noexcept;
 
 private:
-    /**
-     * @brief Internal core Weil construction logic.
-     *
-     * @param prime       Legendre sequence prime (10223 for primary, 1499 for tertiary).
-     * @param weil_index  Weil shift parameter w from LSIS Table 8/9.
-     * @param insertion_index  Bit insertion position for sequence extension (LSIS §2.3.5.2).
-     * @param out         Output buffer for the generated code chips.
-     */
-    [[nodiscard]] PrnStatus construct_weil(
-        uint16_t           prime,
-        uint16_t           weil_index,
-        uint16_t           insertion_index,
-        std::span<uint8_t> out) noexcept;
+  /**
+   * @brief Internal core Weil construction logic.
+   *
+   * @param prime       Legendre sequence prime (10223 for primary, 1499 for tertiary).
+   * @param weil_index  Weil shift parameter w from LSIS Table 8/9.
+   * @param insertion_index  Bit insertion position for sequence extension (LSIS §2.3.5.2).
+   * @param out         Output buffer for the generated code chips.
+   */
+  [[nodiscard]] PrnStatus construct_weil(uint16_t prime,
+                                         uint16_t weil_index,
+                                         uint16_t insertion_index,
+                                         std::span<uint8_t> out) noexcept;
 };
 
 } // namespace lunalink::signal

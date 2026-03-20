@@ -4,17 +4,17 @@
 
 class TvsNoexceptMove {
 public:
-    TvsNoexceptMove() = default;
-    TvsNoexceptMove(TvsNoexceptMove &&other) {  // Move ctor not noexcept — target violation
-        data_ = other.data_;
-        other.data_ = 0;
-    }
-    TvsNoexceptMove &operator=(TvsNoexceptMove &&other) {  // Move assign not noexcept
-        data_ = other.data_;
-        other.data_ = 0;
-        return *this;
-    }
+  TvsNoexceptMove() = default;
+  TvsNoexceptMove(TvsNoexceptMove&& other) { // Move ctor not noexcept — target violation
+    data_ = other.data_;
+    other.data_ = 0;
+  }
+  TvsNoexceptMove& operator=(TvsNoexceptMove&& other) { // Move assign not noexcept
+    data_ = other.data_;
+    other.data_ = 0;
+    return *this;
+  }
 
 private:
-    int data_ = 0;
+  int data_ = 0;
 };

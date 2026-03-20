@@ -473,6 +473,8 @@ tasks:
     cmds:
       - task: build
       - task: lint-check
+      - task: format-cpp-check
+      - task: clang-sa
       - task: check-flags
       - task: test-cpp
       - task: integration
@@ -578,6 +580,125 @@ tasks:
   #   desc: Run integrity monitoring tests.
   #   cmd: echo "Not yet implemented"
   # [[private-end]]
+
+  format-cpp:
+    desc: Format all C++ source files with clang-format.
+    vars:
+      CLANG_FORMAT:
+        sh: |
+          if command -v clang-format >/dev/null 2>&1; then
+            command -v clang-format
+          elif [ -x /opt/homebrew/opt/llvm/bin/clang-format ]; then
+            echo /opt/homebrew/opt/llvm/bin/clang-format
+          elif [ -x /usr/local/opt/llvm/bin/clang-format ]; then
+            echo /usr/local/opt/llvm/bin/clang-format
+          fi
+    cmds:
+      - |
+        if [ -z "{{.CLANG_FORMAT}}" ]; then
+          echo "clang-format not found. Install LLVM: brew install llvm"
+          exit 1
+        fi
+        find cpp/ -name '*.cpp' -o -name '*.hpp' | grep -v _deps | \
+          xargs "{{.CLANG_FORMAT}}" -i
+        echo "Formatted $(find cpp/ -name '*.cpp' -o -name '*.hpp' | grep -v _deps | wc -l | tr -d ' ') files"
+
+  format-cpp-check:
+    desc: Check C++ formatting without modifying files (CI gate).
+    vars:
+      CLANG_FORMAT:
+        sh: |
+          if command -v clang-format >/dev/null 2>&1; then
+            command -v clang-format
+          elif [ -x /opt/homebrew/opt/llvm/bin/clang-format ]; then
+            echo /opt/homebrew/opt/llvm/bin/clang-format
+          elif [ -x /usr/local/opt/llvm/bin/clang-format ]; then
+            echo /usr/local/opt/llvm/bin/clang-format
+          fi
+    cmds:
+      - |
+        if [ -z "{{.CLANG_FORMAT}}" ]; then
+          echo "clang-format not found. Install LLVM: brew install llvm"
+          exit 1
+        fi
+        VIOLATIONS=$(find cpp/ -name '*.cpp' -o -name '*.hpp' | grep -v _deps | \
+          xargs "{{.CLANG_FORMAT}}" --dry-run --Werror 2>&1 | grep -c 'warning:' || true)
+        if [ "$VIOLATIONS" -gt 0 ]; then
+          echo "FAIL: $VIOLATIONS formatting violations found. Run: task format-cpp"
+          exit 1
+        fi
+        echo "PASS: all C++ files correctly formatted"
+
+  clang-sa:
+    desc: Run Clang Static Analyzer (path-sensitive analysis, ECSS-Q-ST-80C §5.5).
+    vars:
+      GENERATOR:
+        sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
+      SCAN_BUILD:
+        sh: |
+          if command -v scan-build >/dev/null 2>&1; then
+            command -v scan-build
+          elif [ -x /opt/homebrew/opt/llvm/bin/scan-build ]; then
+            echo /opt/homebrew/opt/llvm/bin/scan-build
+          elif [ -x /usr/local/opt/llvm/bin/scan-build ]; then
+            echo /usr/local/opt/llvm/bin/scan-build
+          fi
+    cmds:
+      - |
+        if [ -z "{{.SCAN_BUILD}}" ]; then
+          echo "scan-build not found. Install LLVM: brew install llvm"
+          exit 1
+        fi
+        echo "=== Clang Static Analyzer (ECSS-Q-ST-80C §5.5) ==="
+        mkdir -p build/clang-sa
+        cmake -B build/clang-sa -S . -G "{{.GENERATOR}}" \
+          -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=OFF \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+        "{{.SCAN_BUILD}}" \
+          --use-cc=clang --use-c++=clang++ \
+          -o build/clang-sa/report \
+          --status-bugs \
+          -enable-checker core \
+          -enable-checker deadcode \
+          -enable-checker security \
+          -enable-checker unix \
+          -enable-checker cplusplus \
+          -enable-checker nullability \
+          cmake --build build/clang-sa --target lunalink_core --parallel
+        echo "PASS: Clang Static Analyzer found no bugs"
+    silent: false
+
+  iwyu:
+    desc: Run include-what-you-use on C++ core (header hygiene).
+    vars:
+      GENERATOR:
+        sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
+      IWYU:
+        sh: |
+          if command -v include-what-you-use >/dev/null 2>&1; then
+            command -v include-what-you-use
+          elif command -v iwyu >/dev/null 2>&1; then
+            command -v iwyu
+          fi
+    cmds:
+      - |
+        if [ -z "{{.IWYU}}" ]; then
+          echo "include-what-you-use not found."
+          echo "Install: brew install include-what-you-use  (or: apt install iwyu)"
+          echo "Skipping."
+          exit 0
+        fi
+        cmake -B build/iwyu -S . -G "{{.GENERATOR}}" \
+          -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=OFF \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+          -DCMAKE_CXX_INCLUDE_WHAT_YOU_USE="{{.IWYU}};-Xiwyu;--no_fwd_decls;-Xiwyu;--cxx17ns"
+        cmake --build build/iwyu --parallel 2>&1 | tee build/iwyu/iwyu_output.txt
+        echo ""
+        echo "IWYU suggestions written to build/iwyu/iwyu_output.txt"
+        echo "Review and apply selectively — IWYU is advisory, not a gate."
+    silent: false
 
   cross-arch:
     desc: Build and test C++ core on arm64 + s390x via Docker buildx + QEMU emulation.

@@ -4,6 +4,6 @@
 
 #include <cstddef>
 
-size_t tvs_sizeof_expr(int *p) {
-    return sizeof(p) / sizeof(p[0]);  // sizeof pointer, not array — target violation
+size_t tvs_sizeof_expr(int* p) {
+  return sizeof(p) / sizeof(p[0]); // sizeof pointer, not array — target violation
 }

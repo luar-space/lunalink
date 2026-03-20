@@ -3,7 +3,7 @@
 // Expected diagnostic: readability-braces-around-statements
 
 int tvs_no_braces_abs(int x) {
-    if (x < 0)
-        x = -x;  // No braces around single-statement body — target violation
-    return x;
+  if (x < 0)
+    x = -x; // No braces around single-statement body — target violation
+  return x;
 }

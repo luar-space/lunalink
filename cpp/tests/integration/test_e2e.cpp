@@ -1,8 +1,8 @@
-#include <catch2/catch_test_macros.hpp>
-#include <catch2/matchers/catch_matchers_floating_point.hpp>
-
 #include "lunalink/messages/frame.hpp"
 #include "lunalink/messages/frame_decode.hpp"
+
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 #include <array>
 #include <chrono>
@@ -16,92 +16,87 @@ namespace {
 
 /// Convert binary frame (0/1 uint8_t) to bipolar soft symbols (+1.0 / -1.0).
 /// Bit 0 → +1.0, Bit 1 → -1.0 (BPSK mapping per LSIS Table 8).
-void binary_to_bipolar(std::span<const uint8_t> bits,
-                       std::span<float> out) {
-    for (size_t i = 0; i < bits.size(); ++i) {
-        out[i] = (bits[i] == 0U) ? 1.0F : -1.0F;
-    }
+void binary_to_bipolar(std::span<const uint8_t> bits, std::span<float> out) {
+  for (size_t i = 0; i < bits.size(); ++i) {
+    out[i] = (bits[i] == 0U) ? 1.0F : -1.0F;
+  }
 }
 
 /// Add AWGN noise to bipolar symbols at a given Eb/N0 (dB).
 /// For BPSK: Es/N0 = Eb/N0 (since 1 bit per symbol).
 /// sigma = sqrt(1 / (2 * 10^(EbN0_dB/10)))
-void add_awgn(std::span<float> symbols, float eb_n0_db,
-              std::mt19937& rng) {
-    const auto eb_n0_lin = std::pow(10.0F, eb_n0_db / 10.0F);
-    const auto sigma = std::sqrt(1.0F / (2.0F * eb_n0_lin));
-    auto dist = std::normal_distribution<float>(0.0F, sigma);
-    for (auto& s : symbols) {
-        s += dist(rng);
-    }
+void add_awgn(std::span<float> symbols, float eb_n0_db, std::mt19937& rng) {
+  const auto eb_n0_lin = std::pow(10.0F, eb_n0_db / 10.0F);
+  const auto sigma = std::sqrt(1.0F / (2.0F * eb_n0_lin));
+  auto dist = std::normal_distribution<float>(0.0F, sigma);
+  for (auto& s : symbols) {
+    s += dist(rng);
+  }
 }
 
 /// Fill a span with random bits (0 or 1).
 void random_bits(std::span<uint8_t> out, std::mt19937& rng) {
-    auto dist = std::uniform_int_distribution<uint32_t>(0, 1);
-    for (auto& b : out) {
-        b = static_cast<uint8_t>(dist(rng));
-    }
+  auto dist = std::uniform_int_distribution<uint32_t>(0, 1);
+  for (auto& b : out) {
+    b = static_cast<uint8_t>(dist(rng));
+  }
 }
 
 } // namespace
 
 TEST_CASE("[LSIS-AFS-720] E2E round-trip: TX → AWGN → RX → bit-exact recovery", "[e2e][rx]") {
-    std::mt19937 rng(42);
+  std::mt19937 rng(42);
 
-    // Generate random navigation data for all subframes
-    std::array<uint8_t, kSb2DataBits> sb2_data{};
-    std::array<uint8_t, kSb3DataBits> sb3_data{};
-    std::array<uint8_t, kSb4DataBits> sb4_data{};
-    random_bits(sb2_data, rng);
-    random_bits(sb3_data, rng);
-    random_bits(sb4_data, rng);
+  // Generate random navigation data for all subframes
+  std::array<uint8_t, kSb2DataBits> sb2_data{};
+  std::array<uint8_t, kSb3DataBits> sb3_data{};
+  std::array<uint8_t, kSb4DataBits> sb4_data{};
+  random_bits(sb2_data, rng);
+  random_bits(sb3_data, rng);
+  random_bits(sb4_data, rng);
 
-    const Fid fid{0};
-    const Toi toi{42};
+  const Fid fid{0};
+  const Toi toi{42};
 
-    // ── TX: Build frame ──────────────────────────────────────────────────
-    std::array<uint8_t, kFrameLength> tx_frame{};
-    LdpcEncodeWorkspace enc_ws{};
-    FrameBuildWorkspace fbw{};
-    const auto build_status = frame_build(
-        fid, toi, sb2_data, sb3_data, sb4_data, tx_frame, enc_ws, fbw);
-    REQUIRE(build_status == FrameStatus::kOk);
+  // ── TX: Build frame ──────────────────────────────────────────────────
+  std::array<uint8_t, kFrameLength> tx_frame{};
+  LdpcEncodeWorkspace enc_ws{};
+  FrameBuildWorkspace fbw{};
+  const auto build_status =
+      frame_build(fid, toi, sb2_data, sb3_data, sb4_data, tx_frame, enc_ws, fbw);
+  REQUIRE(build_status == FrameStatus::kOk);
 
-    // ── Channel: binary → bipolar → AWGN at Eb/N0 = 3 dB ────────────────
-    std::array<float, kFrameLength> rx_symbols{};
-    binary_to_bipolar(tx_frame, rx_symbols);
-    add_awgn(rx_symbols, 3.0F, rng);
+  // ── Channel: binary → bipolar → AWGN at Eb/N0 = 3 dB ────────────────
+  std::array<float, kFrameLength> rx_symbols{};
+  binary_to_bipolar(tx_frame, rx_symbols);
+  add_awgn(rx_symbols, 3.0F, rng);
 
-    // ── RX: Decode ───────────────────────────────────────────────────────
-    NullTelemetryHal hal;
-    FrameDecodeResult result{};
-    auto workspace = std::make_unique<FrameDecodeWorkspace>();
+  // ── RX: Decode ───────────────────────────────────────────────────────
+  NullTelemetryHal hal;
+  FrameDecodeResult result{};
+  auto workspace = std::make_unique<FrameDecodeWorkspace>();
 
-    const auto status = frame_decode(rx_symbols, result, *workspace, hal);
+  const auto status = frame_decode(rx_symbols, result, *workspace, hal);
 
-    // ── Verify ───────────────────────────────────────────────────────────
-    REQUIRE(status == FrameDecodeStatus::kOk);
-    CHECK(result.sync.detected);
-    CHECK(result.sync.frame_offset == 0);
-    CHECK(result.bch.status == BchStatus::kOk);
-    CHECK(result.bch.fid == fid);
-    CHECK(result.bch.toi == toi);
+  // ── Verify ───────────────────────────────────────────────────────────
+  REQUIRE(status == FrameDecodeStatus::kOk);
+  CHECK(result.sync.detected);
+  CHECK(result.sync.frame_offset == 0);
+  CHECK(result.bch.status == BchStatus::kOk);
+  CHECK(result.bch.fid == fid);
+  CHECK(result.bch.toi == toi);
 
-    CHECK(result.sb2.ldpc_converged);
-    CHECK(result.sb2.crc_ok);
-    CHECK(result.sb3.ldpc_converged);
-    CHECK(result.sb3.crc_ok);
-    CHECK(result.sb4.ldpc_converged);
-    CHECK(result.sb4.crc_ok);
+  CHECK(result.sb2.ldpc_converged);
+  CHECK(result.sb2.crc_ok);
+  CHECK(result.sb3.ldpc_converged);
+  CHECK(result.sb3.crc_ok);
+  CHECK(result.sb4.ldpc_converged);
+  CHECK(result.sb4.crc_ok);
 
-    // Bit-exact data recovery
-    CHECK(std::equal(sb2_data.begin(), sb2_data.end(),
-                     workspace->sb2_data.begin()));
-    CHECK(std::equal(sb3_data.begin(), sb3_data.end(),
-                     workspace->sb3_data.begin()));
-    CHECK(std::equal(sb4_data.begin(), sb4_data.end(),
-                     workspace->sb4_data.begin()));
+  // Bit-exact data recovery
+  CHECK(std::equal(sb2_data.begin(), sb2_data.end(), workspace->sb2_data.begin()));
+  CHECK(std::equal(sb3_data.begin(), sb3_data.end(), workspace->sb3_data.begin()));
+  CHECK(std::equal(sb4_data.begin(), sb4_data.end(), workspace->sb4_data.begin()));
 }
 
 // ---------------------------------------------------------------------------
@@ -119,192 +114,187 @@ TEST_CASE("[LSIS-AFS-720] E2E round-trip: TX → AWGN → RX → bit-exact recov
 // At Eb/N0 = 6.0 dB, 200 frames confirms zero-error operation.
 // ---------------------------------------------------------------------------
 TEST_CASE("Gateway 5: frame-level FER sweep", "[channel][fer][e2e][rx]") {
-    struct SnrPoint {
-        float  eb_n0_db;
-        int    frames;
-        double max_fer;     // Maximum allowable frame error rate; <0 = informational only
-        const char* label;
-    };
+  struct SnrPoint {
+    float eb_n0_db;
+    int frames;
+    double max_fer; // Maximum allowable frame error rate; <0 = informational only
+    const char* label;
+  };
 
-    // NOLINTBEGIN(cert-msc51-cpp)
-    constexpr SnrPoint kPoints[] = {
-        {1.5F,   50,  -1.0,  "1.5 dB (waterfall, informational)"},  // below spec — no pass criterion
-        {3.0F,  100,   0.0,  "3.0 dB (Es/N0=0 dB)"},               // spec operating point
-        {6.0F,  200,   0.0,  "6.0 dB (margin)"},                    // well above threshold
-    };
+  // NOLINTBEGIN(cert-msc51-cpp)
+  constexpr SnrPoint kPoints[] = {
+      {1.5F, 50, -1.0, "1.5 dB (waterfall, informational)"}, // below spec — no pass criterion
+      {3.0F, 100, 0.0, "3.0 dB (Es/N0=0 dB)"},               // spec operating point
+      {6.0F, 200, 0.0, "6.0 dB (margin)"},                   // well above threshold
+  };
 
-    NullTelemetryHal hal;
-    auto workspace = std::make_unique<FrameDecodeWorkspace>();
-    LdpcEncodeWorkspace enc_ws{};
-    FrameBuildWorkspace fbw{};
+  NullTelemetryHal hal;
+  auto workspace = std::make_unique<FrameDecodeWorkspace>();
+  LdpcEncodeWorkspace enc_ws{};
+  FrameBuildWorkspace fbw{};
 
-    for (const auto& pt : kPoints) {
-        size_t frame_errors = 0;
-        size_t total_bit_errors = 0;
-        const size_t bits_per_frame = kSb2DataBits + kSb3DataBits + kSb4DataBits;
+  for (const auto& pt : kPoints) {
+    size_t frame_errors = 0;
+    size_t total_bit_errors = 0;
+    const size_t bits_per_frame = kSb2DataBits + kSb3DataBits + kSb4DataBits;
 
-        for (int trial = 0; trial < pt.frames; ++trial) {
-            std::mt19937 rng(static_cast<uint32_t>(1000 * pt.eb_n0_db) +
-                             static_cast<uint32_t>(trial));
+    for (int trial = 0; trial < pt.frames; ++trial) {
+      std::mt19937 rng(static_cast<uint32_t>(1000 * pt.eb_n0_db) + static_cast<uint32_t>(trial));
 
-            std::array<uint8_t, kSb2DataBits> sb2{};
-            std::array<uint8_t, kSb3DataBits> sb3{};
-            std::array<uint8_t, kSb4DataBits> sb4{};
-            random_bits(sb2, rng);
-            random_bits(sb3, rng);
-            random_bits(sb4, rng);
+      std::array<uint8_t, kSb2DataBits> sb2{};
+      std::array<uint8_t, kSb3DataBits> sb3{};
+      std::array<uint8_t, kSb4DataBits> sb4{};
+      random_bits(sb2, rng);
+      random_bits(sb3, rng);
+      random_bits(sb4, rng);
 
-            std::array<uint8_t, kFrameLength> tx{};
-            REQUIRE(frame_build(Fid{0}, Toi{static_cast<uint8_t>(trial % 100)},
-                                sb2, sb3, sb4, tx, enc_ws, fbw) == FrameStatus::kOk);
+      std::array<uint8_t, kFrameLength> tx{};
+      REQUIRE(frame_build(
+                  Fid{0}, Toi{static_cast<uint8_t>(trial % 100)}, sb2, sb3, sb4, tx, enc_ws, fbw) ==
+              FrameStatus::kOk);
 
-            std::array<float, kFrameLength> rx{};
-            binary_to_bipolar(tx, rx);
-            add_awgn(rx, pt.eb_n0_db, rng);
+      std::array<float, kFrameLength> rx{};
+      binary_to_bipolar(tx, rx);
+      add_awgn(rx, pt.eb_n0_db, rng);
 
-            FrameDecodeResult result{};
-            const auto status = frame_decode(rx, result, *workspace, hal);
+      FrameDecodeResult result{};
+      const auto status = frame_decode(rx, result, *workspace, hal);
 
-            bool frame_ok = (status == FrameDecodeStatus::kOk) &&
-                            result.sb2.ldpc_converged && result.sb2.crc_ok &&
-                            result.sb3.ldpc_converged && result.sb3.crc_ok &&
-                            result.sb4.ldpc_converged && result.sb4.crc_ok;
+      bool frame_ok = (status == FrameDecodeStatus::kOk) && result.sb2.ldpc_converged &&
+                      result.sb2.crc_ok && result.sb3.ldpc_converged && result.sb3.crc_ok &&
+                      result.sb4.ldpc_converged && result.sb4.crc_ok;
 
-            if (!frame_ok) {
-                frame_errors++;
-            } else {
-                // Count bit errors on successfully decoded frames
-                for (size_t i = 0; i < kSb2DataBits; ++i) {
-                    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-                    if (sb2[i] != workspace->sb2_data[i]) { total_bit_errors++; }
-                }
-                for (size_t i = 0; i < kSb3DataBits; ++i) {
-                    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-                    if (sb3[i] != workspace->sb3_data[i]) { total_bit_errors++; }
-                }
-                for (size_t i = 0; i < kSb4DataBits; ++i) {
-                    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-                    if (sb4[i] != workspace->sb4_data[i]) { total_bit_errors++; }
-                }
-            }
+      if (!frame_ok) {
+        frame_errors++;
+      } else {
+        // Count bit errors on successfully decoded frames
+        for (size_t i = 0; i < kSb2DataBits; ++i) {
+          // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+          if (sb2[i] != workspace->sb2_data[i]) {
+            total_bit_errors++;
+          }
         }
-
-        const double fer = static_cast<double>(frame_errors) /
-                           static_cast<double>(pt.frames);
-        const size_t total_bits = static_cast<size_t>(pt.frames) * bits_per_frame;
-        const double ber = static_cast<double>(total_bit_errors) /
-                           static_cast<double>(total_bits);
-
-        std::cout << "[FER sweep] Eb/N0=" << pt.eb_n0_db << " dB"
-                  << "  FER=" << fer
-                  << " (" << frame_errors << "/" << pt.frames << ")"
-                  << "  BER=" << ber
-                  << " (" << total_bit_errors << "/" << total_bits << ")"
-                  << std::endl;
-
-        if (pt.max_fer >= 0.0) {
-            CHECK(fer <= pt.max_fer);
+        for (size_t i = 0; i < kSb3DataBits; ++i) {
+          // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+          if (sb3[i] != workspace->sb3_data[i]) {
+            total_bit_errors++;
+          }
         }
+        for (size_t i = 0; i < kSb4DataBits; ++i) {
+          // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+          if (sb4[i] != workspace->sb4_data[i]) {
+            total_bit_errors++;
+          }
+        }
+      }
     }
-    // NOLINTEND(cert-msc51-cpp)
+
+    const double fer = static_cast<double>(frame_errors) / static_cast<double>(pt.frames);
+    const size_t total_bits = static_cast<size_t>(pt.frames) * bits_per_frame;
+    const double ber = static_cast<double>(total_bit_errors) / static_cast<double>(total_bits);
+
+    std::cout << "[FER sweep] Eb/N0=" << pt.eb_n0_db << " dB"
+              << "  FER=" << fer << " (" << frame_errors << "/" << pt.frames << ")"
+              << "  BER=" << ber << " (" << total_bit_errors << "/" << total_bits << ")"
+              << std::endl;
+
+    if (pt.max_fer >= 0.0) {
+      CHECK(fer <= pt.max_fer);
+    }
+  }
+  // NOLINTEND(cert-msc51-cpp)
 }
 
 TEST_CASE("E2E round-trip: FID=0 TOI=99 with random offset", "[e2e][rx]") {
-    std::mt19937 rng(99);
+  std::mt19937 rng(99);
 
-    std::array<uint8_t, kSb2DataBits> sb2_data{};
-    std::array<uint8_t, kSb3DataBits> sb3_data{};
-    std::array<uint8_t, kSb4DataBits> sb4_data{};
-    random_bits(sb2_data, rng);
-    random_bits(sb3_data, rng);
-    random_bits(sb4_data, rng);
+  std::array<uint8_t, kSb2DataBits> sb2_data{};
+  std::array<uint8_t, kSb3DataBits> sb3_data{};
+  std::array<uint8_t, kSb4DataBits> sb4_data{};
+  random_bits(sb2_data, rng);
+  random_bits(sb3_data, rng);
+  random_bits(sb4_data, rng);
 
-    const Fid fid{0};
-    const Toi toi{99};
+  const Fid fid{0};
+  const Toi toi{99};
 
-    std::array<uint8_t, kFrameLength> tx_frame{};
-    LdpcEncodeWorkspace enc_ws{};
-    FrameBuildWorkspace fbw{};
-    REQUIRE(frame_build(fid, toi, sb2_data, sb3_data, sb4_data,
-                        tx_frame, enc_ws, fbw) == FrameStatus::kOk);
+  std::array<uint8_t, kFrameLength> tx_frame{};
+  LdpcEncodeWorkspace enc_ws{};
+  FrameBuildWorkspace fbw{};
+  REQUIRE(frame_build(fid, toi, sb2_data, sb3_data, sb4_data, tx_frame, enc_ws, fbw) ==
+          FrameStatus::kOk);
 
-    // Place frame at a random offset within a larger buffer
-    constexpr size_t kPadding = 200;
-    std::array<float, kFrameLength + kPadding> rx_buf{};
-    // Fill padding with noise
-    {
-        auto noise_dist = std::normal_distribution<float>(0.0F, 0.5F);
-        for (size_t i = 0; i < kPadding; ++i) {
-            rx_buf[i] = noise_dist(rng);
-        }
+  // Place frame at a random offset within a larger buffer
+  constexpr size_t kPadding = 200;
+  std::array<float, kFrameLength + kPadding> rx_buf{};
+  // Fill padding with noise
+  {
+    auto noise_dist = std::normal_distribution<float>(0.0F, 0.5F);
+    for (size_t i = 0; i < kPadding; ++i) {
+      rx_buf[i] = noise_dist(rng);
     }
-    // Place bipolar frame after padding
-    for (size_t i = 0; i < kFrameLength; ++i) {
-        rx_buf[kPadding + i] = (tx_frame[i] == 0U) ? 1.0F : -1.0F;
-    }
-    // Add light noise (Eb/N0 = 6 dB)
-    add_awgn(std::span<float>(rx_buf).subspan(kPadding, kFrameLength), 6.0F, rng);
+  }
+  // Place bipolar frame after padding
+  for (size_t i = 0; i < kFrameLength; ++i) {
+    rx_buf[kPadding + i] = (tx_frame[i] == 0U) ? 1.0F : -1.0F;
+  }
+  // Add light noise (Eb/N0 = 6 dB)
+  add_awgn(std::span<float>(rx_buf).subspan(kPadding, kFrameLength), 6.0F, rng);
 
-    NullTelemetryHal hal;
-    FrameDecodeResult result{};
-    auto workspace = std::make_unique<FrameDecodeWorkspace>();
+  NullTelemetryHal hal;
+  FrameDecodeResult result{};
+  auto workspace = std::make_unique<FrameDecodeWorkspace>();
 
-    const auto status = frame_decode(rx_buf, result, *workspace, hal);
+  const auto status = frame_decode(rx_buf, result, *workspace, hal);
 
-    REQUIRE(status == FrameDecodeStatus::kOk);
-    CHECK(result.sync.frame_offset == kPadding);
-    CHECK(result.bch.fid == fid);
-    CHECK(result.bch.toi == toi);
+  REQUIRE(status == FrameDecodeStatus::kOk);
+  CHECK(result.sync.frame_offset == kPadding);
+  CHECK(result.bch.fid == fid);
+  CHECK(result.bch.toi == toi);
 
-    CHECK(std::equal(sb2_data.begin(), sb2_data.end(),
-                     workspace->sb2_data.begin()));
-    CHECK(std::equal(sb3_data.begin(), sb3_data.end(),
-                     workspace->sb3_data.begin()));
-    CHECK(std::equal(sb4_data.begin(), sb4_data.end(),
-                     workspace->sb4_data.begin()));
+  CHECK(std::equal(sb2_data.begin(), sb2_data.end(), workspace->sb2_data.begin()));
+  CHECK(std::equal(sb3_data.begin(), sb3_data.end(), workspace->sb3_data.begin()));
+  CHECK(std::equal(sb4_data.begin(), sb4_data.end(), workspace->sb4_data.begin()));
 }
 
 TEST_CASE("E2E: noiseless round-trip (Eb/N0 = infinity)", "[e2e][rx]") {
-    // Perfect channel: verify the pipeline works without any noise
-    std::mt19937 rng(7);
+  // Perfect channel: verify the pipeline works without any noise
+  std::mt19937 rng(7);
 
-    std::array<uint8_t, kSb2DataBits> sb2_data{};
-    std::array<uint8_t, kSb3DataBits> sb3_data{};
-    std::array<uint8_t, kSb4DataBits> sb4_data{};
-    random_bits(sb2_data, rng);
-    random_bits(sb3_data, rng);
-    random_bits(sb4_data, rng);
+  std::array<uint8_t, kSb2DataBits> sb2_data{};
+  std::array<uint8_t, kSb3DataBits> sb3_data{};
+  std::array<uint8_t, kSb4DataBits> sb4_data{};
+  random_bits(sb2_data, rng);
+  random_bits(sb3_data, rng);
+  random_bits(sb4_data, rng);
 
-    std::array<uint8_t, kFrameLength> tx_frame{};
-    LdpcEncodeWorkspace enc_ws{};
-    FrameBuildWorkspace fbw{};
-    REQUIRE(frame_build(Fid{2}, Toi{50}, sb2_data, sb3_data, sb4_data,
-                        tx_frame, enc_ws, fbw) == FrameStatus::kOk);
+  std::array<uint8_t, kFrameLength> tx_frame{};
+  LdpcEncodeWorkspace enc_ws{};
+  FrameBuildWorkspace fbw{};
+  REQUIRE(frame_build(Fid{2}, Toi{50}, sb2_data, sb3_data, sb4_data, tx_frame, enc_ws, fbw) ==
+          FrameStatus::kOk);
 
-    std::array<float, kFrameLength> rx_symbols{};
-    binary_to_bipolar(tx_frame, rx_symbols);
-    // No noise added
+  std::array<float, kFrameLength> rx_symbols{};
+  binary_to_bipolar(tx_frame, rx_symbols);
+  // No noise added
 
-    NullTelemetryHal hal;
-    FrameDecodeResult result{};
-    auto workspace = std::make_unique<FrameDecodeWorkspace>();
+  NullTelemetryHal hal;
+  FrameDecodeResult result{};
+  auto workspace = std::make_unique<FrameDecodeWorkspace>();
 
-    REQUIRE(frame_decode(rx_symbols, result, *workspace, hal) == FrameDecodeStatus::kOk);
-    CHECK(result.bch.fid == Fid{2});
-    CHECK(result.bch.toi == Toi{50});
-    CHECK(result.sb2.ldpc_converged);
-    CHECK(result.sb2.crc_ok);
-    CHECK(result.sb3.ldpc_converged);
-    CHECK(result.sb3.crc_ok);
-    CHECK(result.sb4.ldpc_converged);
-    CHECK(result.sb4.crc_ok);
+  REQUIRE(frame_decode(rx_symbols, result, *workspace, hal) == FrameDecodeStatus::kOk);
+  CHECK(result.bch.fid == Fid{2});
+  CHECK(result.bch.toi == Toi{50});
+  CHECK(result.sb2.ldpc_converged);
+  CHECK(result.sb2.crc_ok);
+  CHECK(result.sb3.ldpc_converged);
+  CHECK(result.sb3.crc_ok);
+  CHECK(result.sb4.ldpc_converged);
+  CHECK(result.sb4.crc_ok);
 
-    CHECK(std::equal(sb2_data.begin(), sb2_data.end(),
-                     workspace->sb2_data.begin()));
-    CHECK(std::equal(sb3_data.begin(), sb3_data.end(),
-                     workspace->sb3_data.begin()));
-    CHECK(std::equal(sb4_data.begin(), sb4_data.end(),
-                     workspace->sb4_data.begin()));
+  CHECK(std::equal(sb2_data.begin(), sb2_data.end(), workspace->sb2_data.begin()));
+  CHECK(std::equal(sb3_data.begin(), sb3_data.end(), workspace->sb3_data.begin()));
+  CHECK(std::equal(sb4_data.begin(), sb4_data.end(), workspace->sb4_data.begin()));
 }
 
 // ---------------------------------------------------------------------------
@@ -317,73 +307,67 @@ TEST_CASE("E2E: noiseless round-trip (Eb/N0 = infinity)", "[e2e][rx]") {
 // subframe payload symbols and verify that CRC rejects the corrupted data.
 // ---------------------------------------------------------------------------
 TEST_CASE("E2E: CRC rejects corrupted subframe payload", "[e2e][rx]") {
-    std::mt19937 rng(123);  // NOLINT(cert-msc51-cpp)
+  std::mt19937 rng(123); // NOLINT(cert-msc51-cpp)
 
-    std::array<uint8_t, kSb2DataBits> sb2_data{};
-    std::array<uint8_t, kSb3DataBits> sb3_data{};
-    std::array<uint8_t, kSb4DataBits> sb4_data{};
-    random_bits(sb2_data, rng);
-    random_bits(sb3_data, rng);
-    random_bits(sb4_data, rng);
+  std::array<uint8_t, kSb2DataBits> sb2_data{};
+  std::array<uint8_t, kSb3DataBits> sb3_data{};
+  std::array<uint8_t, kSb4DataBits> sb4_data{};
+  random_bits(sb2_data, rng);
+  random_bits(sb3_data, rng);
+  random_bits(sb4_data, rng);
 
-    std::array<uint8_t, kFrameLength> tx_frame{};
-    LdpcEncodeWorkspace enc_ws{};
-    FrameBuildWorkspace fbw{};
-    REQUIRE(frame_build(Fid{1}, Toi{77}, sb2_data, sb3_data, sb4_data,
-                        tx_frame, enc_ws, fbw) == FrameStatus::kOk);
+  std::array<uint8_t, kFrameLength> tx_frame{};
+  LdpcEncodeWorkspace enc_ws{};
+  FrameBuildWorkspace fbw{};
+  REQUIRE(frame_build(Fid{1}, Toi{77}, sb2_data, sb3_data, sb4_data, tx_frame, enc_ws, fbw) ==
+          FrameStatus::kOk);
 
-    // Convert to bipolar (noiseless)
-    std::array<float, kFrameLength> rx_clean{};
-    binary_to_bipolar(tx_frame, rx_clean);
+  // Convert to bipolar (noiseless)
+  std::array<float, kFrameLength> rx_clean{};
+  binary_to_bipolar(tx_frame, rx_clean);
 
-    // Sanity: clean frame decodes successfully
-    {
-        NullTelemetryHal hal;
-        FrameDecodeResult result{};
-        auto ws = std::make_unique<FrameDecodeWorkspace>();
-        REQUIRE(frame_decode(rx_clean, result, *ws, hal) == FrameDecodeStatus::kOk);
-        CHECK(result.sb2.crc_ok);
-        CHECK(result.sb3.crc_ok);
-        CHECK(result.sb4.crc_ok);
-    }
-
-    // Corrupt the interleaved payload region: flip a block of symbols
-    // Payload starts at offset kSyncLength + kSb1Length = 68 + 52 = 120
-    // Flipping enough symbols in the payload will cause LDPC to either
-    // not converge or produce residual errors that CRC catches.
-    constexpr size_t kPayloadStart = kSyncLength + kSb1Length;
-    auto rx_corrupt = rx_clean;
-
-    // Flip 3000 of 5880 payload symbols (>50% — overwhelms rate-1/2 LDPC)
-    for (size_t i = 0; i < 3000; ++i) {
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-        rx_corrupt[kPayloadStart + i] = -rx_corrupt[kPayloadStart + i];
-    }
-
+  // Sanity: clean frame decodes successfully
+  {
     NullTelemetryHal hal;
     FrameDecodeResult result{};
     auto ws = std::make_unique<FrameDecodeWorkspace>();
-    const auto status = frame_decode(rx_corrupt, result, *ws, hal);
+    REQUIRE(frame_decode(rx_clean, result, *ws, hal) == FrameDecodeStatus::kOk);
+    CHECK(result.sb2.crc_ok);
+    CHECK(result.sb3.crc_ok);
+    CHECK(result.sb4.crc_ok);
+  }
 
-    // The pipeline must NOT report full success: either LDPC fails to
-    // converge or CRC catches the residual errors.
-    bool any_subframe_rejected =
-        !result.sb2.crc_ok || !result.sb3.crc_ok || !result.sb4.crc_ok;
-    bool pipeline_detected_corruption =
-        (status != FrameDecodeStatus::kOk) || any_subframe_rejected;
+  // Corrupt the interleaved payload region: flip a block of symbols
+  // Payload starts at offset kSyncLength + kSb1Length = 68 + 52 = 120
+  // Flipping enough symbols in the payload will cause LDPC to either
+  // not converge or produce residual errors that CRC catches.
+  constexpr size_t kPayloadStart = kSyncLength + kSb1Length;
+  auto rx_corrupt = rx_clean;
 
-    CHECK(pipeline_detected_corruption);
+  // Flip 3000 of 5880 payload symbols (>50% — overwhelms rate-1/2 LDPC)
+  for (size_t i = 0; i < 3000; ++i) {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+    rx_corrupt[kPayloadStart + i] = -rx_corrupt[kPayloadStart + i];
+  }
 
-    // At least one subframe's CRC or LDPC convergence must have failed
-    std::cout << "[CRC rejection] status="
-              << static_cast<int>(status)
-              << "  sb2: ldpc=" << result.sb2.ldpc_converged
-              << " crc=" << result.sb2.crc_ok
-              << "  sb3: ldpc=" << result.sb3.ldpc_converged
-              << " crc=" << result.sb3.crc_ok
-              << "  sb4: ldpc=" << result.sb4.ldpc_converged
-              << " crc=" << result.sb4.crc_ok
-              << std::endl;
+  NullTelemetryHal hal;
+  FrameDecodeResult result{};
+  auto ws = std::make_unique<FrameDecodeWorkspace>();
+  const auto status = frame_decode(rx_corrupt, result, *ws, hal);
+
+  // The pipeline must NOT report full success: either LDPC fails to
+  // converge or CRC catches the residual errors.
+  bool any_subframe_rejected = !result.sb2.crc_ok || !result.sb3.crc_ok || !result.sb4.crc_ok;
+  bool pipeline_detected_corruption = (status != FrameDecodeStatus::kOk) || any_subframe_rejected;
+
+  CHECK(pipeline_detected_corruption);
+
+  // At least one subframe's CRC or LDPC convergence must have failed
+  std::cout << "[CRC rejection] status=" << static_cast<int>(status)
+            << "  sb2: ldpc=" << result.sb2.ldpc_converged << " crc=" << result.sb2.crc_ok
+            << "  sb3: ldpc=" << result.sb3.ldpc_converged << " crc=" << result.sb3.crc_ok
+            << "  sb4: ldpc=" << result.sb4.ldpc_converged << " crc=" << result.sb4.crc_ok
+            << std::endl;
 }
 
 // ---------------------------------------------------------------------------
@@ -406,41 +390,40 @@ TEST_CASE("E2E: CRC rejects corrupted subframe payload", "[e2e][rx]") {
 // any global state leaks between calls.
 // ---------------------------------------------------------------------------
 TEST_CASE("E2E: consecutive frames with incrementing TOI", "[e2e][rx]") {
-    NullTelemetryHal hal;
-    LdpcEncodeWorkspace enc_ws{};
-    FrameBuildWorkspace fbw{};
-    auto workspace = std::make_unique<FrameDecodeWorkspace>();
+  NullTelemetryHal hal;
+  LdpcEncodeWorkspace enc_ws{};
+  FrameBuildWorkspace fbw{};
+  auto workspace = std::make_unique<FrameDecodeWorkspace>();
 
-    for (uint8_t toi_val = 1U; toi_val <= 3U; ++toi_val) {
-        // NOLINTNEXTLINE(cert-msc51-cpp) — per-TOI seed for independent noise realisations
-        std::mt19937 rng(static_cast<uint32_t>(toi_val) * 1000U + 17U);
+  for (uint8_t toi_val = 1U; toi_val <= 3U; ++toi_val) {
+    // NOLINTNEXTLINE(cert-msc51-cpp) — per-TOI seed for independent noise realisations
+    std::mt19937 rng(static_cast<uint32_t>(toi_val) * 1000U + 17U);
 
-        std::array<uint8_t, kSb2DataBits> sb2{};
-        std::array<uint8_t, kSb3DataBits> sb3{};
-        std::array<uint8_t, kSb4DataBits> sb4{};
-        random_bits(sb2, rng);
-        random_bits(sb3, rng);
-        random_bits(sb4, rng);
+    std::array<uint8_t, kSb2DataBits> sb2{};
+    std::array<uint8_t, kSb3DataBits> sb3{};
+    std::array<uint8_t, kSb4DataBits> sb4{};
+    random_bits(sb2, rng);
+    random_bits(sb3, rng);
+    random_bits(sb4, rng);
 
-        std::array<uint8_t, kFrameLength> tx{};
-        REQUIRE(frame_build(Fid{0}, Toi{toi_val}, sb2, sb3, sb4,
-                            tx, enc_ws, fbw) == FrameStatus::kOk);
+    std::array<uint8_t, kFrameLength> tx{};
+    REQUIRE(frame_build(Fid{0}, Toi{toi_val}, sb2, sb3, sb4, tx, enc_ws, fbw) == FrameStatus::kOk);
 
-        std::array<float, kFrameLength> rx{};
-        binary_to_bipolar(tx, rx);
-        add_awgn(rx, 3.0F, rng);
+    std::array<float, kFrameLength> rx{};
+    binary_to_bipolar(tx, rx);
+    add_awgn(rx, 3.0F, rng);
 
-        FrameDecodeResult result{};
-        const auto status = frame_decode(rx, result, *workspace, hal);
+    FrameDecodeResult result{};
+    const auto status = frame_decode(rx, result, *workspace, hal);
 
-        INFO("TOI=" << static_cast<int>(toi_val));
-        REQUIRE(status == FrameDecodeStatus::kOk);
-        CHECK(result.bch.toi == Toi{toi_val});
-        CHECK(result.bch.fid == Fid{0});
-        CHECK(result.sb2.crc_ok);
-        CHECK(result.sb3.crc_ok);
-        CHECK(result.sb4.crc_ok);
-    }
+    INFO("TOI=" << static_cast<int>(toi_val));
+    REQUIRE(status == FrameDecodeStatus::kOk);
+    CHECK(result.bch.toi == Toi{toi_val});
+    CHECK(result.bch.fid == Fid{0});
+    CHECK(result.sb2.crc_ok);
+    CHECK(result.sb3.crc_ok);
+    CHECK(result.sb4.crc_ok);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -451,78 +434,74 @@ TEST_CASE("E2E: consecutive frames with incrementing TOI", "[e2e][rx]") {
 // pattern → kSyncNotFound), then pass a valid frame and assert kOk.
 // ---------------------------------------------------------------------------
 TEST_CASE("E2E: kSyncNotFound then success — decoder is stateless", "[e2e][rx]") {
-    NullTelemetryHal hal;
-    auto workspace = std::make_unique<FrameDecodeWorkspace>();
+  NullTelemetryHal hal;
+  auto workspace = std::make_unique<FrameDecodeWorkspace>();
 
-    // ── First call: all-zeros, no sync pattern ────────────────────────────
-    {
-        std::array<float, kFrameLength> noise_buf{};  // zero-initialised
-        FrameDecodeResult result{};
-        CHECK(frame_decode(noise_buf, result, *workspace, hal)
-              == FrameDecodeStatus::kSyncNotFound);
-    }
-
-    // ── Second call: valid frame must succeed ─────────────────────────────
-    // NOLINTNEXTLINE(cert-msc51-cpp) — deterministic seed for reproducible test
-    std::mt19937 rng(77U);
-    std::array<uint8_t, kSb2DataBits> sb2{};
-    std::array<uint8_t, kSb3DataBits> sb3{};
-    std::array<uint8_t, kSb4DataBits> sb4{};
-    random_bits(sb2, rng);
-    random_bits(sb3, rng);
-    random_bits(sb4, rng);
-
-    std::array<uint8_t, kFrameLength> tx{};
-    LdpcEncodeWorkspace enc_ws{};
-    FrameBuildWorkspace fbw{};
-    REQUIRE(frame_build(Fid{1}, Toi{5}, sb2, sb3, sb4,
-                        tx, enc_ws, fbw) == FrameStatus::kOk);
-
-    std::array<float, kFrameLength> rx{};
-    binary_to_bipolar(tx, rx);
-
+  // ── First call: all-zeros, no sync pattern ────────────────────────────
+  {
+    std::array<float, kFrameLength> noise_buf{}; // zero-initialised
     FrameDecodeResult result{};
-    const auto status = frame_decode(rx, result, *workspace, hal);
+    CHECK(frame_decode(noise_buf, result, *workspace, hal) == FrameDecodeStatus::kSyncNotFound);
+  }
 
-    REQUIRE(status == FrameDecodeStatus::kOk);
-    CHECK(result.bch.toi == Toi{5});
-    CHECK(result.bch.fid == Fid{1});
+  // ── Second call: valid frame must succeed ─────────────────────────────
+  // NOLINTNEXTLINE(cert-msc51-cpp) — deterministic seed for reproducible test
+  std::mt19937 rng(77U);
+  std::array<uint8_t, kSb2DataBits> sb2{};
+  std::array<uint8_t, kSb3DataBits> sb3{};
+  std::array<uint8_t, kSb4DataBits> sb4{};
+  random_bits(sb2, rng);
+  random_bits(sb3, rng);
+  random_bits(sb4, rng);
+
+  std::array<uint8_t, kFrameLength> tx{};
+  LdpcEncodeWorkspace enc_ws{};
+  FrameBuildWorkspace fbw{};
+  REQUIRE(frame_build(Fid{1}, Toi{5}, sb2, sb3, sb4, tx, enc_ws, fbw) == FrameStatus::kOk);
+
+  std::array<float, kFrameLength> rx{};
+  binary_to_bipolar(tx, rx);
+
+  FrameDecodeResult result{};
+  const auto status = frame_decode(rx, result, *workspace, hal);
+
+  REQUIRE(status == FrameDecodeStatus::kOk);
+  CHECK(result.bch.toi == Toi{5});
+  CHECK(result.bch.fid == Fid{1});
 }
 
 TEST_CASE("E2E: frame_decode completes in < 1 second", "[e2e][rx]") {
-    std::mt19937 rng(55);  // NOLINT(cert-msc51-cpp)
+  std::mt19937 rng(55); // NOLINT(cert-msc51-cpp)
 
-    std::array<uint8_t, kSb2DataBits> sb2{};
-    std::array<uint8_t, kSb3DataBits> sb3{};
-    std::array<uint8_t, kSb4DataBits> sb4{};
-    random_bits(sb2, rng);
-    random_bits(sb3, rng);
-    random_bits(sb4, rng);
+  std::array<uint8_t, kSb2DataBits> sb2{};
+  std::array<uint8_t, kSb3DataBits> sb3{};
+  std::array<uint8_t, kSb4DataBits> sb4{};
+  random_bits(sb2, rng);
+  random_bits(sb3, rng);
+  random_bits(sb4, rng);
 
-    std::array<uint8_t, kFrameLength> tx{};
-    LdpcEncodeWorkspace enc_ws{};
-    FrameBuildWorkspace fbw{};
-    REQUIRE(frame_build(Fid{0}, Toi{1}, sb2, sb3, sb4, tx, enc_ws, fbw)
-            == FrameStatus::kOk);
+  std::array<uint8_t, kFrameLength> tx{};
+  LdpcEncodeWorkspace enc_ws{};
+  FrameBuildWorkspace fbw{};
+  REQUIRE(frame_build(Fid{0}, Toi{1}, sb2, sb3, sb4, tx, enc_ws, fbw) == FrameStatus::kOk);
 
-    // Noiseless bipolar symbols (worst-case for LDPC: instant convergence,
-    // but we want to measure the full pipeline including sync search)
-    std::array<float, kFrameLength> rx{};
-    binary_to_bipolar(tx, rx);
+  // Noiseless bipolar symbols (worst-case for LDPC: instant convergence,
+  // but we want to measure the full pipeline including sync search)
+  std::array<float, kFrameLength> rx{};
+  binary_to_bipolar(tx, rx);
 
-    NullTelemetryHal hal;
-    FrameDecodeResult result{};
-    auto workspace = std::make_unique<FrameDecodeWorkspace>();
+  NullTelemetryHal hal;
+  FrameDecodeResult result{};
+  auto workspace = std::make_unique<FrameDecodeWorkspace>();
 
-    const auto t0 = std::chrono::steady_clock::now();
-    const auto status = frame_decode(rx, result, *workspace, hal);
-    const auto t1 = std::chrono::steady_clock::now();
+  const auto t0 = std::chrono::steady_clock::now();
+  const auto status = frame_decode(rx, result, *workspace, hal);
+  const auto t1 = std::chrono::steady_clock::now();
 
-    REQUIRE(status == FrameDecodeStatus::kOk);
+  REQUIRE(status == FrameDecodeStatus::kOk);
 
-    const auto elapsed_ms =
-        std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
-    std::cout << "[latency] frame_decode: " << elapsed_ms << " ms" << std::endl;
+  const auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+  std::cout << "[latency] frame_decode: " << elapsed_ms << " ms" << std::endl;
 
-    CHECK(elapsed_ms < 1000);
+  CHECK(elapsed_ms < 1000);
 }

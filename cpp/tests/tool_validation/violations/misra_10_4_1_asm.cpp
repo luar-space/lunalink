@@ -2,5 +2,5 @@
 // Expected diagnostic: hicpp-no-assembler
 
 void tvs_asm_nop() {
-    asm("nop");  // Inline assembly — target violation
+  asm("nop"); // Inline assembly — target violation
 }

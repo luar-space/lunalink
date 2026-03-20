@@ -1,6 +1,7 @@
 #pragma once
-#include <cstdint>
 #include "lunalink/core/telemetry.hpp"
+
+#include <cstdint>
 
 namespace lunalink::signal {
 
@@ -37,7 +38,7 @@ inline constexpr uint8_t kWatchdogLowerBoundFaultCode = 0xCCU;
  * @endcode
  */
 class WindowedWatchdog {
- public:
+public:
   /**
    * @param t_min_ticks  Minimum tick() calls expected between reset() and evaluate().
    *                     Under-shot → lower-bound trip → FaultPacket emitted (FIZ-2).
@@ -72,19 +73,19 @@ class WindowedWatchdog {
    *                 Caller MUST escalate to Zone 3 (transition FSM to kSafeMode). // FIZ-2
    */
   [[nodiscard]] bool evaluate(ITelemetryHal& hal, uint32_t timestamp_ms) noexcept {
-    const uint32_t n = count_;  // snapshot volatile before any emission
+    const uint32_t n = count_; // snapshot volatile before any emission
     if (n < t_min_) {
       // fiz_level=2 records detection severity in telemetry; the caller's
       // kSafeMode transition implements Zone 3 containment.
       const FaultPacket pkt{
           timestamp_ms,
           kWatchdogLowerBoundFaultCode,
-          2U,   // fiz_level: Zone 3 escalation is the caller's responsibility
-          0U,   // originating_step: 0 = watchdog monitor (not a POST step)
-          0U,   // reserved
+          2U, // fiz_level: Zone 3 escalation is the caller's responsibility
+          0U, // originating_step: 0 = watchdog monitor (not a POST step)
+          0U, // reserved
       };
       hal.emit(pkt);
-      return false;  // FIZ-2
+      return false; // FIZ-2
     }
     return true;
   }
@@ -114,9 +115,9 @@ class WindowedWatchdog {
   }
 #endif
 
- private:
-  uint32_t          t_min_;
-  uint32_t          t_max_;
+private:
+  uint32_t t_min_;
+  uint32_t t_max_;
   volatile uint32_t count_;
 };
 
@@ -141,4 +142,4 @@ void lock_watchdog_config() noexcept;
  */
 [[nodiscard]] WindowedWatchdog* get_installed_watchdog() noexcept;
 
-}  // namespace lunalink::signal
+} // namespace lunalink::signal

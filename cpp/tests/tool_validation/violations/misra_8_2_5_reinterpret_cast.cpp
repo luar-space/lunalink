@@ -4,5 +4,5 @@
 #include <cstdint>
 
 const uint8_t* tvs_reinterpret_alias(const float* p) {
-    return reinterpret_cast<const uint8_t*>(p);  // target violation
+  return reinterpret_cast<const uint8_t*>(p); // target violation
 }

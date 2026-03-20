@@ -1,16 +1,18 @@
 #pragma once
+#include "lunalink/core/safety.hpp"
+
 #include <cstdint>
 #include <span>
-#include "lunalink/core/safety.hpp"
 
 namespace lunalink::signal {
 
-/** @brief Status codes for 60x98 block interleave/deinterleave operations. [LSIS-AFS-470] SEU-hardened with high Hamming distance bit patterns. */
+/** @brief Status codes for 60x98 block interleave/deinterleave operations. [LSIS-AFS-470]
+ * SEU-hardened with high Hamming distance bit patterns. */
 enum class InterleaverStatus : uint8_t {
-    kOk             = 0x5AU,  ///< Operation completed successfully.
-    kInputTooSmall  = 0xCCU,  ///< Input buffer smaller than required.
-    kOutputTooSmall = 0x33U,  ///< Output buffer too small for result.
-    kFaultDetected  = 0x99U,  ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
+  kOk = 0x5AU,             ///< Operation completed successfully.
+  kInputTooSmall = 0xCCU,  ///< Input buffer smaller than required.
+  kOutputTooSmall = 0x33U, ///< Output buffer too small for result.
+  kFaultDetected = 0x99U,  ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
 };
 
 /// Number of rows in the block interleaver matrix (LSIS Table 17).
@@ -30,9 +32,8 @@ inline constexpr uint16_t kInterleaverSize = kInterleaverRows * kInterleaverCols
  *
  * Hardened with CFI sentinels and mirrored index calculation.
  */
-[[nodiscard]] InterleaverStatus block_interleave(
-    std::span<const uint8_t> in,
-    std::span<uint8_t>       out) noexcept;
+[[nodiscard]] InterleaverStatus block_interleave(std::span<const uint8_t> in,
+                                                 std::span<uint8_t> out) noexcept;
 
 /**
  * @brief 60x98 Block De-interleaver. [LSIS-FID0-470]
@@ -40,9 +41,8 @@ inline constexpr uint16_t kInterleaverSize = kInterleaverRows * kInterleaverCols
  *
  * Hardened with CFI sentinels and mirrored index calculation.
  */
-[[nodiscard]] InterleaverStatus block_deinterleave(
-    std::span<const uint8_t> in,
-    std::span<uint8_t>       out) noexcept;
+[[nodiscard]] InterleaverStatus block_deinterleave(std::span<const uint8_t> in,
+                                                   std::span<uint8_t> out) noexcept;
 
 /**
  * @brief Soft-decision 60x98 Block De-interleaver. [LSIS-AFS-471]
@@ -51,8 +51,7 @@ inline constexpr uint16_t kInterleaverSize = kInterleaverRows * kInterleaverCols
  * soft-decision values (LLRs) to preserve soft information for FEC decoding.
  * Hardened with CFI sentinels and mirrored index calculation.
  */
-[[nodiscard]] InterleaverStatus block_deinterleave_soft(
-    std::span<const float> in,
-    std::span<float>       out) noexcept;
+[[nodiscard]] InterleaverStatus block_deinterleave_soft(std::span<const float> in,
+                                                        std::span<float> out) noexcept;
 
 } // namespace lunalink::signal

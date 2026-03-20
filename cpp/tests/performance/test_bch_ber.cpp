@@ -21,11 +21,13 @@
 // Run explicitly with: task ber
 // ---------------------------------------------------------------------------
 #include "lunalink/encoding/bch.hpp"
+
+#include <catch2/catch_test_macros.hpp>
+
 #include <array>
 #include <cmath>
 #include <iostream>
 #include <random>
-#include <catch2/catch_test_macros.hpp>
 
 using namespace lunalink::signal;
 
@@ -34,11 +36,11 @@ namespace {
 constexpr double kBchRate = 9.0 / 52.0; // code rate R = k/n
 
 struct BchSimResult {
-    size_t total_frames;
-    size_t hard_errors;
-    size_t soft_errors;
-    double hard_fer;
-    double soft_fer;
+  size_t total_frames;
+  size_t hard_errors;
+  size_t soft_errors;
+  double hard_fer;
+  double soft_fer;
 };
 
 // Run a single Eb/N0 point comparing hard ML vs soft ML.
@@ -49,61 +51,61 @@ struct BchSimResult {
 // A frame error = decoded FID or TOI ≠ transmitted value.
 // Both decoders always output the ML-best codeword regardless of status code.
 BchSimResult run_bch_sim(double eb_no_db, int frames, uint32_t seed) {
-    const double eb_no_lin = std::pow(10.0, eb_no_db / 10.0);
-    const double sigma     = 1.0 / std::sqrt(2.0 * kBchRate * eb_no_lin);
-    const double sigma_sq  = sigma * sigma;
+  const double eb_no_lin = std::pow(10.0, eb_no_db / 10.0);
+  const double sigma = 1.0 / std::sqrt(2.0 * kBchRate * eb_no_lin);
+  const double sigma_sq = sigma * sigma;
 
-    std::mt19937 gen(seed);
-    std::uniform_int_distribution<uint8_t> fid_dist(0U, 3U);
-    std::uniform_int_distribution<uint8_t> toi_dist(0U, 99U);
-    std::normal_distribution<double>       noise(0.0, sigma);
+  std::mt19937 gen(seed);
+  std::uniform_int_distribution<uint8_t> fid_dist(0U, 3U);
+  std::uniform_int_distribution<uint8_t> toi_dist(0U, 99U);
+  std::normal_distribution<double> noise(0.0, sigma);
 
-    std::array<uint8_t, kBchCodewordLength> codeword{};
-    std::array<uint8_t, kBchCodewordLength> hard_rx{};
-    std::array<float,   kBchCodewordLength> soft_rx{};
+  std::array<uint8_t, kBchCodewordLength> codeword{};
+  std::array<uint8_t, kBchCodewordLength> hard_rx{};
+  std::array<float, kBchCodewordLength> soft_rx{};
 
-    size_t hard_errors = 0;
-    size_t soft_errors = 0;
+  size_t hard_errors = 0;
+  size_t soft_errors = 0;
 
-    for (int f = 0; f < frames; ++f) {
-        const uint8_t fid = fid_dist(gen);
-        const uint8_t toi = toi_dist(gen);
+  for (int f = 0; f < frames; ++f) {
+    const uint8_t fid = fid_dist(gen);
+    const uint8_t toi = toi_dist(gen);
 
-        REQUIRE(bch_encode(Fid(fid), Toi(toi), codeword) == BchStatus::kOk);
+    REQUIRE(bch_encode(Fid(fid), Toi(toi), codeword) == BchStatus::kOk);
 
-        // Transmit over BPSK AWGN: bit=0 → +1, bit=1 → −1
-        for (uint32_t i = 0; i < kBchCodewordLength; ++i) {
-            const double s = (codeword[i] == 0U) ? 1.0 : -1.0;
-            const double r = s + noise(gen);
+    // Transmit over BPSK AWGN: bit=0 → +1, bit=1 → −1
+    for (uint32_t i = 0; i < kBchCodewordLength; ++i) {
+      const double s = (codeword[i] == 0U) ? 1.0 : -1.0;
+      const double r = s + noise(gen);
 
-            hard_rx[i] = (r < 0.0) ? 1U : 0U;                       // hard decision
-            soft_rx[i] = static_cast<float>(2.0 * r / sigma_sq);     // channel LLR
-        }
-
-        const auto hard_res = bch_decode(hard_rx);
-        const auto soft_res = bch_decode_soft(soft_rx);
-
-        if (hard_res.fid.value() != fid || hard_res.toi.value() != toi) {
-            ++hard_errors;
-        }
-        if (soft_res.fid.value() != fid || soft_res.toi.value() != toi) {
-            ++soft_errors;
-        }
+      hard_rx[i] = (r < 0.0) ? 1U : 0U;                    // hard decision
+      soft_rx[i] = static_cast<float>(2.0 * r / sigma_sq); // channel LLR
     }
 
-    const double n = static_cast<double>(frames);
-    return {static_cast<size_t>(frames), hard_errors, soft_errors,
-            static_cast<double>(hard_errors) / n,
-            static_cast<double>(soft_errors) / n};
+    const auto hard_res = bch_decode(hard_rx);
+    const auto soft_res = bch_decode_soft(soft_rx);
+
+    if (hard_res.fid.value() != fid || hard_res.toi.value() != toi) {
+      ++hard_errors;
+    }
+    if (soft_res.fid.value() != fid || soft_res.toi.value() != toi) {
+      ++soft_errors;
+    }
+  }
+
+  const double n = static_cast<double>(frames);
+  return {static_cast<size_t>(frames),
+          hard_errors,
+          soft_errors,
+          static_cast<double>(hard_errors) / n,
+          static_cast<double>(soft_errors) / n};
 }
 
 void print_bch_result(double eb_no_db, const BchSimResult& r) {
-    std::cout << "[BCH BER] Eb/N0=" << eb_no_db << " dB"
-              << "  hard FER=" << r.hard_fer
-              << " (" << r.hard_errors << "/" << r.total_frames << ")"
-              << "  soft FER=" << r.soft_fer
-              << " (" << r.soft_errors << "/" << r.total_frames << ")"
-              << std::endl;
+  std::cout << "[BCH BER] Eb/N0=" << eb_no_db << " dB"
+            << "  hard FER=" << r.hard_fer << " (" << r.hard_errors << "/" << r.total_frames << ")"
+            << "  soft FER=" << r.soft_fer << " (" << r.soft_errors << "/" << r.total_frames << ")"
+            << std::endl;
 }
 
 } // namespace
@@ -118,14 +120,14 @@ void print_bch_result(double eb_no_db, const BchSimResult& r) {
 // Expected: hard FER ≈ 15%, soft FER ≈ 2%.
 // ---------------------------------------------------------------------------
 TEST_CASE("BCH hard vs soft: noise floor at 2.0 dB", "[channel][ber]") {
-    constexpr int kFrames = 1000;
+  constexpr int kFrames = 1000;
 
-    auto r = run_bch_sim(2.0, kFrames, 42U);
-    print_bch_result(2.0, r);
+  auto r = run_bch_sim(2.0, kFrames, 42U);
+  print_bch_result(2.0, r);
 
-    CHECK(r.hard_fer > 0.05);  // hard: substantial failure rate
-    CHECK(r.soft_fer > 0.005); // soft: also failing — channel is genuinely noisy
-    CHECK(r.hard_fer > r.soft_fer); // soft ML already outperforms at noise floor
+  CHECK(r.hard_fer > 0.05);       // hard: substantial failure rate
+  CHECK(r.soft_fer > 0.005);      // soft: also failing — channel is genuinely noisy
+  CHECK(r.hard_fer > r.soft_fer); // soft ML already outperforms at noise floor
 }
 
 // ---------------------------------------------------------------------------
@@ -143,22 +145,22 @@ TEST_CASE("BCH hard vs soft: noise floor at 2.0 dB", "[channel][ber]") {
 // This 2 dB gain translates directly into link-budget margin for SB1.
 // ---------------------------------------------------------------------------
 TEST_CASE("BCH hard vs soft: waterfall sweep 3-6 dB", "[channel][ber]") {
-    constexpr int kFrames = 3000;
+  constexpr int kFrames = 3000;
 
-    for (double eb_no : {3.0, 4.0, 5.0, 6.0}) {
-        auto r = run_bch_sim(eb_no, kFrames, 77U);
-        print_bch_result(eb_no, r);
+  for (double eb_no : {3.0, 4.0, 5.0, 6.0}) {
+    auto r = run_bch_sim(eb_no, kFrames, 77U);
+    print_bch_result(eb_no, r);
 
-        // Soft ML must never be worse than hard ML
-        CHECK(r.soft_fer <= r.hard_fer);
-    }
+    // Soft ML must never be worse than hard ML
+    CHECK(r.soft_fer <= r.hard_fer);
+  }
 
-    // At 5.0 dB: hard still has residual errors; soft is near-zero.
-    // Soft decoder reaches negligible FER ~2 dB before hard ML.
-    // Statistical bound: ≤2 errors in 3000 frames (FER < 1e-3).
-    auto r5 = run_bch_sim(5.0, kFrames, 137U);
-    CHECK(r5.hard_fer > 0.0);
-    CHECK(r5.soft_fer < 1e-3);
+  // At 5.0 dB: hard still has residual errors; soft is near-zero.
+  // Soft decoder reaches negligible FER ~2 dB before hard ML.
+  // Statistical bound: ≤2 errors in 3000 frames (FER < 1e-3).
+  auto r5 = run_bch_sim(5.0, kFrames, 137U);
+  CHECK(r5.hard_fer > 0.0);
+  CHECK(r5.soft_fer < 1e-3);
 }
 
 // ---------------------------------------------------------------------------
@@ -177,11 +179,11 @@ TEST_CASE("BCH hard vs soft: waterfall sweep 3-6 dB", "[channel][ber]") {
 // Statistical bound: ≤4 errors in 10,000 frames (FER < 5×10⁻⁴).
 // ---------------------------------------------------------------------------
 TEST_CASE("BCH hard vs soft: operating point 7.6 dB", "[channel][ber]") {
-    constexpr int kFrames = 10000;
+  constexpr int kFrames = 10000;
 
-    auto r = run_bch_sim(7.6, kFrames, 99U);
-    print_bch_result(7.6, r);
+  auto r = run_bch_sim(7.6, kFrames, 99U);
+  print_bch_result(7.6, r);
 
-    CHECK(r.hard_fer < 5e-4);
-    CHECK(r.soft_fer < 5e-4);
+  CHECK(r.hard_fer < 5e-4);
+  CHECK(r.soft_fer < 5e-4);
 }

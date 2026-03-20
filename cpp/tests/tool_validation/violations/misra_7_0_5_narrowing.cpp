@@ -6,6 +6,6 @@
 #include <cstdint>
 
 uint8_t tvs_narrow(uint32_t wide) {
-    uint8_t result = wide;  // Implicit narrowing — target violation
-    return result;
+  uint8_t result = wide; // Implicit narrowing — target violation
+  return result;
 }

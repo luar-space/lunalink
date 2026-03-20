@@ -4,13 +4,13 @@
 // Expected diagnostic: cppcoreguidelines-avoid-goto
 
 int tvs_goto_sum_until(const int* data, int n) {
-    int total = 0;
-    for (int i = 0; i < n; ++i) {
-        if (data[i] < 0) {
-            goto done;  // target violation
-        }
-        total += data[i];
+  int total = 0;
+  for (int i = 0; i < n; ++i) {
+    if (data[i] < 0) {
+      goto done; // target violation
     }
+    total += data[i];
+  }
 done:
-    return total;
+  return total;
 }

@@ -1,7 +1,8 @@
 #pragma once
-#include <cstdint>
-#include <array>
 #include "lunalink/core/safety.hpp"
+
+#include <array>
+#include <cstdint>
 
 namespace lunalink::signal {
 

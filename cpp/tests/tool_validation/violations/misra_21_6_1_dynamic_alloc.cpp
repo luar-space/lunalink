@@ -3,9 +3,9 @@
 // JPL Rule 5, Power of Ten Rule 3.
 // Expected diagnostic: cppcoreguidelines-no-malloc
 
-#include <cstdlib>
 #include <cstddef>
+#include <cstdlib>
 
 void* tvs_malloc_alloc(int size) {
-    return malloc(static_cast<size_t>(size));  // malloc — target violation
+  return malloc(static_cast<size_t>(size)); // malloc — target violation
 }

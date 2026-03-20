@@ -5,5 +5,5 @@
 #include <cstdio>
 
 void tvs_unchecked_return() {
-    std::fclose(stdin);  // Unchecked return from fclose — target violation
+  std::fclose(stdin); // Unchecked return from fclose — target violation
 }

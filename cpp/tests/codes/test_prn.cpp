@@ -1,8 +1,10 @@
-#include "lunalink/codes/prn.hpp"
-#include <catch2/catch_test_macros.hpp>
-#include <span>
-#include <cstring>
 #include "lunalink/codes/legendre.hpp"
+#include "lunalink/codes/prn.hpp"
+
+#include <catch2/catch_test_macros.hpp>
+
+#include <cstring>
+#include <span>
 
 using namespace lunalink::signal;
 
@@ -47,8 +49,7 @@ TEST_CASE("[LSIS-AFS-101] gold_prn returns distinct sequences for different PRNs
   const auto p2 = get_gold(2);
   bool differ = false;
   for (uint16_t i = 0; i < kGoldChipLength; ++i) {
-    if (read_chip(p1, i) !=
-        read_chip(p2, i)) {
+    if (read_chip(p1, i) != read_chip(p2, i)) {
       differ = true;
       break;
     }
@@ -86,8 +87,7 @@ TEST_CASE("[LSIS-AFS-102] weil10230_prn returns distinct sequences for different
   const auto p2 = get_weil10230(2);
   bool differ = false;
   for (uint16_t i = 0; i < kWeil10230ChipLength; ++i) {
-    if (read_chip(p1, i) !=
-        read_chip(p2, i)) {
+    if (read_chip(p1, i) != read_chip(p2, i)) {
       differ = true;
       break;
     }
@@ -115,8 +115,7 @@ TEST_CASE("[LSIS-AFS-102] weil1500_prn returns distinct sequences for different 
   const auto p2 = get_weil1500(2);
   bool differ = false;
   for (uint16_t i = 0; i < kWeil1500ChipLength; ++i) {
-    if (read_chip(p1, i) !=
-        read_chip(p2, i)) {
+    if (read_chip(p1, i) != read_chip(p2, i)) {
       differ = true;
       break;
     }
@@ -136,24 +135,23 @@ TEST_CASE("PRN APIs: saturating logic (C-Pattern 4)", "[prn]") {
   PrnCode packed_gold;
   // PRN 0 saturates to 1
   REQUIRE(gold_prn_packed(PrnId{0}, packed_gold) == PrnStatus::kOk);
-  
+
   PrnCode packed_weil;
   // PRN 211 saturates to 210
   REQUIRE(weil10230_prn_packed(PrnId{211}, packed_weil) == PrnStatus::kOk);
 
   uint8_t chip = 0;
   // Chip index still returns error as it's not a CheckedRange parameter but a loop boundary.
-  REQUIRE(unpack_chip(get_gold(1), kGoldChipLength, chip) ==
-          PrnStatus::kInvalidChipIndex);
+  REQUIRE(unpack_chip(get_gold(1), kGoldChipLength, chip) == PrnStatus::kInvalidChipIndex);
 }
 
 TEST_CASE("Weil codebook checksums (CBIT integrity)", "[prn]") {
   const uint64_t sum10230 = weil10230_codebook_checksum();
-  const uint64_t sum1500  = weil1500_codebook_checksum();
-  
+  const uint64_t sum1500 = weil1500_codebook_checksum();
+
   CHECK(sum10230 != 0);
   CHECK(sum1500 != 0);
-  
+
   // Verify stability
   CHECK(weil10230_codebook_checksum() == sum10230);
   CHECK(weil1500_codebook_checksum() == sum1500);
@@ -163,74 +161,80 @@ TEST_CASE("PrnId: Triple Modular Redundancy (TMR) resilience", "[prn]") {
   PrnId id(42);
   REQUIRE(id.value() == 42);
   REQUIRE(id.valid());
-  
+
   // Simulate single event upset (SEU) in one of the storage slots.
   id.storage.v1 = CheckedRange<uint8_t, 1, kPrnCount>{99};
   CHECK(id.value() == 42); // Majority vote should preserve the correct value.
   CHECK(id.valid());
-  
+
   id.storage.refresh(CheckedRange<uint8_t, 1, kPrnCount>{42});
   id.storage.v2 = CheckedRange<uint8_t, 1, kPrnCount>{1}; // valid but wrong
   CHECK(id.value() == 42);
-  
+
   id.storage.refresh(CheckedRange<uint8_t, 1, kPrnCount>{42});
   id.storage.v3 = CheckedRange<uint8_t, 1, kPrnCount>{210};
   CHECK(id.value() == 42);
 }
 
 TEST_CASE("PRN: invalid PRN ID forces error", "[prn]") {
-    PrnCode p;
-    PrnId bad_prn(1);
-    uint8_t over_prn = 250;
-    std::memcpy(&bad_prn.storage.v1, &over_prn, 1);
-    std::memcpy(&bad_prn.storage.v2, &over_prn, 1);
-    std::memcpy(&bad_prn.storage.v3, &over_prn, 1);
+  PrnCode p;
+  PrnId bad_prn(1);
+  uint8_t over_prn = 250;
+  std::memcpy(&bad_prn.storage.v1, &over_prn, 1);
+  std::memcpy(&bad_prn.storage.v2, &over_prn, 1);
+  std::memcpy(&bad_prn.storage.v3, &over_prn, 1);
 
-    CHECK(static_cast<uint8_t>(gold_prn_packed(bad_prn, p)) == static_cast<uint8_t>(PrnStatus::kInvalidPrn));
-    CHECK(static_cast<uint8_t>(weil10230_prn_packed(bad_prn, p)) == static_cast<uint8_t>(PrnStatus::kInvalidPrn));
-    CHECK(static_cast<uint8_t>(weil1500_prn_packed(bad_prn, p)) == static_cast<uint8_t>(PrnStatus::kInvalidPrn));
+  CHECK(static_cast<uint8_t>(gold_prn_packed(bad_prn, p)) ==
+        static_cast<uint8_t>(PrnStatus::kInvalidPrn));
+  CHECK(static_cast<uint8_t>(weil10230_prn_packed(bad_prn, p)) ==
+        static_cast<uint8_t>(PrnStatus::kInvalidPrn));
+  CHECK(static_cast<uint8_t>(weil1500_prn_packed(bad_prn, p)) ==
+        static_cast<uint8_t>(PrnStatus::kInvalidPrn));
 }
 
 TEST_CASE("Legendre: checksum stability", "[prn]") {
-    auto cs10223 = legendre_10223_checksum();
-    auto cs1499  = legendre_1499_checksum();
-    CHECK(cs10223 != 0);
-    CHECK(cs1499 != 0);
-    CHECK(legendre_10223_checksum() == cs10223);
-    CHECK(legendre_1499_checksum() == cs1499);
+  auto cs10223 = legendre_10223_checksum();
+  auto cs1499 = legendre_1499_checksum();
+  CHECK(cs10223 != 0);
+  CHECK(cs1499 != 0);
+  CHECK(legendre_10223_checksum() == cs10223);
+  CHECK(legendre_1499_checksum() == cs1499);
 }
 
 TEST_CASE("Legendre: direct generation and cached access", "[prn]") {
-    std::array<uint8_t, 1499> leg_out{};
-    CHECK(generate_legendre_sequence(1499, leg_out) == LegendreStatus::kOk);
+  std::array<uint8_t, 1499> leg_out{};
+  CHECK(generate_legendre_sequence(1499, leg_out) == LegendreStatus::kOk);
 
-    for (auto b : leg_out) {
-        CHECK((b == 0 || b == 1));
-    }
+  for (auto b : leg_out) {
+    CHECK((b == 0 || b == 1));
+  }
 
-    std::array<uint8_t, 10> small{};
-    CHECK(generate_legendre_sequence(1499, small) == LegendreStatus::kOutputTooSmall);
-    CHECK(generate_legendre_sequence(0, leg_out) == LegendreStatus::kInvalidPrime);
+  std::array<uint8_t, 10> small{};
+  CHECK(generate_legendre_sequence(1499, small) == LegendreStatus::kOutputTooSmall);
+  CHECK(generate_legendre_sequence(0, leg_out) == LegendreStatus::kInvalidPrime);
 
-    auto span10223 = get_cached_legendre(10223);
-    CHECK(span10223.size() == 10223);
-    auto span1499 = get_cached_legendre(1499);
-    CHECK(span1499.size() == 1499);
+  auto span10223 = get_cached_legendre(10223);
+  CHECK(span10223.size() == 10223);
+  auto span1499 = get_cached_legendre(1499);
+  CHECK(span1499.size() == 1499);
 
-    auto span_bad = get_cached_legendre(997);
-    CHECK(span_bad.empty());
+  auto span_bad = get_cached_legendre(997);
+  CHECK(span_bad.empty());
 }
 
 TEST_CASE("PRN: invalid PRN via TMR bypass", "[prn]") {
-    PrnCode p;
-    PrnId bad_prn(1);
-    uint8_t over_prn = 250;
+  PrnCode p;
+  PrnId bad_prn(1);
+  uint8_t over_prn = 250;
 
-    std::memcpy(&bad_prn.storage.v1, &over_prn, 1);
-    std::memcpy(&bad_prn.storage.v2, &over_prn, 1);
-    std::memcpy(&bad_prn.storage.v3, &over_prn, 1);
+  std::memcpy(&bad_prn.storage.v1, &over_prn, 1);
+  std::memcpy(&bad_prn.storage.v2, &over_prn, 1);
+  std::memcpy(&bad_prn.storage.v3, &over_prn, 1);
 
-    CHECK(static_cast<uint8_t>(gold_prn_packed(bad_prn, p)) == static_cast<uint8_t>(PrnStatus::kInvalidPrn));
-    CHECK(static_cast<uint8_t>(weil10230_prn_packed(bad_prn, p)) == static_cast<uint8_t>(PrnStatus::kInvalidPrn));
-    CHECK(static_cast<uint8_t>(weil1500_prn_packed(bad_prn, p)) == static_cast<uint8_t>(PrnStatus::kInvalidPrn));
+  CHECK(static_cast<uint8_t>(gold_prn_packed(bad_prn, p)) ==
+        static_cast<uint8_t>(PrnStatus::kInvalidPrn));
+  CHECK(static_cast<uint8_t>(weil10230_prn_packed(bad_prn, p)) ==
+        static_cast<uint8_t>(PrnStatus::kInvalidPrn));
+  CHECK(static_cast<uint8_t>(weil1500_prn_packed(bad_prn, p)) ==
+        static_cast<uint8_t>(PrnStatus::kInvalidPrn));
 }

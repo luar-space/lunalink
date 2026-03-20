@@ -1,7 +1,7 @@
 // GENERATED - do not edit.
 #pragma once
-#include <cstdint>
 #include <array>
+#include <cstdint>
 
 namespace lunalink::signal {
 

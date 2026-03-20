@@ -1,4 +1,5 @@
 #include "lunalink/codes/gold.hpp"
+
 #include <array>
 
 namespace lunalink::signal {
@@ -34,88 +35,91 @@ alignas(64) LUNALINK_LUT_SECTION constinit const std::array<uint16_t, 210> kGold
 } // namespace
 
 PrnStatus GoldGenerator::generate(PrnId prn_id, std::span<uint8_t> out) noexcept {
-    PrnStatus status = PrnStatus::kOk;
-    
-    // CFI: Magic start sentinel
-    // cppcheck-suppress variableScope -- CFI counter must be at function scope for terminal check
-    uint32_t cfi_count = 0xA5A5A5A5U;
+  PrnStatus status = PrnStatus::kOk;
 
+  // CFI: Magic start sentinel
+  // cppcheck-suppress variableScope -- CFI counter must be at function scope for terminal check
+  uint32_t cfi_count = 0xA5A5A5A5U;
+
+  if (!prn_id.valid()) {
+    status = PrnStatus::kInvalidPrn;
+  } else if (out.size() < kGoldChipLength) {
+    status = PrnStatus::kNullOutput;
+  }
+
+  if (status == PrnStatus::kOk) {
+    // Initialize registers per LSIS Appendix C.
+    g1_reg_ = 0x7FFU; // 11 ones
+    const uint8_t repaired = prn_id.repair();
     if (!prn_id.valid()) {
-        status = PrnStatus::kInvalidPrn;
-    } else if (out.size() < kGoldChipLength) {
-        status = PrnStatus::kNullOutput;
+      status = PrnStatus::kFaultDetected;
+    } else {
+      const size_t idx = static_cast<size_t>(repaired) - 1U;
+      g2_reg_ = kGoldG2Init.at(idx);
+    }
+  }
+
+  if (status == PrnStatus::kOk) {
+    // Mirrored loop counter.
+    // cppcheck-suppress [variableScope, unreadVariable] -- mirror variable must be at function
+    // scope for fault detection
+    uint32_t i_mir = 0xFFFFFFFFU;
+
+    for (uint16_t i = 0; i < kGoldChipLength; ++i) {
+      i_mir = ~static_cast<uint32_t>(i);
+
+      if (static_cast<uint32_t>(i) != (~i_mir)) [[unlikely]] {
+        status = PrnStatus::kFaultDetected; // FIZ-1
+        break;
+      }
+
+      out[i] = shift();
+      cfi_count++;
+      wip_tick();
     }
 
-    if (status == PrnStatus::kOk) {
-        // Initialize registers per LSIS Appendix C.
-        g1_reg_ = 0x7FFU; // 11 ones
-        const uint8_t repaired = prn_id.repair();
-        if (!prn_id.valid()) {
-            status = PrnStatus::kFaultDetected;
-        } else {
-            const size_t idx = static_cast<size_t>(repaired) - 1U;
-            g2_reg_ = kGoldG2Init.at(idx);
-        }
+    // CFI: Terminal verification
+    if (cfi_count != (0xA5A5A5A5U + kGoldChipLength)) [[unlikely]] {
+      status = PrnStatus::kFaultDetected; // FIZ-1
     }
+  }
 
-    if (status == PrnStatus::kOk) {
-        // Mirrored loop counter.
-        // cppcheck-suppress [variableScope, unreadVariable] -- mirror variable must be at function scope for fault detection
-        uint32_t i_mir = 0xFFFFFFFFU;
+  if (status != PrnStatus::kOk) {
+    secure_scrub(out);
+  }
 
-        for (uint16_t i = 0; i < kGoldChipLength; ++i) {
-            i_mir = ~static_cast<uint32_t>(i);
-
-            if (static_cast<uint32_t>(i) != (~i_mir)) [[unlikely]] {
-                status = PrnStatus::kFaultDetected;  // FIZ-1
-                break;
-            }
-
-            out[i] = shift();
-            cfi_count++;
-            wip_tick();
-        }
-
-        // CFI: Terminal verification
-        if (cfi_count != (0xA5A5A5A5U + kGoldChipLength)) [[unlikely]] {
-            status = PrnStatus::kFaultDetected;  // FIZ-1
-        }
-    }
-
-    if (status != PrnStatus::kOk) {
-        secure_scrub(out);
-    }
-
-    return status;
+  return status;
 }
 
 uint8_t GoldGenerator::shift() noexcept {
-    /**
-     * @brief Implementation of dual 11-stage LFSR per LSIS Figure C-1.
-     * Logic: Stage 11 of G1 is XORed with Stage 11 of G2 to produce the chip.
-     * G1 Polynomial: x^11 + x^2 + 1
-     * G2 Polynomial: x^11 + x^8 + x^5 + x^2 + 1
-     */
-    
-    const auto g1_out = static_cast<uint8_t>((static_cast<uint32_t>(g1_reg_) >> 10U) & 1U);
-    const auto g2_out = static_cast<uint8_t>((static_cast<uint32_t>(g2_reg_) >> 10U) & 1U);
-    const auto chip = static_cast<uint8_t>(g1_out ^ g2_out);
+  /**
+   * @brief Implementation of dual 11-stage LFSR per LSIS Figure C-1.
+   * Logic: Stage 11 of G1 is XORed with Stage 11 of G2 to produce the chip.
+   * G1 Polynomial: x^11 + x^2 + 1
+   * G2 Polynomial: x^11 + x^8 + x^5 + x^2 + 1
+   */
 
-    // G1 feedback: tap 11 and stage 2 (XOR)
-    const auto g1_fb = static_cast<uint16_t>(((static_cast<uint32_t>(g1_reg_) >> 10U) ^ 
-                                              (static_cast<uint32_t>(g1_reg_) >> 1U)) & 1U);
-    g1_reg_ = static_cast<uint16_t>((static_cast<uint32_t>(g1_reg_) << 1U) | 
-                                     static_cast<uint32_t>(g1_fb)) & 0x7FFU;
+  const auto g1_out = static_cast<uint8_t>((static_cast<uint32_t>(g1_reg_) >> 10U) & 1U);
+  const auto g2_out = static_cast<uint8_t>((static_cast<uint32_t>(g2_reg_) >> 10U) & 1U);
+  const auto chip = static_cast<uint8_t>(g1_out ^ g2_out);
 
-    // G2 feedback: tap 11, 8, 5, 2 (XOR)
-    const auto g2_fb = static_cast<uint16_t>(((static_cast<uint32_t>(g2_reg_) >> 10U) ^ 
-                                              (static_cast<uint32_t>(g2_reg_) >> 7U) ^ 
-                                              (static_cast<uint32_t>(g2_reg_) >> 4U) ^ 
-                                              (static_cast<uint32_t>(g2_reg_) >> 1U)) & 1U);
-    g2_reg_ = static_cast<uint16_t>((static_cast<uint32_t>(g2_reg_) << 1U) | 
-                                     static_cast<uint32_t>(g2_fb)) & 0x7FFU;
+  // G1 feedback: tap 11 and stage 2 (XOR)
+  const auto g1_fb = static_cast<uint16_t>(
+      ((static_cast<uint32_t>(g1_reg_) >> 10U) ^ (static_cast<uint32_t>(g1_reg_) >> 1U)) & 1U);
+  g1_reg_ =
+      static_cast<uint16_t>((static_cast<uint32_t>(g1_reg_) << 1U) | static_cast<uint32_t>(g1_fb)) &
+      0x7FFU;
 
-    return chip;
+  // G2 feedback: tap 11, 8, 5, 2 (XOR)
+  const auto g2_fb = static_cast<uint16_t>(
+      ((static_cast<uint32_t>(g2_reg_) >> 10U) ^ (static_cast<uint32_t>(g2_reg_) >> 7U) ^
+       (static_cast<uint32_t>(g2_reg_) >> 4U) ^ (static_cast<uint32_t>(g2_reg_) >> 1U)) &
+      1U);
+  g2_reg_ =
+      static_cast<uint16_t>((static_cast<uint32_t>(g2_reg_) << 1U) | static_cast<uint32_t>(g2_fb)) &
+      0x7FFU;
+
+  return chip;
 }
 
 } // namespace lunalink::signal

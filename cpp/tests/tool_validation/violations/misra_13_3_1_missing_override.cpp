@@ -4,11 +4,15 @@
 
 class TvsBase {
 public:
-    virtual ~TvsBase() = default;
-    virtual int compute(int x) { return x; }
+  virtual ~TvsBase() = default;
+  virtual int compute(int x) {
+    return x;
+  }
 };
 
 class TvsDerived : public TvsBase {
 public:
-    int compute(int x) { return x + 1; }  // Missing override — target violation
+  int compute(int x) {
+    return x + 1;
+  } // Missing override — target violation
 };

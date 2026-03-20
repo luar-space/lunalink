@@ -3,5 +3,5 @@
 // Expected diagnostic: bugprone-integer-division
 
 double tvs_integer_division(int a, int b) {
-    return a / b;  // Integer division in floating-point context — target violation
+  return a / b; // Integer division in floating-point context — target violation
 }

@@ -5,6 +5,6 @@
 #include <string>
 #include <utility>
 
-std::string tvs_move_const_arg(const std::string &s) {
-    return std::move(s);  // std::move on const argument — target violation
+std::string tvs_move_const_arg(const std::string& s) {
+  return std::move(s); // std::move on const argument — target violation
 }

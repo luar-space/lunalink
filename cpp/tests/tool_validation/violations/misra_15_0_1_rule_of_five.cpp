@@ -4,8 +4,10 @@
 
 class TvsBuffer {
 public:
-    TvsBuffer() : data_(new int[10]) {}
-    ~TvsBuffer() { delete[] data_; }  // Destructor without copy/move — target violation
+  TvsBuffer() : data_(new int[10]) {}
+  ~TvsBuffer() {
+    delete[] data_;
+  } // Destructor without copy/move — target violation
 private:
-    int* data_;
+  int* data_;
 };

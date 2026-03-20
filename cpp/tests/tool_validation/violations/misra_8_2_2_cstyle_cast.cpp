@@ -3,5 +3,5 @@
 // Expected diagnostic: cppcoreguidelines-pro-type-cstyle-cast
 
 float tvs_cstyle_cast_convert(int x) {
-    return (float)x;  // C-style cast — target violation
+  return (float)x; // C-style cast — target violation
 }

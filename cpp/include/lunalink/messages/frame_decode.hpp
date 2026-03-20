@@ -1,43 +1,44 @@
 #pragma once
+#include "lunalink/core/telemetry.hpp"
+#include "lunalink/encoding/bch.hpp"
+#include "lunalink/encoding/ldpc.hpp"
+#include "lunalink/messages/frame.hpp"
+#include "lunalink/signal/sync_detector.hpp"
+
 #include <array>
 #include <cstdint>
 #include <span>
 
-#include "lunalink/encoding/bch.hpp"
-#include "lunalink/messages/frame.hpp"
-#include "lunalink/encoding/ldpc.hpp"
-#include "lunalink/signal/sync_detector.hpp"
-#include "lunalink/core/telemetry.hpp"
-
 namespace lunalink::signal {
 
-/** @brief Status codes for the full RX decode pipeline: sync -> BCH -> deinterleave -> LDPC -> CRC. [LSIS-AFS-720] SEU-hardened with high Hamming distance bit patterns. */
+/** @brief Status codes for the full RX decode pipeline: sync -> BCH -> deinterleave -> LDPC -> CRC.
+ * [LSIS-AFS-720] SEU-hardened with high Hamming distance bit patterns. */
 enum class FrameDecodeStatus : uint8_t {
-    kOk             = 0x5AU,  ///< All subframes decoded and CRC-verified.
-    kSyncNotFound   = 0xA5U,  ///< Sync pattern not detected above threshold.
-    kBchFailed      = 0x33U,  ///< SB1 BCH decode failed.
-    kLdpcFailed     = 0xCCU,  ///< One or more LDPC subframes did not converge.
-    kCrcFailed      = 0x0FU,  ///< One or more CRC-24Q verifications failed.
-    kInvalidInput   = 0x66U,  ///< Input parameters out of range or invalid.
-    kFaultDetected  = 0x99U,  ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
+  kOk = 0x5AU,            ///< All subframes decoded and CRC-verified.
+  kSyncNotFound = 0xA5U,  ///< Sync pattern not detected above threshold.
+  kBchFailed = 0x33U,     ///< SB1 BCH decode failed.
+  kLdpcFailed = 0xCCU,    ///< One or more LDPC subframes did not converge.
+  kCrcFailed = 0x0FU,     ///< One or more CRC-24Q verifications failed.
+  kInvalidInput = 0x66U,  ///< Input parameters out of range or invalid.
+  kFaultDetected = 0x99U, ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
 };
 
 // ─── Result Structs ──────────────────────────────────────────────────────────
 
 /// Per-subframe decode status.
 struct SubframeDecodeResult {
-    bool ldpc_converged = false;  ///< true if LDPC decoder converged (H·c=0)
-    bool crc_ok         = false;  ///< true if CRC-24Q verified after LDPC decode
+  bool ldpc_converged = false; ///< true if LDPC decoder converged (H·c=0)
+  bool crc_ok = false;         ///< true if CRC-24Q verified after LDPC decode
 };
 
 /// Full frame decode result. Navigation data is in the workspace buffers.
 struct FrameDecodeResult {
-    FrameDecodeStatus     status = FrameDecodeStatus::kFaultDetected;
-    SyncResult            sync{};
-    BchResult             bch{BchStatus::kFaultDetected, Fid{}, Toi{}, 0};
-    SubframeDecodeResult  sb2{};
-    SubframeDecodeResult  sb3{};
-    SubframeDecodeResult  sb4{};
+  FrameDecodeStatus status = FrameDecodeStatus::kFaultDetected;
+  SyncResult sync{};
+  BchResult bch{BchStatus::kFaultDetected, Fid{}, Toi{}, 0};
+  SubframeDecodeResult sb2{};
+  SubframeDecodeResult sb3{};
+  SubframeDecodeResult sb4{};
 };
 
 // ─── Workspace ───────────────────────────────────────────────────────────────
@@ -51,23 +52,23 @@ struct FrameDecodeResult {
 /// WARNING: ~120 KB total. Must be heap-allocated or placed in a dedicated
 /// memory section on flight hardware. Do NOT allocate on a task stack.
 struct FrameDecodeWorkspace {
-    // Internal temporaries
-    LdpcWorkspace                        ldpc_ws{};
-    std::array<float, kPayloadLength>    deinterleave_buf{};
+  // Internal temporaries
+  LdpcWorkspace ldpc_ws{};
+  std::array<float, kPayloadLength> deinterleave_buf{};
 
-    // LDPC decoded message bits (includes CRC-24)
-    std::array<uint8_t, kSb2MsgBits>     sb2_msg{};
-    std::array<uint8_t, kSb3MsgBits>     sb3_msg{};
-    std::array<uint8_t, kSb4MsgBits>     sb4_msg{};
+  // LDPC decoded message bits (includes CRC-24)
+  std::array<uint8_t, kSb2MsgBits> sb2_msg{};
+  std::array<uint8_t, kSb3MsgBits> sb3_msg{};
+  std::array<uint8_t, kSb4MsgBits> sb4_msg{};
 
-    // Output: decoded navigation data (CRC-24 stripped)
-    std::array<uint8_t, kSb2DataBits>    sb2_data{};
-    std::array<uint8_t, kSb3DataBits>    sb3_data{};
-    std::array<uint8_t, kSb4DataBits>    sb4_data{};
+  // Output: decoded navigation data (CRC-24 stripped)
+  std::array<uint8_t, kSb2DataBits> sb2_data{};
+  std::array<uint8_t, kSb3DataBits> sb3_data{};
+  std::array<uint8_t, kSb4DataBits> sb4_data{};
 
 #ifdef LUNALINK_FAULT_INJECTION
-    /// SWIFI: number of CFI milestones to skip. Set before calling frame_decode().
-    uint32_t cfi_skip_inject = 0;
+  /// SWIFI: number of CFI milestones to skip. Set before calling frame_decode().
+  uint32_t cfi_skip_inject = 0;
 #endif
 };
 
@@ -82,8 +83,7 @@ inline constexpr size_t kFrameDecodeMinInput = kFrameLength;
 /// Workspace size for flight memory budgeting.
 /// ~120 KB — must be heap-allocated or placed in a dedicated memory section.
 inline constexpr size_t kFrameDecodeWorkspaceBytes = sizeof(FrameDecodeWorkspace);
-static_assert(kFrameDecodeWorkspaceBytes < 200'000,
-              "FrameDecodeWorkspace exceeds 200 KB budget");
+static_assert(kFrameDecodeWorkspaceBytes < 200'000, "FrameDecodeWorkspace exceeds 200 KB budget");
 
 // ─── Frame Decoder ───────────────────────────────────────────────────────────
 
@@ -108,12 +108,11 @@ static_assert(kFrameDecodeWorkspaceBytes < 200'000,
 /// @param sync_threshold   Sync detection threshold (default: kDefaultSyncThreshold).
 ///
 /// @return FrameDecodeStatus indicating overall decode outcome.
-[[nodiscard]] FrameDecodeStatus frame_decode(
-    std::span<const float>   rx_symbols,
-    FrameDecodeResult&       result,
-    FrameDecodeWorkspace&    workspace,
-    ITelemetryHal&           hal,
-    uint8_t                  ldpc_iterations = kFrameDecodeLdpcIterations,
-    float                    sync_threshold  = kDefaultSyncThreshold) noexcept;
+[[nodiscard]] FrameDecodeStatus frame_decode(std::span<const float> rx_symbols,
+                                             FrameDecodeResult& result,
+                                             FrameDecodeWorkspace& workspace,
+                                             ITelemetryHal& hal,
+                                             uint8_t ldpc_iterations = kFrameDecodeLdpcIterations,
+                                             float sync_threshold = kDefaultSyncThreshold) noexcept;
 
 } // namespace lunalink::signal

@@ -5,5 +5,5 @@
 #include <cstddef>
 
 bool tvs_null_is_null(const int* p) {
-    return p == NULL;  // target violation — use nullptr instead
+  return p == NULL; // target violation — use nullptr instead
 }

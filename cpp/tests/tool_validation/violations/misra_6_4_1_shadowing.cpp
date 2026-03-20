@@ -6,9 +6,9 @@
 #include <cstdint>
 
 int tvs_shadowing_compute(int x) {
-    int val = x + 1;
-    {
-        int val = x + 2;  // Shadows outer val — target violation
-        return val;
-    }
+  int val = x + 1;
+  {
+    int val = x + 2; // Shadows outer val — target violation
+    return val;
+  }
 }

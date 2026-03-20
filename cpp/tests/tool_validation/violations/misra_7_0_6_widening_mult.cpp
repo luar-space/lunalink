@@ -5,6 +5,6 @@
 #include <cstdint>
 
 int64_t tvs_widening_mult(int32_t a, int32_t b) {
-    int64_t result = a * b;  // Implicit widening of multiplication — target violation
-    return result;
+  int64_t result = a * b; // Implicit widening of multiplication — target violation
+  return result;
 }

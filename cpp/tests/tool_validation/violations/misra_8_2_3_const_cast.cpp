@@ -3,6 +3,6 @@
 // Expected diagnostic: cppcoreguidelines-pro-type-const-cast
 
 void tvs_const_cast_mutate(const int* p) {
-    int* q = const_cast<int*>(p);  // target violation
-    *q = 42;
+  int* q = const_cast<int*>(p); // target violation
+  *q = 42;
 }

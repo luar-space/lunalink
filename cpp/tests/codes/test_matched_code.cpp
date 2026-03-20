@@ -1,9 +1,11 @@
-#include "lunalink/codes/prn.hpp"
 #include "lunalink/codes/matched_code.hpp"
-#include <array>
+#include "lunalink/codes/prn.hpp"
+
 #include <catch2/catch_test_macros.hpp>
-#include <span>
+
+#include <array>
 #include <cstring>
+#include <span>
 
 using namespace lunalink::signal;
 
@@ -40,7 +42,8 @@ TEST_CASE("[LSIS-AFS-401] matched_code_epoch produces binary chip values", "[mat
   }
 }
 
-TEST_CASE("[LSIS-AFS-401] matched_code_epoch equals primary XOR secondary XOR tertiary", "[matched_code]") {
+TEST_CASE("[LSIS-AFS-401] matched_code_epoch equals primary XOR secondary XOR tertiary",
+          "[matched_code]") {
   std::array<uint8_t, kWeil10230ChipLength> out{};
   REQUIRE(matched_code_epoch(PrnId{1}, 0, out) == MatchedCodeStatus::kOk);
 
@@ -64,10 +67,11 @@ TEST_CASE("[LSIS-AFS-401] matched_code_epoch equals primary XOR secondary XOR te
   }
 }
 
-TEST_CASE("[LSIS-AFS-401] matched_code_epoch differs across secondary code boundary", "[matched_code]") {
+TEST_CASE("[LSIS-AFS-401] matched_code_epoch differs across secondary code boundary",
+          "[matched_code]") {
   std::array<uint8_t, kWeil10230ChipLength> e0{};
   std::array<uint8_t, kWeil10230ChipLength> e3{};
-  
+
   REQUIRE(matched_code_epoch(PrnId{1}, 0, e0) == MatchedCodeStatus::kOk);
   REQUIRE(matched_code_epoch(PrnId{1}, 3, e3) == MatchedCodeStatus::kOk);
 
@@ -76,7 +80,8 @@ TEST_CASE("[LSIS-AFS-401] matched_code_epoch differs across secondary code bound
   }
 }
 
-TEST_CASE("[LSIS-AFS-401] matched_code_epoch changes across tertiary chip boundary", "[matched_code]") {
+TEST_CASE("[LSIS-AFS-401] matched_code_epoch changes across tertiary chip boundary",
+          "[matched_code]") {
   std::array<uint8_t, kWeil10230ChipLength> e0{};
   std::array<uint8_t, kWeil10230ChipLength> e4{};
 
@@ -93,7 +98,8 @@ TEST_CASE("[LSIS-AFS-401] matched_code_epoch changes across tertiary chip bounda
   }
 }
 
-TEST_CASE("[LSIS-AFS-401] matched_code_epoch different PRNs produce different sequences", "[matched_code]") {
+TEST_CASE("[LSIS-AFS-401] matched_code_epoch different PRNs produce different sequences",
+          "[matched_code]") {
   std::array<uint8_t, kWeil10230ChipLength> out1{};
   std::array<uint8_t, kWeil10230ChipLength> out2{};
   std::array<uint8_t, kWeil10230ChipLength> out{};
@@ -124,17 +130,16 @@ TEST_CASE("[LSIS-AFS-401] matched_code_epoch_checked rejects invalid inputs", "[
   MatchedCodeAssignment a{};
   REQUIRE(default_matched_assignment_checked(PrnId{1}, a) == MatchedCodeStatus::kOk);
 
-  REQUIRE(matched_code_epoch_checked(a, kEpochsPerFrame, out) ==
-          MatchedCodeStatus::kInvalidEpoch);
-  REQUIRE(matched_code_epoch_checked(a, 0, short_out) ==
-          MatchedCodeStatus::kOutputTooSmall);
+  REQUIRE(matched_code_epoch_checked(a, kEpochsPerFrame, out) == MatchedCodeStatus::kInvalidEpoch);
+  REQUIRE(matched_code_epoch_checked(a, 0, short_out) == MatchedCodeStatus::kOutputTooSmall);
 }
 
-TEST_CASE("[LSIS-AFS-401] matched_code_epoch_checked supports tertiary phase offset", "[matched_code]") {
+TEST_CASE("[LSIS-AFS-401] matched_code_epoch_checked supports tertiary phase offset",
+          "[matched_code]") {
   std::array<uint8_t, kWeil10230ChipLength> out0{};
   std::array<uint8_t, kWeil10230ChipLength> out1{};
   MatchedCodeAssignment a0{}, a1{};
-  
+
   REQUIRE(default_matched_assignment_checked(PrnId{1}, a0) == MatchedCodeStatus::kOk);
   a1 = a0;
   a1.tertiary_phase_offset = CheckedRange<uint16_t, 0, 1499>{1};
@@ -144,7 +149,7 @@ TEST_CASE("[LSIS-AFS-401] matched_code_epoch_checked supports tertiary phase off
 
   PrnCode t;
   REQUIRE(weil1500_prn_packed(PrnId{1}, t) == PrnStatus::kOk);
-  uint8_t c0=0, c1=0;
+  uint8_t c0 = 0, c1 = 0;
   REQUIRE(unpack_chip(t, 0, c0) == PrnStatus::kOk);
   REQUIRE(unpack_chip(t, 1, c1) == PrnStatus::kOk);
 
@@ -157,101 +162,106 @@ TEST_CASE("checked matched helper APIs: saturating logic", "[matched_code]") {
   MatchedCodeAssignment a{};
   // Storage flip bypasses high-level logic, but value() saturates on read.
   a.primary_prn.storage.refresh(CheckedRange<uint8_t, 1, kPrnCount>{210});
-  a.primary_prn.storage.v1 = CheckedRange<uint8_t, 1, kPrnCount>{255}; 
+  a.primary_prn.storage.v1 = CheckedRange<uint8_t, 1, kPrnCount>{255};
   // v1 becomes 210 due to saturating CheckedRange constructor
   CHECK(a.primary_prn.value() == 210);
 }
 
 namespace {
 MatchedCodeAssignment make_test_assignment(PrnId p) {
-    MatchedCodeAssignment a;
-    a.primary_prn = p;
-    a.tertiary_prn = PrnId(1);
-    a.secondary_code_idx = CheckedRange<uint8_t, 0, 3>(0);
-    a.tertiary_phase_offset = CheckedRange<uint16_t, 0, 1499>(0);
-    return a;
+  MatchedCodeAssignment a;
+  a.primary_prn = p;
+  a.tertiary_prn = PrnId(1);
+  a.secondary_code_idx = CheckedRange<uint8_t, 0, 3>(0);
+  a.tertiary_phase_offset = CheckedRange<uint16_t, 0, 1499>(0);
+  return a;
 }
 } // namespace
 
 TEST_CASE("matched_code_epoch_checked: error paths", "[matched_code]") {
-    std::array<uint8_t, kWeil10230ChipLength> out_chips{};
+  std::array<uint8_t, kWeil10230ChipLength> out_chips{};
 
-    // Output too small
-    std::span<uint8_t> small_out(out_chips.data(), 100);
-    CHECK(static_cast<uint8_t>(matched_code_epoch_checked(make_test_assignment(PrnId(1)), 0, small_out)) == static_cast<uint8_t>(MatchedCodeStatus::kOutputTooSmall));
+  // Output too small
+  std::span<uint8_t> small_out(out_chips.data(), 100);
+  CHECK(static_cast<uint8_t>(
+            matched_code_epoch_checked(make_test_assignment(PrnId(1)), 0, small_out)) ==
+        static_cast<uint8_t>(MatchedCodeStatus::kOutputTooSmall));
 
-    // Invalid Epoch
-    CHECK(static_cast<uint8_t>(matched_code_epoch_checked(make_test_assignment(PrnId(1)), kEpochsPerFrame, out_chips)) == static_cast<uint8_t>(MatchedCodeStatus::kInvalidEpoch));
+  // Invalid Epoch
+  CHECK(static_cast<uint8_t>(matched_code_epoch_checked(
+            make_test_assignment(PrnId(1)), kEpochsPerFrame, out_chips)) ==
+        static_cast<uint8_t>(MatchedCodeStatus::kInvalidEpoch));
 
-    // Invalid PRN
-    PrnId bad_prn(1);
-    uint8_t over_prn = 250;
-    bad_prn.storage.v1 = CheckedRange<uint8_t, 1, 210>(1);
-    std::memcpy(&bad_prn.storage.v1, &over_prn, 1);
-    std::memcpy(&bad_prn.storage.v2, &over_prn, 1);
-    std::memcpy(&bad_prn.storage.v3, &over_prn, 1);
+  // Invalid PRN
+  PrnId bad_prn(1);
+  uint8_t over_prn = 250;
+  bad_prn.storage.v1 = CheckedRange<uint8_t, 1, 210>(1);
+  std::memcpy(&bad_prn.storage.v1, &over_prn, 1);
+  std::memcpy(&bad_prn.storage.v2, &over_prn, 1);
+  std::memcpy(&bad_prn.storage.v3, &over_prn, 1);
 
-    auto assignment = make_test_assignment(bad_prn);
-    CHECK(static_cast<uint8_t>(matched_code_epoch_checked(assignment, 0, out_chips)) == static_cast<uint8_t>(MatchedCodeStatus::kInvalidAssignment));
+  auto assignment = make_test_assignment(bad_prn);
+  CHECK(static_cast<uint8_t>(matched_code_epoch_checked(assignment, 0, out_chips)) ==
+        static_cast<uint8_t>(MatchedCodeStatus::kInvalidAssignment));
 }
 
 TEST_CASE("matched_code_epoch_checked: invalid tertiary PRN", "[matched_code]") {
-    MatchedCodeAssignment assignment;
-    assignment.primary_prn = PrnId(1);
-    assignment.secondary_code_idx = CheckedRange<uint8_t, 0, 3>(0);
-    assignment.tertiary_phase_offset = CheckedRange<uint16_t, 0, 1499>(0);
+  MatchedCodeAssignment assignment;
+  assignment.primary_prn = PrnId(1);
+  assignment.secondary_code_idx = CheckedRange<uint8_t, 0, 3>(0);
+  assignment.tertiary_phase_offset = CheckedRange<uint16_t, 0, 1499>(0);
 
-    uint8_t bad_val = 250;
-    assignment.tertiary_prn = PrnId(1);
-    std::memcpy(&assignment.tertiary_prn.storage.v1, &bad_val, 1);
-    std::memcpy(&assignment.tertiary_prn.storage.v2, &bad_val, 1);
-    std::memcpy(&assignment.tertiary_prn.storage.v3, &bad_val, 1);
+  uint8_t bad_val = 250;
+  assignment.tertiary_prn = PrnId(1);
+  std::memcpy(&assignment.tertiary_prn.storage.v1, &bad_val, 1);
+  std::memcpy(&assignment.tertiary_prn.storage.v2, &bad_val, 1);
+  std::memcpy(&assignment.tertiary_prn.storage.v3, &bad_val, 1);
 
-    std::array<uint8_t, kWeil10230ChipLength> out{};
-    CHECK(matched_code_epoch_checked(assignment, 0, out) == MatchedCodeStatus::kInvalidAssignment);
+  std::array<uint8_t, kWeil10230ChipLength> out{};
+  CHECK(matched_code_epoch_checked(assignment, 0, out) == MatchedCodeStatus::kInvalidAssignment);
 }
 
 TEST_CASE("[LSIS-AFS-401] Matched Code Coherency (LSIS-172)", "[matched_code]") {
-    PrnId prn{1};
-    MatchedCodeAssignment assignment;
-    REQUIRE(default_matched_assignment_checked(prn, assignment) == MatchedCodeStatus::kOk);
+  PrnId prn{1};
+  MatchedCodeAssignment assignment;
+  REQUIRE(default_matched_assignment_checked(prn, assignment) == MatchedCodeStatus::kOk);
 
-    std::array<uint8_t, kWeil10230ChipLength> epoch0{};
-    std::array<uint8_t, kWeil10230ChipLength> epoch1{};
-    std::array<uint8_t, kWeil10230ChipLength> epoch4{};
+  std::array<uint8_t, kWeil10230ChipLength> epoch0{};
+  std::array<uint8_t, kWeil10230ChipLength> epoch1{};
+  std::array<uint8_t, kWeil10230ChipLength> epoch4{};
 
-    // 1. Verify Secondary Code alignment
-    // S0 = [1, 1, 1, 0]
-    // Epoch 0: secondary chip should be 1
-    // Epoch 3: secondary chip should be 0
-    REQUIRE(matched_code_epoch_checked(assignment, 0, epoch0) == MatchedCodeStatus::kOk);
-    REQUIRE(matched_code_epoch_checked(assignment, 3, epoch1) == MatchedCodeStatus::kOk);
+  // 1. Verify Secondary Code alignment
+  // S0 = [1, 1, 1, 0]
+  // Epoch 0: secondary chip should be 1
+  // Epoch 3: secondary chip should be 0
+  REQUIRE(matched_code_epoch_checked(assignment, 0, epoch0) == MatchedCodeStatus::kOk);
+  REQUIRE(matched_code_epoch_checked(assignment, 3, epoch1) == MatchedCodeStatus::kOk);
 
-    // They should differ because secondary bit flipped (XOR modifier)
-    CHECK(epoch0[0] != epoch1[0]);
+  // They should differ because secondary bit flipped (XOR modifier)
+  CHECK(epoch0[0] != epoch1[0]);
 
-    // 2. Verify Tertiary Code alignment (Ns = 4)
-    // Tertiary chip only changes every 4 primary epochs.
-    // Epoch 0-3: same tertiary chip.
-    // Epoch 4: next tertiary chip.
-    REQUIRE(matched_code_epoch_checked(assignment, 0, epoch0) == MatchedCodeStatus::kOk);
+  // 2. Verify Tertiary Code alignment (Ns = 4)
+  // Tertiary chip only changes every 4 primary epochs.
+  // Epoch 0-3: same tertiary chip.
+  // Epoch 4: next tertiary chip.
+  REQUIRE(matched_code_epoch_checked(assignment, 0, epoch0) == MatchedCodeStatus::kOk);
 
-    // To isolate tertiary, we'd need to XOR out the primary and secondary.
-    // But we can check that epoch 0 and 4 use different tertiary indices.
-    // Tertiary index = (offset + floor(epoch/4)) % 1500
-    // Epoch 0 -> index 0
-    // Epoch 4 -> index 1
+  // To isolate tertiary, we'd need to XOR out the primary and secondary.
+  // But we can check that epoch 0 and 4 use different tertiary indices.
+  // Tertiary index = (offset + floor(epoch/4)) % 1500
+  // Epoch 0 -> index 0
+  // Epoch 4 -> index 1
 
-    PrnCode t_code;
-    REQUIRE(weil1500_prn_packed(assignment.tertiary_prn, t_code) == PrnStatus::kOk);
-    uint8_t t0=0, t1=0;
-    REQUIRE(unpack_chip(t_code, 0, t0) == PrnStatus::kOk);
-    REQUIRE(unpack_chip(t_code, 1, t1) == PrnStatus::kOk);
+  PrnCode t_code;
+  REQUIRE(weil1500_prn_packed(assignment.tertiary_prn, t_code) == PrnStatus::kOk);
+  uint8_t t0 = 0, t1 = 0;
+  REQUIRE(unpack_chip(t_code, 0, t0) == PrnStatus::kOk);
+  REQUIRE(unpack_chip(t_code, 1, t1) == PrnStatus::kOk);
 
-    if (t0 != t1) {
-        // If tertiary chips differ, and secondary chip is same (S0[0] == S0[4%4]),
-        // then epochs should differ.
-        REQUIRE(matched_code_epoch_checked(assignment, 4, epoch4) == MatchedCodeStatus::kOk);
-        CHECK(epoch0[0] != epoch4[0]);
-    }
+  if (t0 != t1) {
+    // If tertiary chips differ, and secondary chip is same (S0[0] == S0[4%4]),
+    // then epochs should differ.
+    REQUIRE(matched_code_epoch_checked(assignment, 4, epoch4) == MatchedCodeStatus::kOk);
+    CHECK(epoch0[0] != epoch4[0]);
+  }
 }

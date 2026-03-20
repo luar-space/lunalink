@@ -1,16 +1,18 @@
 #pragma once
+#include "lunalink/core/safety.hpp"
+
 #include <cstdint>
 #include <span>
-#include "lunalink/core/safety.hpp"
 
 namespace lunalink::signal {
 
-/** @brief Status codes for CRC-24Q generation and verification. [LSIS-AFS-467] SEU-hardened with high Hamming distance bit patterns. */
+/** @brief Status codes for CRC-24Q generation and verification. [LSIS-AFS-467] SEU-hardened with
+ * high Hamming distance bit patterns. */
 enum class CrcStatus : uint8_t {
-    kOk             = 0x5AU,  ///< Operation completed successfully.
-    kNullInput      = 0xCCU,  ///< Required buffer is null or empty.
-    kOutputTooSmall = 0x33U,  ///< Output buffer too small for result.
-    kFaultDetected  = 0x99U,  ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
+  kOk = 0x5AU,             ///< Operation completed successfully.
+  kNullInput = 0xCCU,      ///< Required buffer is null or empty.
+  kOutputTooSmall = 0x33U, ///< Output buffer too small for result.
+  kFaultDetected = 0x99U,  ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
 };
 
 /// CRC-24Q output length in bits.
@@ -30,15 +32,13 @@ inline constexpr uint8_t kCrc24Bits = 24;
  * @param out_crc Pointer to 24-bit output (3 bytes or 24 bit-bytes).
  * @return CrcStatus
  */
-[[nodiscard]] CrcStatus crc24_calculate(
-    std::span<const uint8_t> in,
-    std::span<uint8_t, 24ULL> out_crc) noexcept;
+[[nodiscard]] CrcStatus crc24_calculate(std::span<const uint8_t> in,
+                                        std::span<uint8_t, 24ULL> out_crc) noexcept;
 
 /**
  * @brief Hardened CRC verification. [LSIS-FID0-467]
  * @return true if CRC matches.
  */
-[[nodiscard]] bool crc24_verify(
-    std::span<const uint8_t> data_with_crc) noexcept;
+[[nodiscard]] bool crc24_verify(std::span<const uint8_t> data_with_crc) noexcept;
 
 } // namespace lunalink::signal

@@ -1,184 +1,199 @@
-#include <array>
-#include <numeric>
-#include <vector>
-
+#include "lunalink/core/telemetry.hpp"
 #include "lunalink/encoding/bch.hpp"
+#include "lunalink/encoding/ldpc.hpp"
 #include "lunalink/messages/frame.hpp"
 #include "lunalink/messages/frame_decode.hpp"
-#include "lunalink/encoding/ldpc.hpp"
-#include <random>
 #include "lunalink/signal/sync_detector.hpp"
-#include "lunalink/core/telemetry.hpp"
 
-#include <catch2/catch_test_macros.hpp>
 #include <catch2/benchmark/catch_benchmark.hpp>
+#include <catch2/catch_test_macros.hpp>
+
+#include <array>
+#include <numeric>
+#include <random>
+#include <vector>
 
 using namespace lunalink::signal;
 
 namespace {
 // Helper: encode a test pattern and produce soft symbols for benchmarking.
-void prepare_soft_symbols(LdpcSubframe type,
-                          std::span<float> soft,
-                          float snr_scale = 1.0f) {
-    const bool is_sf2 = (type == LdpcSubframe::kSF2);
-    const size_t k = is_sf2 ? 1200U : 870U;
-    const size_t n = is_sf2 ? 2400U : 1740U;
+void prepare_soft_symbols(LdpcSubframe type, std::span<float> soft, float snr_scale = 1.0f) {
+  const bool is_sf2 = (type == LdpcSubframe::kSF2);
+  const size_t k = is_sf2 ? 1200U : 870U;
+  const size_t n = is_sf2 ? 2400U : 1740U;
 
-    std::vector<uint8_t> msg(k);
-    std::iota(msg.begin(), msg.end(), uint8_t{0});
-    for (auto& b : msg) b %= 2;
+  std::vector<uint8_t> msg(k);
+  std::iota(msg.begin(), msg.end(), uint8_t{0});
+  for (auto& b : msg)
+    b %= 2;
 
-    std::vector<uint8_t> encoded(n);
-    LdpcEncodeWorkspace enc_ws{};
-    (void)ldpc_encode(type, msg, encoded, enc_ws);
+  std::vector<uint8_t> encoded(n);
+  LdpcEncodeWorkspace enc_ws{};
+  (void)ldpc_encode(type, msg, encoded, enc_ws);
 
-    for (size_t i = 0; i < n && i < soft.size(); ++i)
-        soft[i] = (encoded[i] == 1 ? -snr_scale : snr_scale);
+  for (size_t i = 0; i < n && i < soft.size(); ++i)
+    soft[i] = (encoded[i] == 1 ? -snr_scale : snr_scale);
 }
 } // namespace
 
 TEST_CASE("Gateway 2: WCET Analysis", "[wcet]") {
-    std::array<uint8_t, 1200> msg_sf2{};
-    std::array<uint8_t, 2400> encoded_sf2{};
-    std::array<float, 2400> soft_sf2{};
-    std::array<uint8_t, 1200> decoded_sf2{};
+  std::array<uint8_t, 1200> msg_sf2{};
+  std::array<uint8_t, 2400> encoded_sf2{};
+  std::array<float, 2400> soft_sf2{};
+  std::array<uint8_t, 1200> decoded_sf2{};
 
-    LdpcEncodeWorkspace enc_ws{};
+  LdpcEncodeWorkspace enc_ws{};
 
-    BENCHMARK("LDPC encode SF2") {
-        return ldpc_encode(LdpcSubframe::kSF2, msg_sf2, encoded_sf2, enc_ws);
-    };
+  BENCHMARK("LDPC encode SF2") {
+    return ldpc_encode(LdpcSubframe::kSF2, msg_sf2, encoded_sf2, enc_ws);
+  };
 
-    soft_sf2.fill(1.0f);
-    LdpcWorkspace ws{};
+  soft_sf2.fill(1.0f);
+  LdpcWorkspace ws{};
 
-    BENCHMARK("LDPC decode SF2 (50 iter)") {
-        return ldpc_decode(LdpcSubframe::kSF2, soft_sf2, 50, decoded_sf2, ws);
-    };
+  BENCHMARK("LDPC decode SF2 (50 iter)") {
+    return ldpc_decode(LdpcSubframe::kSF2, soft_sf2, 50, decoded_sf2, ws);
+  };
 
-    std::array<uint8_t, 52> bch_in{};
+  std::array<uint8_t, 52> bch_in{};
 
-    BENCHMARK("BCH ML decode") {
-        return bch_decode(bch_in);
-    };
+  BENCHMARK("BCH ML decode") {
+    return bch_decode(bch_in);
+  };
 }
 
 TEST_CASE("Gateway 5: Sync Detector WCET", "[wcet]") {
-    NullTelemetryHal hal;
-    SyncDetector det(hal);
+  NullTelemetryHal hal;
+  SyncDetector det(hal);
 
-    // Build a 6000-symbol stream with sync at offset 0.
-    std::array<float, 6000> symbols{};
-    for (uint16_t i = 0; i < kSyncLength; ++i) {
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-        symbols[i] = (kSyncPattern[i] == 0U) ? 1.0F : -1.0F;
-    }
+  // Build a 6000-symbol stream with sync at offset 0.
+  std::array<float, 6000> symbols{};
+  for (uint16_t i = 0; i < kSyncLength; ++i) {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+    symbols[i] = (kSyncPattern[i] == 0U) ? 1.0F : -1.0F;
+  }
 
-    SyncResult result{};
+  SyncResult result{};
 
-    BENCHMARK("sync_detect (6000 symbols)") {
-        return det.detect(std::span<const float>(symbols), result);
-    };
+  BENCHMARK("sync_detect (6000 symbols)") {
+    return det.detect(std::span<const float>(symbols), result);
+  };
 }
 
 TEST_CASE("Gateway 2: LDPC Decode Throughput", "[wcet]") {
-    SECTION("SF2 — alpha sweep throughput") {
-        std::array<float, 2400> soft{};
-        prepare_soft_symbols(LdpcSubframe::kSF2, soft);
+  SECTION("SF2 — alpha sweep throughput") {
+    std::array<float, 2400> soft{};
+    prepare_soft_symbols(LdpcSubframe::kSF2, soft);
 
-        struct AlphaConfig { int16_t num; int16_t den; const char* label; };
-        AlphaConfig configs[] = {
-            {3, 4, "3/4 (0.75)"},
-        };
+    struct AlphaConfig {
+      int16_t num;
+      int16_t den;
+      const char* label;
+    };
+    AlphaConfig configs[] = {
+        {3, 4, "3/4 (0.75)"},
+    };
 
-        for (const auto& cfg : configs) {
-            std::array<uint8_t, 1200> decoded{};
-            LdpcWorkspace ws{};
-            ws.alpha_numerator = cfg.num;
-            ws.alpha_denominator = cfg.den;
+    for (const auto& cfg : configs) {
+      std::array<uint8_t, 1200> decoded{};
+      LdpcWorkspace ws{};
+      ws.alpha_numerator = cfg.num;
+      ws.alpha_denominator = cfg.den;
 
-            BENCHMARK("LDPC decode SF2 alpha=0.75") {
-                return ldpc_decode(LdpcSubframe::kSF2, soft, 50, decoded, ws);
-            };
-        }
+      BENCHMARK("LDPC decode SF2 alpha=0.75") {
+        return ldpc_decode(LdpcSubframe::kSF2, soft, 50, decoded, ws);
+      };
     }
+  }
 
-    SECTION("SF3 — baseline throughput") {
-        std::array<float, 1740> soft{};
-        prepare_soft_symbols(LdpcSubframe::kSF3, soft);
+  SECTION("SF3 — baseline throughput") {
+    std::array<float, 1740> soft{};
+    prepare_soft_symbols(LdpcSubframe::kSF3, soft);
 
-        std::array<uint8_t, 870> decoded{};
-        LdpcWorkspace ws{};
+    std::array<uint8_t, 870> decoded{};
+    LdpcWorkspace ws{};
 
-        BENCHMARK("LDPC decode SF3 alpha=0.75") {
-            return ldpc_decode(LdpcSubframe::kSF3, soft, 50, decoded, ws);
-        };
-    }
+    BENCHMARK("LDPC decode SF3 alpha=0.75") {
+      return ldpc_decode(LdpcSubframe::kSF3, soft, 50, decoded, ws);
+    };
+  }
 }
 
 TEST_CASE("Gateway 5: frame_decode WCET", "[wcet]") {
-    // Multi-class WCET benchmark per MA §2: all-zeros, all-ones, pseudo-random.
-    // Timing spread across input classes detects data-dependent branches.
+  // Multi-class WCET benchmark per MA §2: all-zeros, all-ones, pseudo-random.
+  // Timing spread across input classes detects data-dependent branches.
 
-    auto build_rx = [](std::span<uint8_t, kSb2DataBits> sb2,
-                       std::span<uint8_t, kSb3DataBits> sb3,
-                       std::span<uint8_t, kSb4DataBits> sb4,
-                       std::span<float> out) {
-        std::array<uint8_t, kFrameLength> tx{};
-        LdpcEncodeWorkspace enc_ws{};
-        FrameBuildWorkspace fbw{};
-        (void)frame_build(Fid{0}, Toi{42}, sb2, sb3, sb4, tx, enc_ws, fbw);
-        for (size_t i = 0; i < kFrameLength; ++i) {
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-            out[i] = (tx[i] == 0U) ? 1.0F : -1.0F;
-        }
+  auto build_rx = [](std::span<uint8_t, kSb2DataBits> sb2,
+                     std::span<uint8_t, kSb3DataBits> sb3,
+                     std::span<uint8_t, kSb4DataBits> sb4,
+                     std::span<float> out) {
+    std::array<uint8_t, kFrameLength> tx{};
+    LdpcEncodeWorkspace enc_ws{};
+    FrameBuildWorkspace fbw{};
+    (void)frame_build(Fid{0}, Toi{42}, sb2, sb3, sb4, tx, enc_ws, fbw);
+    for (size_t i = 0; i < kFrameLength; ++i) {
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+      out[i] = (tx[i] == 0U) ? 1.0F : -1.0F;
+    }
+  };
+
+  NullTelemetryHal hal;
+  auto workspace = std::make_unique<FrameDecodeWorkspace>();
+  FrameDecodeResult result{};
+
+  // Class 1: all-zeros nav data
+  {
+    std::array<uint8_t, kSb2DataBits> sb2{};
+    std::array<uint8_t, kSb3DataBits> sb3{};
+    std::array<uint8_t, kSb4DataBits> sb4{};
+    std::array<float, kFrameLength> rx{};
+    build_rx(sb2, sb3, sb4, rx);
+    BENCHMARK("frame_decode (all-zeros)") {
+      return frame_decode(rx, result, *workspace, hal);
     };
+  }
 
-    NullTelemetryHal hal;
-    auto workspace = std::make_unique<FrameDecodeWorkspace>();
-    FrameDecodeResult result{};
-
-    // Class 1: all-zeros nav data
-    {
-        std::array<uint8_t, kSb2DataBits> sb2{};
-        std::array<uint8_t, kSb3DataBits> sb3{};
-        std::array<uint8_t, kSb4DataBits> sb4{};
-        std::array<float, kFrameLength> rx{};
-        build_rx(sb2, sb3, sb4, rx);
-        BENCHMARK("frame_decode (all-zeros)") {
-            return frame_decode(rx, result, *workspace, hal);
-        };
+  // Class 2: all-ones nav data
+  {
+    std::array<uint8_t, kSb2DataBits> sb2{};
+    std::array<uint8_t, kSb3DataBits> sb3{};
+    std::array<uint8_t, kSb4DataBits> sb4{};
+    for (auto& b : sb2) {
+      b = 1;
     }
-
-    // Class 2: all-ones nav data
-    {
-        std::array<uint8_t, kSb2DataBits> sb2{};
-        std::array<uint8_t, kSb3DataBits> sb3{};
-        std::array<uint8_t, kSb4DataBits> sb4{};
-        for (auto& b : sb2) { b = 1; }
-        for (auto& b : sb3) { b = 1; }
-        for (auto& b : sb4) { b = 1; }
-        std::array<float, kFrameLength> rx{};
-        build_rx(sb2, sb3, sb4, rx);
-        BENCHMARK("frame_decode (all-ones)") {
-            return frame_decode(rx, result, *workspace, hal);
-        };
+    for (auto& b : sb3) {
+      b = 1;
     }
-
-    // Class 3: pseudo-random nav data
-    {
-        std::mt19937 rng(42);  // NOLINT(cert-msc51-cpp) deterministic seed for reproducible benchmark
-        auto dist = std::uniform_int_distribution<uint32_t>(0, 1);
-        std::array<uint8_t, kSb2DataBits> sb2{};
-        std::array<uint8_t, kSb3DataBits> sb3{};
-        std::array<uint8_t, kSb4DataBits> sb4{};
-        for (auto& b : sb2) { b = static_cast<uint8_t>(dist(rng)); }
-        for (auto& b : sb3) { b = static_cast<uint8_t>(dist(rng)); }
-        for (auto& b : sb4) { b = static_cast<uint8_t>(dist(rng)); }
-        std::array<float, kFrameLength> rx{};
-        build_rx(sb2, sb3, sb4, rx);
-        BENCHMARK("frame_decode (pseudo-random)") {
-            return frame_decode(rx, result, *workspace, hal);
-        };
+    for (auto& b : sb4) {
+      b = 1;
     }
+    std::array<float, kFrameLength> rx{};
+    build_rx(sb2, sb3, sb4, rx);
+    BENCHMARK("frame_decode (all-ones)") {
+      return frame_decode(rx, result, *workspace, hal);
+    };
+  }
+
+  // Class 3: pseudo-random nav data
+  {
+    std::mt19937 rng(42); // NOLINT(cert-msc51-cpp) deterministic seed for reproducible benchmark
+    auto dist = std::uniform_int_distribution<uint32_t>(0, 1);
+    std::array<uint8_t, kSb2DataBits> sb2{};
+    std::array<uint8_t, kSb3DataBits> sb3{};
+    std::array<uint8_t, kSb4DataBits> sb4{};
+    for (auto& b : sb2) {
+      b = static_cast<uint8_t>(dist(rng));
+    }
+    for (auto& b : sb3) {
+      b = static_cast<uint8_t>(dist(rng));
+    }
+    for (auto& b : sb4) {
+      b = static_cast<uint8_t>(dist(rng));
+    }
+    std::array<float, kFrameLength> rx{};
+    build_rx(sb2, sb3, sb4, rx);
+    BENCHMARK("frame_decode (pseudo-random)") {
+      return frame_decode(rx, result, *workspace, hal);
+    };
+  }
 }

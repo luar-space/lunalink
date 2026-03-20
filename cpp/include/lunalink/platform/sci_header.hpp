@@ -1,6 +1,7 @@
 #pragma once
-#include <cstdint>
 #include "lunalink/core/safety.hpp"
+
+#include <cstdint>
 
 namespace lunalink::signal {
 
@@ -10,15 +11,15 @@ namespace lunalink::signal {
  * [SW-SAF-04, FM-034]
  */
 struct [[gnu::packed]] SciHeader {
-    // NOLINTBEGIN(hicpp-avoid-c-arrays) — C-style char arrays required for packed
-    // binary layout and direct CRC computation over raw bytes; std::array<char,N>
-    // cannot guarantee the same ABI without additional indirection.
-    char     git_sha[41];       // null-terminated hex SHA-1 (40 chars + NUL)
-    char     lsis_version[16];  // e.g. "LSIS-V1.0-2025\0\0"
-    char     version[24];       // git describe, e.g. "v0.1.8-47-gabcdef0\0..."
-    // NOLINTEND(hicpp-avoid-c-arrays)
-    uint32_t build_timestamp;   // seconds since J2000 (2000-01-01T12:00:00 UTC)
-    uint32_t header_crc32;      // CRC-32 (IEEE 802.3) of the preceding four fields
+  // NOLINTBEGIN(hicpp-avoid-c-arrays) — C-style char arrays required for packed
+  // binary layout and direct CRC computation over raw bytes; std::array<char,N>
+  // cannot guarantee the same ABI without additional indirection.
+  char git_sha[41];      // null-terminated hex SHA-1 (40 chars + NUL)
+  char lsis_version[16]; // e.g. "LSIS-V1.0-2025\0\0"
+  char version[24];      // git describe, e.g. "v0.1.8-47-gabcdef0\0..."
+  // NOLINTEND(hicpp-avoid-c-arrays)
+  uint32_t build_timestamp; // seconds since J2000 (2000-01-01T12:00:00 UTC)
+  uint32_t header_crc32;    // CRC-32 (IEEE 802.3) of the preceding four fields
 };
 
 static_assert(sizeof(SciHeader) == 41U + 16U + 24U + 4U + 4U,
@@ -34,4 +35,4 @@ extern const SciHeader kSciHeader;
  */
 [[nodiscard]] bool sci_header_verify() noexcept;
 
-}  // namespace lunalink::signal
+} // namespace lunalink::signal

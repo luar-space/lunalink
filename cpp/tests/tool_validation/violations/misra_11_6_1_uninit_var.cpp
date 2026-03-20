@@ -3,7 +3,7 @@
 // Expected diagnostic: cppcoreguidelines-init-variables
 
 int tvs_uninit_var() {
-    int x;  // Uninitialized variable — target violation
-    x = 42;
-    return x;
+  int x; // Uninitialized variable — target violation
+  x = 42;
+  return x;
 }

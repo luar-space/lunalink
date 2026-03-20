@@ -1,11 +1,12 @@
-#include <algorithm>  // for std::fill
-#include <cstddef>
-
 #include "lunalink/codes/prn.hpp"
+
 #include "lunalink/codes/prn_table.hpp"
 #include "lunalink/codes/prn_table_weil10230.hpp"
 #include "lunalink/codes/prn_table_weil1500.hpp"
 #include "lunalink/core/safety.hpp"
+
+#include <algorithm> // for std::fill
+#include <cstddef>
 
 namespace lunalink::signal {
 
@@ -86,4 +87,4 @@ uint64_t weil1500_codebook_checksum() noexcept {
   return ~(static_cast<uint64_t>(crc));
 }
 
-}  // namespace lunalink::signal
+} // namespace lunalink::signal

@@ -34,8 +34,12 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1
         with:
           key: lint
+      - name: Install clang-format
+        run: sudo apt-get install -y clang-format
       - name: Run lint checks
         run: task lint-check
+      - name: Check C++ formatting
+        run: task format-cpp-check
       - name: Check build flags (S10 gate)
         run: |
           # Build to generate compile_commands.json first

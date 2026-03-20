@@ -6,7 +6,7 @@
 #include <utility>
 
 std::string tvs_use_after_move() {
-    std::string s = "hello";
-    std::string t = std::move(s);
-    return s;  // Use after move — target violation
+  std::string s = "hello";
+  std::string t = std::move(s);
+  return s; // Use after move — target violation
 }

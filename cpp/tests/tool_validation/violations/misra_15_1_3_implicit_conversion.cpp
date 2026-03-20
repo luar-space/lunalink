@@ -4,8 +4,11 @@
 
 class TvsVoltage {
 public:
-    TvsVoltage(double v) : volts_(v) {}  // Implicit single-arg ctor — target violation
-    double get() const { return volts_; }
+  TvsVoltage(double v) : volts_(v) {} // Implicit single-arg ctor — target violation
+  double get() const {
+    return volts_;
+  }
+
 private:
-    double volts_;
+  double volts_;
 };

@@ -3,8 +3,8 @@
 // JPL Rule 20, Power of Ten Rule 8.
 // Expected diagnostic: cppcoreguidelines-macro-usage
 
-#define TVS_SQUARE(x) ((x) * (x))  // Function-like macro — target violation
+#define TVS_SQUARE(x) ((x) * (x)) // Function-like macro — target violation
 
 int tvs_macro_compute(int n) {
-    return TVS_SQUARE(n);
+  return TVS_SQUARE(n);
 }

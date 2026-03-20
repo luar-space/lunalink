@@ -2,6 +2,6 @@
 // JPL Rule 26, Power of Ten Rule 9.
 // Expected diagnostic: cppcoreguidelines-pro-bounds-pointer-arithmetic
 
-int tvs_pointer_arith(int *p) {
-    return *(p + 1);  // Pointer arithmetic — target violation
+int tvs_pointer_arith(int* p) {
+  return *(p + 1); // Pointer arithmetic — target violation
 }

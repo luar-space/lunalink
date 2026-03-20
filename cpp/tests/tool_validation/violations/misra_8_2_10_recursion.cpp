@@ -4,8 +4,8 @@
 // This file must trigger misc-no-recursion to prove the check is active.
 
 int tvs_factorial(int n) {
-    if (n <= 1) {
-        return 1;
-    }
-    return n * tvs_factorial(n - 1);  // Recursive call — target violation
+  if (n <= 1) {
+    return 1;
+  }
+  return n * tvs_factorial(n - 1); // Recursive call — target violation
 }

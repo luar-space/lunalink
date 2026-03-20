@@ -8,27 +8,31 @@ namespace lunalink::signal {
 namespace {
 
 // Validate IQ mux input sizes and aliasing.
-IqMuxStatus validate_iq_inputs(
-    std::span<const int8_t> i_samples,
-    std::span<const int8_t> q_samples,
-    std::span<int16_t>      out) noexcept {
+IqMuxStatus validate_iq_inputs(std::span<const int8_t> i_samples,
+                               std::span<const int8_t> q_samples,
+                               std::span<int16_t> out) noexcept {
   if (i_samples.size() < kGoldChipLength || q_samples.size() < kWeil10230ChipLength) [[unlikely]] {
     return IqMuxStatus::kInputTooSmall;
   }
   if (out.size() < static_cast<size_t>(2U * kIqSamplesPerEpoch)) [[unlikely]] {
     return IqMuxStatus::kOutputTooSmall;
   }
-  if (spans_overlap(static_cast<const void*>(i_samples.data()), i_samples.size_bytes(),
-                    static_cast<const void*>(out.data()), out.size_bytes()) ||
-      spans_overlap(static_cast<const void*>(q_samples.data()), q_samples.size_bytes(),
-                    static_cast<const void*>(out.data()), out.size_bytes())) [[unlikely]] {
-    return IqMuxStatus::kFaultDetected;  // FIZ-1
+  if (spans_overlap(static_cast<const void*>(i_samples.data()),
+                    i_samples.size_bytes(),
+                    static_cast<const void*>(out.data()),
+                    out.size_bytes()) ||
+      spans_overlap(static_cast<const void*>(q_samples.data()),
+                    q_samples.size_bytes(),
+                    static_cast<const void*>(out.data()),
+                    out.size_bytes())) [[unlikely]] {
+    return IqMuxStatus::kFaultDetected; // FIZ-1
   }
   return IqMuxStatus::kOk;
 }
 
 // Validate that an IQ sample pair is in {-1, 1}.
-// NOLINTBEGIN(bugprone-signed-char-misuse) -- int8_t samples are +/-1 BPSK symbols, signedness intentional
+// NOLINTBEGIN(bugprone-signed-char-misuse) -- int8_t samples are +/-1 BPSK symbols, signedness
+// intentional
 IqMuxStatus validate_iq_sample(int8_t i_raw, int8_t q_raw) noexcept {
   if (static_cast<int>(i_raw) * static_cast<int>(i_raw) != 1) [[unlikely]] {
     return IqMuxStatus::kInvalidISample;
@@ -40,16 +44,14 @@ IqMuxStatus validate_iq_sample(int8_t i_raw, int8_t q_raw) noexcept {
 }
 // NOLINTEND(bugprone-signed-char-misuse)
 
-}  // namespace
+} // namespace
 
 /**
  * @brief Multiplex I and Q channels. [LSIS-AFS-301]
  */
-IqMuxStatus multiplex_iq(
-    std::span<const int8_t> i_samples,
-    std::span<const int8_t> q_samples,
-    std::span<int16_t>      out) noexcept {
-
+IqMuxStatus multiplex_iq(std::span<const int8_t> i_samples,
+                         std::span<const int8_t> q_samples,
+                         std::span<int16_t> out) noexcept {
   // ESA/JAXA Safety Policy: Pre-initialise buffer.
   if (!out.empty()) {
     secure_scrub(out);
@@ -64,7 +66,9 @@ IqMuxStatus multiplex_iq(
       const auto q_raw = q_samples[n];
 
       status = validate_iq_sample(i_raw, q_raw);
-      if (status != IqMuxStatus::kOk) [[unlikely]] { break; }
+      if (status != IqMuxStatus::kOk) [[unlikely]] {
+        break;
+      }
 
       // NOLINTBEGIN(bugprone-signed-char-misuse) -- int8_t to int16_t widening of BPSK +/-1 symbols
       const auto idx = n << 1U;
@@ -77,11 +81,11 @@ IqMuxStatus multiplex_iq(
 
     // CFI: Terminal count verification.
     if (status == IqMuxStatus::kOk && loop_count != kIqSamplesPerEpoch) [[unlikely]] {
-        status = IqMuxStatus::kFaultDetected;  // FIZ-1
+      status = IqMuxStatus::kFaultDetected; // FIZ-1
     }
 
     if (status != IqMuxStatus::kOk) [[unlikely]] {
-        secure_scrub(out);
+      secure_scrub(out);
     }
   }
   return status;

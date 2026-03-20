@@ -1,26 +1,29 @@
 #pragma once
-#include <cstdint>
-#include <span>
-#include <array>
 #include "lunalink/core/safety.hpp"
 #include "lunalink/encoding/ldpc_tables.hpp"
 
+#include <array>
+#include <cstdint>
+#include <span>
+
 namespace lunalink::signal {
 
-/** @brief Status codes for LDPC encode and layered NMS belief-propagation decode. [LSIS-AFS-320] SEU-hardened with high Hamming distance bit patterns. */
+/** @brief Status codes for LDPC encode and layered NMS belief-propagation decode. [LSIS-AFS-320]
+ * SEU-hardened with high Hamming distance bit patterns. */
 enum class LdpcStatus : uint8_t {
-    kOk             = 0x5AU,  ///< Operation completed successfully.
-    kInvalidInput   = 0xA5U,  ///< Input parameters out of range or invalid.
-    kOutputTooSmall = 0x33U,  ///< Output buffer too small for result.
-    kFaultDetected  = 0x99U,  ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
-    kNotConverged   = 0x66U,  ///< BP iterations exhausted without syndrome convergence.
+  kOk = 0x5AU,             ///< Operation completed successfully.
+  kInvalidInput = 0xA5U,   ///< Input parameters out of range or invalid.
+  kOutputTooSmall = 0x33U, ///< Output buffer too small for result.
+  kFaultDetected = 0x99U,  ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
+  kNotConverged = 0x66U,   ///< BP iterations exhausted without syndrome convergence.
 };
 
-/** @brief Subframe type selector for LDPC codec (SF2: rate-1/2 n=2400, SF3/SF4: rate-1/2 n=1740). [LSIS-AFS-321] SEU-hardened with high Hamming distance bit patterns. */
+/** @brief Subframe type selector for LDPC codec (SF2: rate-1/2 n=2400, SF3/SF4: rate-1/2 n=1740).
+ * [LSIS-AFS-321] SEU-hardened with high Hamming distance bit patterns. */
 enum class LdpcSubframe : uint8_t {
-    kSF2 = 0x5AU,  ///< Subframe 2: n=2400, k=1200, rate 1/2.
-    kSF3 = 0xA5U,  ///< Subframe 3: n=1740, k=870, rate 1/2.
-    kSF4 = 0x33U,  ///< Subframe 4: reuses SF3 matrices.
+  kSF2 = 0x5AU, ///< Subframe 2: n=2400, k=1200, rate 1/2.
+  kSF3 = 0xA5U, ///< Subframe 3: n=1740, k=870, rate 1/2.
+  kSF4 = 0x33U, ///< Subframe 4: reuses SF3 matrices.
 };
 
 /**
@@ -29,12 +32,12 @@ enum class LdpcSubframe : uint8_t {
  * Caller must allocate (heap or dedicated memory section on flight hardware).
  */
 struct LdpcEncodeWorkspace {
-    std::array<uint8_t, 1200> s{};
-    std::array<uint8_t, 480>  p1{};
-    std::array<uint8_t, 4560> p2{};
-    std::array<uint8_t, 480>  t_as{};
-    std::array<uint8_t, 4560> t_cs{};
-    std::array<uint8_t, 4560> t_dp1{};
+  std::array<uint8_t, 1200> s{};
+  std::array<uint8_t, 480> p1{};
+  std::array<uint8_t, 4560> p2{};
+  std::array<uint8_t, 480> t_as{};
+  std::array<uint8_t, 4560> t_cs{};
+  std::array<uint8_t, 4560> t_dp1{};
 };
 
 /**
@@ -50,11 +53,10 @@ struct LdpcEncodeWorkspace {
  *
  * @return LdpcStatus::kOk or error code.
  */
-[[nodiscard]] LdpcStatus ldpc_encode(
-    LdpcSubframe               type,
-    std::span<const uint8_t>   msg,
-    std::span<uint8_t>         out,
-    LdpcEncodeWorkspace&       workspace) noexcept;
+[[nodiscard]] LdpcStatus ldpc_encode(LdpcSubframe type,
+                                     std::span<const uint8_t> msg,
+                                     std::span<uint8_t> out,
+                                     LdpcEncodeWorkspace& workspace) noexcept;
 
 /**
  * @brief Scratchpad memory for LDPC decoding to ensure re-entrancy.
@@ -65,17 +67,17 @@ struct LdpcEncodeWorkspace {
  * memory section on flight hardware. Do NOT allocate on a task stack.
  */
 struct LdpcWorkspace {
-    std::array<int16_t, 6240>  L_v{};   // Variable-node LLRs (Mother length)
-    std::array<int16_t, 32000> L_cv{};  // Check-to-variable messages (Sparse parts)
-    std::array<int16_t, 4560>  L_cv_identity{}; // Messages for identity part
+  std::array<int16_t, 6240> L_v{};           // Variable-node LLRs (Mother length)
+  std::array<int16_t, 32000> L_cv{};         // Check-to-variable messages (Sparse parts)
+  std::array<int16_t, 4560> L_cv_identity{}; // Messages for identity part
 
-    // NMS scaling factor α = alpha_numerator / alpha_denominator.
-    // Default 2/3 ≈ 0.667 — optimized empirically for the LSIS-AFS LDPC
-    // codes (n=2400 rate-1/2 and n=1740 rate-1/2). Outperforms the standard
-    // α=3/4 by ~0.3 dB in the waterfall region.
-    // Valid range: numerator in [1,7], denominator in [1,8], numerator <= denominator.
-    int16_t alpha_numerator   = 2;
-    int16_t alpha_denominator = 3;
+  // NMS scaling factor α = alpha_numerator / alpha_denominator.
+  // Default 2/3 ≈ 0.667 — optimized empirically for the LSIS-AFS LDPC
+  // codes (n=2400 rate-1/2 and n=1740 rate-1/2). Outperforms the standard
+  // α=3/4 by ~0.3 dB in the waterfall region.
+  // Valid range: numerator in [1,7], denominator in [1,8], numerator <= denominator.
+  int16_t alpha_numerator = 2;
+  int16_t alpha_denominator = 3;
 };
 
 /**
@@ -92,11 +94,10 @@ struct LdpcWorkspace {
  *
  * @return LdpcStatus::kOk on convergence, kNotConverged if max iterations reached.
  */
-[[nodiscard]] LdpcStatus ldpc_decode(
-    LdpcSubframe               type,
-    std::span<const float>     symbols,
-    uint8_t                    iterations,
-    std::span<uint8_t>         out,
-    LdpcWorkspace&             workspace) noexcept;
+[[nodiscard]] LdpcStatus ldpc_decode(LdpcSubframe type,
+                                     std::span<const float> symbols,
+                                     uint8_t iterations,
+                                     std::span<uint8_t> out,
+                                     LdpcWorkspace& workspace) noexcept;
 
 } // namespace lunalink::signal

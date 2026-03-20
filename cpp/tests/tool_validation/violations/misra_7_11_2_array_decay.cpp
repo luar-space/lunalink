@@ -4,11 +4,11 @@
 // Expected diagnostic: cppcoreguidelines-pro-bounds-array-to-pointer-decay
 
 void tvs_array_decay_process(const int* data, int n) {
-    (void)data;
-    (void)n;
+  (void)data;
+  (void)n;
 }
 
 void tvs_array_decay_caller() {
-    int buf[10] = {};
-    tvs_array_decay_process(buf, 10);  // Array-to-pointer decay — target violation
+  int buf[10] = {};
+  tvs_array_decay_process(buf, 10); // Array-to-pointer decay — target violation
 }

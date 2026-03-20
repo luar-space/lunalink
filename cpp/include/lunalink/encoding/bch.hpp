@@ -1,22 +1,24 @@
 #pragma once
+#include "lunalink/core/safety.hpp"
+
 #include <concepts>
 #include <cstdint>
 #include <span>
 #include <type_traits>
-#include "lunalink/core/safety.hpp"
 
 namespace lunalink::signal {
 
-/** @brief Status codes for BCH(51,8) encode and maximum-likelihood decode. [LSIS-AFS-501] SEU-hardened with high Hamming distance bit patterns. */
+/** @brief Status codes for BCH(51,8) encode and maximum-likelihood decode. [LSIS-AFS-501]
+ * SEU-hardened with high Hamming distance bit patterns. */
 enum class BchStatus : uint8_t {
-    kOk             = 0x5AU,  ///< Operation completed successfully.
-    kOutputTooSmall = 0xA5U,  ///< Output buffer too small for result.
-    kInvalidFid     = 0x33U,  ///< FID value exceeds kBchFidMax.
-    kInvalidToi     = 0xCCU,  ///< TOI value exceeds kBchToiMax.
-    kNullOutput     = 0x99U,  ///< Required buffer is null or empty.
-    kInvalidInput   = 0x66U,  ///< Input parameters out of range or invalid.
-    kAmbiguousMatch = 0xF0U,  ///< Multiple codewords at same Hamming distance.
-    kFaultDetected  = 0x0FU,  ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
+  kOk = 0x5AU,             ///< Operation completed successfully.
+  kOutputTooSmall = 0xA5U, ///< Output buffer too small for result.
+  kInvalidFid = 0x33U,     ///< FID value exceeds kBchFidMax.
+  kInvalidToi = 0xCCU,     ///< TOI value exceeds kBchToiMax.
+  kNullOutput = 0x99U,     ///< Required buffer is null or empty.
+  kInvalidInput = 0x66U,   ///< Input parameters out of range or invalid.
+  kAmbiguousMatch = 0xF0U, ///< Multiple codewords at same Hamming distance.
+  kFaultDetected = 0x0FU,  ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
 };
 
 /// BCH(51,8) encoder output length: 1 raw MSB + 51 LFSR symbols = 52 symbols.
@@ -38,10 +40,18 @@ struct Fid : TmrCheckedId<0, kBchFidMax, FidTag> {
   using TmrCheckedId::TmrCheckedId;
 
   // LSIS Node Constants
-  static constexpr Fid kNode1() { return Fid{0}; }
-  static constexpr Fid kNode2() { return Fid{1}; }
-  static constexpr Fid kNode3() { return Fid{2}; }
-  static constexpr Fid kNode4() { return Fid{3}; }
+  static constexpr Fid kNode1() {
+    return Fid{0};
+  }
+  static constexpr Fid kNode2() {
+    return Fid{1};
+  }
+  static constexpr Fid kNode3() {
+    return Fid{2};
+  }
+  static constexpr Fid kNode4() {
+    return Fid{3};
+  }
 };
 
 /**
@@ -55,9 +65,9 @@ using Toi = TmrCheckedId<0, kBchToiMax, ToiTag>;
  */
 struct alignas(8) BchResult {
   BchStatus status;
-  Fid       fid;
-  Toi       toi;
-  uint8_t   hamming_distance;
+  Fid fid;
+  Toi toi;
+  uint8_t hamming_distance;
 
   constexpr BchResult(BchStatus s, Fid f, Toi t, uint8_t d) noexcept
       : status(s), fid(f), toi(t), hamming_distance(d) {}
@@ -75,20 +85,14 @@ struct alignas(8) BchResult {
  *
  * @return BchStatus::kOk or error code.
  */
-[[nodiscard]] BchStatus bch_encode(
-    Fid                      fid,
-    Toi                      toi,
-    std::span<uint8_t, 52ULL> out) noexcept;
+[[nodiscard]] BchStatus bch_encode(Fid fid, Toi toi, std::span<uint8_t, 52ULL> out) noexcept;
 
 /**
  * @brief Ergonomic overload for fixed-size arrays.
  */
 template <typename T>
-    requires (!std::same_as<std::remove_cvref_t<T>, std::span<uint8_t, 52ULL>>)
-[[nodiscard]] inline BchStatus bch_encode(
-    Fid fid,
-    Toi toi,
-    T&& out) noexcept {
+  requires(!std::same_as<std::remove_cvref_t<T>, std::span<uint8_t, 52ULL>>)
+[[nodiscard]] inline BchStatus bch_encode(Fid fid, Toi toi, T&& out) noexcept {
   return bch_encode(fid, toi, std::span<uint8_t, 52ULL>(out));
 }
 

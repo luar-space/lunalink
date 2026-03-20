@@ -3,18 +3,19 @@
 
 namespace lunalink::signal {
 
-/** @brief Status codes for power-on self-test (POST). [SW-SAF-04] SEU-hardened with high Hamming distance bit patterns. */
+/** @brief Status codes for power-on self-test (POST). [SW-SAF-04] SEU-hardened with high Hamming
+ * distance bit patterns. */
 enum class PostStatus : uint8_t {
-    kPass          = 0x5AU,  ///< All POST steps completed successfully.
-    kFaultDetected = 0x99U,  ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
+  kPass = 0x5AU,          ///< All POST steps completed successfully.
+  kFaultDetected = 0x99U, ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
 };
 
 /**
  * @brief Result of run_post(): status and the step number that failed (0 = none).
  */
 struct PostResult {
-    PostStatus status;
-    uint8_t    failed_step;  // 0 = all passed; 1–5 = step that failed
+  PostStatus status;
+  uint8_t failed_step; // 0 = all passed; 1–5 = step that failed
 };
 
 /**
@@ -33,4 +34,4 @@ struct PostResult {
  */
 [[nodiscard]] PostResult run_post() noexcept;
 
-}  // namespace lunalink::signal
+} // namespace lunalink::signal

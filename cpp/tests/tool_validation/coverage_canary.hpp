@@ -25,13 +25,13 @@ namespace lunalink::canary {
 // Validates: llvm-cov correctly reports covered vs uncovered lines.
 // ──────────────────────────────────────────────────────────────────────
 inline int32_t line_coverage_canary(int32_t x) {
-    int32_t result = 0;                  // COVERED
-    if (x > 0) {                         // COVERED (condition evaluated)
-        result = x * 2;                  // COVERED (true branch taken)
-    } else {
-        result = -1;                     // UNCOVERED (false branch never taken)
-    }
-    return result;                       // COVERED
+  int32_t result = 0; // COVERED
+  if (x > 0) {        // COVERED (condition evaluated)
+    result = x * 2;   // COVERED (true branch taken)
+  } else {
+    result = -1; // UNCOVERED (false branch never taken)
+  }
+  return result; // COVERED
 }
 
 // ──────────────────────────────────────────────────────────────────────
@@ -40,15 +40,25 @@ inline int32_t line_coverage_canary(int32_t x) {
 // Validates: llvm-cov correctly reports branch hit/miss.
 // ──────────────────────────────────────────────────────────────────────
 inline int32_t branch_coverage_canary(int32_t selector) {
-    int32_t result = 0;
-    switch (selector) {
-        case 0:  result = 10;  break;    // COVERED
-        case 1:  result = 20;  break;    // COVERED
-        case 2:  result = 30;  break;    // COVERED
-        case 3:  result = 40;  break;    // UNCOVERED (never selected)
-        default: result = -1;  break;    // UNCOVERED (never selected)
-    }
-    return result;
+  int32_t result = 0;
+  switch (selector) {
+  case 0:
+    result = 10;
+    break; // COVERED
+  case 1:
+    result = 20;
+    break; // COVERED
+  case 2:
+    result = 30;
+    break; // COVERED
+  case 3:
+    result = 40;
+    break; // UNCOVERED (never selected)
+  default:
+    result = -1;
+    break; // UNCOVERED (never selected)
+  }
+  return result;
 }
 
 // ──────────────────────────────────────────────────────────────────────
@@ -61,7 +71,7 @@ inline int32_t branch_coverage_canary(int32_t selector) {
 // Validates: llvm-cov MC/DC instrumentation correctly counts conditions.
 // ──────────────────────────────────────────────────────────────────────
 inline bool mcdc_full_canary(bool a, bool b, bool c) {
-    return (a && b) || c;
+  return (a && b) || c;
 }
 
 // ──────────────────────────────────────────────────────────────────────
@@ -73,7 +83,7 @@ inline bool mcdc_full_canary(bool a, bool b, bool c) {
 // Validates: llvm-cov correctly reports partial MC/DC.
 // ──────────────────────────────────────────────────────────────────────
 inline bool mcdc_partial_canary(bool p, bool q) {
-    return p && q;
+  return p && q;
 }
 
 // ──────────────────────────────────────────────────────────────────────
@@ -82,10 +92,10 @@ inline bool mcdc_partial_canary(bool p, bool q) {
 // Validates: llvm-cov correctly reports 0% function/line coverage.
 // ──────────────────────────────────────────────────────────────────────
 inline int32_t fully_uncovered_canary(int32_t x) {
-    if (x > 100) {
-        return x - 100;
-    }
-    return x + 100;
+  if (x > 100) {
+    return x - 100;
+  }
+  return x + 100;
 }
 
-}  // namespace lunalink::canary
+} // namespace lunalink::canary

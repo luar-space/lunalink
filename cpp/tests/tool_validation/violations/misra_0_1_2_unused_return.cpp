@@ -6,6 +6,6 @@
 #include <vector>
 
 void tvs_unused_return() {
-    std::vector<int> v;
-    v.empty();  // Ignoring [[nodiscard]] return value — target violation
+  std::vector<int> v;
+  v.empty(); // Ignoring [[nodiscard]] return value — target violation
 }

@@ -61,3 +61,22 @@ jobs:
         with:
           name: static-analysis-report
           path: build/reports/static_analysis_report.rst
+
+  clang-sa:
+    name: Clang Static Analyzer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Install tools
+        run: sudo apt-get install -y ninja-build clang
+      - uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: clang-sa
+      - uses: arduino/setup-task@v2
+      - name: Run Clang Static Analyzer
+        run: task clang-sa
+        env:
+          CMAKE_C_COMPILER_LAUNCHER: ccache
+          CMAKE_CXX_COMPILER_LAUNCHER: ccache

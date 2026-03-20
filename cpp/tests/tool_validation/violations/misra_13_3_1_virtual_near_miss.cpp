@@ -4,11 +4,15 @@
 
 class TvsNearMissBase {
 public:
-    virtual ~TvsNearMissBase() = default;
-    virtual int compute(int x) { return x; }
+  virtual ~TvsNearMissBase() = default;
+  virtual int compute(int x) {
+    return x;
+  }
 };
 
 class TvsNearMissDerived : public TvsNearMissBase {
 public:
-    virtual int computee(int x) { return x + 1; }  // Typo near miss — target violation
+  virtual int computee(int x) {
+    return x + 1;
+  } // Typo near miss — target violation
 };

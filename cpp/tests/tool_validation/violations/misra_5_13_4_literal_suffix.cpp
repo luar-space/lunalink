@@ -2,6 +2,6 @@
 // Expected diagnostic: hicpp-uppercase-literal-suffix
 
 unsigned long tvs_literal_suffix() {
-    unsigned long x = 42ul;  // Lowercase literal suffix — target violation
-    return x;
+  unsigned long x = 42ul; // Lowercase literal suffix — target violation
+  return x;
 }

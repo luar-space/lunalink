@@ -1,4 +1,5 @@
 #include "lunalink/encoding/bch_table.hpp"
+
 #include <array>
 
 namespace lunalink::signal {

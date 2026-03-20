@@ -27,8 +27,8 @@
  * dependency entirely.
  */
 #ifndef LUNALINK_CRITICAL_ENTER
-#  define LUNALINK_CRITICAL_ENTER  ((void)0)  // Override in flight HAL (see note above)
-#  define LUNALINK_CRITICAL_EXIT   ((void)0)
+#define LUNALINK_CRITICAL_ENTER ((void)0) // Override in flight HAL (see note above)
+#define LUNALINK_CRITICAL_EXIT  ((void)0)
 #endif
 
 /**
@@ -49,14 +49,14 @@ namespace lunalink::signal {
  * Uses volatile pointer to ensure compiler does not optimize away the zeroing.
  * Templated to support scrubbing arrays of any POD type (uint8_t, int16_t, etc).
  */
-template <typename T>
-inline void secure_scrub(std::span<T> data) noexcept {
+template <typename T> inline void secure_scrub(std::span<T> data) noexcept {
   if (data.empty()) {
     return;
   }
   volatile T* p = data.data();
   for (size_t i = 0; i < data.size(); ++i) {
-    // Volatile pointer arithmetic required for DSE-proof scrubbing — NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    // Volatile pointer arithmetic required for DSE-proof scrubbing —
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     p[i] = T{0};
   }
 }
@@ -64,8 +64,7 @@ inline void secure_scrub(std::span<T> data) noexcept {
 /**
  * @brief Securely scrub a scalar value.
  */
-template <typename T>
-inline void secure_scrub_scalar(T& val) noexcept {
+template <typename T> inline void secure_scrub_scalar(T& val) noexcept {
   volatile T* p = &val;
   *p = T{0};
 }
@@ -73,8 +72,7 @@ inline void secure_scrub_scalar(T& val) noexcept {
 /**
  * @brief Overload for std::array or other containers with data() and size().
  */
-template <typename Container>
-inline void secure_scrub(Container& c) noexcept {
+template <typename Container> inline void secure_scrub(Container& c) noexcept {
   secure_scrub(std::span(c.data(), c.size()));
 }
 
@@ -104,39 +102,43 @@ inline void wip_tick() noexcept {
  * Prevents undefined behaviour from overlapping input/output buffers
  * in encoding and signal-processing functions.
  */
-[[nodiscard]] inline bool spans_overlap(const void* a, size_t a_bytes,
-                                        const void* b, size_t b_bytes) noexcept {
-    const auto* ab = static_cast<const uint8_t*>(a);
-    const auto* bb = static_cast<const uint8_t*>(b);
-    // Pointer arithmetic needed for byte-level overlap comparison — NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return (ab < bb + b_bytes) && (bb < ab + a_bytes);
-    // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+[[nodiscard]] inline bool
+spans_overlap(const void* a, size_t a_bytes, const void* b, size_t b_bytes) noexcept {
+  const auto* ab = static_cast<const uint8_t*>(a);
+  const auto* bb = static_cast<const uint8_t*>(b);
+  // Pointer arithmetic needed for byte-level overlap comparison —
+  // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+  return (ab < bb + b_bytes) && (bb < ab + a_bytes);
+  // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 }
 
 // Convenience template overload for typed spans.
 // Template return type deduced by compiler — NOLINTNEXTLINE(fuchsia-trailing-return)
 template <typename T, typename U>
 [[nodiscard]] inline bool spans_overlap(std::span<T> a, std::span<U> b) noexcept {
-    return spans_overlap(static_cast<const void*>(a.data()), a.size_bytes(),
-                         static_cast<const void*>(b.data()), b.size_bytes());
+  return spans_overlap(static_cast<const void*>(a.data()),
+                       a.size_bytes(),
+                       static_cast<const void*>(b.data()),
+                       b.size_bytes());
 }
 
 /**
  * @brief Value-constrained wrapper ensuring a value remains within [Min, Max].
  * Implements "Saturating Logic" per Mission Assurance requirements.
  */
-template <typename T, T Min, T Max>
-class CheckedRange {
-  static_assert(Min <= Max,
-                "CheckedRange: Min must be less than or equal to Max");
+template <typename T, T Min, T Max> class CheckedRange {
+  static_assert(Min <= Max, "CheckedRange: Min must be less than or equal to Max");
   T value_;
 
- public:
+public:
   constexpr CheckedRange() noexcept : value_(Min) {}
 
-  explicit constexpr CheckedRange(T v) noexcept : value_(v) { saturate(); }
+  explicit constexpr CheckedRange(T v) noexcept : value_(v) {
+    saturate();
+  }
 
-  // Value-type assignment operator required for saturating semantics — NOLINTBEGIN(fuchsia-overloaded-operator)
+  // Value-type assignment operator required for saturating semantics —
+  // NOLINTBEGIN(fuchsia-overloaded-operator)
   constexpr CheckedRange& operator=(T v) noexcept {
     value_ = v;
     saturate();
@@ -145,19 +147,25 @@ class CheckedRange {
   // NOLINTEND(fuchsia-overloaded-operator)
 
   /// Return the current saturated value (passive read, no repair).
-  [[nodiscard]] constexpr T value() const noexcept { return value_; }
+  [[nodiscard]] constexpr T value() const noexcept {
+    return value_;
+  }
 
   /**
    * @brief Force a value into the range, bypassing saturating logic.
    * Internal use only for Mission Assurance fault injection.
    */
-  void force_set(T v) noexcept { value_ = v; }
+  void force_set(T v) noexcept {
+    value_ = v;
+  }
 
   // Implicit conversion is intentionally allowed for ergonomic use in DSP
   // blocks. NOLINTNEXTLINE(hicpp-explicit-conversions)
-  [[nodiscard]] constexpr operator T() const noexcept { return value_; }
+  [[nodiscard]] constexpr operator T() const noexcept {
+    return value_;
+  }
 
- private:
+private:
   constexpr void saturate() noexcept {
     if (value_ < Min) {
       value_ = Min;
@@ -173,8 +181,7 @@ class CheckedRange {
  * Stores three copies and corrects a single corrupted copy during vote()
  * [NASA-FSW].
  */
-template <typename T>
-struct TmrValue {
+template <typename T> struct TmrValue {
   mutable T v1;
   mutable T v2;
   mutable T v3;
@@ -190,15 +197,15 @@ struct TmrValue {
    */
   [[nodiscard]] T vote() const noexcept {
     if (v1 == v2) {
-      v3 = v1;  // Repair v3 if it flipped
+      v3 = v1; // Repair v3 if it flipped
       return v1;
     }
     if (v1 == v3) {
-      v2 = v1;  // Repair v2 if it flipped
+      v2 = v1; // Repair v2 if it flipped
       return v1;
     }
     if (v2 == v3) {
-      v1 = v2;  // Repair v1 if it flipped
+      v1 = v2; // Repair v1 if it flipped
       return v2;
     }
     // Critical Failure: No majority. In flight, this triggers Safe Mode.
@@ -216,7 +223,9 @@ struct TmrValue {
     return v2;
   }
 
-  constexpr void refresh(T v) noexcept { v1 = v2 = v3 = v; }
+  constexpr void refresh(T v) noexcept {
+    v1 = v2 = v3 = v;
+  }
 
   // Value-type equality comparison required — NOLINTNEXTLINE(fuchsia-overloaded-operator)
   constexpr bool operator==(const TmrValue& other) const noexcept {
@@ -227,7 +236,9 @@ struct TmrValue {
    * @brief Fault Injection helper: Force all copies to a bad value.
    * Internal use only for Mission Assurance coverage testing.
    */
-  void inject_fault(T bad_value) noexcept { v1 = v2 = v3 = bad_value; }
+  void inject_fault(T bad_value) noexcept {
+    v1 = v2 = v3 = bad_value;
+  }
 
 #ifdef LUNALINK_FAULT_INJECTION
   /**
@@ -235,9 +246,13 @@ struct TmrValue {
    * Only available when LUNALINK_FAULT_INJECTION=1. [SW-SAF-06]
    */
   void inject_fault(uint8_t copy_index, T corrupted_value) noexcept {
-    if (copy_index == 0U) { v1 = corrupted_value; }
-    else if (copy_index == 1U) { v2 = corrupted_value; }
-    else { v3 = corrupted_value; }
+    if (copy_index == 0U) {
+      v1 = corrupted_value;
+    } else if (copy_index == 1U) {
+      v2 = corrupted_value;
+    } else {
+      v3 = corrupted_value;
+    }
   }
 #endif
 
@@ -245,17 +260,16 @@ struct TmrValue {
    * @brief Force a raw underlying value into all TMR copies.
    * Bypasses CheckedRange saturating logic if T is CheckedRange.
    */
-  template<typename RawT>
-  void force_fault(RawT raw_bad_value) noexcept {
-      if constexpr (requires { v1.force_set(raw_bad_value); }) {
-          v1.force_set(raw_bad_value);
-          v2.force_set(raw_bad_value);
-          v3.force_set(raw_bad_value);
-      } else {
-          v1 = static_cast<T>(raw_bad_value);
-          v2 = static_cast<T>(raw_bad_value);
-          v3 = static_cast<T>(raw_bad_value);
-      }
+  template <typename RawT> void force_fault(RawT raw_bad_value) noexcept {
+    if constexpr (requires { v1.force_set(raw_bad_value); }) {
+      v1.force_set(raw_bad_value);
+      v2.force_set(raw_bad_value);
+      v3.force_set(raw_bad_value);
+    } else {
+      v1 = static_cast<T>(raw_bad_value);
+      v2 = static_cast<T>(raw_bad_value);
+      v3 = static_cast<T>(raw_bad_value);
+    }
   }
 };
 
@@ -270,8 +284,7 @@ struct TmrValue {
  * redundant with saturating logic.  `repair()` performs active TMR voting;
  * `value()` is a passive majority peek.
  */
-template <uint8_t Min, uint8_t Max, typename Tag>
-struct TmrCheckedId {
+template <uint8_t Min, uint8_t Max, typename Tag> struct TmrCheckedId {
   TmrValue<CheckedRange<uint8_t, Min, Max>> storage{CheckedRange<uint8_t, Min, Max>{Min}};
 
   constexpr TmrCheckedId() noexcept = default;
@@ -295,7 +308,9 @@ struct TmrCheckedId {
     return v >= Min && v <= Max;
   }
 
-  explicit constexpr operator uint8_t() const noexcept { return value(); }
+  explicit constexpr operator uint8_t() const noexcept {
+    return value();
+  }
 
   // Value-type equality comparison required — NOLINTNEXTLINE(fuchsia-overloaded-operator)
   constexpr bool operator==(const TmrCheckedId& other) const noexcept {
@@ -311,13 +326,20 @@ struct TmrCheckedId {
 class CfiGuard {
   volatile uint32_t count_;
   uint32_t expected_;
- public:
+
+public:
   explicit constexpr CfiGuard(uint32_t magic, uint32_t n) noexcept
       : count_(magic), expected_(magic + n) {}
-  void tick() noexcept { count_ = count_ + 1U; }
-  [[nodiscard]] bool verify() const noexcept { return count_ == expected_; }
+  void tick() noexcept {
+    count_ = count_ + 1U;
+  }
+  [[nodiscard]] bool verify() const noexcept {
+    return count_ == expected_;
+  }
 #ifdef LUNALINK_FAULT_INJECTION
-  void inject_skip(uint32_t n) noexcept { count_ = count_ - n; }
+  void inject_skip(uint32_t n) noexcept {
+    count_ = count_ - n;
+  }
 #endif
 };
 
@@ -326,19 +348,22 @@ class CfiGuard {
  * N: maximum number of legal (from→to) edge pairs.
  * State values are cast to uint8_t for storage; use enums with uint8_t underlying type.
  */
-template <typename State, size_t N>
-class TransitionMatrix {
-  struct Edge { uint8_t from; uint8_t to; };
+template <typename State, size_t N> class TransitionMatrix {
+  struct Edge {
+    uint8_t from;
+    uint8_t to;
+  };
   // C-style array required for constexpr packed layout — NOLINTNEXTLINE(hicpp-avoid-c-arrays)
   Edge edges_[N]{};
   size_t count_{0};
 
- public:
+public:
   constexpr TransitionMatrix() noexcept : edges_{}, count_(0) {}
 
   constexpr void add(State from, State to) noexcept {
     if (count_ < N) {
-      // Index bounds-checked by guard clause above — NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+      // Index bounds-checked by guard clause above —
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
       edges_[count_++] = {static_cast<uint8_t>(from), static_cast<uint8_t>(to)};
     }
   }
@@ -346,13 +371,17 @@ class TransitionMatrix {
   [[nodiscard]] bool is_legal(State from, State to) const noexcept {
     const auto f = static_cast<uint8_t>(from);
     const auto t = static_cast<uint8_t>(to);
-    // Loop bound checked against count_ <= N — NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+    // Loop bound checked against count_ <= N —
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
     for (size_t i = 0; i < count_; ++i) {
-      // Index bounded by count_ < N invariant — NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-      if (edges_[i].from == f && edges_[i].to == t) { return true; }
+      // Index bounded by count_ < N invariant —
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+      if (edges_[i].from == f && edges_[i].to == t) {
+        return true;
+      }
     }
     return false;
   }
 };
 
-}  // namespace lunalink::signal
+} // namespace lunalink::signal

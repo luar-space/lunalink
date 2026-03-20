@@ -1,7 +1,9 @@
-#include "lunalink/signal/modulator.hpp"
 #include "lunalink/codes/prn.hpp"
-#include <array>
+#include "lunalink/signal/modulator.hpp"
+
 #include <catch2/catch_test_macros.hpp>
+
+#include <array>
 
 using namespace lunalink::signal;
 
@@ -60,8 +62,9 @@ TEST_CASE("[LSIS-AFS-201] modulate_bpsk_i rejects non-binary chips", "[modulator
 }
 
 TEST_CASE("modulate_bpsk_any: invalid chip value rejected", "[modulator]") {
-    std::array<uint8_t, 10> chips = {0};
-    std::array<int8_t, 10> out = {0};
-    chips[0] = 2;
-    CHECK(static_cast<uint8_t>(modulate_bpsk_any(chips, 1, out)) == static_cast<uint8_t>(ModulationStatus::kInvalidChipValue));
+  std::array<uint8_t, 10> chips = {0};
+  std::array<int8_t, 10> out = {0};
+  chips[0] = 2;
+  CHECK(static_cast<uint8_t>(modulate_bpsk_any(chips, 1, out)) ==
+        static_cast<uint8_t>(ModulationStatus::kInvalidChipValue));
 }

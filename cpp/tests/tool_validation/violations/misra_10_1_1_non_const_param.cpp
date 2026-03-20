@@ -2,6 +2,6 @@
 // should be declared const.
 // Expected diagnostic: readability-non-const-parameter
 
-int tvs_non_const_param(int *p) {  // Pointer-to-non-const but *p not modified — target violation
-    return *p + 1;
+int tvs_non_const_param(int* p) { // Pointer-to-non-const but *p not modified — target violation
+  return *p + 1;
 }

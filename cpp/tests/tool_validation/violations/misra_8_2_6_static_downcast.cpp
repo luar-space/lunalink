@@ -4,16 +4,16 @@
 
 class TvsDownBase {
 public:
-    virtual ~TvsDownBase() = default;
-    int value = 0;
+  virtual ~TvsDownBase() = default;
+  int value = 0;
 };
 
 class TvsDownDerived : public TvsDownBase {
 public:
-    int extra = 42;
+  int extra = 42;
 };
 
-int tvs_static_downcast(TvsDownBase *base) {
-    auto *d = static_cast<TvsDownDerived *>(base);  // Static downcast — target violation
-    return d->extra;
+int tvs_static_downcast(TvsDownBase* base) {
+  auto* d = static_cast<TvsDownDerived*>(base); // Static downcast — target violation
+  return d->extra;
 }
