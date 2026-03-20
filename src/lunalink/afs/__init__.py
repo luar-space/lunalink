@@ -1,6 +1,8 @@
 """LunaLink AFS subpackage — Augmented Forward Signal implementation."""
 
 from lunalink.afs.signal import (
+    AFS_I_CHIP_RATE,
+    AFS_Q_CHIP_RATE,
     BCH_CODEWORD_LENGTH,
     DEFAULT_SYNC_THRESHOLD,
     EPOCHS_PER_FRAME,
@@ -41,6 +43,8 @@ from lunalink.afs.signal import (
     bch_encode,
     frame_build,
     frame_build_partial,
+    generate_iq_epoch,
+    generate_iq_frame,
     ldpc_decode,
     ldpc_encode,
     matched_code_epoch,
@@ -55,6 +59,7 @@ from lunalink.afs.signal import (
     sync_detect,
     weil1500_code,
     weil10230_code,
+    write_iq_file,
 )
 
 __all__ = [
@@ -112,4 +117,9 @@ __all__ = [
     "matched_code_epoch_assigned",
     "weil1500_code",
     "weil10230_code",
+    "AFS_I_CHIP_RATE",
+    "AFS_Q_CHIP_RATE",
+    "generate_iq_epoch",
+    "generate_iq_frame",
+    "write_iq_file",
 ]

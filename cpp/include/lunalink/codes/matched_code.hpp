@@ -80,6 +80,13 @@ struct MatchedCodeAssignment {
 
 /// Retrieve the default interim assignment for a PRN ID (1-12 only). [LSIS-AFS-401]
 /// Per LSIS Table 11.
+///
+/// @note LSIS V1.0 Table F-1 assigns all 210 LNSP nodes as TBD. Once the
+///   final code assignments are published, this function can be extended to
+///   accept PRN 1-210 by populating a lookup table keyed on LNSP node ID.
+///   The MatchedCodeAssignment struct and matched_code_epoch_checked() API
+///   already support arbitrary primary/secondary/tertiary/phase combinations
+///   — only this default-mapping function enforces the interim 1-12 limit.
 [[nodiscard]] inline constexpr MatchedCodeStatus default_matched_assignment_checked(
     PrnId                   prn_id,
     MatchedCodeAssignment& out_assignment) noexcept {

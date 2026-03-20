@@ -378,6 +378,64 @@ TEST_CASE("[LSIS-AFS-605] frame_build payload round-trip: deinterleave, decode, 
   }
 }
 
+// ===========================================================================
+// LSIS-300: Spare bits — alternating 0/1 starting with 0 on MSB
+// ===========================================================================
+
+TEST_CASE("[LSIS-AFS-300] Spare bits pattern: alternating 0/1 starting with 0", "[frame]") {
+  // LSIS-300: "spare bits shall be filled with a sequence of alternating
+  // zeros and ones starting with zero on the MSB."
+  // Verify that CRC correctly covers spare bits with this pattern.
+
+  // SB2: 1176 data bits. Fill first 100 as "real" data, rest as spare.
+  std::array<uint8_t, kSb2DataBits> sb2_data{};
+  for (size_t i = 0; i < 100; ++i) { sb2_data[i] = 1; }  // Some payload
+  // Fill spare region (bits 100..1175) with LSIS-300 pattern: 0,1,0,1,...
+  for (size_t i = 100; i < kSb2DataBits; ++i) {
+    sb2_data[i] = static_cast<uint8_t>((i - 100) % 2);
+  }
+
+  // Encode SB2 and verify round-trip recovers the exact spare pattern
+  std::array<uint8_t, kSb2Length> encoded{};
+  LdpcEncodeWorkspace enc_ws{};
+  REQUIRE(subframe_build_sb2(sb2_data, encoded, enc_ws) == FrameStatus::kOk);
+
+  // Decode (perfect channel)
+  std::array<float, kSb2Length> soft{};
+  for (size_t i = 0; i < kSb2Length; ++i) {
+    soft[i] = (encoded[i] == 0U) ? 10.0F : -10.0F;
+  }
+  std::array<uint8_t, kSb2MsgBits> decoded{};
+  LdpcWorkspace dec_ws{};
+  REQUIRE(ldpc_decode(LdpcSubframe::kSF2, soft, 20, decoded, dec_ws) == LdpcStatus::kOk);
+
+  // Verify spare bits survived CRC + LDPC round-trip intact
+  for (size_t i = 100; i < kSb2DataBits; ++i) {
+    REQUIRE(decoded[i] == static_cast<uint8_t>((i - 100) % 2));
+  }
+  CHECK(crc24_verify(decoded));
+
+  // Same check for SB3
+  std::array<uint8_t, kSb3DataBits> sb3_data{};
+  for (size_t i = 0; i < kSb3DataBits; ++i) {
+    sb3_data[i] = static_cast<uint8_t>(i % 2);  // 0,1,0,1,...
+  }
+  std::array<uint8_t, kSb3Length> sb3_enc{};
+  REQUIRE(subframe_build_sb3(sb3_data, sb3_enc, enc_ws) == FrameStatus::kOk);
+
+  std::array<float, kSb3Length> sb3_soft{};
+  for (size_t i = 0; i < kSb3Length; ++i) {
+    sb3_soft[i] = (sb3_enc[i] == 0U) ? 10.0F : -10.0F;
+  }
+  std::array<uint8_t, kSb3MsgBits> sb3_dec{};
+  REQUIRE(ldpc_decode(LdpcSubframe::kSF3, sb3_soft, 20, sb3_dec, dec_ws) == LdpcStatus::kOk);
+
+  for (size_t i = 0; i < kSb3DataBits; ++i) {
+    REQUIRE(sb3_dec[i] == static_cast<uint8_t>(i % 2));
+  }
+  CHECK(crc24_verify(sb3_dec));
+}
+
 TEST_CASE("frame_decode: input too small rejected", "[frame]") {
     std::array<float, 100> short_rx{};
     FrameDecodeResult result{};

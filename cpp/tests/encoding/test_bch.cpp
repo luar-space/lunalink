@@ -177,6 +177,33 @@ TEST_CASE("[LSIS-AFS-501] BCH soft decoder: exhaustive codebook", "[bch]") {
   }
 }
 
+TEST_CASE("[LSIS-AFS-501] BCH spec test vector: Figure 8 (FID=0, TOI=69)", "[bch]") {
+  // LSIS-AFS V1.0 Figure 8: SB1 data 0x045 (FID=0, TOI=69)
+  // Expected encoded field: 0x229f61dbb84a0
+  constexpr std::array<uint8_t, kBchCodewordLength> expected = {
+      0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1,
+      1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1,
+      1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0,
+  };
+
+  std::array<uint8_t, kBchCodewordLength> codeword{};
+  REQUIRE(bch_encode(Fid::kNode1(), Toi(69), codeword) == BchStatus::kOk);
+  CHECK(std::ranges::equal(codeword, expected));
+
+  // Verify hex representation matches spec: 0x229f61dbb84a0
+  uint64_t packed = 0;
+  for (uint32_t i = 0; i < kBchCodewordLength; ++i) {
+    packed = (packed << 1U) | static_cast<uint64_t>(codeword[i]);
+  }
+  CHECK(packed == 0x229f61dbb84a0ULL);
+
+  // Decode must recover FID=0, TOI=69
+  const auto result = bch_decode(codeword);
+  CHECK(result.status == BchStatus::kOk);
+  CHECK(result.fid == Fid::kNode1());
+  CHECK(result.toi.value() == 69);
+}
+
 TEST_CASE("[LSIS-AFS-501] Gateway 2: BCH Round-trip", "[bch]") {
     Fid fid{2};
     Toi toi{42};

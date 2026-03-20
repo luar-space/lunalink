@@ -183,6 +183,11 @@ __all__ = [
     "legendre_cache_init",
     "legendre_10223_checksum",
     "legendre_1499_checksum",
+    "generate_iq_epoch",
+    "generate_iq_frame",
+    "write_iq_file",
+    "AFS_I_CHIP_RATE",
+    "AFS_Q_CHIP_RATE",
 ]
 
 
@@ -402,3 +407,158 @@ def legendre_10223_checksum() -> int:
 def legendre_1499_checksum() -> int:
     """Return CRC-32 checksum of the cached Legendre sequence for prime 1499."""
     return _legendre_1499_checksum()
+
+
+# ---------------------------------------------------------------------------
+# I/Q signal generation and file export
+# ---------------------------------------------------------------------------
+
+#: Native AFS-I chip rate (Hz).
+AFS_I_CHIP_RATE = 1_023_000
+#: Native AFS-Q chip rate (Hz).
+AFS_Q_CHIP_RATE = 5_115_000
+
+
+def generate_iq_epoch(
+    prn_id: int,
+    epoch_idx: int,
+    data_symbol: int = 1,
+    sample_rate: float | None = None,
+) -> NDArray[np.float32]:
+    """Generate one 2 ms epoch of baseband I/Q samples.
+
+    Parameters
+    ----------
+    prn_id : int
+        PRN ID (1-12 for interim codes).
+    epoch_idx : int
+        Epoch index within the 12 s frame (0-5999).
+    data_symbol : int
+        Navigation data bit in {-1, +1} for AFS-I.
+    sample_rate : float, optional
+        Output sample rate in Hz. ``None`` uses the native Q-channel rate
+        (5.115 MHz, 1 sample per Q-chip = 10230 samples/epoch).
+        Common choices: 10.23e6 (2x), 20.46e6 (4x).
+
+    Returns
+    -------
+    NDArray[np.float32]
+        Interleaved I/Q pairs with shape (N, 2) where N depends on sample_rate.
+    """
+    gold = prn_code(prn_id)
+    matched = matched_code_epoch(prn_id, epoch_idx)
+
+    i_mod = modulate_i(gold, data_symbol)
+    q_mod = modulate_q(matched)
+    iq = multiplex_iq(i_mod, q_mod)  # (10230, 2) int16
+
+    iq_f32 = iq.astype(np.float32)
+
+    if sample_rate is not None and sample_rate != AFS_Q_CHIP_RATE:
+        native_rate = float(AFS_Q_CHIP_RATE)
+        n_native = iq_f32.shape[0]
+        n_out = int(round(n_native * sample_rate / native_rate))
+        # Nearest-neighbour resampling (zero-order hold, round-half-up
+        # for deterministic chip boundaries across implementations)
+        indices = np.floor(np.linspace(0, n_native - 1, n_out) + 0.5).astype(int)
+        iq_f32 = iq_f32[indices]
+
+    return iq_f32
+
+
+def generate_iq_frame(
+    prn_id: int,
+    frame_symbols: NDArray[np.uint8],
+    sample_rate: float | None = None,
+) -> NDArray[np.float32]:
+    """Generate a full 12 s frame of baseband I/Q samples.
+
+    Parameters
+    ----------
+    prn_id : int
+        PRN ID (1-12 for interim codes).
+    frame_symbols : NDArray[np.uint8]
+        6000 binary frame symbols (from ``frame_build``).
+    sample_rate : float, optional
+        Output sample rate in Hz. ``None`` for native 5.115 MHz.
+
+    Returns
+    -------
+    NDArray[np.float32]
+        Interleaved I/Q pairs with shape (N, 2).
+    """
+    if len(frame_symbols) != FRAME_LENGTH:
+        raise ValueError(f"Expected {FRAME_LENGTH} symbols, got {len(frame_symbols)}")
+    if EPOCHS_PER_FRAME != FRAME_LENGTH:
+        raise RuntimeError(
+            "EPOCHS_PER_FRAME != FRAME_LENGTH: 1 symbol per epoch assumed"
+        )
+
+    epochs = []
+    for epoch in range(EPOCHS_PER_FRAME):
+        data_sym = 1 - 2 * int(frame_symbols[epoch])  # BPSK: 0→+1, 1→-1
+        epochs.append(generate_iq_epoch(prn_id, epoch, data_sym, sample_rate))
+
+    return np.concatenate(epochs, axis=0)
+
+
+def write_iq_file(
+    path: str,
+    iq_data: NDArray[np.float32],
+    sample_rate: float,
+    prn_id: int,
+    duration_s: float | None = None,
+) -> None:
+    """Write I/Q samples to a binary file with a 128-byte metadata header.
+
+    Header format (per docs/shaping/test-vector-format.md):
+        - Magic:       ``"LSISIQ"`` + 2 null bytes (8 bytes)
+        - Version:     ``1`` (uint32 LE, 4 bytes)
+        - Sample rate: ``float64`` LE (8 bytes)
+        - Duration:    ``float64`` LE seconds (8 bytes)
+        - PRN:         ``uint32`` LE (4 bytes)
+        - Format:      ``"float32"`` (16 bytes, zero-padded)
+        - Reserved:    80 bytes (zeros)
+
+    Data: interleaved float32 [I0, Q0, I1, Q1, ...].
+
+    Parameters
+    ----------
+    path : str
+        Output file path.
+    iq_data : NDArray[np.float32]
+        I/Q data with shape (N, 2).
+    sample_rate : float
+        Sample rate in Hz.
+    prn_id : int
+        PRN identifier.
+    duration_s : float, optional
+        Signal duration in seconds. Computed from data length if not provided.
+    """
+    import io
+    import struct
+
+    if iq_data.ndim != 2 or iq_data.shape[1] != 2:
+        raise ValueError("iq_data must have shape (N, 2)")
+
+    n_samples = iq_data.shape[0]
+    if duration_s is None:
+        duration_s = n_samples / sample_rate
+
+    # 128-byte header: Magic(8) + Version(4) + SampleRate(8) + Duration(8)
+    #                  + PRN(4) + Format(16) + Reserved(80) = 128
+    buf = io.BytesIO()
+    buf.write(b"LSISIQ\x00\x00")  # 8
+    buf.write(struct.pack("<I", 1))  # 4
+    buf.write(struct.pack("<d", sample_rate))  # 8
+    buf.write(struct.pack("<d", duration_s))  # 8
+    buf.write(struct.pack("<I", prn_id))  # 4
+    buf.write(b"float32" + b"\x00" * 9)  # 16
+    buf.write(b"\x00" * (128 - buf.tell()))  # pad to 128
+    header = buf.getvalue()
+    assert len(header) == 128
+
+    interleaved = iq_data.astype(np.float32).ravel()
+    with open(path, "wb") as f:
+        f.write(header)
+        f.write(interleaved.tobytes())

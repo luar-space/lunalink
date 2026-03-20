@@ -1,9 +1,13 @@
 """Tests for AFS signal generation (C1–C5)."""
 
+import os
+import tempfile
+
 import numpy as np
 import pytest
 
 from lunalink.afs import (
+    AFS_Q_CHIP_RATE,
     DEFAULT_SYNC_THRESHOLD,
     EPOCHS_PER_FRAME,
     FRAME_LENGTH,
@@ -16,7 +20,10 @@ from lunalink.afs import (
     SyncDetectorStatus,
     bch_decode,
     bch_encode,
+    frame_build,
     frame_build_partial,
+    generate_iq_epoch,
+    generate_iq_frame,
     matched_code_epoch,
     matched_code_epoch_assigned,
     modulate_i,
@@ -26,6 +33,7 @@ from lunalink.afs import (
     sync_detect,
     weil1500_code,
     weil10230_code,
+    write_iq_file,
 )
 
 
@@ -474,3 +482,92 @@ class TestSyncDetect:
         assert SYNC_LENGTH == 68
         assert FRAME_LENGTH == 6000
         assert DEFAULT_SYNC_THRESHOLD > 0.0
+
+
+class TestGenerateIqEpoch:
+    """Tests for generate_iq_epoch (I/Q signal generation)."""
+
+    def test_native_rate_shape(self):
+        """Native rate produces (10230, 2) float32 output."""
+        iq = generate_iq_epoch(1, 0)
+        assert iq.shape == (10230, 2)
+        assert iq.dtype == np.float32
+
+    def test_values_bipolar(self):
+        """All I/Q values are -1.0 or +1.0 at native rate."""
+        iq = generate_iq_epoch(1, 0)
+        assert set(iq[:, 0].tolist()).issubset({-1.0, 1.0})
+        assert set(iq[:, 1].tolist()).issubset({-1.0, 1.0})
+
+    def test_data_symbol_flips_i(self):
+        """data_symbol=-1 inverts the I channel."""
+        iq_pos = generate_iq_epoch(1, 0, data_symbol=1)
+        iq_neg = generate_iq_epoch(1, 0, data_symbol=-1)
+        np.testing.assert_array_equal(iq_pos[:, 0], -iq_neg[:, 0])
+        np.testing.assert_array_equal(iq_pos[:, 1], iq_neg[:, 1])
+
+    def test_upsampled_rate(self):
+        """Upsampled rate doubles the number of samples."""
+        iq = generate_iq_epoch(1, 0, sample_rate=AFS_Q_CHIP_RATE * 2)
+        assert iq.shape == (20460, 2)
+
+
+class TestGenerateIqFrame:
+    """Tests for generate_iq_frame (full 12 s frame)."""
+
+    def test_output_shape(self):
+        """Full frame at native rate: 6000 epochs x 10230 samples."""
+        sb2 = np.zeros(1176, dtype=np.uint8)
+        sb3 = np.zeros(846, dtype=np.uint8)
+        sb4 = np.zeros(846, dtype=np.uint8)
+        frame = frame_build(0, 0, sb2, sb3, sb4)
+        iq = generate_iq_frame(1, frame)
+        assert iq.shape == (6000 * 10230, 2)
+        assert iq.dtype == np.float32
+
+    def test_wrong_length_raises(self):
+        """Frame with wrong length raises ValueError."""
+        with pytest.raises(ValueError, match="Expected 6000"):
+            generate_iq_frame(1, np.zeros(100, dtype=np.uint8))
+
+
+class TestWriteIqFile:
+    """Tests for write_iq_file (binary I/Q export)."""
+
+    def test_header_size(self):
+        """Output file has 128-byte header + correct data size."""
+        import os
+
+        iq = generate_iq_epoch(1, 0)
+        with tempfile.NamedTemporaryFile(suffix=".iq", delete=False) as f:
+            path = f.name
+        try:
+            write_iq_file(path, iq, AFS_Q_CHIP_RATE, 1)
+            size = os.path.getsize(path)
+            expected = 128 + 10230 * 2 * 4  # header + N * 2 channels * float32
+            assert size == expected
+        finally:
+            os.unlink(path)
+
+    def test_header_magic(self):
+        """File starts with LSISIQ magic bytes."""
+        iq = generate_iq_epoch(1, 0)
+        with tempfile.NamedTemporaryFile(suffix=".iq", delete=False) as f:
+            path = f.name
+        try:
+            write_iq_file(path, iq, AFS_Q_CHIP_RATE, 1)
+            with open(path, "rb") as f:
+                magic = f.read(8)
+            assert magic == b"LSISIQ\x00\x00"
+        finally:
+            os.unlink(path)
+
+    def test_wrong_shape_raises(self):
+        """1D input raises ValueError."""
+        with tempfile.NamedTemporaryFile(suffix=".iq", delete=False) as f:
+            path = f.name
+        try:
+            with pytest.raises(ValueError, match="shape"):
+                write_iq_file(path, np.zeros(100, dtype=np.float32), 1e6, 1)
+        finally:
+            os.unlink(path)

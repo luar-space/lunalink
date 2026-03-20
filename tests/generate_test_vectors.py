@@ -51,6 +51,11 @@ from lunalink.afs._afs import (
     weil1500_code,
     weil10230_code,
 )
+from lunalink.afs.signal import (
+    frame_build,
+    generate_iq_epoch,
+    write_iq_file,
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 VECTORS = ROOT / "test-vectors"
@@ -145,22 +150,35 @@ def generate_code_vectors(prn_ids: list[int]) -> None:
 # ---------------------------------------------------------------------------
 
 TEST_MESSAGES = [
-    # (id, description, fid, toi)
-    ("1_all_zeros", "All zeros (baseline)", 0, 0),
-    ("2_all_ones", "All ones (inverse baseline)", 3, 99),
-    ("3_alternating", "Alternating FID/TOI", 1, 42),
-    ("4_boundary", "Maximum valid values", 3, 99),
-    ("5_midrange", "Mid-range values", 2, 55),
+    # (id, description, fid, toi, sb_pattern)
+    ("1_all_zeros", "All zeros (baseline)", 0, 0, "zeros"),
+    ("2_all_ones", "All ones (inverse baseline)", 3, 99, "ones"),
+    ("3_alternating", "Alternating FID/TOI", 1, 42, "alternating"),
+    ("4_boundary", "Maximum valid values", 3, 99, "sparse"),
+    ("5_midrange", "Mid-range values", 2, 55, "random"),
 ]
 
 
-def _build_frame_bin(fid: int, toi: int, prn: int) -> bytes:
-    """Encode SB1 and zero-pad to 6000 symbols; prepend 64-byte header."""
-    codeword = bch_encode(fid, toi)  # 52 × uint8
-    # Frame layout per spec: 68 sync + 52 SB1 + 5880 payload = 6000
-    sync = np.zeros(68, dtype=np.uint8)
-    payload = np.zeros(5880, dtype=np.uint8)
-    frame = np.concatenate([sync, codeword, payload])
+def _build_frame_bin(fid: int, toi: int, prn: int, sb2_pattern: str = "zeros") -> bytes:
+    """Build a complete frame using frame_build and prepend 64-byte header."""
+    patterns = {
+        "zeros": lambda n: np.zeros(n, dtype=np.uint8),
+        "ones": lambda n: np.ones(n, dtype=np.uint8),
+        "alternating": lambda n: np.array([i % 2 for i in range(n)], dtype=np.uint8),
+        "sparse": lambda n: np.array(
+            [1 if i % 17 == 0 else 0 for i in range(n)], dtype=np.uint8
+        ),
+        "random": lambda n: np.random.default_rng(0x12345678).integers(
+            0, 2, n, dtype=np.uint8
+        ),
+    }
+    pat_fn = patterns.get(sb2_pattern, patterns["zeros"])
+
+    sb2 = pat_fn(1176)
+    sb3 = pat_fn(846)
+    sb4 = pat_fn(846)
+
+    frame = frame_build(fid, toi, sb2, sb3, sb4)
     assert len(frame) == 6000
 
     ts = int(time.time())
@@ -182,8 +200,8 @@ def generate_frame_vectors() -> None:
     out_dir = VECTORS / "frames"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    for msg_id, _desc, fid, toi in TEST_MESSAGES:
-        data = _build_frame_bin(fid, toi, prn=1)
+    for msg_id, _desc, fid, toi, sb_pat in TEST_MESSAGES:
+        data = _build_frame_bin(fid, toi, prn=1, sb2_pattern=sb_pat)
         path = out_dir / f"test_message_{msg_id}.bin"
         path.write_bytes(data)
 
@@ -385,7 +403,7 @@ def generate_parsed_vectors() -> None:
     out_dir = VECTORS / "parsed"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    for msg_id, desc, fid, toi in TEST_MESSAGES:
+    for msg_id, desc, fid, toi, _sb_pat in TEST_MESSAGES:
         parsed = {
             "version": "1.0",
             "timestamp": NOW_ISO,
@@ -395,15 +413,49 @@ def generate_parsed_vectors() -> None:
                 "fid": fid,
                 "toi": toi,
             },
-            "subframe2": None,
-            "subframe3": None,
-            "subframe4": None,
-            "notes": "subframes 2-4 not yet implemented (GD3.2 pending)",
+            "subframe2": {"data_bits": 1176, "crc_bits": 24, "total_bits": 1200},
+            "subframe3": {"data_bits": 846, "crc_bits": 24, "total_bits": 870},
+            "subframe4": {"data_bits": 846, "crc_bits": 24, "total_bits": 870},
         }
         path = out_dir / f"frame_{msg_id}.json"
         path.write_text(json.dumps(parsed, indent=2))
 
     print(f"[parsed] wrote {len(TEST_MESSAGES)} .json files → {out_dir}")
+
+
+# ---------------------------------------------------------------------------
+# Level 3 — I/Q signal vectors
+# ---------------------------------------------------------------------------
+
+
+def generate_iq_vectors(prn_ids: list[int]) -> None:
+    """Write I/Q signal files for interoperability Level 3 validation.
+
+    Generates one 2 ms epoch per PRN at native 5.115 MHz and at 10.23 MHz,
+    using the 128-byte LSISIQ header format.
+    """
+    out_dir = VECTORS / "signals"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    native_rate = 5_115_000.0
+    upsampled_rate = 10_230_000.0
+
+    for prn_id in prn_ids:
+        # Native rate: 1 sample/chip (5.115 MHz)
+        iq_native = generate_iq_epoch(prn_id, epoch_idx=0, data_symbol=1)
+        path_native = out_dir / f"prn{prn_id:03d}_5115ksps.iq"
+        write_iq_file(
+            str(path_native), iq_native, native_rate, prn_id, duration_s=0.002
+        )
+
+        # Upsampled: 10.23 MHz (2x oversampling)
+        iq_up = generate_iq_epoch(
+            prn_id, epoch_idx=0, data_symbol=1, sample_rate=upsampled_rate
+        )
+        path_up = out_dir / f"prn{prn_id:03d}_10230ksps.iq"
+        write_iq_file(str(path_up), iq_up, upsampled_rate, prn_id, duration_s=0.002)
+
+    print(f"[signal] wrote {len(prn_ids) * 2} .iq files → {out_dir}")
 
 
 # ---------------------------------------------------------------------------
@@ -424,6 +476,7 @@ def main() -> None:
     generate_crc24_vectors()
     generate_interleaver_vectors()
     generate_ldpc_vectors()
+    generate_iq_vectors(prn_ids)
     generate_parsed_vectors()
 
     print("\nDone. To validate the vectors against this implementation:")

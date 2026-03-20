@@ -36,7 +36,7 @@ PLATFORMS: dict[str, dict[str, str]] = {
 BUILDER_NAME = "lunalink-cross-arch"
 
 
-def check_prerequisites() -> None:
+def check_prerequisites() -> None:  # noqa: D103
     if not shutil.which("docker"):
         print("ERROR: docker not found in PATH", file=sys.stderr)
         sys.exit(1)
@@ -97,11 +97,11 @@ def run_build(platform_key: str, dry_run: bool) -> tuple[str, bool, float]:
         ".",
     ]
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  {platform_key} ({docker_platform})")
     print(f"  Endian: {info['endian']}  Alignment: {info['alignment']}")
     print(f"  {info['purpose']}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     if dry_run:
         print(f"  [DRY RUN] {' '.join(cmd)}")
@@ -114,7 +114,7 @@ def run_build(platform_key: str, dry_run: bool) -> tuple[str, bool, float]:
     return platform_key, result.returncode == 0, duration
 
 
-def main() -> None:
+def main() -> None:  # noqa: D103
     parser = argparse.ArgumentParser(
         description="Cross-architecture build & test for LunaLink C++ core"
     )
@@ -141,18 +141,19 @@ def main() -> None:
         results.append(run_build(target, args.dry_run))
 
     # Summary table
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("  Cross-Architecture Test Summary")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"  {'Arch':<10} {'Platform':<16} {'Endian':<8} {'Result':<10} {'Time'}")
-    print(f"  {'-'*10} {'-'*16} {'-'*8} {'-'*10} {'-'*8}")
+    print(f"  {'-' * 10} {'-' * 16} {'-' * 8} {'-' * 10} {'-' * 8}")
     all_passed = True
     for arch, passed, duration in results:
         info = PLATFORMS[arch]
         status = "PASS" if passed else "FAIL"
         time_str = f"{duration:.0f}s" if duration > 0 else "—"
         print(
-            f"  {arch:<10} {info['docker_platform']:<16} {info['endian']:<8} {status:<10} {time_str}"
+            f"  {arch:<10} {info['docker_platform']:<16}"
+            f" {info['endian']:<8} {status:<10} {time_str}"
         )
         if not passed:
             all_passed = False
