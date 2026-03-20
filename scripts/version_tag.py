@@ -71,7 +71,10 @@ def main() -> None:
         patch += 1
 
     new_tag = f"v{major}.{minor}.{patch}"
-    message = f"Release {new_tag}"
+
+    # Use HEAD commit's first line as tag message for traceability
+    head_subject = run_git("log", "-1", "--format=%s")
+    message = f"{new_tag}: {head_subject}"
 
     print(f"Latest tag : {latest}")
     print(f"Bump       : {'minor' if args.minor else 'patch'}")

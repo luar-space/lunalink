@@ -57,7 +57,7 @@ ninja.make-fallback = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov=lunalink --cov-report=term-missing --cov-fail-under=90"
+addopts = "--cov=lunalink --cov-report=term-missing --cov-fail-under=100"
 
 [tool.coverage.run]
 source = ["lunalink"]

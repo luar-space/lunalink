@@ -489,10 +489,6 @@ def generate_iq_frame(
     """
     if len(frame_symbols) != FRAME_LENGTH:
         raise ValueError(f"Expected {FRAME_LENGTH} symbols, got {len(frame_symbols)}")
-    if EPOCHS_PER_FRAME != FRAME_LENGTH:
-        raise RuntimeError(
-            "EPOCHS_PER_FRAME != FRAME_LENGTH: 1 symbol per epoch assumed"
-        )
 
     epochs = []
     for epoch in range(EPOCHS_PER_FRAME):

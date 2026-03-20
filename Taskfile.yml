@@ -195,6 +195,12 @@ tasks:
         fi
     silent: false
 
+  coverage-report:
+    desc: Generate structured coverage evidence report (RST + JSON) from existing coverage data.
+    cmds:
+      - python3 scripts/coverage_evidence_report.py --build-dir build/coverage
+    silent: false
+
   sanitize:
     desc: Build and run C++ tests with AddressSanitizer and UBSan.
     vars:

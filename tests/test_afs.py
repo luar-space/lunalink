@@ -12,24 +12,42 @@ from lunalink.afs import (
     EPOCHS_PER_FRAME,
     FRAME_LENGTH,
     INTERIM_ASSIGNMENT_MAX_PRN,
+    SB2_DATA_BITS,
+    SB2_LENGTH,
+    SB3_DATA_BITS,
+    SB3_LENGTH,
+    SB4_DATA_BITS,
+    SB4_LENGTH,
     SECONDARY_CODE_COUNT,
     SECONDARY_CODE_LENGTH,
     SYNC_LENGTH,
     TERTIARY_CODE_LENGTH,
     BchStatus,
+    FrameDecodeStatus,
+    FrameStatus,
     SyncDetectorStatus,
     bch_decode,
     bch_encode,
+    block_deinterleave_soft,
+    commit_frame,
+    default_matched_assignment,
     frame_build,
     frame_build_partial,
+    frame_decode,
     generate_iq_epoch,
     generate_iq_frame,
+    legendre_1499_checksum,
+    legendre_10223_checksum,
+    legendre_cache_init,
     matched_code_epoch,
     matched_code_epoch_assigned,
     modulate_i,
     modulate_q,
     multiplex_iq,
     prn_code,
+    subframe_build_sb2,
+    subframe_build_sb3,
+    subframe_build_sb4,
     sync_detect,
     weil1500_code,
     weil10230_code,
@@ -571,3 +589,156 @@ class TestWriteIqFile:
                 write_iq_file(path, np.zeros(100, dtype=np.float32), 1e6, 1)
         finally:
             os.unlink(path)
+
+    def test_explicit_duration(self):
+        """Explicit duration_s parameter is accepted."""
+        iq = generate_iq_epoch(1, 0)
+        with tempfile.NamedTemporaryFile(suffix=".iq", delete=False) as f:
+            path = f.name
+        try:
+            write_iq_file(path, iq, AFS_Q_CHIP_RATE, 1, duration_s=0.002)
+            assert os.path.getsize(path) == 128 + 10230 * 2 * 4
+        finally:
+            os.unlink(path)
+
+
+class TestLdpcWrappers:
+    """Tests for ldpc_encode/ldpc_decode Python wrappers."""
+
+    def test_encode_sf2(self):
+        """LDPC encode SF2 produces correct length."""
+        from lunalink.afs import LdpcSubframe, ldpc_encode
+
+        msg = np.zeros(1200, dtype=np.uint8)
+        codeword = ldpc_encode(LdpcSubframe.SF2, msg)
+        assert codeword.shape == (2400,)
+
+    def test_decode_sf2_round_trip(self):
+        """LDPC encode then decode recovers original data."""
+        from lunalink.afs import LdpcSubframe, ldpc_decode, ldpc_encode
+
+        msg = np.zeros(1200, dtype=np.uint8)
+        codeword = ldpc_encode(LdpcSubframe.SF2, msg)
+        soft = np.where(codeword == 0, 10.0, -10.0).astype(np.float32)
+        decoded, status = ldpc_decode(LdpcSubframe.SF2, soft, iterations=20)
+        np.testing.assert_array_equal(decoded[:1200], msg)
+
+
+class TestSubframeBuilders:
+    """Tests for subframe_build_sb2/sb3/sb4 Python wrappers."""
+
+    def test_sb2_shape(self):
+        """SB2 encoder produces correct output length."""
+        data = np.zeros(SB2_DATA_BITS, dtype=np.uint8)
+        encoded = subframe_build_sb2(data)
+        assert encoded.shape == (SB2_LENGTH,)
+
+    def test_sb3_shape(self):
+        """SB3 encoder produces correct output length."""
+        data = np.zeros(SB3_DATA_BITS, dtype=np.uint8)
+        encoded = subframe_build_sb3(data)
+        assert encoded.shape == (SB3_LENGTH,)
+
+    def test_sb4_shape(self):
+        """SB4 encoder produces correct output length."""
+        data = np.zeros(SB4_DATA_BITS, dtype=np.uint8)
+        encoded = subframe_build_sb4(data)
+        assert encoded.shape == (SB4_LENGTH,)
+
+
+class TestFrameDecode:
+    """Tests for frame_decode Python wrapper."""
+
+    def test_decode_clean_frame(self):
+        """Encode then decode a frame over a perfect channel."""
+        sb2 = np.zeros(SB2_DATA_BITS, dtype=np.uint8)
+        sb3 = np.zeros(SB3_DATA_BITS, dtype=np.uint8)
+        sb4 = np.zeros(SB4_DATA_BITS, dtype=np.uint8)
+        frame = frame_build(0, 42, sb2, sb3, sb4)
+        # Convert to bipolar soft symbols: 0→+1.0, 1→-1.0
+        bipolar = np.where(frame == 0, 1.0, -1.0).astype(np.float32)
+        result, sb2_out, sb3_out, sb4_out, status = frame_decode(bipolar)
+        assert status == FrameDecodeStatus.OK
+        assert int(result.bch.fid) == 0
+        assert int(result.bch.toi) == 42
+
+
+class TestBlockDeinterleaveSoft:
+    """Tests for block_deinterleave_soft Python wrapper."""
+
+    def test_round_trip(self):
+        """Interleave then deinterleave recovers original data."""
+        from lunalink.afs._afs import block_interleave
+
+        data = np.arange(5880, dtype=np.uint8) % 2
+        interleaved = block_interleave(data)
+        soft = np.where(interleaved == 0, 1.0, -1.0).astype(np.float32)
+        deinterleaved = block_deinterleave_soft(soft)
+        # Convert back to hard bits for comparison
+        hard = (deinterleaved < 0).astype(np.uint8)
+        np.testing.assert_array_equal(hard, data)
+
+
+class TestCommitFrame:
+    """Tests for commit_frame Python wrapper."""
+
+    def test_valid_frame_passes(self):
+        """A frame with valid CRC passes commit_frame."""
+        from lunalink.afs._afs import crc24_calculate
+
+        data = np.zeros(100, dtype=np.uint8)
+        crc = crc24_calculate(data)
+        buf = np.concatenate([data, crc])
+        assert commit_frame(buf) == FrameStatus.OK
+
+    def test_corrupted_frame_fails(self):
+        """A frame with flipped bit fails commit_frame."""
+        from lunalink.afs._afs import crc24_calculate
+
+        data = np.zeros(100, dtype=np.uint8)
+        crc = crc24_calculate(data)
+        buf = np.concatenate([data, crc])
+        buf[50] ^= 1
+        assert commit_frame(buf) == FrameStatus.FAULT_DETECTED
+
+
+class TestDefaultMatchedAssignment:
+    """Tests for default_matched_assignment Python wrapper."""
+
+    def test_prn1_assignment(self):
+        """PRN 1 maps to S0, tertiary PRN 1, phase offset 0."""
+        primary, secondary_idx, tertiary, phase = default_matched_assignment(1)
+        assert primary == 1
+        assert secondary_idx == 0  # S0
+        assert tertiary == 1
+        assert phase == 0
+
+    def test_prn5_cycles(self):
+        """PRN 5 cycles back to S0."""
+        _, secondary_idx, _, _ = default_matched_assignment(5)
+        assert secondary_idx == 0
+
+
+class TestLegendre:
+    """Tests for Legendre cache and checksum wrappers."""
+
+    def test_cache_init(self):
+        """Legendre cache initialises successfully."""
+        from lunalink.afs import LegendreStatus
+
+        status = legendre_cache_init()
+        assert status == LegendreStatus.OK
+
+    def test_10223_checksum(self):
+        """Legendre-10223 checksum is nonzero and stable."""
+        c1 = legendre_10223_checksum()
+        c2 = legendre_10223_checksum()
+        assert c1 != 0
+        assert c1 == c2
+
+    def test_1499_checksum(self):
+        """Legendre-1499 checksum is nonzero and stable."""
+        c1 = legendre_1499_checksum()
+        c2 = legendre_1499_checksum()
+        assert c1 != 0
+        assert c1 == c2
