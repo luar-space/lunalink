@@ -755,6 +755,49 @@ void extract_hard_bits(std::span<const int16_t> L_v,
 }
 } // namespace
 
+// Validate ldpc_encode preconditions. Returns kOk when all checks pass;
+// otherwise returns the appropriate error status.
+[[nodiscard]] LdpcStatus validate_encode_inputs(
+    LdpcSubframe type,
+    std::span<const uint8_t> msg,
+    std::span<uint8_t> out,
+    uint16_t K_nominal,
+    uint16_t N_output) noexcept {
+  if (msg.size() != static_cast<size_t>(K_nominal) || !validate_bits(msg)) {
+    return LdpcStatus::kInvalidInput;
+  }
+  if (out.size() < static_cast<size_t>(N_output)) {
+    return LdpcStatus::kOutputTooSmall;
+  }
+  if (spans_overlap(msg.data(), msg.size_bytes(), out.data(), out.size_bytes()) ||
+      !verify_tables(type)) {
+    return LdpcStatus::kFaultDetected; // FIZ-1 (aliasing) / FIZ-3 (LUT integrity)
+  }
+  return LdpcStatus::kOk;
+}
+
+// Execute the DSP core: compute parity, pack output, verify CFI.
+// Returns kOk on success; kFaultDetected on CFI check failure.
+[[nodiscard]] LdpcStatus encode_dsp_and_verify(
+    LdpcSubframe type,
+    std::span<const uint8_t> msg,
+    std::span<uint8_t> out,
+    LdpcEncodeWorkspace& workspace,
+    bool is_sf2) noexcept {
+  volatile uint32_t cfi_count = kCfiMagicEncode;
+  bool dsp_ok = encode_compute_parity(type, msg, workspace, cfi_count);
+
+  if (dsp_ok) {
+    pack_output_bits(workspace, out, is_sf2);
+    cfi_count = cfi_count + 1U; // milestone 5: output written
+  }
+
+  constexpr uint32_t kExpectedCfi = kCfiMagicEncode + 5U;
+  return (dsp_ok && cfi_count == kExpectedCfi)
+             ? LdpcStatus::kOk
+             : LdpcStatus::kFaultDetected;
+}
+
 // --- Encoder (A4: single exit, A5: CFI sentinel) ---
 
 LdpcStatus ldpc_encode(LdpcSubframe type,
@@ -769,33 +812,39 @@ LdpcStatus ldpc_encode(LdpcSubframe type,
   const uint16_t N_output = is_sf2 ? 2400U : 1740U;
   LdpcStatus status = LdpcStatus::kFaultDetected;
 
-  // A5: CFI sentinel counter — tracks expected execution milestones.
-  volatile uint32_t cfi_count = kCfiMagicEncode;
+  // SWIFI bypass flag — always false in production builds.
+  [[maybe_unused]] bool fi_bypass = false;
 
-  // --- Precondition checks ---
-  if (msg.size() != static_cast<size_t>(K_nominal) || !validate_bits(msg)) {
-    status = LdpcStatus::kInvalidInput;
-  } else if (out.size() < static_cast<size_t>(N_output)) {
-    status = LdpcStatus::kOutputTooSmall;
-  } else if (spans_overlap(msg.data(), msg.size_bytes(), out.data(), out.size_bytes()) ||
-             !verify_tables(type)) {
-    status = LdpcStatus::kFaultDetected; // FIZ-1 (aliasing) / FIZ-3 (LUT integrity)
+#ifdef LUNALINK_FAULT_INJECTION
+  // SWIFI return-value injection: set status to the injected value and skip
+  // the DSP core.  Caller's error-handling path is exercised without relying
+  // on indirect failures (e.g., bit-flipped LUT).  [SW-SAF-06]
+  // Sentinel 0 is not a valid LdpcStatus value (all status codes have
+  // Hamming distance >= 3 from 0x00), so 0 safely means "no injection".
+  if (workspace.fi_force_status != 0U) {
+    // cppcheck-suppress redundantInitialization ; pessimistic default is intentional safety pattern
+    status = static_cast<LdpcStatus>(workspace.fi_force_status);
+    workspace.fi_force_status = 0U; // one-shot
+    fi_bypass = true;
+  }
+#endif
+
+  // --- Precondition checks (fi_bypass skips entire chain) ---
+  // cppcheck-suppress knownConditionTrueFalse ; fi_bypass is set by LUNALINK_FAULT_INJECTION ifdef
+  if (fi_bypass) {
+    // Injection: status already set above, skip DSP core.
   } else {
-    // --- DSP core (milestones 1-4 tracked inside) ---
-    bool dsp_ok = encode_compute_parity(type, msg, workspace, cfi_count);
-
-    if (dsp_ok) {
-      pack_output_bits(workspace, out, is_sf2);
-      cfi_count = cfi_count + 1U; // milestone 5: output written
+    // cppcheck-suppress redundantInitialization ; pessimistic default is intentional safety pattern
+    status = validate_encode_inputs(type, msg, out, K_nominal, N_output);
+    if (status == LdpcStatus::kOk) {
+      status = encode_dsp_and_verify(type, msg, out, workspace, is_sf2);
     }
+  }
 
-    scrub_encode_workspace(workspace);
-
-    // A5: CFI terminal check — all 5 milestones must have been reached.
-    constexpr uint32_t kExpectedCfi = kCfiMagicEncode + 5U;
-    if (dsp_ok && cfi_count == kExpectedCfi) {
-      status = LdpcStatus::kOk;
-    }
+  // Unconditional workspace scrub; output scrub on non-OK (§7).
+  scrub_encode_workspace(workspace);
+  if (status != LdpcStatus::kOk) {
+    secure_scrub(out);
   }
 
   return status;

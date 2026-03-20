@@ -69,6 +69,12 @@ struct FrameDecodeWorkspace {
 #ifdef LUNALINK_FAULT_INJECTION
   /// SWIFI: number of CFI milestones to skip. Set before calling frame_decode().
   uint32_t cfi_skip_inject = 0;
+  /// SWIFI: when non-zero, the sync detection stage returns kSyncNotFound
+  /// immediately. Used for return-value injection testing. [SW-SAF-06]
+  uint8_t fi_force_sync_fail = 0;
+  /// SWIFI: when non-zero, the LDPC decode stage returns kFaultDetected
+  /// immediately. Used for return-value injection testing. [SW-SAF-06]
+  uint8_t fi_force_ldpc_fail = 0;
 #endif
 };
 

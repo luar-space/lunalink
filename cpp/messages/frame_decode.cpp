@@ -197,6 +197,20 @@ decode_stage_crc_and_copy(FrameDecodeResult& result, FrameDecodeWorkspace& works
   return FrameDecodeStatus::kOk;
 }
 
+#ifdef LUNALINK_FAULT_INJECTION
+/// SWIFI return-value injection helper for frame_decode stages.
+/// Checks the one-shot injection field; if set, resets it and overwrites
+/// status with the injected value.  Otherwise status is unchanged.
+void fi_override_stage(uint8_t& fi_flag,
+                       FrameDecodeStatus injected,
+                       FrameDecodeStatus& status) noexcept {
+  if (fi_flag != 0U) {
+    fi_flag = 0U; // one-shot
+    status = injected;
+  }
+}
+#endif
+
 } // namespace
 
 // Single-exit accumulator pattern per c_plus_plus_guidelines.rst §3.4. [LSIS-AFS-720]
@@ -224,6 +238,11 @@ FrameDecodeStatus frame_decode(std::span<const float> rx_symbols,
     cfi_count = cfi_count + 1U; // Milestone 1: input validated
     LUNALINK_CRITICAL_EXIT;
     status = decode_stage_sync(rx_symbols, result, sync_threshold, hal, offset);
+#ifdef LUNALINK_FAULT_INJECTION
+    // SWIFI: override sync result with injected failure. [SW-SAF-06]
+    fi_override_stage(workspace.fi_force_sync_fail,
+                      FrameDecodeStatus::kSyncNotFound, status);
+#endif
   }
 
   // cppcheck-suppress duplicateCondition  ; single-exit accumulator pattern
@@ -248,6 +267,11 @@ FrameDecodeStatus frame_decode(std::span<const float> rx_symbols,
     cfi_count = cfi_count + 1U; // Milestone 4: deinterleaved
     LUNALINK_CRITICAL_EXIT;
     status = decode_stage_ldpc(result, workspace, ldpc_iterations);
+#ifdef LUNALINK_FAULT_INJECTION
+    // SWIFI: override LDPC result with injected failure. [SW-SAF-06]
+    fi_override_stage(workspace.fi_force_ldpc_fail,
+                      FrameDecodeStatus::kFaultDetected, status);
+#endif
   }
 
   // cppcheck-suppress duplicateCondition  ; single-exit accumulator pattern

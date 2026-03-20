@@ -38,6 +38,15 @@ struct LdpcEncodeWorkspace {
   std::array<uint8_t, 480> t_as{};
   std::array<uint8_t, 4560> t_cs{};
   std::array<uint8_t, 4560> t_dp1{};
+
+#ifdef LUNALINK_FAULT_INJECTION
+  /// SWIFI: when non-zero, ldpc_encode() returns this status immediately
+  /// without computing. Used for return-value injection testing. [SW-SAF-06]
+  /// Sentinel 0 is not a valid LdpcStatus value (all status codes use
+  /// SEU-hardened bit patterns with Hamming distance >= 3 from 0x00),
+  /// so 0 safely means "no injection".
+  uint8_t fi_force_status = 0;
+#endif
 };
 
 /**

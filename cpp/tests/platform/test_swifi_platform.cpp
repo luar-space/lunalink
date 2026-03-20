@@ -54,6 +54,52 @@ TEST_CASE("SWIFI: tmr_single_copy_corrupt — vote() corrects minority copy") {
 }
 
 // ---------------------------------------------------------------------------
+// FI-35 — TMR two-of-three corruption: different bad values, no majority
+// ---------------------------------------------------------------------------
+TEST_CASE("SWIFI: tmr_two_of_three_different — no majority, recovery fails") {
+    // When two copies hold different bad values, no two copies agree.
+    // vote() falls back to v1 (the first copy). This documents the detection
+    // boundary: TMR detects single-copy corruption but not double-copy
+    // corruption with distinct values.
+    constexpr uint32_t kGood = 0xA5A5A5A5U;
+    constexpr uint32_t kBad1 = 0xDEADBEEFU;
+    constexpr uint32_t kBad2 = 0xCAFEBABEU;
+
+    TmrValue<uint32_t> tmr(kGood);
+
+    // Corrupt v1 and v2 with different values: [BAD1, BAD2, GOOD]
+    tmr.inject_fault(0U, kBad1);
+    tmr.inject_fault(1U, kBad2);
+
+    // No majority exists — vote() returns v1 (first copy) as fallback.
+    // v3 holds the correct value but is outnumbered by two disagreeing copies.
+    const uint32_t result = tmr.vote();
+
+    // Document: with two different corruptions, TMR cannot recover.
+    // It returns v1 (which happens to be kBad1). This is a known limitation:
+    // TMR only guarantees correction of single-copy faults.
+    CHECK(result != kGood);  // documents that recovery failed
+}
+
+// ---------------------------------------------------------------------------
+// FI-36 — TMR two-of-three corruption: same bad value, wrong majority wins
+// ---------------------------------------------------------------------------
+TEST_CASE("SWIFI: tmr_two_of_three_same — wrong majority wins") {
+    // When two copies hold the same wrong value, they form a (false) majority.
+    // vote() returns the wrong value and repairs the correct copy to match.
+    // This confirms the FI-02 residual risk from the other direction.
+    constexpr uint32_t kGood = 0xA5A5A5A5U;
+    constexpr uint32_t kBad  = 0xDEADBEEFU;
+
+    TmrValue<uint32_t> tmr(kGood);
+    tmr.inject_fault(0U, kBad);
+    tmr.inject_fault(1U, kBad);
+
+    // [BAD, BAD, GOOD] — majority is BAD (wrong)
+    CHECK(tmr.vote() == kBad);  // wrong majority wins — residual risk
+}
+
+// ---------------------------------------------------------------------------
 // TMR — all copies corrupted (residual risk, no majority)
 // ---------------------------------------------------------------------------
 TEST_CASE("SWIFI: tmr_all_copies_same_corrupt — documents residual risk") {
@@ -219,6 +265,83 @@ TEST_CASE("SWIFI: watchdog_lower_bound_trip — FaultPacket emitted on under-run
     wdog.tick();
   }
   REQUIRE(wdog.upper_bound_exceeded() == true);
+}
+
+// ---------------------------------------------------------------------------
+// FI-32 — Timing injection: watchdog upper-bound exceeded (informational)
+// ---------------------------------------------------------------------------
+TEST_CASE("SWIFI: watchdog_upper_bound_exceeded — informational detection via inject") {
+    constexpr uint32_t kTMin = 100U;
+    constexpr uint32_t kTMax = 10000U;
+    WindowedWatchdog wdog(kTMin, kTMax);
+    CaptureTelemetryHal<4> capture;
+
+    // Normal operation: tick to within bounds
+    wdog.reset();
+    for (uint32_t i = 0U; i < kTMin; ++i) { wdog.tick(); }
+    REQUIRE(wdog.upper_bound_exceeded() == false);
+
+    // Inject tick count just above upper bound
+    wdog.inject_tick_count(kTMax + 1U);
+    REQUIRE(wdog.upper_bound_exceeded() == true);
+
+    // evaluate() still passes (upper bound is informational, hardware watchdog
+    // owns the hang path) — but the counter exceeds t_min so no lower-bound trip
+    const bool eval = wdog.evaluate(capture, 0U);
+    REQUIRE(eval == true);
+    REQUIRE(capture.count() == 0U);  // no FaultPacket on upper-bound path
+}
+
+// ---------------------------------------------------------------------------
+// FI-33 — Timing injection: zero-tick starvation (complete wip_tick absence)
+// ---------------------------------------------------------------------------
+TEST_CASE("SWIFI: watchdog_zero_tick_starvation — lower-bound trip on zero ticks") {
+    constexpr uint32_t kTMin = 50U;
+    constexpr uint32_t kTMax = 500U;
+    WindowedWatchdog wdog(kTMin, kTMax);
+    CaptureTelemetryHal<4> capture;
+
+    // Reset and immediately evaluate — zero ticks (complete starvation)
+    wdog.reset();
+    REQUIRE(wdog.tick_count() == 0U);
+
+    const bool eval = wdog.evaluate(capture, 1000U);
+    REQUIRE(eval == false);  // lower-bound violated (0 < t_min)
+
+    // FaultPacket must have been emitted
+    REQUIRE(capture.count() == 1U);
+    CHECK(capture.packet(0U).fiz_level == 2U);
+    CHECK(capture.packet(0U).fault_code == kWatchdogLowerBoundFaultCode);
+}
+
+// ---------------------------------------------------------------------------
+// FI-34 — Timing injection: inject_tick_count at exact boundaries
+// ---------------------------------------------------------------------------
+TEST_CASE("SWIFI: watchdog_boundary_ticks — exact t_min and t_max pass") {
+    constexpr uint32_t kTMin = 100U;
+    constexpr uint32_t kTMax = 10000U;
+    WindowedWatchdog wdog(kTMin, kTMax);
+    CaptureTelemetryHal<4> capture;
+
+    // Exact lower bound: t_min ticks — must pass
+    wdog.reset();
+    wdog.inject_tick_count(kTMin);
+    REQUIRE(wdog.evaluate(capture, 0U) == true);
+    REQUIRE(wdog.upper_bound_exceeded() == false);
+
+    // Exact upper bound: t_max ticks — must pass (upper bound is <=)
+    wdog.reset();
+    wdog.inject_tick_count(kTMax);
+    REQUIRE(wdog.evaluate(capture, 0U) == true);
+    REQUIRE(wdog.upper_bound_exceeded() == false);
+
+    // One below lower bound — must fail
+    wdog.reset();
+    wdog.inject_tick_count(kTMin - 1U);
+    REQUIRE(wdog.evaluate(capture, 0U) == false);
+    REQUIRE(capture.count() == 1U);
+
+    // No packets on the passing cases
 }
 
 // ---------------------------------------------------------------------------

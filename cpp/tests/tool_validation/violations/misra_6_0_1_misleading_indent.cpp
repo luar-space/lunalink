@@ -5,6 +5,6 @@
 int tvs_misleading_indent(int x) {
   if (x > 0)
     x = x + 1;
-  x = x + 2; // Misleading indentation — target violation
+    x = x + 2; // Misleading indentation — looks inside if but is not
   return x;
 }
