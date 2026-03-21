@@ -94,7 +94,15 @@ def main():  # noqa: C901
         root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
     # --- Scan code files (headers + sources + bindings) ---
-    code_dirs = ["cpp/include", "cpp/signal", "cpp/bindings"]
+    code_dirs = [
+        "cpp/include",
+        "cpp/codes",
+        "cpp/encoding",
+        "cpp/messages",
+        "cpp/signal",
+        "cpp/platform",
+        "cpp/bindings",
+    ]
     code_extensions = [".hpp", ".cpp"]
     # tag -> set of relative file paths
     code_tags = defaultdict(set)

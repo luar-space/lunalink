@@ -8,28 +8,42 @@ import pytest
 
 from lunalink.afs import (
     AFS_Q_CHIP_RATE,
+    BLOCK_INTERVAL_DURATION,
     DEFAULT_SYNC_THRESHOLD,
     EPOCHS_PER_FRAME,
+    FRAME_DURATION_SEC,
     FRAME_LENGTH,
     INTERIM_ASSIGNMENT_MAX_PRN,
+    ITOW_BITS,
+    ITOW_MAX,
     SB2_DATA_BITS,
     SB2_LENGTH,
     SB3_DATA_BITS,
     SB3_LENGTH,
     SB4_DATA_BITS,
     SB4_LENGTH,
+    SEC_WEEK,
     SECONDARY_CODE_COUNT,
     SECONDARY_CODE_LENGTH,
+    SUBFRAME_TYPE_BITS,
     SYNC_LENGTH,
     TERTIARY_CODE_LENGTH,
+    TOT_HEADER_BITS,
+    TOT_TOI_MAX,
+    WN_BITS,
+    WN_MAX,
     BchStatus,
     FrameDecodeStatus,
     FrameStatus,
+    MessageParseStatus,
+    MessageType,
     SyncDetectorStatus,
+    TotStatus,
     bch_decode,
     bch_encode,
     block_deinterleave_soft,
     commit_frame,
+    compute_tot,
     default_matched_assignment,
     frame_build,
     frame_build_partial,
@@ -44,6 +58,9 @@ from lunalink.afs import (
     modulate_i,
     modulate_q,
     multiplex_iq,
+    parse_sb2,
+    parse_sb3,
+    parse_sb4,
     prn_code,
     subframe_build_sb2,
     subframe_build_sb3,
@@ -742,3 +759,243 @@ class TestLegendre:
         c2 = legendre_1499_checksum()
         assert c1 != 0
         assert c1 == c2
+
+
+# ─── Gateway 6: Message Parsing ──────────────────────────────────────────────
+
+
+class TestParseSb2:
+    """Tests for parse_sb2 Python wrapper."""
+
+    @staticmethod
+    def _pack_sb2(wn: int, itow: int) -> np.ndarray:
+        """Pack WN (13 bits) + ITOW (9 bits) into SB2 data array."""
+        sb2 = np.zeros(SB2_DATA_BITS, dtype=np.uint8)
+        for i in range(WN_BITS):
+            sb2[i] = (wn >> (WN_BITS - 1 - i)) & 1
+        for i in range(ITOW_BITS):
+            sb2[WN_BITS + i] = (itow >> (ITOW_BITS - 1 - i)) & 1
+        return sb2
+
+    def test_basic_extraction(self):
+        """Extract known WN and ITOW values."""
+        sb2 = self._pack_sb2(1234, 456)
+        result = parse_sb2(sb2)
+        assert result.status == MessageParseStatus.OK
+        assert result.wn == 1234
+        assert result.itow == 456
+
+    def test_boundary_values(self):
+        """Extract maximum WN=8191 and ITOW=503."""
+        sb2 = self._pack_sb2(WN_MAX, ITOW_MAX)
+        result = parse_sb2(sb2)
+        assert result.status == MessageParseStatus.OK
+        assert result.wn == WN_MAX
+        assert result.itow == ITOW_MAX
+
+    def test_zero_values(self):
+        """WN=0, ITOW=0 from all-zero data."""
+        sb2 = np.zeros(SB2_DATA_BITS, dtype=np.uint8)
+        result = parse_sb2(sb2)
+        assert result.status == MessageParseStatus.OK
+        assert result.wn == 0
+        assert result.itow == 0
+
+    def test_wrong_size_rejected(self):
+        """Wrong input size returns INVALID_INPUT."""
+        too_small = np.zeros(100, dtype=np.uint8)
+        result = parse_sb2(too_small)
+        assert result.status == MessageParseStatus.INVALID_INPUT
+
+    def test_float_dtype_rejected(self):
+        """Non-uint8 dtype is rejected, not silently coerced."""
+        sb2_float = np.zeros(SB2_DATA_BITS, dtype=np.float32)
+        sb2_float[0] = 1.9  # would truncate to 1 if coerced
+        with pytest.raises(TypeError):
+            parse_sb2(sb2_float)
+
+    def test_data_offset_and_payload_size(self):
+        """data_offset and payload_size cover the full SB2 data region."""
+        sb2 = self._pack_sb2(0, 0)
+        result = parse_sb2(sb2)
+        assert result.data_offset == TOT_HEADER_BITS
+        assert result.payload_size == SB2_DATA_BITS - TOT_HEADER_BITS
+        # payload_offset + payload_size should not exceed SB2 total
+        assert result.data_offset + result.payload_size == SB2_DATA_BITS
+
+    def test_payload_extraction(self):
+        """Raw payload bytes are accessible via offset + size."""
+        sb2 = self._pack_sb2(100, 42)
+        # Put a recognisable pattern in the payload region
+        sb2[TOT_HEADER_BITS] = 1
+        sb2[TOT_HEADER_BITS + 1] = 0
+        sb2[TOT_HEADER_BITS + 2] = 1
+        result = parse_sb2(sb2)
+        assert result.status == MessageParseStatus.OK
+        # Caller slices: sb2[data_offset : data_offset + payload_size]
+        payload = sb2[result.data_offset : result.data_offset + result.payload_size]
+        assert len(payload) == result.payload_size
+        assert payload[0] == 1
+        assert payload[1] == 0
+        assert payload[2] == 1
+
+
+class TestParseSb3:
+    """Tests for parse_sb3 Python wrapper."""
+
+    @staticmethod
+    def _pack_type(type_val: int) -> np.ndarray:
+        """Pack a type field into SB3 data."""
+        sb3 = np.zeros(SB3_DATA_BITS, dtype=np.uint8)
+        for i in range(SUBFRAME_TYPE_BITS):
+            sb3[i] = (type_val >> (SUBFRAME_TYPE_BITS - 1 - i)) & 1
+        return sb3
+
+    def test_known_type(self):
+        """Type=5 maps to G5 (Orbit Almanac)."""
+        sb3 = self._pack_type(5)
+        result = parse_sb3(sb3)
+        assert result.status == MessageParseStatus.OK
+        assert result.type == MessageType.G5
+        assert result.type_raw == 5
+
+    def test_unknown_type(self):
+        """Unknown type returns OK with UNKNOWN."""
+        sb3 = self._pack_type(63)
+        result = parse_sb3(sb3)
+        assert result.status == MessageParseStatus.OK
+        assert result.type == MessageType.UNKNOWN
+
+    def test_wrong_size_rejected(self):
+        """Wrong size returns INVALID_INPUT."""
+        result = parse_sb3(np.zeros(10, dtype=np.uint8))
+        assert result.status == MessageParseStatus.INVALID_INPUT
+
+    def test_payload_offset_and_size(self):
+        """Payload covers bits after the type field."""
+        sb3 = self._pack_type(5)
+        result = parse_sb3(sb3)
+        assert result.data_offset == SUBFRAME_TYPE_BITS
+        assert result.payload_size == SB3_DATA_BITS - SUBFRAME_TYPE_BITS
+        payload = sb3[result.data_offset : result.data_offset + result.payload_size]
+        assert len(payload) == result.payload_size
+
+
+class TestParseSb4:
+    """Tests for parse_sb4 Python wrapper."""
+
+    def test_known_type(self):
+        """Type=1 maps to G1 (Network Access Info)."""
+        sb4 = np.zeros(SB4_DATA_BITS, dtype=np.uint8)
+        for i in range(SUBFRAME_TYPE_BITS):
+            sb4[i] = (1 >> (SUBFRAME_TYPE_BITS - 1 - i)) & 1
+        result = parse_sb4(sb4)
+        assert result.status == MessageParseStatus.OK
+        assert result.type == MessageType.G1
+
+    def test_wrong_size_rejected(self):
+        """Wrong size returns INVALID_INPUT."""
+        result = parse_sb4(np.zeros(10, dtype=np.uint8))
+        assert result.status == MessageParseStatus.INVALID_INPUT
+
+    def test_payload_offset_and_size(self):
+        """Payload covers bits after the type field."""
+        sb4 = np.zeros(SB4_DATA_BITS, dtype=np.uint8)
+        for i in range(SUBFRAME_TYPE_BITS):
+            sb4[i] = (1 >> (SUBFRAME_TYPE_BITS - 1 - i)) & 1
+        result = parse_sb4(sb4)
+        assert result.data_offset == SUBFRAME_TYPE_BITS
+        assert result.payload_size == SB4_DATA_BITS - SUBFRAME_TYPE_BITS
+
+
+class TestComputeTot:
+    """Tests for compute_tot Python wrapper."""
+
+    def test_all_zeros(self):
+        """t_F = 0 when all inputs are zero."""
+        result = compute_tot(0, 0, 0)
+        assert result.status == TotStatus.OK
+        assert result.t_f == 0.0
+
+    def test_basic_formula(self):
+        """WN=1, ITOW=2, TOI=5 → t_F = 607260."""
+        result = compute_tot(1, 2, 5)
+        assert result.status == TotStatus.OK
+        assert result.t_f == 607260.0
+
+    def test_boundary_values(self):
+        """Maximum valid inputs."""
+        result = compute_tot(WN_MAX, ITOW_MAX, TOT_TOI_MAX)
+        assert result.status == TotStatus.OK
+        expected = (
+            WN_MAX * SEC_WEEK
+            + ITOW_MAX * BLOCK_INTERVAL_DURATION
+            + TOT_TOI_MAX * FRAME_DURATION_SEC
+        )
+        assert result.t_f == float(expected)
+
+    def test_with_delta(self):
+        """Delta offset is added."""
+        result = compute_tot(0, 0, 0, 1.5)
+        assert result.status == TotStatus.OK
+        assert result.t_f == 1.5
+
+    def test_invalid_wn(self):
+        """WN > 8191 rejected."""
+        result = compute_tot(8192, 0, 0)
+        assert result.status == TotStatus.INVALID_WN
+
+    def test_invalid_itow(self):
+        """ITOW > 503 rejected."""
+        result = compute_tot(0, 504, 0)
+        assert result.status == TotStatus.INVALID_ITOW
+
+    def test_invalid_toi(self):
+        """TOI > 99 rejected."""
+        result = compute_tot(0, 0, 100)
+        assert result.status == TotStatus.INVALID_TOI
+
+    def test_nan_delta_rejected(self):
+        """NaN delta_t_lrt rejected."""
+        result = compute_tot(0, 0, 0, float("nan"))
+        assert result.status == TotStatus.INVALID_DELTA
+        assert result.t_f == 0.0
+
+    def test_inf_delta_rejected(self):
+        """Inf delta_t_lrt rejected."""
+        result = compute_tot(0, 0, 0, float("inf"))
+        assert result.status == TotStatus.INVALID_DELTA
+
+    def test_week_consistency(self):
+        """Last frame of week + 12s = first frame of next week."""
+        last = compute_tot(0, ITOW_MAX, TOT_TOI_MAX)
+        first = compute_tot(1, 0, 0)
+        assert last.status == TotStatus.OK
+        assert first.status == TotStatus.OK
+        assert first.t_f - last.t_f == float(FRAME_DURATION_SEC)
+
+    def test_e2e_round_trip(self):
+        """Full pipeline: build → decode → parse → ToT → verify time."""
+        wn, itow, toi_val = 100, 42, 17
+        sb2 = TestParseSb2._pack_sb2(wn, itow)
+        sb3 = np.zeros(SB3_DATA_BITS, dtype=np.uint8)
+        sb4 = np.zeros(SB4_DATA_BITS, dtype=np.uint8)
+
+        frame = frame_build(0, toi_val, sb2, sb3, sb4)
+        bipolar = np.where(frame == 0, 1.0, -1.0).astype(np.float32)
+        result, sb2_out, sb3_out, sb4_out, status = frame_decode(bipolar)
+        assert status == FrameDecodeStatus.OK
+
+        sb2_parsed = parse_sb2(sb2_out)
+        assert sb2_parsed.status == MessageParseStatus.OK
+        assert sb2_parsed.wn == wn
+        assert sb2_parsed.itow == itow
+
+        tot = compute_tot(sb2_parsed.wn, sb2_parsed.itow, toi_val)
+        assert tot.status == TotStatus.OK
+        expected = (
+            wn * SEC_WEEK
+            + itow * BLOCK_INTERVAL_DURATION
+            + toi_val * FRAME_DURATION_SEC
+        )
+        assert tot.t_f == float(expected)

@@ -1,5 +1,7 @@
 #include "lunalink/messages/frame.hpp"
 #include "lunalink/messages/frame_decode.hpp"
+#include "lunalink/messages/message_parser.hpp"
+#include "lunalink/messages/time_of_transmission.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
@@ -97,6 +99,89 @@ TEST_CASE("[LSIS-AFS-720] E2E round-trip: TX → AWGN → RX → bit-exact recov
   CHECK(std::equal(sb2_data.begin(), sb2_data.end(), workspace->sb2_data.begin()));
   CHECK(std::equal(sb3_data.begin(), sb3_data.end(), workspace->sb3_data.begin()));
   CHECK(std::equal(sb4_data.begin(), sb4_data.end(), workspace->sb4_data.begin()));
+}
+
+TEST_CASE("[LSIS-AFS-810] E2E: TX → RX → parse → ToT round-trip", "[e2e][rx]") {
+  // Pack known WN, ITOW into SB2 data; known type into SB3/SB4.
+  // Build frame → decode → parse → compute_tot → verify time matches.
+
+  const uint16_t wn = 100;
+  const uint16_t itow = 42;
+  const uint8_t sb3_type = 5; // MSG-G5 (Orbit Almanac)
+  const uint8_t sb4_type = 1; // MSG-G1 (Network Access Info)
+
+  // ── Pack SB2 data: WN(13 bits) + ITOW(9 bits) at offset 0, MSB-first ──
+  std::array<uint8_t, kSb2DataBits> sb2_data{};
+  // Pack WN (13 bits)
+  for (uint8_t i = 0; i < kWnBits; ++i) {
+    const auto bit_pos = static_cast<uint8_t>(kWnBits - 1U - i);
+    sb2_data[i] = static_cast<uint8_t>((wn >> bit_pos) & 1U);
+  }
+  // Pack ITOW (9 bits)
+  for (uint8_t i = 0; i < kItowBits; ++i) {
+    const auto bit_pos = static_cast<uint8_t>(kItowBits - 1U - i);
+    sb2_data[kWnBits + i] = static_cast<uint8_t>((itow >> bit_pos) & 1U);
+  }
+
+  // ── Pack SB3 data: type field (6 bits) at offset 0 ──
+  std::array<uint8_t, kSb3DataBits> sb3_data{};
+  for (uint8_t i = 0; i < kSubframeTypeBits; ++i) {
+    const auto bit_pos = static_cast<uint8_t>(kSubframeTypeBits - 1U - i);
+    sb3_data[i] = static_cast<uint8_t>((sb3_type >> bit_pos) & 1U);
+  }
+
+  // ── Pack SB4 data: type field (6 bits) at offset 0 ──
+  std::array<uint8_t, kSb4DataBits> sb4_data{};
+  for (uint8_t i = 0; i < kSubframeTypeBits; ++i) {
+    const auto bit_pos = static_cast<uint8_t>(kSubframeTypeBits - 1U - i);
+    sb4_data[i] = static_cast<uint8_t>((sb4_type >> bit_pos) & 1U);
+  }
+
+  const Fid fid{0};
+  const Toi toi{17};
+
+  // ── TX: Build frame ──
+  std::array<uint8_t, kFrameLength> tx_frame{};
+  LdpcEncodeWorkspace enc_ws{};
+  FrameBuildWorkspace fbw{};
+  REQUIRE(frame_build(fid, toi, sb2_data, sb3_data, sb4_data, tx_frame, enc_ws, fbw) ==
+          FrameStatus::kOk);
+
+  // ── Channel: clean (no noise) ──
+  std::array<float, kFrameLength> rx_symbols{};
+  binary_to_bipolar(tx_frame, rx_symbols);
+
+  // ── RX: Decode ──
+  NullTelemetryHal hal;
+  FrameDecodeResult result{};
+  auto workspace = std::make_unique<FrameDecodeWorkspace>();
+  REQUIRE(frame_decode(rx_symbols, result, *workspace, hal) == FrameDecodeStatus::kOk);
+  REQUIRE(result.bch.toi == toi);
+
+  // ── Parse SB2 → WN, ITOW ──
+  Sb2ParseResult sb2_result{};
+  REQUIRE(parse_sb2(workspace->sb2_data, sb2_result) == MessageParseStatus::kOk);
+  CHECK(sb2_result.wn == wn);
+  CHECK(sb2_result.itow == itow);
+
+  // ── Parse SB3 → type ──
+  Sb3ParseResult sb3_result{};
+  REQUIRE(parse_sb3(workspace->sb3_data, sb3_result) == MessageParseStatus::kOk);
+  CHECK(sb3_result.type == MessageType::kG5);
+
+  // ── Parse SB4 → type ──
+  Sb4ParseResult sb4_result{};
+  REQUIRE(parse_sb4(workspace->sb4_data, sb4_result) == MessageParseStatus::kOk);
+  CHECK(sb4_result.type == MessageType::kG1);
+
+  // ── Compute ToT ──
+  const auto tot = compute_tot(sb2_result.wn, sb2_result.itow, toi.value());
+  REQUIRE(tot.status == TotStatus::kOk);
+
+  // Expected: WN=100 × 604800 + ITOW=42 × 1200 + TOI=17 × 12 = 60530604.0
+  const double expected_t_f =
+      static_cast<double>(wn) * 604800.0 + static_cast<double>(itow) * 1200.0 + 17.0 * 12.0;
+  CHECK(tot.t_f == expected_t_f);
 }
 
 // ---------------------------------------------------------------------------

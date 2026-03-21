@@ -119,9 +119,11 @@ add_library(lunalink_core
     cpp/encoding/ldpc_tables.cpp
     cpp/encoding/crc.cpp
     cpp/encoding/interleaver.cpp
-    # messages/ — Framing (Gateway 3)
+    # messages/ — Framing (Gateway 3) & Parsing (Gateway 6)
     cpp/messages/frame.cpp
     cpp/messages/frame_decode.cpp
+    cpp/messages/message_parser.cpp
+    cpp/messages/time_of_transmission.cpp
     # signal/ — Baseband & RX (Gateway 4-5)
     cpp/signal/modulator.cpp
     cpp/signal/iq_mux.cpp
@@ -187,6 +189,8 @@ if(BUILD_TESTING)
         cpp/tests/encoding/test_interleaver.cpp
         # messages/
         cpp/tests/messages/test_frame.cpp
+        cpp/tests/messages/test_message_parser.cpp
+        cpp/tests/messages/test_time_of_transmission.cpp
         # signal/
         cpp/tests/signal/test_modulator.cpp
         cpp/tests/signal/test_iq_mux.cpp

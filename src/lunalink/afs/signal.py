@@ -7,6 +7,7 @@ from numpy.typing import NDArray
 
 from lunalink.afs._afs import AFS_I_CODE_LENGTH as AFS_I_CODE_LENGTH
 from lunalink.afs._afs import BCH_CODEWORD_LENGTH as BCH_CODEWORD_LENGTH
+from lunalink.afs._afs import BLOCK_INTERVAL_DURATION as BLOCK_INTERVAL_DURATION
 from lunalink.afs._afs import CHIP_RATE_HZ as CHIP_RATE_HZ
 from lunalink.afs._afs import CODE_PERIOD_S as CODE_PERIOD_S
 from lunalink.afs._afs import DEFAULT_SYNC_THRESHOLD as DEFAULT_SYNC_THRESHOLD
@@ -14,11 +15,14 @@ from lunalink.afs._afs import DOPPLER_BIN_SPACING_HZ as DOPPLER_BIN_SPACING_HZ
 from lunalink.afs._afs import EPOCHS_PER_FRAME as EPOCHS_PER_FRAME
 from lunalink.afs._afs import FFT_SIZE as FFT_SIZE
 from lunalink.afs._afs import FRAME_DURATION_S as FRAME_DURATION_S
+from lunalink.afs._afs import FRAME_DURATION_SEC as FRAME_DURATION_SEC
 from lunalink.afs._afs import FRAME_LENGTH as FRAME_LENGTH
 from lunalink.afs._afs import GOLD_CHIP_LENGTH as GOLD_CHIP_LENGTH
 from lunalink.afs._afs import INTERIM_ASSIGNMENT_MAX_PRN as INTERIM_ASSIGNMENT_MAX_PRN
 from lunalink.afs._afs import IQ_SAMPLES_PER_EPOCH as IQ_SAMPLES_PER_EPOCH
 from lunalink.afs._afs import IQ_UPSAMPLE_FACTOR as IQ_UPSAMPLE_FACTOR
+from lunalink.afs._afs import ITOW_BITS as ITOW_BITS
+from lunalink.afs._afs import ITOW_MAX as ITOW_MAX
 from lunalink.afs._afs import MAX_CHANNELS as MAX_CHANNELS
 from lunalink.afs._afs import PAYLOAD_LENGTH as PAYLOAD_LENGTH
 from lunalink.afs._afs import PRN_COUNT as PRN_COUNT
@@ -27,19 +31,28 @@ from lunalink.afs._afs import SB1_LENGTH as SB1_LENGTH
 from lunalink.afs._afs import SB2_DATA_BITS as SB2_DATA_BITS
 from lunalink.afs._afs import SB2_LENGTH as SB2_LENGTH
 from lunalink.afs._afs import SB2_MSG_BITS as SB2_MSG_BITS
+from lunalink.afs._afs import SB2_PAYLOAD_BITS as SB2_PAYLOAD_BITS
 from lunalink.afs._afs import SB3_DATA_BITS as SB3_DATA_BITS
 from lunalink.afs._afs import SB3_LENGTH as SB3_LENGTH
 from lunalink.afs._afs import SB3_MSG_BITS as SB3_MSG_BITS
+from lunalink.afs._afs import SB3_PAYLOAD_BITS as SB3_PAYLOAD_BITS
 from lunalink.afs._afs import SB4_DATA_BITS as SB4_DATA_BITS
 from lunalink.afs._afs import SB4_LENGTH as SB4_LENGTH
 from lunalink.afs._afs import SB4_MSG_BITS as SB4_MSG_BITS
+from lunalink.afs._afs import SB4_PAYLOAD_BITS as SB4_PAYLOAD_BITS
+from lunalink.afs._afs import SEC_WEEK as SEC_WEEK
 from lunalink.afs._afs import SECONDARY_CODE_COUNT as SECONDARY_CODE_COUNT
 from lunalink.afs._afs import SECONDARY_CODE_LENGTH as SECONDARY_CODE_LENGTH
+from lunalink.afs._afs import SUBFRAME_TYPE_BITS as SUBFRAME_TYPE_BITS
 from lunalink.afs._afs import SYMBOL_RATE as SYMBOL_RATE
 from lunalink.afs._afs import SYNC_LENGTH as SYNC_LENGTH
 from lunalink.afs._afs import TERTIARY_CODE_LENGTH as TERTIARY_CODE_LENGTH
+from lunalink.afs._afs import TOT_HEADER_BITS as TOT_HEADER_BITS
+from lunalink.afs._afs import TOT_TOI_MAX as TOT_TOI_MAX
 from lunalink.afs._afs import WEIL_1500_CHIP_LENGTH as WEIL_1500_CHIP_LENGTH
 from lunalink.afs._afs import WEIL_10230_CHIP_LENGTH as WEIL_10230_CHIP_LENGTH
+from lunalink.afs._afs import WN_BITS as WN_BITS
+from lunalink.afs._afs import WN_MAX as WN_MAX
 from lunalink.afs._afs import AcquisitionResult as AcquisitionResult
 from lunalink.afs._afs import BchResult as BchResult
 from lunalink.afs._afs import BchStatus as BchStatus
@@ -57,13 +70,20 @@ from lunalink.afs._afs import LdpcSubframe as LdpcSubframe
 from lunalink.afs._afs import LdpcWorkspace as LdpcWorkspace
 from lunalink.afs._afs import LegendreStatus as LegendreStatus
 from lunalink.afs._afs import MatchedCodeStatus as MatchedCodeStatus
+from lunalink.afs._afs import MessageParseStatus as MessageParseStatus
+from lunalink.afs._afs import MessageType as MessageType
 from lunalink.afs._afs import ModulationStatus as ModulationStatus
 from lunalink.afs._afs import PrnId as PrnId
 from lunalink.afs._afs import PrnStatus as PrnStatus
+from lunalink.afs._afs import Sb2ParseResult as Sb2ParseResult
+from lunalink.afs._afs import Sb3ParseResult as Sb3ParseResult
+from lunalink.afs._afs import Sb4ParseResult as Sb4ParseResult
 from lunalink.afs._afs import SubframeDecodeResult as SubframeDecodeResult
 from lunalink.afs._afs import SyncDetectorStatus as SyncDetectorStatus
 from lunalink.afs._afs import SyncResult as SyncResult
 from lunalink.afs._afs import Toi as Toi
+from lunalink.afs._afs import TotResult as TotResult
+from lunalink.afs._afs import TotStatus as TotStatus
 from lunalink.afs._afs import TrackingState as TrackingState
 from lunalink.afs._afs import UniformPrior as UniformPrior
 from lunalink.afs._afs import bch_codebook_checksum as _bch_codebook_checksum
@@ -71,6 +91,7 @@ from lunalink.afs._afs import bch_decode as _bch_decode
 from lunalink.afs._afs import bch_encode as _bch_encode
 from lunalink.afs._afs import block_deinterleave_soft as _block_deinterleave_soft
 from lunalink.afs._afs import commit_frame as _commit_frame
+from lunalink.afs._afs import compute_tot as _compute_tot
 from lunalink.afs._afs import default_matched_assignment as _default_matched_assignment
 from lunalink.afs._afs import frame_build as _frame_build
 from lunalink.afs._afs import frame_build_partial as _frame_build_partial
@@ -87,6 +108,9 @@ from lunalink.afs._afs import (
 from lunalink.afs._afs import modulate_i as _modulate_i
 from lunalink.afs._afs import modulate_q as _modulate_q
 from lunalink.afs._afs import multiplex_iq as _multiplex_iq
+from lunalink.afs._afs import parse_sb2 as _parse_sb2
+from lunalink.afs._afs import parse_sb3 as _parse_sb3
+from lunalink.afs._afs import parse_sb4 as _parse_sb4
 from lunalink.afs._afs import prn_code as _prn_code
 from lunalink.afs._afs import subframe_build_sb2 as _subframe_build_sb2
 from lunalink.afs._afs import subframe_build_sb3 as _subframe_build_sb3
@@ -188,6 +212,31 @@ __all__ = [
     "write_iq_file",
     "AFS_I_CHIP_RATE",
     "AFS_Q_CHIP_RATE",
+    # Gateway 6: Message Parsing
+    "MessageType",
+    "MessageParseStatus",
+    "TotStatus",
+    "Sb2ParseResult",
+    "Sb3ParseResult",
+    "Sb4ParseResult",
+    "TotResult",
+    "parse_sb2",
+    "parse_sb3",
+    "parse_sb4",
+    "compute_tot",
+    "SUBFRAME_TYPE_BITS",
+    "WN_BITS",
+    "ITOW_BITS",
+    "TOT_HEADER_BITS",
+    "SEC_WEEK",
+    "BLOCK_INTERVAL_DURATION",
+    "FRAME_DURATION_SEC",
+    "WN_MAX",
+    "ITOW_MAX",
+    "TOT_TOI_MAX",
+    "SB2_PAYLOAD_BITS",
+    "SB3_PAYLOAD_BITS",
+    "SB4_PAYLOAD_BITS",
 ]
 
 
@@ -407,6 +456,50 @@ def legendre_10223_checksum() -> int:
 def legendre_1499_checksum() -> int:
     """Return CRC-32 checksum of the cached Legendre sequence for prime 1499."""
     return _legendre_1499_checksum()
+
+
+# ---------------------------------------------------------------------------
+# Gateway 6: Message Parsing
+# ---------------------------------------------------------------------------
+
+
+def parse_sb2(sb2_data: NDArray[np.uint8]) -> Sb2ParseResult:
+    """Parse Subframe 2: extract WN and ITOW fields (LSIS-720, Table 22)."""
+    return _parse_sb2(sb2_data)
+
+
+def parse_sb3(sb3_data: NDArray[np.uint8]) -> Sb3ParseResult:
+    """Parse Subframe 3: extract type field (§2.4.3.1.7)."""
+    return _parse_sb3(sb3_data)
+
+
+def parse_sb4(sb4_data: NDArray[np.uint8]) -> Sb4ParseResult:
+    """Parse Subframe 4: extract type field (§2.4.3.1.8)."""
+    return _parse_sb4(sb4_data)
+
+
+def compute_tot(wn: int, itow: int, toi: int, delta_t_lrt: float = 0.0) -> TotResult:
+    """Compute Time of Transmission per LSIS-720.
+
+    Formula: t_F = WN * 604800 + ITOW * 1200 + TOI * 12 + delta_t_lrt
+
+    Parameters
+    ----------
+    wn : int
+        Week Number (0..8191, 13 bits).
+    itow : int
+        Interval Time of Week (0..503, 9 bits).
+    toi : int
+        Time of Interval (0..99, 7 bits).
+    delta_t_lrt : float, optional
+        Node Time offset w.r.t. LRT in seconds (default: 0.0).
+
+    Returns
+    -------
+    TotResult
+        Result with status and t_f (time since LRT epoch in seconds).
+    """
+    return _compute_tot(wn, itow, toi, delta_t_lrt)
 
 
 # ---------------------------------------------------------------------------

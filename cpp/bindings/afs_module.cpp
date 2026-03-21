@@ -7,6 +7,8 @@
 #include "lunalink/encoding/ldpc.hpp"
 #include "lunalink/messages/frame.hpp"
 #include "lunalink/messages/frame_decode.hpp"
+#include "lunalink/messages/message_parser.hpp"
+#include "lunalink/messages/time_of_transmission.hpp"
 #include "lunalink/signal/correlator.hpp"
 #include "lunalink/signal/iq_mux.hpp"
 #include "lunalink/signal/modulator.hpp"
@@ -740,4 +742,211 @@ tuple[FrameDecodeResult, ndarray, ndarray, ndarray, FrameDecodeStatus]
   m.def("legendre_cache_init", []() { return legendre_cache_init(); });
   m.def("legendre_10223_checksum", &legendre_10223_checksum);
   m.def("legendre_1499_checksum", &legendre_1499_checksum);
+
+  // ─── Message Parser bindings (Gateway 6) ──────────────────────────────────
+
+  py::enum_<MessageType>(m, "MessageType")
+      .value("G1", MessageType::kG1)
+      .value("G2", MessageType::kG2)
+      .value("G3", MessageType::kG3)
+      .value("G4", MessageType::kG4)
+      .value("G5", MessageType::kG5)
+      .value("G8", MessageType::kG8)
+      .value("G10", MessageType::kG10)
+      .value("G11", MessageType::kG11)
+      .value("G14", MessageType::kG14)
+      .value("G15", MessageType::kG15)
+      .value("G17", MessageType::kG17)
+      .value("S19", MessageType::kS19)
+      .value("S20", MessageType::kS20)
+      .value("G22", MessageType::kG22)
+      .value("G23", MessageType::kG23)
+      .value("G24", MessageType::kG24)
+      .value("G25", MessageType::kG25)
+      .value("G27", MessageType::kG27)
+      .value("G28", MessageType::kG28)
+      .value("G29", MessageType::kG29)
+      .value("G30", MessageType::kG30)
+      .value("G31", MessageType::kG31)
+      .value("G32", MessageType::kG32)
+      .value("UNKNOWN", MessageType::kUnknown)
+      .export_values();
+
+  py::enum_<MessageParseStatus>(m, "MessageParseStatus")
+      .value("OK", MessageParseStatus::kOk)
+      .value("INVALID_INPUT", MessageParseStatus::kInvalidInput)
+      .value("FAULT_DETECTED", MessageParseStatus::kFaultDetected)
+      .export_values();
+
+  py::enum_<TotStatus>(m, "TotStatus")
+      .value("OK", TotStatus::kOk)
+      .value("INVALID_TOI", TotStatus::kInvalidToi)
+      .value("INVALID_ITOW", TotStatus::kInvalidItow)
+      .value("INVALID_WN", TotStatus::kInvalidWn)
+      .value("INVALID_DELTA", TotStatus::kInvalidDelta)
+      .value("FAULT_DETECTED", TotStatus::kFaultDetected)
+      .export_values();
+
+  py::class_<Sb2ParseResult>(m, "Sb2ParseResult")
+      .def_readonly("status", &Sb2ParseResult::status)
+      .def_readonly("wn", &Sb2ParseResult::wn)
+      .def_readonly("itow", &Sb2ParseResult::itow)
+      .def_readonly("data_offset", &Sb2ParseResult::data_offset)
+      .def_readonly("payload_size", &Sb2ParseResult::payload_size);
+
+  py::class_<Sb3ParseResult>(m, "Sb3ParseResult")
+      .def_readonly("status", &Sb3ParseResult::status)
+      .def_readonly("type_raw", &Sb3ParseResult::type_raw)
+      .def_readonly("type", &Sb3ParseResult::type)
+      .def_readonly("data_offset", &Sb3ParseResult::data_offset)
+      .def_readonly("payload_size", &Sb3ParseResult::payload_size);
+
+  py::class_<Sb4ParseResult>(m, "Sb4ParseResult")
+      .def_readonly("status", &Sb4ParseResult::status)
+      .def_readonly("type_raw", &Sb4ParseResult::type_raw)
+      .def_readonly("type", &Sb4ParseResult::type)
+      .def_readonly("data_offset", &Sb4ParseResult::data_offset)
+      .def_readonly("payload_size", &Sb4ParseResult::payload_size);
+
+  py::class_<TotResult>(m, "TotResult")
+      .def_readonly("status", &TotResult::status)
+      .def_readonly("t_f", &TotResult::t_f);
+
+  // parse_sb2/sb3/sb4: accept py::object and validate dtype manually to prevent
+  // silent float-to-int truncation from bypassing the C++ bit-value guard.
+  // pybind11's forcecast and implicit conversion both coerce before the lambda
+  // runs, so we must check the original array's dtype ourselves.
+  m.def("parse_sb2",
+        [](py::object obj) {
+          auto arr = py::array::ensure(obj);
+          if (!arr || !arr.dtype().is(py::dtype::of<uint8_t>())) {
+            throw py::type_error("sb2_data must be a numpy array with dtype uint8");
+          }
+          auto sb2_data = py::array_t<uint8_t, py::array::c_style>::ensure(obj);
+          if (!sb2_data) {
+            throw py::type_error("sb2_data must be a C-contiguous uint8 array");
+          }
+          Sb2ParseResult result{};
+          (void)parse_sb2(
+              std::span<const uint8_t>(sb2_data.data(), static_cast<size_t>(sb2_data.size())), result);
+          return result;
+        },
+        py::arg("sb2_data"),
+        R"(Parse Subframe 2: extract WN and ITOW fields. [LSIS-AFS-801]
+
+Parameters
+----------
+sb2_data : array of uint8
+    Decoded SB2 navigation data (1176 bits, one bit per byte).
+    Must be dtype uint8 — non-uint8 arrays are rejected (no silent coercion).
+
+Returns
+-------
+Sb2ParseResult
+    Parsed result with wn, itow, and data_offset fields.
+)");
+
+  m.def("parse_sb3",
+        [](py::object obj) {
+          auto arr = py::array::ensure(obj);
+          if (!arr || !arr.dtype().is(py::dtype::of<uint8_t>())) {
+            throw py::type_error("sb3_data must be a numpy array with dtype uint8");
+          }
+          auto sb3_data = py::array_t<uint8_t, py::array::c_style>::ensure(obj);
+          if (!sb3_data) {
+            throw py::type_error("sb3_data must be a C-contiguous uint8 array");
+          }
+          Sb3ParseResult result{};
+          (void)parse_sb3(
+              std::span<const uint8_t>(sb3_data.data(), static_cast<size_t>(sb3_data.size())), result);
+          return result;
+        },
+        py::arg("sb3_data"),
+        R"(Parse Subframe 3: extract type field. [LSIS-AFS-802]
+
+Parameters
+----------
+sb3_data : array of uint8
+    Decoded SB3 navigation data (846 bits, one bit per byte).
+    Must be dtype uint8 — non-uint8 arrays are rejected (no silent coercion).
+
+Returns
+-------
+Sb3ParseResult
+    Parsed result with type_raw, type, and data_offset fields.
+)");
+
+  m.def("parse_sb4",
+        [](py::object obj) {
+          auto arr = py::array::ensure(obj);
+          if (!arr || !arr.dtype().is(py::dtype::of<uint8_t>())) {
+            throw py::type_error("sb4_data must be a numpy array with dtype uint8");
+          }
+          auto sb4_data = py::array_t<uint8_t, py::array::c_style>::ensure(obj);
+          if (!sb4_data) {
+            throw py::type_error("sb4_data must be a C-contiguous uint8 array");
+          }
+          Sb4ParseResult result{};
+          (void)parse_sb4(
+              std::span<const uint8_t>(sb4_data.data(), static_cast<size_t>(sb4_data.size())), result);
+          return result;
+        },
+        py::arg("sb4_data"),
+        R"(Parse Subframe 4: extract type field. [LSIS-AFS-803]
+
+Parameters
+----------
+sb4_data : array of uint8
+    Decoded SB4 navigation data (846 bits, one bit per byte).
+    Must be dtype uint8 — non-uint8 arrays are rejected (no silent coercion).
+
+Returns
+-------
+Sb4ParseResult
+    Parsed result with type_raw, type, and data_offset fields.
+)");
+
+  m.def("compute_tot",
+        [](uint16_t wn, uint16_t itow, uint8_t toi, double delta_t_lrt) {
+          return compute_tot(wn, itow, toi, delta_t_lrt);
+        },
+        py::arg("wn"),
+        py::arg("itow"),
+        py::arg("toi"),
+        py::arg("delta_t_lrt") = 0.0,
+        R"(Compute Time of Transmission per LSIS-720. [LSIS-AFS-810]
+
+Formula: t_F = WN * 604800 + ITOW * 1200 + TOI * 12 + delta_t_lrt
+
+Parameters
+----------
+wn : int
+    Week Number (0..8191, 13 bits).
+itow : int
+    Interval Time of Week (0..503, 9 bits).
+toi : int
+    Time of Interval (0..99, 7 bits).
+delta_t_lrt : float, optional
+    Node Time offset w.r.t. LRT in seconds (default: 0.0).
+
+Returns
+-------
+TotResult
+    Result with status and t_f (time since LRT epoch in seconds).
+)");
+
+  // Export Gateway 6 constants
+  m.attr("SUBFRAME_TYPE_BITS") = kSubframeTypeBits;
+  m.attr("WN_BITS") = kWnBits;
+  m.attr("ITOW_BITS") = kItowBits;
+  m.attr("TOT_HEADER_BITS") = kTotHeaderBits;
+  m.attr("SB2_PAYLOAD_BITS") = kSb2PayloadBits;
+  m.attr("SB3_PAYLOAD_BITS") = kSb3PayloadBits;
+  m.attr("SB4_PAYLOAD_BITS") = kSb4PayloadBits;
+  m.attr("SEC_WEEK") = kSecWeek;
+  m.attr("BLOCK_INTERVAL_DURATION") = kBlockIntervalDuration;
+  m.attr("FRAME_DURATION_SEC") = kFrameDurationSec;
+  m.attr("WN_MAX") = kWnMax;
+  m.attr("ITOW_MAX") = kItowMax;
+  m.attr("TOT_TOI_MAX") = kTotToiMax;
 }

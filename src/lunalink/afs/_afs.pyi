@@ -303,3 +303,90 @@ DOPPLER_BIN_SPACING_HZ: float
 def legendre_cache_init() -> LegendreStatus: ...
 def legendre_10223_checksum() -> int: ...
 def legendre_1499_checksum() -> int: ...
+
+# ─── Gateway 6: Message Parsing ──────────────────────────────────────────────
+
+class MessageType(IntEnum):
+    G1 = 0x01
+    G2 = 0x02
+    G3 = 0x03
+    G4 = 0x04
+    G5 = 0x05
+    G8 = 0x08
+    G10 = 0x0A
+    G11 = 0x0B
+    G14 = 0x0E
+    G15 = 0x0F
+    G17 = 0x11
+    S19 = 0x13
+    S20 = 0x14
+    G22 = 0x16
+    G23 = 0x17
+    G24 = 0x18
+    G25 = 0x19
+    G27 = 0x1B
+    G28 = 0x1C
+    G29 = 0x1D
+    G30 = 0x1E
+    G31 = 0x1F
+    G32 = 0x20
+    UNKNOWN = 0xFF
+
+class MessageParseStatus(IntEnum):
+    OK = 0x5A
+    INVALID_INPUT = 0xA5
+    FAULT_DETECTED = 0x99
+
+class TotStatus(IntEnum):
+    OK = 0x5A
+    INVALID_TOI = 0xA5
+    INVALID_ITOW = 0x33
+    INVALID_WN = 0xCC
+    INVALID_DELTA = 0x3C
+    FAULT_DETECTED = 0x99
+
+class Sb2ParseResult:
+    status: MessageParseStatus
+    wn: int
+    itow: int
+    data_offset: int
+    payload_size: int
+
+class Sb3ParseResult:
+    status: MessageParseStatus
+    type_raw: int
+    type: MessageType
+    data_offset: int
+    payload_size: int
+
+class Sb4ParseResult:
+    status: MessageParseStatus
+    type_raw: int
+    type: MessageType
+    data_offset: int
+    payload_size: int
+
+class TotResult:
+    status: TotStatus
+    t_f: float
+
+def parse_sb2(sb2_data: NDArray[np.uint8]) -> Sb2ParseResult: ...
+def parse_sb3(sb3_data: NDArray[np.uint8]) -> Sb3ParseResult: ...
+def parse_sb4(sb4_data: NDArray[np.uint8]) -> Sb4ParseResult: ...
+def compute_tot(
+    wn: int, itow: int, toi: int, delta_t_lrt: float = 0.0
+) -> TotResult: ...
+
+SUBFRAME_TYPE_BITS: int
+WN_BITS: int
+ITOW_BITS: int
+TOT_HEADER_BITS: int
+SEC_WEEK: int
+BLOCK_INTERVAL_DURATION: int
+FRAME_DURATION_SEC: int
+WN_MAX: int
+ITOW_MAX: int
+TOT_TOI_MAX: int
+SB2_PAYLOAD_BITS: int
+SB3_PAYLOAD_BITS: int
+SB4_PAYLOAD_BITS: int
