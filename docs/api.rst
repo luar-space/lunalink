@@ -13,7 +13,7 @@ lunalink.afs
 
 .. automodule:: lunalink.afs
    :members:
-   :exclude-members: _afs
+   :exclude-members: _afs, FrameDecodeResult, FrameDecodeStatus, LegendreStatus
    :show-inheritance:
 
 lunalink.afs.signal

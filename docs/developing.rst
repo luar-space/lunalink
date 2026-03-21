@@ -82,8 +82,6 @@ Run ``task --list`` to see all tasks. The most common ones are:
      - Serve the documentation locally with live reload on port 8000.
    * - ``task install-hooks``
      - Register the git pre-commit hook in ``.githooks/``.
-   * - ``task swifi``
-     - Build and run the SWIFI fault-injection test suite (``LUNALINK_FAULT_INJECTION=1``).
    * - ``task sanitize``
      - Build and run C++ tests with AddressSanitizer + UBSan.
    * - ``task tidy``
@@ -91,7 +89,7 @@ Run ``task --list`` to see all tasks. The most common ones are:
    * - ``task wcet-profile``
      - Build in Release mode and run ``[performance]`` benchmarks to check WCET tolerance.
    * - ``task ci-checks``
-     - Full local CI suite: build, lint, flags, test-cpp, swifi, coverage, tidy, test-py, sanitize, docs.
+     - Full local CI suite: build, lint, flags, test-cpp, coverage, tidy, test-py, sanitize, docs.
    * - ``task recertify``
      - Run all recertification gates locally and write
        ``docs/assurance/private/recertification_record.rst``.
@@ -217,10 +215,6 @@ independent workflows for granular status reporting.
    * - **Python Tests** (``test-python.yml``)
      - push, PR, tag
      - ``pytest`` on Python 3.12, 3.13, and 3.14 (matrix).
-   * - **SWIFI** (``swifi.yml``)
-     - push, PR, tag
-     - Fault-injection test suite compiled with ``LUNALINK_FAULT_INJECTION=1``;
-       100% single-bit fault detection coverage enforced.
    * - **Sanitizers** (``sanitize.yml``)
      - push, PR, tag
      - C++ tests recompiled with ``-fsanitize=address,undefined``; any

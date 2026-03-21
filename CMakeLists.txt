@@ -139,10 +139,9 @@ set_target_properties(lunalink_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_options(lunalink_core PRIVATE ${LUNALINK_WARNING_FLAGS} ${LUNALINK_CORE_FLAGS})
 target_link_options(lunalink_core PRIVATE ${LUNALINK_LINKER_FLAGS})
 
-# Fault injection APIs are enabled either by the explicit CMake option or
-# automatically when testing is enabled. This ensures lunalink_core and
-# lunalink_swifi_tests share the same struct layout (no ABI mismatch).
-if(LUNALINK_FAULT_INJECTION OR BUILD_TESTING)
+# Fault injection APIs are only enabled by the explicit CMake option.
+# The lunalink_swifi_tests target sets its own definition independently.
+if(LUNALINK_FAULT_INJECTION)
     target_compile_definitions(lunalink_core PUBLIC LUNALINK_FAULT_INJECTION=1)
 endif()
 
@@ -220,6 +219,9 @@ if(BUILD_TESTING)
     endif()
 
     # --- SWIFI (fault injection) test suite ---
+    # Only built when LUNALINK_FAULT_INJECTION=ON to ensure ABI consistency
+    # between lunalink_core and the SWIFI test binary.
+    if(LUNALINK_FAULT_INJECTION)
     add_executable(lunalink_swifi_tests
         cpp/tests/platform/test_swifi_platform.cpp
         cpp/tests/encoding/test_swifi_encoding.cpp
@@ -242,7 +244,8 @@ if(BUILD_TESTING)
             PROPERTIES LABELS swifi
         )
     endif()
-endif()
+    endif() # LUNALINK_FAULT_INJECTION
+endif() # BUILD_TESTING
 
 # --- Coverage Analysis ---
 if(ENABLE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -265,8 +268,10 @@ if(ENABLE_LLVM_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if(BUILD_TESTING)
         target_compile_options(test_lunalink PRIVATE ${LLVM_COV_FLAGS})
         target_link_options(test_lunalink PRIVATE ${LLVM_COV_FLAGS})
-        target_compile_options(lunalink_swifi_tests PRIVATE ${LLVM_COV_FLAGS})
-        target_link_options(lunalink_swifi_tests PRIVATE ${LLVM_COV_FLAGS})
+        if(TARGET lunalink_swifi_tests)
+            target_compile_options(lunalink_swifi_tests PRIVATE ${LLVM_COV_FLAGS})
+            target_link_options(lunalink_swifi_tests PRIVATE ${LLVM_COV_FLAGS})
+        endif()
     endif()
 elseif(ENABLE_LLVM_COVERAGE AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     message(WARNING "ENABLE_LLVM_COVERAGE requires Clang. Use CC=clang CXX=clang++.")
@@ -281,8 +286,10 @@ if(ENABLE_SANITIZERS AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(test_lunalink PRIVATE ${SANITIZE_FLAGS})
     target_link_options(test_lunalink PRIVATE ${SANITIZE_FLAGS})
 
-    target_compile_options(lunalink_swifi_tests PRIVATE ${SANITIZE_FLAGS})
-    target_link_options(lunalink_swifi_tests PRIVATE ${SANITIZE_FLAGS})
+    if(TARGET lunalink_swifi_tests)
+        target_compile_options(lunalink_swifi_tests PRIVATE ${SANITIZE_FLAGS})
+        target_link_options(lunalink_swifi_tests PRIVATE ${SANITIZE_FLAGS})
+    endif()
 endif()
 
 # --- Stack Usage Analysis ---

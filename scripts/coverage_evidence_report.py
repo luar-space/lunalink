@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate structured coverage evidence for ECSS-Q-ST-80C §5.5 certification.
+r"""Generate structured coverage evidence for ECSS-Q-ST-80C §5.5 certification.
 
 Reports functional test coverage (the primary structural coverage metric) with
 per-file breakdown, threshold compliance, and trend comparison. SWIFI fault
@@ -43,6 +43,8 @@ THRESHOLDS = {
 
 @dataclass
 class Metric:
+    """A single coverage metric (count, covered, percent)."""
+
     count: int = 0
     covered: int = 0
     percent: float = 0.0
@@ -50,6 +52,8 @@ class Metric:
 
 @dataclass
 class FileCoverage:
+    """Per-file coverage breakdown with flag annotations."""
+
     filename: str = ""
     regions: Metric = field(default_factory=Metric)
     lines: Metric = field(default_factory=Metric)
@@ -62,7 +66,8 @@ class FileCoverage:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-def find_llvm_tool(name: str) -> str | None:
+def _find_llvm_tool(name: str) -> str | None:
+    """Locate an LLVM tool by name, checking PATH and common Homebrew prefixes."""
     import shutil
 
     if shutil.which(name):
@@ -74,7 +79,9 @@ def find_llvm_tool(name: str) -> str | None:
     return None
 
 
-def git_info() -> tuple[str, str]:
+def _git_info() -> tuple[str, str]:
+    """Return (short SHA, git describe) for the current HEAD."""
+
     def _run(*args: str) -> str:
         try:
             return subprocess.run(
@@ -86,7 +93,8 @@ def git_info() -> tuple[str, str]:
     return _run("rev-parse", "--short", "HEAD"), _run("describe", "--tags", "--always")
 
 
-def parse_metric(d: dict) -> Metric:
+def _parse_metric(d: dict) -> Metric:
+    """Parse a metric dict from llvm-cov JSON export."""
     return Metric(
         count=d.get("count", 0),
         covered=d.get("covered", 0),
@@ -94,16 +102,18 @@ def parse_metric(d: dict) -> Metric:
     )
 
 
-def fmt(m: Metric) -> str:
+def _fmt(m: Metric) -> str:
+    """Format a metric as a percentage string, or '--' if empty."""
     return "--" if m.count == 0 else f"{m.percent:.2f}%"
 
 
-def get_test_count(binary: Path) -> int:
+def _get_test_count(binary: Path) -> int:
+    """Count Catch2 test cases by parsing --list-tests output."""
     try:
         r = subprocess.run(
             [str(binary), "--list-tests"], capture_output=True, text=True, check=False
         )
-        return len([l for l in r.stdout.splitlines() if l.strip()])
+        return len([line for line in r.stdout.splitlines() if line.strip()])
     except (FileNotFoundError, OSError):
         return 0
 
@@ -116,17 +126,22 @@ def extract_coverage(
 ) -> tuple[dict[str, Metric], list[FileCoverage]]:
     """Run llvm-cov export and return (totals, per_file)."""
     cmd = [
-        llvm_cov, "export", "--summary-only", "--show-mcdc-summary",
+        llvm_cov,
+        "export",
+        "--summary-only",
+        "--show-mcdc-summary",
         str(binary),
-        "-instr-profile", str(profdata),
-        "-ignore-filename-regex", "_deps|tests",
+        "-instr-profile",
+        str(profdata),
+        "-ignore-filename-regex",
+        "_deps|tests",
     ]
     result = subprocess.run(cmd, capture_output=True, text=True, check=True)
     data = json.loads(result.stdout)
 
     totals_raw = data["data"][0]["totals"]
     totals = {
-        k: parse_metric(totals_raw.get(k, {}))
+        k: _parse_metric(totals_raw.get(k, {}))
         for k in ["regions", "lines", "functions", "branches", "mcdc"]
     }
 
@@ -135,17 +150,17 @@ def extract_coverage(
         fname = f["filename"]
         for prefix in ["cpp/", "./cpp/"]:
             if prefix in fname:
-                fname = fname[fname.index(prefix) + len(prefix):]
+                fname = fname[fname.index(prefix) + len(prefix) :]
                 break
 
         s = f["summary"]
         fc = FileCoverage(
             filename=fname,
-            regions=parse_metric(s.get("regions", {})),
-            lines=parse_metric(s.get("lines", {})),
-            functions=parse_metric(s.get("functions", {})),
-            branches=parse_metric(s.get("branches", {})),
-            mcdc=parse_metric(s.get("mcdc", {})),
+            regions=_parse_metric(s.get("regions", {})),
+            lines=_parse_metric(s.get("lines", {})),
+            functions=_parse_metric(s.get("functions", {})),
+            branches=_parse_metric(s.get("branches", {})),
+            mcdc=_parse_metric(s.get("mcdc", {})),
         )
         if fc.lines.percent < THRESHOLDS["per_file_line"]:
             fc.flags.append("BELOW_THRESHOLD")
@@ -160,7 +175,7 @@ def extract_coverage(
 # ---------------------------------------------------------------------------
 # RST report
 # ---------------------------------------------------------------------------
-def generate_rst(
+def _generate_rst(  # noqa: C901
     totals: dict[str, Metric],
     files: list[FileCoverage],
     test_count: int,
@@ -170,17 +185,18 @@ def generate_rst(
     tool_version: str,
     compiler: str,
 ) -> str:
-    sha, describe = git_info()
+    """Generate RST coverage evidence report."""
+    sha, describe = _git_info()
     now = datetime.date.today().isoformat()
 
-    o = []
+    o: list[str] = []
     w = o.append
 
     w("Coverage Evidence Report")
     w("========================")
     w("")
-    w(f":Document ID: LUNALINK-COV-001")
-    w(f":Specification Reference: ECSS-Q-ST-80C Rev.2 §5.5; ECSS-E-ST-40C §5.5.1")
+    w(":Document ID: LUNALINK-COV-001")
+    w(":Specification Reference: ECSS-Q-ST-80C Rev.2 §5.5; ECSS-E-ST-40C §5.5.1")
     w(f":Revision: {describe}")
     w(f":Date: {now}")
     w(f":Status: Generated — {sha}")
@@ -222,8 +238,16 @@ def generate_rst(
         ("Line Coverage", "line", "ECSS Category B floor"),
         ("Function Coverage", "function", "All public API functions exercised"),
         ("Branch Coverage", "branch", "ECSS Category B; Category A target 90%"),
-        ("MC/DC Coverage", "mcdc", "Interim; Category A target 100% on safety-critical functions"),
-        ("Per-file Line Coverage", "per_file_line", "No single file significantly below project average"),
+        (
+            "MC/DC Coverage",
+            "mcdc",
+            "Interim; Category A target 100% on safety-critical functions",
+        ),
+        (
+            "Per-file Line Coverage",
+            "per_file_line",
+            "No single file significantly below project average",
+        ),
     ]:
         w(f"   * - {name}")
         w(f"     - >= {THRESHOLDS[key]:.0f}%")
@@ -251,12 +275,17 @@ def generate_rst(
         ("MC/DC", "mcdc"),
     ]:
         m = totals[key]
-        key_map = {"regions": "region", "lines": "line", "functions": "function",
-                   "branches": "branch", "mcdc": "mcdc"}
+        key_map = {
+            "regions": "region",
+            "lines": "line",
+            "functions": "function",
+            "branches": "branch",
+            "mcdc": "mcdc",
+        }
         thresh = THRESHOLDS.get(key_map[key], 0.0)
         verdict = "PASS" if m.percent >= thresh else "**FAIL**"
         w(f"   * - {name}")
-        w(f"     - {fmt(m)}")
+        w(f"     - {_fmt(m)}")
         w(f"     - >= {thresh:.0f}%")
         w(f"     - {verdict}")
 
@@ -276,9 +305,13 @@ def generate_rst(
         w("     - Previous")
         w("     - Current")
         w("     - Delta")
-        for name, key in [("Region", "regions"), ("Line", "lines"),
-                          ("Function", "functions"), ("Branch", "branches"),
-                          ("MC/DC", "mcdc")]:
+        for name, key in [
+            ("Region", "regions"),
+            ("Line", "lines"),
+            ("Function", "functions"),
+            ("Branch", "branches"),
+            ("MC/DC", "mcdc"),
+        ]:
             prev = prev_totals.get(key, {}).get("percent", 0.0) or 0.0
             curr = totals[key].percent
             delta = curr - prev
@@ -310,11 +343,11 @@ def generate_rst(
     for f in files:
         flag_str = ", ".join(f.flags) if f.flags else ""
         w(f"   * - ``{f.filename}``")
-        w(f"     - {fmt(f.regions)}")
-        w(f"     - {fmt(f.lines)}")
-        w(f"     - {fmt(f.functions)}")
-        w(f"     - {fmt(f.branches)}")
-        w(f"     - {fmt(f.mcdc)}")
+        w(f"     - {_fmt(f.regions)}")
+        w(f"     - {_fmt(f.lines)}")
+        w(f"     - {_fmt(f.functions)}")
+        w(f"     - {_fmt(f.branches)}")
+        w(f"     - {_fmt(f.mcdc)}")
         w(f"     - {flag_str}")
 
     # -- Exclusions
@@ -350,10 +383,10 @@ def generate_rst(
     w("   * - Metric")
     w("     - Value")
     w("     - Threshold")
-    w(f"   * - Line Coverage")
+    w("   * - Line Coverage")
     w(f"     - {python_pct:.2f}%")
     w("     - >= 100%")
-    w(f"   * - Tests")
+    w("   * - Tests")
     w(f"     - {python_tests}")
     w("     - --")
     w("")
@@ -364,11 +397,16 @@ def generate_rst(
 # ---------------------------------------------------------------------------
 # JSON
 # ---------------------------------------------------------------------------
-def metric_dict(m: Metric) -> dict:
-    return {"count": m.count, "covered": m.covered, "percent": m.percent if m.count > 0 else None}
+def _metric_dict(m: Metric) -> dict:
+    """Convert a Metric to a JSON-serialisable dict."""
+    return {
+        "count": m.count,
+        "covered": m.covered,
+        "percent": m.percent if m.count > 0 else None,
+    }
 
 
-def generate_json(
+def _generate_json(  # noqa: C901
     totals: dict[str, Metric],
     files: list[FileCoverage],
     test_count: int,
@@ -378,16 +416,19 @@ def generate_json(
     tool_version: str,
     compiler: str,
 ) -> dict:
-    sha, describe = git_info()
+    """Generate machine-readable coverage JSON summary."""
+    sha, describe = _git_info()
     per_file_violations = [f.filename for f in files if "BELOW_THRESHOLD" in f.flags]
 
-    all_pass = all([
-        totals["regions"].percent >= THRESHOLDS["region"],
-        totals["lines"].percent >= THRESHOLDS["line"],
-        totals["functions"].percent >= THRESHOLDS["function"],
-        totals["branches"].percent >= THRESHOLDS["branch"],
-        totals["mcdc"].percent >= THRESHOLDS["mcdc"],
-    ])
+    all_pass = all(
+        [
+            totals["regions"].percent >= THRESHOLDS["region"],
+            totals["lines"].percent >= THRESHOLDS["line"],
+            totals["functions"].percent >= THRESHOLDS["function"],
+            totals["branches"].percent >= THRESHOLDS["branch"],
+            totals["mcdc"].percent >= THRESHOLDS["mcdc"],
+        ]
+    )
 
     if all_pass and not per_file_violations:
         overall = "PASS"
@@ -404,15 +445,15 @@ def generate_json(
         "tool": {"llvm_cov_version": tool_version, "compiler": compiler},
         "thresholds": THRESHOLDS,
         "test_count": test_count,
-        "totals": {k: metric_dict(v) for k, v in totals.items()},
+        "totals": {k: _metric_dict(v) for k, v in totals.items()},
         "per_file": [
             {
                 "filename": f.filename,
-                "regions": metric_dict(f.regions),
-                "lines": metric_dict(f.lines),
-                "functions": metric_dict(f.functions),
-                "branches": metric_dict(f.branches),
-                "mcdc": metric_dict(f.mcdc),
+                "regions": _metric_dict(f.regions),
+                "lines": _metric_dict(f.lines),
+                "functions": _metric_dict(f.functions),
+                "branches": _metric_dict(f.branches),
+                "mcdc": _metric_dict(f.mcdc),
                 "flags": f.flags,
             }
             for f in files
@@ -437,7 +478,11 @@ def generate_json(
                 k: {
                     "previous": prev_totals.get(k, {}).get("percent", 0.0) or 0.0,
                     "current": totals[k].percent,
-                    "delta_pp": round(totals[k].percent - (prev_totals.get(k, {}).get("percent", 0.0) or 0.0), 2),
+                    "delta_pp": round(
+                        totals[k].percent
+                        - (prev_totals.get(k, {}).get("percent", 0.0) or 0.0),
+                        2,
+                    ),
                 }
                 for k in ["regions", "lines", "functions", "branches", "mcdc"]
             },
@@ -449,8 +494,11 @@ def generate_json(
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate coverage evidence (LUNALINK-COV-001).")
+def main() -> None:  # noqa: C901
+    """Generate coverage evidence report (LUNALINK-COV-001)."""
+    parser = argparse.ArgumentParser(
+        description="Generate coverage evidence (LUNALINK-COV-001)."
+    )
     parser.add_argument("--build-dir", default="build/coverage")
     parser.add_argument("--output-rst", default="build/coverage/coverage_evidence.rst")
     parser.add_argument("--output-json", default="build/coverage/coverage_summary.json")
@@ -463,18 +511,24 @@ def main() -> None:
 
     for p in [test_bin, profdata]:
         if not p.exists():
-            print(f"ERROR: {p} not found. Run `task coverage-cpp` first.", file=sys.stderr)
+            print(
+                f"ERROR: {p} not found. Run `task coverage-cpp` first.", file=sys.stderr
+            )
             sys.exit(1)
 
-    llvm_cov = find_llvm_tool("llvm-cov")
+    llvm_cov = _find_llvm_tool("llvm-cov")
     if not llvm_cov:
         print("ERROR: llvm-cov not found.", file=sys.stderr)
         sys.exit(1)
 
     # Tool version
-    tool_ver = subprocess.run(
-        [llvm_cov, "--version"], capture_output=True, text=True, check=False
-    ).stdout.strip().splitlines()[0]
+    tool_ver = (
+        subprocess.run(
+            [llvm_cov, "--version"], capture_output=True, text=True, check=False
+        )
+        .stdout.strip()
+        .splitlines()[0]
+    )
 
     # Compiler from CMakeCache
     compiler = "unknown"
@@ -485,7 +539,10 @@ def main() -> None:
                 cpath = line.split("=", 1)[1]
                 try:
                     compiler = subprocess.run(
-                        [cpath, "--version"], capture_output=True, text=True, check=False
+                        [cpath, "--version"],
+                        capture_output=True,
+                        text=True,
+                        check=False,
                     ).stdout.splitlines()[0]
                 except (FileNotFoundError, OSError):
                     compiler = cpath
@@ -494,7 +551,7 @@ def main() -> None:
     # Extract functional coverage (the primary metric)
     print("Extracting functional coverage from test_lunalink...")
     totals, files = extract_coverage(llvm_cov, test_bin, profdata)
-    test_count = get_test_count(test_bin)
+    test_count = _get_test_count(test_bin)
 
     # Baseline
     baseline = None
@@ -507,37 +564,69 @@ def main() -> None:
     python_tests = 73
 
     # Generate
-    rst = generate_rst(totals, files, test_count, python_pct, python_tests, baseline, tool_ver, compiler)
+    rst = _generate_rst(
+        totals,
+        files,
+        test_count,
+        python_pct,
+        python_tests,
+        baseline,
+        tool_ver,
+        compiler,
+    )
     Path(args.output_rst).parent.mkdir(parents=True, exist_ok=True)
     Path(args.output_rst).write_text(rst)
     print(f"RST: {args.output_rst}")
 
-    json_data = generate_json(totals, files, test_count, python_pct, python_tests, baseline, tool_ver, compiler)
+    json_data = _generate_json(
+        totals,
+        files,
+        test_count,
+        python_pct,
+        python_tests,
+        baseline,
+        tool_ver,
+        compiler,
+    )
     Path(args.output_json).write_text(json.dumps(json_data, indent=2))
     print(f"JSON: {args.output_json}")
 
     # Console summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  Coverage Evidence (LUNALINK-COV-001) — {test_count} functional tests")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"  {'Metric':<12} {'Value':>10} {'Threshold':>12}  Verdict")
-    print(f"  {'-'*12} {'-'*10} {'-'*12}  {'-'*7}")
-    for name, key in [("Region", "regions"), ("Line", "lines"), ("Function", "functions"),
-                      ("Branch", "branches"), ("MC/DC", "mcdc")]:
+    print(f"  {'-' * 12} {'-' * 10} {'-' * 12}  {'-' * 7}")
+    for name, key in [
+        ("Region", "regions"),
+        ("Line", "lines"),
+        ("Function", "functions"),
+        ("Branch", "branches"),
+        ("MC/DC", "mcdc"),
+    ]:
         m = totals[key]
-        key_map = {"regions": "region", "lines": "line", "functions": "function",
-                   "branches": "branch", "mcdc": "mcdc"}
+        key_map = {
+            "regions": "region",
+            "lines": "line",
+            "functions": "function",
+            "branches": "branch",
+            "mcdc": "mcdc",
+        }
         thresh = THRESHOLDS.get(key_map[key], 0.0)
         verdict = "PASS" if m.percent >= thresh else "FAIL"
-        print(f"  {name:<12} {fmt(m):>10} {'>= ' + str(int(thresh)) + '%':>12}  {verdict}")
-    print(f"{'='*60}")
+        print(
+            f"  {name:<12} {_fmt(m):>10} {'>= ' + str(int(thresh)) + '%':>12}"
+            f"  {verdict}"
+        )
+    print(f"{'=' * 60}")
     print(f"  Python: {python_pct:.0f}% ({python_tests} tests)")
-    print(f"  SWIFI: see swifi_results.json (fault detection, not coverage)")
+    print("  SWIFI: see swifi_results.json (fault detection, not coverage)")
     violations = [f.filename for f in files if "BELOW_THRESHOLD" in f.flags]
     if violations:
-        print(f"  Per-file waivers: {len(violations)} files below {THRESHOLDS['per_file_line']:.0f}%")
-        print(f"  Verdict: PASS_WITH_WAIVERS")
-    print(f"{'='*60}")
+        threshold_pct = THRESHOLDS["per_file_line"]
+        print(f"  Per-file waivers: {len(violations)} files below {threshold_pct:.0f}%")
+        print("  Verdict: PASS_WITH_WAIVERS")
+    print(f"{'=' * 60}")
 
     if json_data["verdict"]["overall"] == "FAIL":
         sys.exit(1)

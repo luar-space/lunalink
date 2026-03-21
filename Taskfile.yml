@@ -195,6 +195,46 @@ tasks:
         fi
     silent: false
 
+  coverage-oss:
+    desc: Coverage for OSS export profile (no SWIFI instrumentation, functional tests only).
+    vars:
+      GENERATOR:
+        sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
+      LLVM_DIR:
+        sh: |
+          if command -v llvm-profdata >/dev/null 2>&1; then
+            dirname "$(command -v llvm-profdata)"
+          elif [ -x /opt/homebrew/opt/llvm/bin/llvm-profdata ]; then
+            echo /opt/homebrew/opt/llvm/bin
+          elif [ -x /usr/local/opt/llvm/bin/llvm-profdata ]; then
+            echo /usr/local/opt/llvm/bin
+          fi
+    cmds:
+      - |
+        if [ -z "{{.LLVM_DIR}}" ]; then
+          echo "ERROR: LLVM not found. Install it: brew install llvm"
+          exit 1
+        fi
+        echo "Using LLVM from {{.LLVM_DIR}}"
+      - cmake -B build/coverage-oss -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_LLVM_COVERAGE=ON -DLUNALINK_FAULT_INJECTION=OFF -DCMAKE_C_COMPILER={{.LLVM_DIR}}/clang -DCMAKE_CXX_COMPILER={{.LLVM_DIR}}/clang++
+      - cmake --build build/coverage-oss --parallel
+      - rm -f build/coverage-oss/*.profraw build/coverage-oss/*.profdata
+      - LLVM_PROFILE_FILE="lunalink-%m.profraw" ctest --test-dir build/coverage-oss --output-on-failure
+      - "{{.LLVM_DIR}}/llvm-profdata merge -sparse build/coverage-oss/*.profraw -o build/coverage-oss/lunalink.profdata"
+      - "{{.LLVM_DIR}}/llvm-cov report build/coverage-oss/test_lunalink -instr-profile=build/coverage-oss/lunalink.profdata -show-mcdc-summary -ignore-filename-regex='_deps|tests'"
+      - |
+        REGION_PCT=$({{.LLVM_DIR}}/llvm-cov report build/coverage-oss/test_lunalink \
+          -instr-profile=build/coverage-oss/lunalink.profdata \
+          -ignore-filename-regex='_deps|tests' 2>/dev/null | \
+          awk '/TOTAL/{for(i=1;i<=NF;i++) if($i ~ /%/) {gsub(/%/,"",$i); print $i; exit}}')
+        echo "OSS region coverage: ${REGION_PCT}%"
+        if [ "$(echo "$REGION_PCT < 80" | bc -l)" -eq 1 ]; then
+          echo "ERROR: OSS region coverage ${REGION_PCT}% is below minimum 80%"
+          exit 1
+        fi
+        echo "PASS: OSS coverage ${REGION_PCT}% >= 80%"
+    silent: false
+
   coverage-report:
     desc: Generate structured coverage evidence report (RST + JSON) from existing coverage data.
     cmds:
@@ -407,9 +447,12 @@ tasks:
   check-flags:
     desc: Verify required/forbidden compiler flags in compile_commands.json (S10 gate).
     vars:
+      GENERATOR:
+        sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
       BUILD_DIR:
         sh: which ninja >/dev/null 2>&1 && echo "build/cpp-tests-ninja" || echo "build/cpp-tests-make"
     cmds:
+      - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
       - uv run python scripts/check_build_flags.py {{.BUILD_DIR}}/compile_commands.json
     silent: false
 
@@ -532,8 +575,8 @@ tasks:
         fi
         echo "PASS: no private/ directories"
 
-        # No confidential markers
-        MARKER='[[Confidential - Not for OpenSource]]'
+        # No confidential markers (marker split to avoid self-match)
+        MARKER="[[""Confidential - Not for OpenSource""]]"
         if grep -rF "$MARKER" "$EXPORT_DIR/" --include='*.rst' --include='*.md' --include='*.py' --include='*.yml' --include='*.toml' --include='*.hpp' --include='*.cpp' 2>/dev/null; then
           echo "FAIL: confidential markers found"
           exit 1
@@ -568,6 +611,29 @@ tasks:
           exit 1
         fi
         echo "PASS: README.md present"
+
+        # No SWIFI test files
+        if find "$EXPORT_DIR" -name "test_swifi*" | grep -q .; then
+          echo "FAIL: SWIFI test files found in export"
+          find "$EXPORT_DIR" -name "test_swifi*"
+          exit 1
+        fi
+        echo "PASS: no SWIFI test files"
+
+        # No fault injection guard in C++ source or headers (split to avoid self-match)
+        FI_GUARD="LUNALINK_FAULT""_INJECTION"
+        if grep -r "$FI_GUARD" "$EXPORT_DIR/" --include='*.hpp' --include='*.cpp' --include='*.h' 2>/dev/null; then
+          echo "FAIL: $FI_GUARD references found in C++ code"
+          exit 1
+        fi
+        echo "PASS: no SWIFI instrumentation in C++ code"
+
+        # No fault injection guard in CMake/build files
+        if grep -r "$FI_GUARD" "$EXPORT_DIR/" --include='CMakeLists.txt' --include='*.cmake' 2>/dev/null; then
+          echo "FAIL: $FI_GUARD references found in CMake files"
+          exit 1
+        fi
+        echo "PASS: no SWIFI references in build system"
 
         echo "=== All export validation checks passed ==="
       - |

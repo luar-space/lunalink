@@ -812,9 +812,6 @@ LdpcStatus ldpc_encode(LdpcSubframe type,
   const uint16_t N_output = is_sf2 ? 2400U : 1740U;
   LdpcStatus status = LdpcStatus::kFaultDetected;
 
-  // SWIFI bypass flag — always false in production builds.
-  [[maybe_unused]] bool fi_bypass = false;
-
 #ifdef LUNALINK_FAULT_INJECTION
   // SWIFI return-value injection: set status to the injected value and skip
   // the DSP core.  Caller's error-handling path is exercised without relying
@@ -825,15 +822,9 @@ LdpcStatus ldpc_encode(LdpcSubframe type,
     // cppcheck-suppress redundantInitialization ; pessimistic default is intentional safety pattern
     status = static_cast<LdpcStatus>(workspace.fi_force_status);
     workspace.fi_force_status = 0U; // one-shot
-    fi_bypass = true;
-  }
+  } else
 #endif
-
-  // --- Precondition checks (fi_bypass skips entire chain) ---
-  // cppcheck-suppress knownConditionTrueFalse ; fi_bypass is set by LUNALINK_FAULT_INJECTION ifdef
-  if (fi_bypass) {
-    // Injection: status already set above, skip DSP core.
-  } else {
+  {
     // cppcheck-suppress redundantInitialization ; pessimistic default is intentional safety pattern
     status = validate_encode_inputs(type, msg, out, K_nominal, N_output);
     if (status == LdpcStatus::kOk) {

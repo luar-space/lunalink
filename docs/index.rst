@@ -64,6 +64,7 @@ LunaLink AFS reference implementation with C++ core and pybind11 bindings.
    assurance/private/wcet_profile
    assurance/private/test_procedures
    assurance/private/traceability_matrix
+   assurance/private/coverage_exclusions
    signal/compliance_matrix
    signal/spec_findings_report
    signal/validation_plan
