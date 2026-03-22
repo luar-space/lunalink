@@ -211,7 +211,11 @@ if(BUILD_TESTING)
     )
     target_link_libraries(test_lunalink PRIVATE lunalink_core Catch2::Catch2WithMain)
     target_include_directories(test_lunalink PRIVATE cpp/tests)
-    target_compile_options(test_lunalink PRIVATE ${LUNALINK_WARNING_FLAGS})
+    target_compile_options(test_lunalink PRIVATE ${LUNALINK_WARNING_FLAGS}
+        # Suppress Catch2 macro warnings (not our code):
+        # - __COUNTER__ is a C2y extension used by SECTION
+        # - MC/DC instrumenter can't handle nested booleans inside REQUIRE/CHECK
+        $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Wno-unknown-warning-option -Wno-c2y-extensions -Wno-pgo-coverage>)
 
     include(Catch OPTIONAL RESULT_VARIABLE CATCH_MODULE_FOUND)
     if(CATCH_MODULE_FOUND)

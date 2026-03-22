@@ -360,13 +360,13 @@ template <typename State, size_t N> class TransitionMatrix {
 public:
   constexpr TransitionMatrix() noexcept : edges_{}, count_(0) {}
 
-  constexpr void add(State from, State to) noexcept {
+  constexpr void add(State from, State to) noexcept { // NOCOVER_BEGIN(CONSTEXPR_INIT): called during constinit static initialization
     if (count_ < N) {
       // Index bounds-checked by guard clause above —
       // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
       edges_[count_++] = {static_cast<uint8_t>(from), static_cast<uint8_t>(to)};
     }
-  }
+  } // NOCOVER_END
 
   [[nodiscard]] bool is_legal(State from, State to) const noexcept {
     const auto f = static_cast<uint8_t>(from);

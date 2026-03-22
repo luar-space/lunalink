@@ -133,7 +133,7 @@ bool SyncDetector::set_threshold(float threshold) noexcept {
     status = result.detected ? SyncDetectorStatus::kOk : SyncDetectorStatus::kNotDetected;
   } else {
     // CFI violation: radiation-induced skip detected. FIZ-1
-    status = SyncDetectorStatus::kFaultDetected;
+    status = SyncDetectorStatus::kFaultDetected; // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): loop counter corruption
     const FaultPacket pkt{
         .timestamp_ms = 0U, // HAL-provided in flight
         .fault_code = static_cast<uint8_t>(SyncDetectorStatus::kFaultDetected),
@@ -142,12 +142,12 @@ bool SyncDetector::set_threshold(float threshold) noexcept {
         .reserved = 0U,
     };
     hal_.emit(pkt);
-  }
+  } // NOCOVER_END
 
   // Cleanup: scrub result on fault (§7).
-  if (status == SyncDetectorStatus::kFaultDetected) {
+  if (status == SyncDetectorStatus::kFaultDetected) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): SEU on peak offset
     result = SyncResult{};
-  }
+  } // NOCOVER_END
 
   return status;
 }

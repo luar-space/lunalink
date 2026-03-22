@@ -21,7 +21,7 @@ constexpr uint32_t kCfiMagicParse = 0x6B6B6B6BU;
                                               const uint16_t bit_offset,
                                               const uint8_t n_bits,
                                               uint32_t& out) noexcept {
-    // [LSIS-320] MSB-first bit extraction.
+    // [LSIS-AFS-320] MSB-first bit extraction.
     MessageParseStatus status = MessageParseStatus::kFaultDetected; // Pessimistic default
     volatile uint32_t cfi_count = kCfiMagicParse;
     out = 0;
@@ -71,9 +71,9 @@ constexpr uint32_t kCfiMagicParse = 0x6B6B6B6BU;
         if (cfi_count == kCfiMagicParse + 2U) {
             status = MessageParseStatus::kOk;
         } else {
-            status = MessageParseStatus::kFaultDetected; // FIZ-1
+            status = MessageParseStatus::kFaultDetected; // FIZ-1 // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CFI sentinel failure path — volatile counter always matches under nominal execution
             out = 0;
-        }
+        } // NOCOVER_END
     }
 
     return status;
@@ -172,7 +172,7 @@ constexpr uint32_t kCfiMagicParse = 0x6B6B6B6BU;
         if (cfi_count == kCfiMagicParse + 2U) {
             status = MessageParseStatus::kOk;
         } else {
-            status = MessageParseStatus::kFaultDetected; // FIZ-1
+            status = MessageParseStatus::kFaultDetected; // FIZ-1 // NOCOVER(DEFENCE_IN_DEPTH): CFI sentinel failure path — volatile counter always matches under nominal execution
         }
     }
 
@@ -234,7 +234,7 @@ constexpr uint32_t kCfiMagicParse = 0x6B6B6B6BU;
         if (cfi_count == kCfiMagicParse + 2U) {
             status = MessageParseStatus::kOk;
         } else {
-            status = MessageParseStatus::kFaultDetected; // FIZ-1
+            status = MessageParseStatus::kFaultDetected; // FIZ-1 // NOCOVER(DEFENCE_IN_DEPTH): CFI sentinel failure path — volatile counter always matches under nominal execution
         }
     }
 
@@ -295,7 +295,7 @@ constexpr uint32_t kCfiMagicParse = 0x6B6B6B6BU;
         if (cfi_count == kCfiMagicParse + 2U) {
             status = MessageParseStatus::kOk;
         } else {
-            status = MessageParseStatus::kFaultDetected; // FIZ-1
+            status = MessageParseStatus::kFaultDetected; // FIZ-1 // NOCOVER(DEFENCE_IN_DEPTH): CFI sentinel failure path — volatile counter always matches under nominal execution
         }
     }
 
@@ -311,7 +311,7 @@ constexpr uint32_t kCfiMagicParse = 0x6B6B6B6BU;
 // ─── validate_spare_bits ─────────────────────────────────────────────────────
 
 [[nodiscard]] bool validate_spare_bits(std::span<const uint8_t> bits) noexcept {
-    // [LSIS-300] Spare bits: alternating 0/1, starting with 0 on MSB.
+    // [LSIS-AFS-300] Spare bits: alternating 0/1, starting with 0 on MSB.
     if (bits.empty()) {
         return false; // Empty spare region is a caller error, not vacuously valid
     }

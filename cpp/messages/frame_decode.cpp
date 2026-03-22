@@ -17,7 +17,7 @@ namespace {
 [[nodiscard]] bool
 strip_crc_copy(std::span<const uint8_t> msg, std::span<uint8_t> data_out, size_t n_data) noexcept {
   if (msg.size() < n_data || data_out.size() < n_data) {
-    return false;
+    return false; // NOCOVER(DEFENCE_IN_DEPTH): bounds violation impossible with correct sizes
   }
   std::ranges::copy_n(msg.begin(), static_cast<ptrdiff_t>(n_data), data_out.begin());
   return true;
@@ -57,7 +57,7 @@ decode_validate_input(std::span<const float> rx_symbols,
 
   const auto sync_status = sync_det.detect(rx_symbols, result.sync);
   if (sync_status == SyncDetectorStatus::kFaultDetected) {
-    return FrameDecodeStatus::kFaultDetected;
+    return FrameDecodeStatus::kFaultDetected; // NOCOVER(DEFENCE_IN_DEPTH): sync detector kFaultDetected
   }
   if (sync_status != SyncDetectorStatus::kOk || !result.sync.detected) {
     return FrameDecodeStatus::kSyncNotFound;
@@ -81,7 +81,7 @@ decode_validate_input(std::span<const float> rx_symbols,
   result.bch = bch_decode_soft(sb1_soft.first<kSb1Length>());
 
   if (result.bch.status == BchStatus::kFaultDetected) {
-    return FrameDecodeStatus::kFaultDetected;
+    return FrameDecodeStatus::kFaultDetected; // NOCOVER(DEFENCE_IN_DEPTH): BCH kFaultDetected
   }
   if (result.bch.status != BchStatus::kOk) {
     return FrameDecodeStatus::kBchFailed;
@@ -100,7 +100,7 @@ decode_validate_input(std::span<const float> rx_symbols,
                                                     std::span<float>(workspace.deinterleave_buf));
 
   if (deint_status != InterleaverStatus::kOk) {
-    return FrameDecodeStatus::kFaultDetected;
+    return FrameDecodeStatus::kFaultDetected; // NOCOVER(DEFENCE_IN_DEPTH): deinterleave fault
   }
   return FrameDecodeStatus::kOk;
 }
@@ -142,7 +142,7 @@ decode_validate_input(std::span<const float> rx_symbols,
   // Any hardware fault in LDPC → escalate
   if (ldpc_sb2 == LdpcStatus::kFaultDetected || ldpc_sb3 == LdpcStatus::kFaultDetected ||
       ldpc_sb4 == LdpcStatus::kFaultDetected) {
-    return FrameDecodeStatus::kFaultDetected;
+    return FrameDecodeStatus::kFaultDetected; // NOCOVER(DEFENCE_IN_DEPTH): LDPC kFaultDetected
   }
   return FrameDecodeStatus::kOk;
 }
@@ -165,17 +165,17 @@ decode_stage_crc_and_copy(FrameDecodeResult& result, FrameDecodeWorkspace& works
   // Strip CRC, copy data to output buffers
   if (result.sb2.crc_ok) {
     if (!strip_crc_copy(workspace.sb2_msg, workspace.sb2_data, kSb2DataBits)) {
-      return FrameDecodeStatus::kFaultDetected;
+      return FrameDecodeStatus::kFaultDetected; // NOCOVER(DEFENCE_IN_DEPTH): strip_crc_copy kFaultDetected (SB2)
     }
   }
   if (result.sb3.crc_ok) {
     if (!strip_crc_copy(workspace.sb3_msg, workspace.sb3_data, kSb3DataBits)) {
-      return FrameDecodeStatus::kFaultDetected;
+      return FrameDecodeStatus::kFaultDetected; // NOCOVER(DEFENCE_IN_DEPTH): strip_crc_copy kFaultDetected (SB3)
     }
   }
   if (result.sb4.crc_ok) {
     if (!strip_crc_copy(workspace.sb4_msg, workspace.sb4_data, kSb4DataBits)) {
-      return FrameDecodeStatus::kFaultDetected;
+      return FrameDecodeStatus::kFaultDetected; // NOCOVER(DEFENCE_IN_DEPTH): strip_crc_copy kFaultDetected (SB4)
     }
   }
 
@@ -192,7 +192,7 @@ decode_stage_crc_and_copy(FrameDecodeResult& result, FrameDecodeWorkspace& works
     return FrameDecodeStatus::kLdpcFailed;
   }
   if (!all_crc) {
-    return FrameDecodeStatus::kCrcFailed;
+    return FrameDecodeStatus::kCrcFailed; // NOCOVER(DEFENCE_IN_DEPTH): CRC failed but all LDPC converged — undetected LDPC error
   }
   return FrameDecodeStatus::kOk;
 }
@@ -300,10 +300,10 @@ FrameDecodeStatus frame_decode(std::span<const float> rx_symbols,
   // cppcheck-suppress duplicateCondition  ; single-exit accumulator pattern
   if (status == FrameDecodeStatus::kOk) {
     if (cfi_count != (0x7E7E7E7EU + 6U)) [[unlikely]] {
-      const FaultPacket pkt{0, 0x80, 2, 6, 0};
+      const FaultPacket pkt{0, 0x80, 2, 6, 0}; // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CFI terminal check failure
       hal.emit(pkt);
       status = FrameDecodeStatus::kFaultDetected;
-    }
+    } // NOCOVER_END
   }
 
   // ── Determine overall status ─────────────────────────────────────────

@@ -142,7 +142,7 @@ struct Sb4ParseResult {
 
 // ─── Functions ───────────────────────────────────────────────────────────────
 
-/// Extract N bits from a bit array starting at bit_offset, MSB-first. [LSIS-320]
+/// Extract N bits from a bit array starting at bit_offset, MSB-first. [LSIS-AFS-320]
 ///
 /// Each element of `bits` is a single bit (0 or 1). The extracted value is
 /// packed MSB-first into a uint32_t. Maximum 32 bits can be extracted.

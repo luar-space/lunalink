@@ -16,6 +16,16 @@ namespace {
 constexpr uint32_t kCfiMagicTot = 0x4D4D4D4DU;
 } // namespace
 
+// Validate ToT inputs. Returns kOk if all pass; otherwise the first failing status.
+[[nodiscard]] TotStatus validate_tot_inputs(uint16_t wn, uint16_t itow,
+                                            uint8_t toi, double delta_t_lrt) noexcept {
+    if (wn > kWnMax) { return TotStatus::kInvalidWn; }
+    if (itow > kItowMax) { return TotStatus::kInvalidItow; }
+    if (toi > kTotToiMax) { return TotStatus::kInvalidToi; }
+    if (!std::isfinite(delta_t_lrt)) { return TotStatus::kInvalidDelta; }
+    return TotStatus::kOk;
+}
+
 [[nodiscard]] TotResult compute_tot(const uint16_t wn,
                                     const uint16_t itow,
                                     const uint8_t toi,
@@ -26,33 +36,10 @@ constexpr uint32_t kCfiMagicTot = 0x4D4D4D4DU;
     volatile uint32_t cfi_count = kCfiMagicTot;
 
     // Input validation
-    bool ok = (wn <= kWnMax);
+    const auto input_status = validate_tot_inputs(wn, itow, toi, delta_t_lrt);
+    bool ok = (input_status == TotStatus::kOk);
     if (!ok) {
-        status = TotStatus::kInvalidWn;
-    }
-
-    // cppcheck-suppress duplicateCondition  ; single-exit accumulator pattern
-    if (ok) {
-        ok = (itow <= kItowMax);
-        if (!ok) {
-            status = TotStatus::kInvalidItow;
-        }
-    }
-
-    // cppcheck-suppress duplicateCondition  ; single-exit accumulator pattern
-    if (ok) {
-        ok = (toi <= kTotToiMax);
-        if (!ok) {
-            status = TotStatus::kInvalidToi;
-        }
-    }
-
-    // cppcheck-suppress duplicateCondition  ; single-exit accumulator pattern
-    if (ok) {
-        ok = std::isfinite(delta_t_lrt);
-        if (!ok) {
-            status = TotStatus::kInvalidDelta;
-        }
+        status = input_status;
     }
 
     // cppcheck-suppress duplicateCondition  ; single-exit accumulator pattern
@@ -83,7 +70,7 @@ constexpr uint32_t kCfiMagicTot = 0x4D4D4D4DU;
         if (cfi_count == kCfiMagicTot + 2U) {
             status = TotStatus::kOk;
         } else {
-            status = TotStatus::kFaultDetected; // FIZ-1
+            status = TotStatus::kFaultDetected; // FIZ-1 // NOCOVER(DEFENCE_IN_DEPTH): CFI sentinel failure path — volatile counter always matches under nominal execution
         }
     }
 

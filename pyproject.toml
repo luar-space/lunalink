@@ -48,6 +48,7 @@ private = []
 
 [tool.setuptools_scm]
 fallback_version = "0.0.0.dev0"
+git_describe_command = ["git", "describe", "--tags", "--long", "--match", "v*"]
 
 [tool.scikit-build]
 minimum-version = "0.9"

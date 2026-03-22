@@ -3,6 +3,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <array>
+#include <bit>
 #include <cmath>
 #include <limits>
 
@@ -252,4 +253,45 @@ TEST_CASE("BCH codebook checksum: stable across calls", "[bch]") {
   uint64_t c2 = bch_codebook_checksum();
   CHECK(c1 == c2);
   CHECK(c1 != 0);
+}
+
+TEST_CASE("BCH: kAmbiguousMatch on equidistant received word", "[bch]") {
+  // BCH(51,8) has minimum distance 20 (all even). Construct a received word
+  // equidistant (distance 10) from two codewords: (FID=0,TOI=0) and (FID=2,TOI=31).
+  // This exercises the kAmbiguousMatch path in bch_decode.
+  std::array<uint8_t, kBchCodewordLength> cw1{};
+  std::array<uint8_t, kBchCodewordLength> cw2{};
+  REQUIRE(bch_encode(Fid(0), Toi(0), cw1) == BchStatus::kOk);
+  REQUIRE(bch_encode(Fid(2), Toi(31), cw2) == BchStatus::kOk);
+
+  // Pack to uint64_t for distance computation
+  uint64_t c1 = 0;
+  uint64_t c2 = 0;
+  for (int i = 0; i < 52; ++i) {
+    c1 |= (static_cast<uint64_t>(cw1[static_cast<size_t>(i)] & 1U) << i);
+    c2 |= (static_cast<uint64_t>(cw2[static_cast<size_t>(i)] & 1U) << i);
+  }
+  const int dist = std::popcount(c1 ^ c2);
+  REQUIRE(dist == 20); // minimum distance is 20, all even
+
+  // Construct received word: flip exactly half (10) of the 20 differing bits
+  uint64_t diff = c1 ^ c2;
+  uint64_t received = c1;
+  int flipped = 0;
+  for (int b = 0; b < 52 && flipped < dist / 2; ++b) {
+    if ((diff >> static_cast<unsigned>(b)) & 1U) {
+      received ^= (1ULL << static_cast<unsigned>(b));
+      flipped++;
+    }
+  }
+
+  // Unpack to array
+  std::array<uint8_t, kBchCodewordLength> rx{};
+  for (int i = 0; i < 52; ++i) {
+    rx[static_cast<size_t>(i)] = static_cast<uint8_t>((received >> static_cast<unsigned>(i)) & 1U);
+  }
+
+  // bch_decode should return kAmbiguousMatch (two codewords at same distance)
+  const auto result = bch_decode(rx);
+  CHECK(result.status == BchStatus::kAmbiguousMatch);
 }

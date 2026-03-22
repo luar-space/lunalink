@@ -80,9 +80,9 @@ IqMuxStatus multiplex_iq(std::span<const int8_t> i_samples,
     }
 
     // CFI: Terminal count verification.
-    if (status == IqMuxStatus::kOk && loop_count != kIqSamplesPerEpoch) [[unlikely]] {
+    if (status == IqMuxStatus::kOk && loop_count != kIqSamplesPerEpoch) [[unlikely]] { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH)
       status = IqMuxStatus::kFaultDetected; // FIZ-1
-    }
+    } // NOCOVER_END
 
     if (status != IqMuxStatus::kOk) [[unlikely]] {
       secure_scrub(out);

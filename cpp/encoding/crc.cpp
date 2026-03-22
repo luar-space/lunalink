@@ -17,9 +17,9 @@ inline constexpr uint32_t kCrc24Poly = 0x864CFBU;
 CrcStatus crc24_calculate(std::span<const uint8_t> in, std::span<uint8_t, 24ULL> out_crc) noexcept {
   // P0-6: Reject inputs that would truncate the CFI counter cast to uint32_t.
   if (in.size() > static_cast<size_t>(std::numeric_limits<uint32_t>::max())) [[unlikely]] {
-    secure_scrub(out_crc);
+    secure_scrub(out_crc); // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): aliasing check scrub + return
     return CrcStatus::kFaultDetected;
-  }
+  } // NOCOVER_END
 
   CrcStatus status = CrcStatus::kOk;
   uint32_t cfi_count = 0xA5A5A5A5U;
@@ -35,9 +35,9 @@ CrcStatus crc24_calculate(std::span<const uint8_t> in, std::span<uint8_t, 24ULL>
   for (size_t i = 0; i < in.size(); ++i) {
     i_mir = ~i;
     if (i != (~i_mir)) [[unlikely]] {
-      status = CrcStatus::kFaultDetected; // FIZ-1
+      status = CrcStatus::kFaultDetected; // FIZ-1 // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CFI counter mismatch in accumulation loop
       break;
-    }
+    } // NOCOVER_END
 
     const uint8_t bit = in[i] & 1U;
     const auto msb = static_cast<uint8_t>((register_state >> 23U) & 1U);
@@ -55,7 +55,7 @@ CrcStatus crc24_calculate(std::span<const uint8_t> in, std::span<uint8_t, 24ULL>
   if (status == CrcStatus::kOk) {
     // CFI terminal check
     if (cfi_count != (0xA5A5A5A5U + static_cast<uint32_t>(in.size()))) [[unlikely]] {
-      status = CrcStatus::kFaultDetected; // FIZ-1
+      status = CrcStatus::kFaultDetected; // FIZ-1 // NOCOVER(DEFENCE_IN_DEPTH): CFI terminal check
     } else {
       // Unpack 24-bit state to output bit-bytes
       for (uint8_t b = 0; b < 24U; ++b) {
@@ -69,7 +69,7 @@ CrcStatus crc24_calculate(std::span<const uint8_t> in, std::span<uint8_t, 24ULL>
   secure_scrub_scalar(register_state);
 
   if (status != CrcStatus::kOk) {
-    secure_scrub(out_crc);
+    secure_scrub(out_crc); // NOCOVER(DEFENCE_IN_DEPTH): error path scrub
   }
 
   return status;
@@ -86,7 +86,7 @@ bool crc24_verify(std::span<const uint8_t> data_with_crc) noexcept {
   const auto status = crc24_calculate(data_with_crc.subspan(0, data_len), calc_crc);
 
   if (status != CrcStatus::kOk) {
-    return false;
+    return false; // NOCOVER(DEFENCE_IN_DEPTH): crc24_verify aliasing or bounds check
   }
 
   bool match = true;

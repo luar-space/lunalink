@@ -52,7 +52,7 @@ PrnStatus GoldGenerator::generate(PrnId prn_id, std::span<uint8_t> out) noexcept
     g1_reg_ = 0x7FFU; // 11 ones
     const uint8_t repaired = prn_id.repair();
     if (!prn_id.valid()) {
-      status = PrnStatus::kFaultDetected;
+      status = PrnStatus::kFaultDetected; // NOCOVER(DEFENCE_IN_DEPTH): repair cannot invalidate a valid PRN
     } else {
       const size_t idx = static_cast<size_t>(repaired) - 1U;
       g2_reg_ = kGoldG2Init.at(idx);
@@ -69,9 +69,9 @@ PrnStatus GoldGenerator::generate(PrnId prn_id, std::span<uint8_t> out) noexcept
       i_mir = ~static_cast<uint32_t>(i);
 
       if (static_cast<uint32_t>(i) != (~i_mir)) [[unlikely]] {
-        status = PrnStatus::kFaultDetected; // FIZ-1
+        status = PrnStatus::kFaultDetected; // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): mirrored loop counter corruption
         break;
-      }
+      } // NOCOVER_END
 
       out[i] = shift();
       cfi_count++;
@@ -80,7 +80,7 @@ PrnStatus GoldGenerator::generate(PrnId prn_id, std::span<uint8_t> out) noexcept
 
     // CFI: Terminal verification
     if (cfi_count != (0xA5A5A5A5U + kGoldChipLength)) [[unlikely]] {
-      status = PrnStatus::kFaultDetected; // FIZ-1
+      status = PrnStatus::kFaultDetected; // NOCOVER(DEFENCE_IN_DEPTH): CFI counter corruption
     }
   }
 

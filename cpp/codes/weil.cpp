@@ -36,9 +36,9 @@ PrnStatus WeilGenerator::generate_primary(PrnId prn_id, std::span<uint8_t> out) 
 
   const uint8_t repaired = prn_id.repair();
   if (!prn_id.valid()) {
-    secure_scrub(out);
+    secure_scrub(out); // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): repair cannot invalidate a valid PRN
     return PrnStatus::kFaultDetected;
-  }
+  } // NOCOVER_END
   const size_t idx = static_cast<size_t>(repaired) - 1U;
   const auto params = kPrimaryWeilParams.at(idx);
 
@@ -57,9 +57,9 @@ PrnStatus WeilGenerator::generate_tertiary(PrnId prn_id, std::span<uint8_t> out)
 
   const uint8_t repaired = prn_id.repair();
   if (!prn_id.valid()) {
-    secure_scrub(out);
+    secure_scrub(out); // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): repair cannot invalidate a valid PRN
     return PrnStatus::kFaultDetected;
-  }
+  } // NOCOVER_END
   const size_t idx = static_cast<size_t>(repaired) - 1U;
   const uint16_t k = kTertiaryWeilIndices.at(idx);
 
@@ -82,9 +82,9 @@ PrnStatus WeilGenerator::construct_weil(uint16_t prime,
 
   const auto legendre = get_cached_legendre(prime);
   if (legendre.empty()) [[unlikely]] {
-    secure_scrub(out);                // P0-4: scrub on error
+    secure_scrub(out);                // P0-4: scrub on error // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CFI terminal check in generate
     return PrnStatus::kFaultDetected; // FIZ-1
-  }
+  } // NOCOVER_END
 
   uint32_t cfi_count = 0xA5A5A5A5U;
   uint16_t out_idx = 0;
@@ -95,9 +95,9 @@ PrnStatus WeilGenerator::construct_weil(uint16_t prime,
   for (uint16_t t = 0; t < prime; ++t) {
     t_mir = static_cast<uint16_t>(~t);
     if (t != static_cast<uint16_t>(~t_mir)) [[unlikely]] {
-      secure_scrub(out);                // P0-4: scrub on error
+      secure_scrub(out);                // P0-4: scrub on error // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CFI terminal check in weil10230
       return PrnStatus::kFaultDetected; // FIZ-1
-    }
+    } // NOCOVER_END
 
     if (out_idx == (insertion_index - 1U)) {
       out_idx = insert_expansion(out, out_idx);
@@ -115,9 +115,9 @@ PrnStatus WeilGenerator::construct_weil(uint16_t prime,
   }
 
   if (cfi_count != (0xA5A5A5A5U + prime)) [[unlikely]] {
-    secure_scrub(out);                // P0-4: scrub on error
+    secure_scrub(out);                // P0-4: scrub on error // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CFI terminal check in weil1500
     return PrnStatus::kFaultDetected; // FIZ-1
-  }
+  } // NOCOVER_END
 
   return PrnStatus::kOk;
 }

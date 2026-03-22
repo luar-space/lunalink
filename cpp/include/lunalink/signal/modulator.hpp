@@ -69,7 +69,7 @@ enum class ModulationStatus : uint8_t {
 
     // CFI: Terminal count verification.
     if (status == ModulationStatus::kOk && loop_count != chips.size()) [[unlikely]] {
-      status = ModulationStatus::kFaultDetected; // FIZ-1
+      status = ModulationStatus::kFaultDetected; // FIZ-1 // NOCOVER(DEFENCE_IN_DEPTH): CFI terminal count — loop count always matches chips.size() under nominal execution
     }
 
     if (status != ModulationStatus::kOk) [[unlikely]] {

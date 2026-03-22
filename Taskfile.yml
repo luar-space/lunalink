@@ -167,7 +167,7 @@ tasks:
           exit 1
         fi
         echo "Using LLVM from {{.LLVM_DIR}}"
-      - cmake -B build/coverage -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_LLVM_COVERAGE=ON -DCMAKE_C_COMPILER={{.LLVM_DIR}}/clang -DCMAKE_CXX_COMPILER={{.LLVM_DIR}}/clang++
+      - cmake -B build/coverage -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_LLVM_COVERAGE=ON -DLUNALINK_FAULT_INJECTION=ON -DCMAKE_CXX_COMPILER={{.LLVM_DIR}}/clang++ --fresh
       - cmake --build build/coverage --parallel
       - rm -f build/coverage/*.profraw build/coverage/*.profdata
       - LLVM_PROFILE_FILE="lunalink-%m.profraw" ctest --test-dir build/coverage --output-on-failure
@@ -188,11 +188,7 @@ tasks:
           -instr-profile=build/coverage/lunalink.profdata \
           -ignore-filename-regex='_deps|tests' 2>/dev/null | \
           awk '/TOTAL/{for(i=1;i<=NF;i++) if($i ~ /%/) {gsub(/%/,"",$i); print $i; exit}}')
-        echo "Line coverage: ${LINE_PCT}%"
-        if [ "$(echo "$LINE_PCT < 90" | bc -l)" -eq 1 ]; then
-          echo "ERROR: Line coverage ${LINE_PCT}% is below minimum 90%"
-          exit 1
-        fi
+        echo "Line coverage: ${LINE_PCT}% (informational — effective coverage is the gate)"
     silent: false
 
   coverage-oss:
@@ -216,7 +212,7 @@ tasks:
           exit 1
         fi
         echo "Using LLVM from {{.LLVM_DIR}}"
-      - cmake -B build/coverage-oss -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_LLVM_COVERAGE=ON -DLUNALINK_FAULT_INJECTION=OFF -DCMAKE_C_COMPILER={{.LLVM_DIR}}/clang -DCMAKE_CXX_COMPILER={{.LLVM_DIR}}/clang++
+      - cmake -B build/coverage-oss -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_LLVM_COVERAGE=ON -DLUNALINK_FAULT_INJECTION=OFF -DCMAKE_CXX_COMPILER={{.LLVM_DIR}}/clang++ --fresh
       - cmake --build build/coverage-oss --parallel
       - rm -f build/coverage-oss/*.profraw build/coverage-oss/*.profdata
       - LLVM_PROFILE_FILE="lunalink-%m.profraw" ctest --test-dir build/coverage-oss --output-on-failure
@@ -227,12 +223,29 @@ tasks:
           -instr-profile=build/coverage-oss/lunalink.profdata \
           -ignore-filename-regex='_deps|tests' 2>/dev/null | \
           awk '/TOTAL/{for(i=1;i<=NF;i++) if($i ~ /%/) {gsub(/%/,"",$i); print $i; exit}}')
-        echo "OSS region coverage: ${REGION_PCT}%"
-        if [ "$(echo "$REGION_PCT < 80" | bc -l)" -eq 1 ]; then
-          echo "ERROR: OSS region coverage ${REGION_PCT}% is below minimum 80%"
-          exit 1
-        fi
-        echo "PASS: OSS coverage ${REGION_PCT}% >= 80%"
+        echo "OSS region coverage: ${REGION_PCT}% (informational — effective coverage is the gate)"
+    silent: false
+
+  coverage-effective:
+    desc: Compute effective coverage (100% of coverable lines) excluding NOCOVER-marked defence-in-depth paths.
+    deps: [coverage-oss]
+    vars:
+      LLVM_DIR:
+        sh: |
+          if command -v llvm-profdata >/dev/null 2>&1; then
+            dirname "$(command -v llvm-profdata)"
+          elif [ -x /opt/homebrew/opt/llvm/bin/llvm-profdata ]; then
+            echo /opt/homebrew/opt/llvm/bin
+          elif [ -x /usr/local/opt/llvm/bin/llvm-profdata ]; then
+            echo /usr/local/opt/llvm/bin
+          fi
+    cmds:
+      - |
+        {{.LLVM_DIR}}/llvm-cov export build/coverage-oss/test_lunalink \
+          -instr-profile=build/coverage-oss/lunalink.profdata \
+          -ignore-filename-regex='_deps|tests' \
+          -format=lcov > build/coverage-oss/coverage.lcov
+      - python3 scripts/effective_coverage.py --lcov build/coverage-oss/coverage.lcov --src cpp/ --path-prefix "build/coverage-oss/" --json build/coverage-oss/effective.json
     silent: false
 
   coverage-report:

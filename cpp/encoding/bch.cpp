@@ -130,7 +130,7 @@ BchResult bch_decode(std::span<const uint8_t, 52ULL> in) noexcept {
   // Single exit: CFI failure sets status rather than early-returning.
   BchStatus status = BchStatus::kOk;
   if (!sr.cfi_ok) [[unlikely]] {
-    status = BchStatus::kFaultDetected; // FIZ-1
+    status = BchStatus::kFaultDetected; // FIZ-1 // NOCOVER(DEFENCE_IN_DEPTH): CFI counter fault in BCH encode/decode
   } else if (sr.amb_mask != 0U && sr.min_dist != 0U) {
     status = BchStatus::kAmbiguousMatch;
   } else if (sr.min_dist > 2U) {
@@ -161,11 +161,11 @@ BchResult bch_decode_soft(std::span<const float, 52ULL> llr) noexcept {
 
     // CFI Verification
     if (!sr.cfi_ok) [[unlikely]] {
-      status = BchStatus::kFaultDetected; // FIZ-1
+      status = BchStatus::kFaultDetected; // FIZ-1 // NOCOVER(DEFENCE_IN_DEPTH): CFI terminal check failure paths
     }
     // Variable mirror integrity check: detects SEU corruption of best_idx mid-loop.
     if (!sr.mirror_ok) [[unlikely]] {
-      status = BchStatus::kFaultDetected; // FIZ-1
+      status = BchStatus::kFaultDetected; // FIZ-1 // NOCOVER(DEFENCE_IN_DEPTH): CFI terminal check failure paths
     }
   }
 

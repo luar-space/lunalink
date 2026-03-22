@@ -2,15 +2,20 @@
 #include "lunalink/codes/prn.hpp"
 #include "lunalink/core/safety.hpp"
 #include "lunalink/encoding/bch.hpp"
+#include "lunalink/encoding/crc.hpp"
 #include "lunalink/encoding/ldpc.hpp"
+#include "lunalink/messages/frame.hpp"
+#include "lunalink/messages/frame_decode.hpp"
 #include "lunalink/platform/signal_chain_fsm.hpp"
 #include "lunalink/platform/watchdog.hpp"
+#include "lunalink/signal/iq_mux.hpp"
 #include "lunalink/signal/modulator.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
 #include <cstdint>
 #include <cstring>
+#include <memory>
 
 using namespace lunalink::signal;
 
@@ -318,6 +323,85 @@ TEST_CASE("[SW-SAF-02] Watchdog: install and retrieve", "[safety]") {
   SUCCEED("get_installed_watchdog() returned without fault");
 }
 
+// ===========================================================================
+// Coverage: PrnId operators (operator<=> and operator size_t)
+// ===========================================================================
+
+TEST_CASE("PrnId: comparison and size_t conversion", "[safety]") {
+  PrnId a(1);
+  PrnId b(42);
+  PrnId c(42);
+
+  // operator<=>
+  CHECK(a < b);
+  CHECK(b > a);
+  CHECK(b == c);
+  CHECK(a != b);
+  CHECK(b <= c);
+  CHECK(b >= c);
+
+  // operator size_t
+  CHECK(static_cast<size_t>(a) == 1);
+  CHECK(static_cast<size_t>(b) == 42);
+}
+
+// ===========================================================================
+// Coverage: FSM illegal transition + CaptureTelemetryHal
+// ===========================================================================
+
+TEST_CASE("[SW-SAF-02] FSM: illegal transition emits telemetry", "[safety]") {
+  CaptureTelemetryHal<4> hal;
+  SignalChainFsm fsm(hal);
+
+  // Attempt an illegal transition: kUninitialized → kOperational
+  // (must go through kPostRunning first)
+  CHECK(fsm.transition(SignalChainState::kOperational) == false);
+  CHECK(fsm.state() == SignalChainState::kSafeMode);
+
+  // Verify telemetry was emitted
+  REQUIRE(hal.count() == 1);
+  CHECK(hal.packet(0).fiz_level == 3);
+  CHECK(hal.packet(0).fault_code == static_cast<uint8_t>(SignalChainState::kSafeMode));
+}
+
+TEST_CASE("[SW-SAF-02] FSM: on_frame_fault from non-operational emits telemetry", "[safety]") {
+  CaptureTelemetryHal<4> hal;
+  SignalChainFsm fsm(hal);
+
+  // Move to POST, then call on_frame_fault (illegal — must be kOperational)
+  CHECK(fsm.transition(SignalChainState::kPostRunning));
+  CHECK(fsm.on_frame_fault() == false);
+  CHECK(fsm.state() == SignalChainState::kSafeMode);
+
+  REQUIRE(hal.count() == 1);
+  CHECK(hal.packet(0).fiz_level == 3);
+}
+
+TEST_CASE("CaptureTelemetryHal: overflow and reset", "[safety]") {
+  CaptureTelemetryHal<2> hal;
+
+  // Emit 3 packets but capacity is 2
+  hal.emit(FaultPacket{100, 0xAA, 1, 0, 0});
+  hal.emit(FaultPacket{200, 0xBB, 2, 0, 0});
+  hal.emit(FaultPacket{300, 0xCC, 3, 0, 0}); // dropped
+
+  CHECK(hal.count() == 2);
+  CHECK(hal.packet(0).timestamp_ms == 100);
+  CHECK(hal.packet(1).timestamp_ms == 200);
+
+  // Out-of-range access returns empty packet
+  CHECK(hal.packet(2).timestamp_ms == 0);
+  CHECK(hal.packet(99).timestamp_ms == 0);
+
+  // Reset
+  hal.reset();
+  CHECK(hal.count() == 0);
+}
+
+// ===========================================================================
+// Original Gateway 2 composite test
+// ===========================================================================
+
 TEST_CASE("Safety: TMR voting and CFI detection (Gateway 2)", "[safety]") {
   SECTION("TMR Majority Voting (Radiation Resilience)") {
     TmrValue<uint8_t> val(0x5AU);
@@ -347,4 +431,189 @@ TEST_CASE("Safety: TMR voting and CFI detection (Gateway 2)", "[safety]") {
       SUCCEED("Correct error status returned");
     }
   }
+}
+
+// ===========================================================================
+// Coverage: CfiGuard — runtime usage (not just constexpr)
+// ===========================================================================
+
+TEST_CASE("CfiGuard: constructor, tick, verify", "[safety]") {
+  CfiGuard guard(0xDEAD0000U, 3U);
+  CHECK_FALSE(guard.verify()); // 0 ticks, expected 3
+  guard.tick();
+  guard.tick();
+  CHECK_FALSE(guard.verify()); // 2 ticks, expected 3
+  guard.tick();
+  CHECK(guard.verify()); // 3 ticks, expected 3
+}
+
+// ===========================================================================
+// Coverage: WindowedWatchdog — pure logic, not HAL
+// ===========================================================================
+
+TEST_CASE("WindowedWatchdog: tick, reset, evaluate", "[safety]") {
+  WindowedWatchdog wdog(5, 100);
+
+  // Under lower bound → evaluate returns false + emits telemetry
+  CaptureTelemetryHal<4> hal;
+  wdog.reset();
+  wdog.tick();
+  wdog.tick(); // 2 ticks, min is 5
+  CHECK(wdog.tick_count() == 2);
+  CHECK_FALSE(wdog.evaluate(hal, 42));
+  REQUIRE(hal.count() == 1);
+  CHECK(hal.packet(0).fault_code == kWatchdogLowerBoundFaultCode);
+  CHECK(hal.packet(0).timestamp_ms == 42);
+
+  // At lower bound → evaluate returns true
+  hal.reset();
+  wdog.reset();
+  for (int i = 0; i < 5; ++i) {
+    wdog.tick();
+  }
+  CHECK(wdog.evaluate(hal, 100));
+  CHECK(hal.count() == 0);
+
+  // Upper bound exceeded is informational
+  wdog.reset();
+  for (int i = 0; i < 101; ++i) {
+    wdog.tick();
+  }
+  CHECK(wdog.upper_bound_exceeded());
+  CHECK(wdog.evaluate(hal, 200)); // still returns true (upper bound is HW watchdog's job)
+}
+
+// ===========================================================================
+// Coverage: aliasing detection on frame_decode workspace
+// ===========================================================================
+
+TEST_CASE("frame_decode: aliasing workspace with rx_symbols detected", "[safety]") {
+  // Pass rx_symbols pointing INTO the workspace memory — spans_overlap fires.
+  auto ws = std::make_unique<FrameDecodeWorkspace>();
+  std::span<const float> aliased_rx(
+      reinterpret_cast<const float*>(ws.get()), kFrameLength);
+
+  FrameDecodeResult result{};
+  NullTelemetryHal hal;
+  CHECK(frame_decode(aliased_rx, result, *ws, hal) == FrameDecodeStatus::kFaultDetected);
+}
+
+// ===========================================================================
+// Coverage: aliasing detection on frame_build_partial
+// ===========================================================================
+
+TEST_CASE("frame_build: aliasing data with output detected", "[safety]") {
+  // Pass sb2_data that overlaps the output frame buffer.
+  auto buf = std::make_unique<std::array<uint8_t, kFrameLength + 1000>>();
+  std::span<uint8_t, kFrameLength> out(buf->data(), kFrameLength);
+  // Point sb2_data INTO the output buffer (overlapping)
+  std::span<const uint8_t, kSb2DataBits> sb2(buf->data() + 100, kSb2DataBits);
+  std::array<uint8_t, kSb3DataBits> sb3{};
+  std::array<uint8_t, kSb4DataBits> sb4{};
+  LdpcEncodeWorkspace ldpc_ws{};
+  FrameBuildWorkspace fbw{};
+  CHECK(frame_build(Fid::kNode1(), Toi(0), sb2, sb3, sb4, out, ldpc_ws, fbw) ==
+        FrameStatus::kFaultDetected);
+}
+
+TEST_CASE("frame_build: aliasing workspace with output detected", "[safety]") {
+  // Pass an LdpcEncodeWorkspace that overlaps the output frame buffer.
+  auto buf = std::make_unique<std::array<uint8_t, sizeof(LdpcEncodeWorkspace) + kFrameLength>>();
+  auto* ldpc_ws = new (buf->data()) LdpcEncodeWorkspace{};
+  // Output span starts inside the workspace memory
+  std::span<uint8_t, kFrameLength> out(buf->data(), kFrameLength);
+  std::array<uint8_t, kSb2DataBits> sb2{};
+  std::array<uint8_t, kSb3DataBits> sb3{};
+  std::array<uint8_t, kSb4DataBits> sb4{};
+  FrameBuildWorkspace fbw{};
+  CHECK(frame_build(Fid::kNode1(), Toi(0), sb2, sb3, sb4, out, *ldpc_ws, fbw) ==
+        FrameStatus::kFaultDetected);
+}
+
+TEST_CASE("modulator: aliasing input with output detected", "[safety]") {
+  // Pass the same buffer as both chips input and modulated output.
+  std::array<int8_t, 100> buf{};
+  for (auto& b : buf) {
+    b = 1;
+  }
+  std::span<const uint8_t> chips(reinterpret_cast<const uint8_t*>(buf.data()), buf.size());
+  std::span<int8_t> out(buf);
+  CHECK(validate_modulation_inputs(chips, 1, out) == ModulationStatus::kFaultDetected);
+}
+
+TEST_CASE("LDPC decode: zero iterations rejected", "[safety]") {
+  std::array<float, kSb3Length> soft{};
+  soft.fill(1.0F);
+  std::array<uint8_t, kSb3MsgBits> decoded{};
+  LdpcWorkspace ws{};
+  CHECK(ldpc_decode(LdpcSubframe::kSF3, soft, 0, decoded, ws) == LdpcStatus::kInvalidInput);
+}
+
+TEST_CASE("LDPC decode: output buffer too small", "[safety]") {
+  std::array<float, kSb3Length> soft{};
+  soft.fill(1.0F);
+  std::array<uint8_t, 10> tiny_out{}; // way too small for SF3 (needs 870)
+  LdpcWorkspace ws{};
+  CHECK(ldpc_decode(LdpcSubframe::kSF3, soft, 20, tiny_out, ws) == LdpcStatus::kOutputTooSmall);
+}
+
+TEST_CASE("frame_build_partial: aliasing staging with output detected", "[safety]") {
+  // Create a FrameBuildWorkspace whose staging array overlaps the output.
+  // We achieve this by placement-constructing the workspace at an offset
+  // within a large buffer that also serves as the output.
+  alignas(16) auto buf = std::make_unique<std::array<uint8_t, sizeof(FrameBuildWorkspace) + kFrameLength>>();
+  auto* ws = new (buf->data()) FrameBuildWorkspace{};
+  // Output span starts inside the workspace staging region
+  std::span<uint8_t, kFrameLength> out(buf->data(), kFrameLength);
+
+  CHECK(frame_build_partial(Fid::kNode1(), Toi(0), out, *ws) == FrameStatus::kFaultDetected);
+}
+
+// ===========================================================================
+// Coverage: watchdog install / lock / get semantics
+// ===========================================================================
+
+TEST_CASE("Watchdog: install, lock, and locked-install rejection", "[safety]") {
+  // Note: g_wdog_locked is a process-global one-way latch. This test may
+  // interact with other tests depending on execution order. We test the
+  // semantics that work regardless of prior lock state.
+  WindowedWatchdog wdog(10, 100);
+
+  // get_installed_watchdog returns the current pointer (may be nullptr or a prior test's wdog)
+  auto* prior = get_installed_watchdog();
+  (void)prior;
+
+  // Try to install — succeeds only if not yet locked
+  const bool installed = install_watchdog(&wdog);
+  if (installed) {
+    CHECK(get_installed_watchdog() == &wdog);
+
+    // Lock and verify install is rejected
+    lock_watchdog_config();
+    CHECK_FALSE(install_watchdog(nullptr));
+    // Watchdog pointer persists after lock
+    CHECK(get_installed_watchdog() == &wdog);
+  } else {
+    // Already locked by a prior test (e.g., POST) — verify rejection
+    CHECK_FALSE(install_watchdog(&wdog));
+    SUCCEED("Config already locked — rejection path exercised");
+  }
+}
+
+// ===========================================================================
+// Coverage: IQ mux aliasing detection
+// ===========================================================================
+
+TEST_CASE("IQ mux: aliasing I-channel with output detected", "[safety]") {
+  // Pass I-channel samples that overlap the output buffer.
+  std::array<int16_t, kIqSamplesPerEpoch * 2> buf{};
+  // Point I-channel into the output buffer region
+  auto* i_ptr = reinterpret_cast<int8_t*>(buf.data());
+  std::span<const int8_t> i_samples(i_ptr, kGoldChipLength);
+  std::array<int8_t, kIqSamplesPerEpoch> q_samples{};
+  for (auto& q : q_samples) {
+    q = 1;
+  }
+  std::span<int16_t> out(buf);
+  CHECK(multiplex_iq(i_samples, q_samples, out) == IqMuxStatus::kFaultDetected);
 }

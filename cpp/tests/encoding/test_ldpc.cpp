@@ -350,3 +350,40 @@ TEST_CASE("LDPC: error paths", "[ldpc]") {
   CHECK(static_cast<uint8_t>(ldpc_encode(LdpcSubframe::kSF2, valid_msg, small_out, enc_ws)) ==
         static_cast<uint8_t>(LdpcStatus::kOutputTooSmall));
 }
+
+TEST_CASE("LDPC: extreme LLR decode exercises Q8.7 saturation", "[ldpc]") {
+  // With high-magnitude LLRs (±256.0F → ±32767 in Q8.7), the BP decoder's
+  // sat_sub(lv, lcv) overflows when lv=+32767 and lcv is a large negative
+  // NMS output (≈-24575). This exercises the sat_sub positive-overflow
+  // and sat_add negative-overflow clamping paths.
+  //
+  // Encode a non-trivial message (alternating bits for mixed positive/negative
+  // LLRs), then decode with extreme magnitude.
+  std::array<uint8_t, kSb3MsgBits> msg{};
+  for (size_t i = 0; i < msg.size(); ++i) {
+    msg[i] = static_cast<uint8_t>(i % 2);
+  }
+
+  std::array<uint8_t, kSb3Length> encoded{};
+  LdpcEncodeWorkspace enc_ws{};
+  REQUIRE(ldpc_encode(LdpcSubframe::kSF3, msg, encoded, enc_ws) == LdpcStatus::kOk);
+
+  // Create extreme-magnitude LLRs (±256.0F) — clamps to ±32767 in Q8.7
+  std::array<float, kSb3Length> soft{};
+  for (size_t i = 0; i < kSb3Length; ++i) {
+    soft[i] = (encoded[i] == 0U) ? 256.0F : -256.0F;
+  }
+
+  // Decode with enough iterations to trigger accumulator saturation
+  std::array<uint8_t, kSb3MsgBits> decoded{};
+  LdpcWorkspace dec_ws{};
+  const auto status = ldpc_decode(LdpcSubframe::kSF3, soft, 30, decoded, dec_ws);
+
+  // Should still decode correctly — saturation clamps rather than corrupts
+  REQUIRE((status == LdpcStatus::kOk || status == LdpcStatus::kNotConverged));
+  if (status == LdpcStatus::kOk) {
+    for (size_t i = 0; i < msg.size(); ++i) {
+      CHECK(decoded[i] == msg[i]);
+    }
+  }
+}

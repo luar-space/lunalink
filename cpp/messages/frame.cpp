@@ -54,9 +54,9 @@ FrameStatus frame_build_partial(Fid fid,
       case BchStatus::kInvalidToi:
         status = FrameStatus::kInvalidToi;
         break;
-      default:
+      default: // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): DEAD_BY_DESIGN — MISRA Rule 16.4 default case
         status = FrameStatus::kBchFailed;
-        break;
+        break; // NOCOVER_END
       }
     } else {
       cfi_count = cfi_count + 1U; // milestone 2: SB1 done
@@ -75,7 +75,7 @@ FrameStatus frame_build_partial(Fid fid,
         workspace.staging,
         out.subspan<kSyncLength + static_cast<size_t>(kSb1Length), kPayloadLength>());
     if (int_status != InterleaverStatus::kOk) [[unlikely]] {
-      ok = false;
+      ok = false; // NOCOVER(DEFENCE_IN_DEPTH): interleaver fault path
       status = FrameStatus::kFaultDetected; // FIZ-2
     } else {
       cfi_count = cfi_count + 1U; // milestone 3: interleave done
@@ -90,7 +90,7 @@ FrameStatus frame_build_partial(Fid fid,
     if (cfi_count == kCfiMagicPartial + 3U) {
       status = FrameStatus::kOk;
     } else {
-      status = FrameStatus::kFaultDetected; // FIZ-2 (CFI violation)
+      status = FrameStatus::kFaultDetected; // FIZ-2 (CFI violation) // NOCOVER(DEFENCE_IN_DEPTH): CFI terminal check
     }
   }
 
@@ -157,9 +157,9 @@ encode_bch_header(Fid fid, Toi toi, std::span<uint8_t> sb1_out, FrameStatus& sta
   case BchStatus::kInvalidToi:
     status = FrameStatus::kInvalidToi;
     break;
-  default:
+  default: // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): DEAD_BY_DESIGN — MISRA Rule 16.4 default case
     status = FrameStatus::kBchFailed;
-    break;
+    break; // NOCOVER_END
   }
   return false;
 }
@@ -201,7 +201,7 @@ encode_bch_header(Fid fid, Toi toi, std::span<uint8_t> sb1_out, FrameStatus& sta
   if (ok) {
     const auto crc_status = crc24_calculate(data, crc);
     if (crc_status != CrcStatus::kOk) [[unlikely]] {
-      ok = false;
+      ok = false; // NOCOVER(DEFENCE_IN_DEPTH): CRC failure in subframe_build_ldpc
       status = FrameStatus::kCrcFailed; // FIZ-1
     } else {
       auto msg = std::span(msg_buf).subspan(0, expected_msg_bits);
@@ -215,7 +215,7 @@ encode_bch_header(Fid fid, Toi toi, std::span<uint8_t> sb1_out, FrameStatus& sta
     auto msg = std::span(msg_buf).subspan(0, expected_msg_bits);
     const auto ldpc_status = ldpc_encode(type, msg, out, workspace);
     if (ldpc_status != LdpcStatus::kOk) [[unlikely]] {
-      ok = false;
+      ok = false; // NOCOVER(DEFENCE_IN_DEPTH): LDPC failure in subframe_build_ldpc
       status = FrameStatus::kLdpcFailed; // FIZ-1
     } else {
       cfi_count = cfi_count + 1U; // milestone 3: LDPC done
@@ -227,13 +227,13 @@ encode_bch_header(Fid fid, Toi toi, std::span<uint8_t> sb1_out, FrameStatus& sta
     if (cfi_count == kCfiMagicSb + 3U) {
       status = FrameStatus::kOk;
     } else {
-      status = FrameStatus::kFaultDetected; // FIZ-1 (CFI violation)
+      status = FrameStatus::kFaultDetected; // FIZ-1 (CFI violation) // NOCOVER(DEFENCE_IN_DEPTH): CFI terminal check in subframe_build_ldpc
     }
   }
 
   // Cleanup: scrub output on fault; always scrub temporaries (§7).
   if (status != FrameStatus::kOk) {
-    secure_scrub(out);
+    secure_scrub(out); // NOCOVER(DEFENCE_IN_DEPTH): scrub on fault in subframe_build_ldpc
   }
   secure_scrub(msg_buf);
   secure_scrub(crc);
@@ -267,9 +267,9 @@ struct SubframeBuildParams {
                                        p.msg_bits,
                                        p.out_len);
     if (s != FrameStatus::kOk) [[unlikely]] {
-      status = s;
+      status = s; // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): build_subframes failure path
       return false;
-    }
+    } // NOCOVER_END
     cfi_count = cfi_count + 1U;
   }
   return true;
@@ -356,7 +356,7 @@ FrameStatus frame_build(Fid fid,
     const auto int_status = block_interleave(
         staging, out.subspan<kSyncLength + static_cast<size_t>(kSb1Length), kPayloadLength>());
     if (int_status != InterleaverStatus::kOk) [[unlikely]] {
-      ok = false;
+      ok = false; // NOCOVER(DEFENCE_IN_DEPTH): interleaver fault in frame_build
       status = FrameStatus::kFaultDetected; // FIZ-2
     } else {
       cfi_count = cfi_count + 1U; // milestone 6: interleave done
@@ -368,7 +368,7 @@ FrameStatus frame_build(Fid fid,
     if (cfi_count == kCfiMagicFrame + 6U) {
       status = FrameStatus::kOk;
     } else {
-      status = FrameStatus::kFaultDetected; // FIZ-2 (CFI violation)
+      status = FrameStatus::kFaultDetected; // FIZ-2 (CFI violation) // NOCOVER(DEFENCE_IN_DEPTH): CFI terminal check in frame_build
     }
   }
 

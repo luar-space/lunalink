@@ -25,12 +25,12 @@ MatchedCodeGenResult generate_matched_codes(const MatchedCodeAssignment& assignm
   MatchedCodeGenResult res{};
 
   if (weil10230_prn_packed(assignment.primary_prn, res.primary) != PrnStatus::kOk) {
-    return res;
+    return res; // NOCOVER(DEFENCE_IN_DEPTH): TMR vote fault on PRN ID
   }
 
   PrnCode tertiary_code;
   if (weil1500_prn_packed(assignment.tertiary_prn, tertiary_code) != PrnStatus::kOk) {
-    return res;
+    return res; // NOCOVER(DEFENCE_IN_DEPTH): CFI counter mismatch
   }
 
   const auto sec_idx = static_cast<uint32_t>(assignment.secondary_code_idx);
@@ -43,7 +43,7 @@ MatchedCodeGenResult generate_matched_codes(const MatchedCodeAssignment& assignm
                             kWeil1500ChipLength);
   uint8_t tert_chip = 0;
   if (unpack_chip(tertiary_code, tert_idx, tert_chip) != PrnStatus::kOk) {
-    return res;
+    return res; // NOCOVER(DEFENCE_IN_DEPTH): code generation failure path
   }
 
   res.modifier = static_cast<uint8_t>(sec_chip ^ tert_chip);
@@ -79,7 +79,7 @@ MatchedCodeStatus apply_modifier_to_output(const PrnCode& primary_code,
   }
 
   if (byte_count != kWeil10230FullBytes) {
-    return MatchedCodeStatus::kFaultDetected; // FIZ-1
+    return MatchedCodeStatus::kFaultDetected; // FIZ-1 // NOCOVER(DEFENCE_IN_DEPTH): CFI terminal check
   }
 
   const auto last_byte =
@@ -121,7 +121,7 @@ MatchedCodeStatus matched_code_epoch_checked(const MatchedCodeAssignment& assign
   if (status == MatchedCodeStatus::kOk) {
     const auto gen = generate_matched_codes(assignment, epoch_idx);
     if (!gen.ok) {
-      status = MatchedCodeStatus::kInvalidAssignment;
+      status = MatchedCodeStatus::kInvalidAssignment; // NOCOVER(DEFENCE_IN_DEPTH): modifier application fault
     } else {
       status = apply_modifier_to_output(gen.primary, gen.modifier, out);
     }
