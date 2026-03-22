@@ -1,5 +1,9 @@
 """LunaLink AFS subpackage — Augmented Forward Signal implementation."""
 
+from lunalink.afs._errors import AfsError, DecodeError, SyncNotFoundError
+from lunalink.afs._receiver import receive_frame
+from lunalink.afs._results import DecodeResult, SubframeResult, TimeOfTransmission, TransmitFrame
+from lunalink.afs._transmitter import make_test_payload, transmit_frame
 from lunalink.afs.signal import (
     AFS_I_CHIP_RATE,
     AFS_Q_CHIP_RATE,
@@ -192,4 +196,15 @@ __all__ = [
     "SB2_PAYLOAD_BITS",
     "SB3_PAYLOAD_BITS",
     "SB4_PAYLOAD_BITS",
+    # High-level API
+    "AfsError",
+    "DecodeError",
+    "SyncNotFoundError",
+    "receive_frame",
+    "DecodeResult",
+    "SubframeResult",
+    "TimeOfTransmission",
+    "TransmitFrame",
+    "transmit_frame",
+    "make_test_payload",
 ]

@@ -103,6 +103,7 @@ LunaLink AFS reference implementation with C++ core and pybind11 bindings.
    :maxdepth: 2
    :caption: Developer & Interoperability:
 
+   quickstart
    developing
    tech_stack
    test_vectors

@@ -70,6 +70,7 @@ class Fid:
 class Toi:
     value: int
     def __init__(self, value: int) -> None: ...
+    def __int__(self) -> int: ...
 
 class PrnId:
     value: int
