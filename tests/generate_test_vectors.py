@@ -21,6 +21,7 @@ Run after building the extension module::
 
 from __future__ import annotations
 
+import gzip
 import json
 import struct
 
@@ -71,6 +72,14 @@ SECONDARY_CODES_HEX = ["E", "7", "B", "D"]
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _gzip_replace(path: Path) -> None:
+    """Gzip a file in-place: read, compress, write as path.gz, remove original."""
+    data = path.read_bytes()
+    gz_path = path.with_suffix(path.suffix + ".gz")
+    gz_path.write_bytes(gzip.compress(data))
+    path.unlink()
 
 
 def bits_to_hex(bits: np.ndarray) -> str:
@@ -226,8 +235,8 @@ def generate_bch_vectors() -> None:
                     "toi": toi,
                     "codeword_bits": bits_to_list(cw),
                     "codeword_hex": bits_to_hex(cw),
-                    "decoded_fid": int(result.fid.value),
-                    "decoded_toi": int(result.toi.value),
+                    "decoded_fid": int(result.fid),
+                    "decoded_toi": int(result.toi),
                     "hamming_distance": int(result.hamming_distance),
                 }
             )
@@ -447,6 +456,7 @@ def generate_iq_vectors(prn_ids: list[int]) -> None:
         write_iq_file(
             str(path_native), iq_native, native_rate, prn_id, duration_s=0.002
         )
+        _gzip_replace(path_native)
 
         # Upsampled: 10.23 MHz (2x oversampling)
         iq_up = generate_iq_epoch(
@@ -454,8 +464,91 @@ def generate_iq_vectors(prn_ids: list[int]) -> None:
         )
         path_up = out_dir / f"prn{prn_id:03d}_10230ksps.iq"
         write_iq_file(str(path_up), iq_up, upsampled_rate, prn_id, duration_s=0.002)
+        _gzip_replace(path_up)
 
-    print(f"[signal] wrote {len(prn_ids) * 2} .iq files → {out_dir}")
+    print(f"[signal] wrote {len(prn_ids) * 2} .iq.gz files → {out_dir}")
+
+
+# ---------------------------------------------------------------------------
+# Decode-direction vectors — expected decoder outputs for frame .bin files
+# ---------------------------------------------------------------------------
+
+
+def generate_decode_vectors() -> None:
+    """Generate expected decode outputs for each standard test message.
+
+    For each of the 5 test messages, derive the expected decoder output
+    independently from the spec (not by running the DUT):
+    - FID, TOI: from the frame_build input parameters
+    - SB2/SB3/SB4 data: from the input bit patterns
+    - WN, ITOW: extracted from SB2 input bits 0..12 and 13..21 (MSB-first)
+    - ToT: computed from LSIS-720 formula (WN×604800 + ITOW×1200 + TOI×12)
+
+    A third party can validate their decoder against these vectors.
+    """
+    out_dir = VECTORS / "decode"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    patterns = {
+        "zeros": lambda n: np.zeros(n, dtype=np.uint8),
+        "ones": lambda n: np.ones(n, dtype=np.uint8),
+        "alternating": lambda n: np.array([i % 2 for i in range(n)], dtype=np.uint8),
+        "sparse": lambda n: np.array(
+            [1 if i % 17 == 0 else 0 for i in range(n)], dtype=np.uint8
+        ),
+        "random": lambda n: np.random.default_rng(0x12345678).integers(
+            0, 2, n, dtype=np.uint8
+        ),
+    }
+
+    for msg_id, desc, fid, toi, sb_pat in TEST_MESSAGES:
+        pat_fn = patterns.get(sb_pat, patterns["zeros"])
+        sb2_data = pat_fn(1176)
+        sb3_data = pat_fn(846)
+        sb4_data = pat_fn(846)
+
+        # Derive WN and ITOW independently from the SB2 input bits, NOT from
+        # the DUT's parse_sb2().  Per LSIS V1.0 §2.4.3.1.6 (LSIS-FID0-520):
+        #   WN   = bits 0..12  (13 bits, MSB first)
+        #   ITOW = bits 13..21 ( 9 bits, MSB first)
+        wn = 0
+        for i in range(13):
+            wn = (wn << 1) | int(sb2_data[i])
+        itow = 0
+        for i in range(13, 22):
+            itow = (itow << 1) | int(sb2_data[i])
+
+        # Compute ToT from the spec formula (LSIS-720), not from compute_tot():
+        #   t_F = WN * SECWEEK + ITOW * BI_d + TOI * F_d
+        # where SECWEEK=604800, BI_d=1200, F_d=12.
+        # ToT is valid when all fields are within range.
+        wn_valid = 0 <= wn <= 8191
+        itow_valid = 0 <= itow <= 503
+        toi_valid = 0 <= toi <= 99
+        tot_valid = wn_valid and itow_valid and toi_valid
+        tot_seconds = (wn * 604800 + itow * 1200 + toi * 12) if tot_valid else None
+
+        vector = {
+            "description": f"Decode vector: {desc}",
+            "spec_ref": "Gateway 7 — decode-direction validation",
+            "input_file": f"../frames/test_message_{msg_id}.bin",
+            "expected": {
+                "fid": fid,
+                "toi": toi,
+                "sb2_data": sb2_data.tolist(),
+                "sb3_data": sb3_data.tolist(),
+                "sb4_data": sb4_data.tolist(),
+                "wn": wn,
+                "itow": itow,
+                "tot_valid": tot_valid,
+                "tot_seconds": tot_seconds,
+            },
+        }
+
+        path = out_dir / f"decode_{msg_id}.json.gz"
+        path.write_bytes(gzip.compress(json.dumps(vector, indent=2).encode()))
+
+    print(f"[decode] wrote {len(TEST_MESSAGES)} decode vectors → {out_dir}")
 
 
 # ---------------------------------------------------------------------------
@@ -478,6 +571,7 @@ def main() -> None:
     generate_ldpc_vectors()
     generate_iq_vectors(prn_ids)
     generate_parsed_vectors()
+    generate_decode_vectors()
 
     print("\nDone. To validate the vectors against this implementation:")
     print("  python tests/validate_test_vectors.py")

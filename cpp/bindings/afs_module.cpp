@@ -13,6 +13,7 @@
 #include "lunalink/signal/iq_mux.hpp"
 #include "lunalink/signal/modulator.hpp"
 #include "lunalink/signal/sync_detector.hpp"
+#include "lunalink/core/sise.hpp"
 
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -949,4 +950,105 @@ TotResult
   m.attr("WN_MAX") = kWnMax;
   m.attr("ITOW_MAX") = kItowMax;
   m.attr("TOT_TOI_MAX") = kTotToiMax;
+
+  // ─── SISE (Signal-In-Space Error) bindings (Gateway 7) ──────────────────
+
+  using lunalink::core::SiseStatus;
+  using lunalink::core::SiseVec;
+  using lunalink::core::SiseResult;
+  using lunalink::core::SisePercentileResult;
+
+  py::enum_<SiseStatus>(m, "SiseStatus")
+      .value("OK", SiseStatus::kOk)
+      .value("INVALID_INPUT", SiseStatus::kInvalidInput)
+      .value("EMPTY_DATA", SiseStatus::kEmptyData)
+      .value("FAULT_DETECTED", SiseStatus::kFaultDetected)
+      .export_values();
+
+  py::class_<SiseVec>(m, "SiseVec")
+      .def(py::init<double, double, double, double>(),
+           py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0,
+           py::arg("ct") = 0.0)
+      .def_readwrite("x", &SiseVec::x)
+      .def_readwrite("y", &SiseVec::y)
+      .def_readwrite("z", &SiseVec::z)
+      .def_readwrite("ct", &SiseVec::ct);
+
+  py::class_<SiseResult>(m, "SiseResult")
+      .def_readonly("status", &SiseResult::status)
+      .def_readonly("position_error_m", &SiseResult::position_error_m)
+      .def_readonly("velocity_error_mps", &SiseResult::velocity_error_mps);
+
+  py::class_<SisePercentileResult>(m, "SisePercentileResult")
+      .def_readonly("status", &SisePercentileResult::status)
+      .def_readonly("position_percentile_m", &SisePercentileResult::position_percentile_m)
+      .def_readonly("velocity_percentile_mps", &SisePercentileResult::velocity_percentile_mps)
+      .def_readonly("position_pass", &SisePercentileResult::position_pass)
+      .def_readonly("velocity_pass", &SisePercentileResult::velocity_pass);
+
+  m.def("compute_sise",
+        [](SiseVec pos_true, SiseVec pos_broadcast, SiseVec vel_true, SiseVec vel_broadcast) {
+          return lunalink::core::compute_sise(pos_true, pos_broadcast,
+                                              vel_true, vel_broadcast);
+        },
+        py::arg("pos_true"),
+        py::arg("pos_broadcast"),
+        py::arg("vel_true"),
+        py::arg("vel_broadcast"),
+        R"(Compute single-epoch SISE per LSIS V1.0 §2.2.2. [LSIS-SISE]
+
+4-D RSS of (true - broadcast) position+clock and velocity+clock-drift.
+
+Parameters
+----------
+pos_true : SiseVec
+    True position (x,y,z in metres) + clock bias (ct in metres).
+pos_broadcast : SiseVec
+    Broadcast position + clock bias.
+vel_true : SiseVec
+    True velocity (x,y,z in m/s) + clock drift (ct in m/s).
+vel_broadcast : SiseVec
+    Broadcast velocity + clock drift.
+
+Returns
+-------
+SiseResult
+    Result with status, position_error_m, and velocity_error_mps.
+)");
+
+  m.def("compute_sise_percentile",
+        [](py::array_t<double, py::array::c_style | py::array::forcecast> pos_errors,
+           py::array_t<double, py::array::c_style | py::array::forcecast> vel_errors,
+           double percentile) {
+          const auto n = static_cast<size_t>(pos_errors.size());
+          if (static_cast<size_t>(vel_errors.size()) != n) {
+            throw py::value_error("pos_errors and vel_errors must have same length");
+          }
+          return lunalink::core::compute_sise_percentile(
+              pos_errors.data(), vel_errors.data(), n, percentile);
+        },
+        py::arg("pos_errors_m"),
+        py::arg("vel_errors_mps"),
+        py::arg("percentile") = 0.95,
+        R"(Compute percentile SISE over N epochs. [LSIS-SISE]
+
+Parameters
+----------
+pos_errors_m : array of float64
+    Position errors in metres for each epoch.
+vel_errors_mps : array of float64
+    Velocity errors in m/s for each epoch.
+percentile : float, optional
+    Percentile to compute (0.0..1.0, default 0.95).
+
+Returns
+-------
+SisePercentileResult
+    Result with status, percentile values, and pass/fail against spec limits
+    (40 m position, 0.01 m/s velocity).
+)");
+
+  m.attr("SISE_POSITION_LIMIT_M") = lunalink::core::kSisePositionLimitM;
+  m.attr("SISE_VELOCITY_LIMIT_MPS") = lunalink::core::kSiseVelocityLimitMps;
+  m.attr("SPEED_OF_LIGHT_MPS") = lunalink::core::kSpeedOfLightMps;
 }

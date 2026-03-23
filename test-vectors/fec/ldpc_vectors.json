@@ -1,7 +1,7 @@
 {
   "description": "5G NR LDPC encode test vectors (SF2/SF3/SF4). codeword_hex fields are truncated to first/last 64 bits; run ldpc_encode() to reproduce the full codeword.",
   "spec_ref": "LSIS-AFS SF2/SF3/SF4",
-  "generated": "2026-03-11T23:16:56+00:00",
+  "generated": "2026-03-23T19:29:06+00:00",
   "vectors": [
     {
       "subframe": "SF2",

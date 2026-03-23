@@ -43,6 +43,9 @@ from lunalink.afs._afs import SB4_PAYLOAD_BITS as SB4_PAYLOAD_BITS
 from lunalink.afs._afs import SEC_WEEK as SEC_WEEK
 from lunalink.afs._afs import SECONDARY_CODE_COUNT as SECONDARY_CODE_COUNT
 from lunalink.afs._afs import SECONDARY_CODE_LENGTH as SECONDARY_CODE_LENGTH
+from lunalink.afs._afs import SISE_POSITION_LIMIT_M as SISE_POSITION_LIMIT_M
+from lunalink.afs._afs import SISE_VELOCITY_LIMIT_MPS as SISE_VELOCITY_LIMIT_MPS
+from lunalink.afs._afs import SPEED_OF_LIGHT_MPS as SPEED_OF_LIGHT_MPS
 from lunalink.afs._afs import SUBFRAME_TYPE_BITS as SUBFRAME_TYPE_BITS
 from lunalink.afs._afs import SYMBOL_RATE as SYMBOL_RATE
 from lunalink.afs._afs import SYNC_LENGTH as SYNC_LENGTH
@@ -78,6 +81,10 @@ from lunalink.afs._afs import PrnStatus as PrnStatus
 from lunalink.afs._afs import Sb2ParseResult as Sb2ParseResult
 from lunalink.afs._afs import Sb3ParseResult as Sb3ParseResult
 from lunalink.afs._afs import Sb4ParseResult as Sb4ParseResult
+from lunalink.afs._afs import SisePercentileResult as SisePercentileResult
+from lunalink.afs._afs import SiseResult as SiseResult
+from lunalink.afs._afs import SiseStatus as SiseStatus
+from lunalink.afs._afs import SiseVec as SiseVec
 from lunalink.afs._afs import SubframeDecodeResult as SubframeDecodeResult
 from lunalink.afs._afs import SyncDetectorStatus as SyncDetectorStatus
 from lunalink.afs._afs import SyncResult as SyncResult
@@ -91,6 +98,8 @@ from lunalink.afs._afs import bch_decode as _bch_decode
 from lunalink.afs._afs import bch_encode as _bch_encode
 from lunalink.afs._afs import block_deinterleave_soft as _block_deinterleave_soft
 from lunalink.afs._afs import commit_frame as _commit_frame
+from lunalink.afs._afs import compute_sise as _compute_sise
+from lunalink.afs._afs import compute_sise_percentile as _compute_sise_percentile
 from lunalink.afs._afs import compute_tot as _compute_tot
 from lunalink.afs._afs import default_matched_assignment as _default_matched_assignment
 from lunalink.afs._afs import frame_build as _frame_build
@@ -237,6 +246,16 @@ __all__ = [
     "SB2_PAYLOAD_BITS",
     "SB3_PAYLOAD_BITS",
     "SB4_PAYLOAD_BITS",
+    # Gateway 7: SISE
+    "SiseStatus",
+    "SiseVec",
+    "SPEED_OF_LIGHT_MPS",
+    "SiseResult",
+    "SisePercentileResult",
+    "compute_sise",
+    "compute_sise_percentile",
+    "SISE_POSITION_LIMIT_M",
+    "SISE_VELOCITY_LIMIT_MPS",
 ]
 
 
@@ -500,6 +519,64 @@ def compute_tot(wn: int, itow: int, toi: int, delta_t_lrt: float = 0.0) -> TotRe
         Result with status and t_f (time since LRT epoch in seconds).
     """
     return _compute_tot(wn, itow, toi, delta_t_lrt)
+
+
+# ---------------------------------------------------------------------------
+# Gateway 7: SISE (Signal-In-Space Error)
+# ---------------------------------------------------------------------------
+
+
+def compute_sise(
+    pos_true: SiseVec,
+    pos_broadcast: SiseVec,
+    vel_true: SiseVec,
+    vel_broadcast: SiseVec,
+) -> SiseResult:
+    """Compute single-epoch SISE (Signal-In-Space Error).
+
+    RSS of (true - broadcast) position and velocity vectors.
+
+    Parameters
+    ----------
+    pos_true : Vec3
+        True position in metres (any consistent frame).
+    pos_broadcast : Vec3
+        Broadcast position in metres.
+    vel_true : Vec3
+        True velocity in m/s.
+    vel_broadcast : Vec3
+        Broadcast velocity in m/s.
+
+    Returns
+    -------
+    SiseResult
+        Result with status, position_error_m, and velocity_error_mps.
+    """
+    return _compute_sise(pos_true, pos_broadcast, vel_true, vel_broadcast)
+
+
+def compute_sise_percentile(
+    pos_errors_m: NDArray[np.float64],
+    vel_errors_mps: NDArray[np.float64],
+    percentile: float = 0.95,
+) -> SisePercentileResult:
+    """Compute percentile SISE over N epochs.
+
+    Parameters
+    ----------
+    pos_errors_m : array of float64
+        Position errors in metres for each epoch.
+    vel_errors_mps : array of float64
+        Velocity errors in m/s for each epoch.
+    percentile : float, optional
+        Percentile to compute (0.0..1.0, default 0.95).
+
+    Returns
+    -------
+    SisePercentileResult
+        Result with status, percentile values, and pass/fail against spec limits.
+    """
+    return _compute_sise_percentile(pos_errors_m, vel_errors_mps, percentile)
 
 
 # ---------------------------------------------------------------------------

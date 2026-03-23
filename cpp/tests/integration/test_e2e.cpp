@@ -590,3 +590,54 @@ TEST_CASE("E2E: frame_decode completes in < 1 second", "[e2e][rx]") {
 
   CHECK(elapsed_ms < 1000);
 }
+
+TEST_CASE("[LSIS-TABLE11][e2e] all 12 interim codes round-trip", "[e2e]") {
+  // Verify all 12 interim test codes (Table 11, PRN 1-12) through the full
+  // frame-level E2E pipeline.  FID cycles 0-3 across PRNs to cover all
+  // frame identifier values.  Each PRN uses a different TOI and RNG seed
+  // to ensure independent test data.
+  for (uint8_t prn = 1; prn <= 12; ++prn) {
+    DYNAMIC_SECTION("PRN " << static_cast<int>(prn)) {
+      const auto fid = Fid{static_cast<uint8_t>((prn - 1U) % 4U)};
+      const auto toi = Toi{static_cast<uint8_t>(prn * 7U)};
+      std::mt19937 rng(1000U + prn); // Deterministic per-PRN seed
+
+      std::array<uint8_t, kSb2DataBits> sb2_data{};
+      std::array<uint8_t, kSb3DataBits> sb3_data{};
+      std::array<uint8_t, kSb4DataBits> sb4_data{};
+      random_bits(sb2_data, rng);
+      random_bits(sb3_data, rng);
+      random_bits(sb4_data, rng);
+
+      // TX: Build frame
+      std::array<uint8_t, kFrameLength> tx_frame{};
+      LdpcEncodeWorkspace enc_ws{};
+      FrameBuildWorkspace fbw{};
+      const auto build_status =
+          frame_build(fid, toi, sb2_data, sb3_data, sb4_data, tx_frame, enc_ws, fbw);
+      REQUIRE(build_status == FrameStatus::kOk);
+
+      // Channel: binary → bipolar → AWGN at Eb/N0 = 3 dB
+      std::array<float, kFrameLength> rx_symbols{};
+      binary_to_bipolar(tx_frame, rx_symbols);
+      add_awgn(rx_symbols, 3.0F, rng);
+
+      // RX: Decode
+      NullTelemetryHal hal;
+      FrameDecodeResult result{};
+      auto workspace = std::make_unique<FrameDecodeWorkspace>();
+      const auto status = frame_decode(rx_symbols, result, *workspace, hal);
+
+      // Verify bit-exact recovery
+      REQUIRE(status == FrameDecodeStatus::kOk);
+      CHECK(result.bch.fid == fid);
+      CHECK(result.bch.toi == toi);
+      CHECK(result.sb2.crc_ok);
+      CHECK(result.sb3.crc_ok);
+      CHECK(result.sb4.crc_ok);
+      CHECK(std::equal(sb2_data.begin(), sb2_data.end(), workspace->sb2_data.begin()));
+      CHECK(std::equal(sb3_data.begin(), sb3_data.end(), workspace->sb3_data.begin()));
+      CHECK(std::equal(sb4_data.begin(), sb4_data.end(), workspace->sb4_data.begin()));
+    }
+  }
+}

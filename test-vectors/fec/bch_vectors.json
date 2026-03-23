@@ -2,7 +2,7 @@
   "description": "BCH(51,8) encode/decode test vectors. codeword_bits[i] is the i-th binary symbol (0 or 1, 52 total).",
   "spec_ref": "LSIS-AFS-501",
   "codeword_length": 52,
-  "generated": "2026-03-11T23:16:56+00:00",
+  "generated": "2026-03-23T19:29:06+00:00",
   "vectors": [
     {
       "fid": 0,

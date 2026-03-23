@@ -23,8 +23,8 @@ import sys
 from collections import defaultdict
 from datetime import UTC, datetime
 
-# Regex for requirement tags: [LSIS-AFS-101], [SW-SAF-01], etc.
-TAG_RE = re.compile(r"\[(?:LSIS-AFS-\d+|SW-SAF-\d+)\]")
+# Regex for requirement tags: [LSIS-AFS-101], [LSIS-SISE], [SW-SAF-01], etc.
+TAG_RE = re.compile(r"\[(?:LSIS-AFS-\d+|LSIS-SISE|SW-SAF-\d+)\]")
 
 
 def find_files(root, dirs, extensions):
@@ -97,6 +97,7 @@ def main():  # noqa: C901
     code_dirs = [
         "cpp/include",
         "cpp/codes",
+        "cpp/core",
         "cpp/encoding",
         "cpp/messages",
         "cpp/signal",

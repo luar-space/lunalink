@@ -2,6 +2,7 @@
 
 import os
 import tempfile
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -37,12 +38,16 @@ from lunalink.afs import (
     FrameStatus,
     MessageParseStatus,
     MessageType,
+    SiseStatus,
+    SiseVec,
     SyncDetectorStatus,
     TotStatus,
     bch_decode,
     bch_encode,
     block_deinterleave_soft,
     commit_frame,
+    compute_sise,
+    compute_sise_percentile,
     compute_tot,
     default_matched_assignment,
     frame_build,
@@ -70,6 +75,40 @@ from lunalink.afs import (
     weil10230_code,
     write_iq_file,
 )
+
+
+class TestSise:
+    """Test SISE Python wrappers."""
+
+    def test_compute_sise_zero_error(self) -> None:
+        """Identical vectors produce zero error."""
+        pos = SiseVec(1000.0, 2000.0, 3000.0)
+        vel = SiseVec(1.0, 2.0, 3.0)
+        r = compute_sise(pos, pos, vel, vel)
+        assert r.status == SiseStatus.OK
+        assert abs(r.position_error_m) < 1e-15
+        assert abs(r.velocity_error_mps) < 1e-15
+
+    def test_compute_sise_known_error(self) -> None:
+        """3-4-5 triangle produces 5 m position error."""
+        r = compute_sise(
+            SiseVec(100.0, 200.0, 300.0),
+            SiseVec(103.0, 204.0, 300.0),
+            SiseVec(10.0, 20.0, 30.0),
+            SiseVec(10.0, 20.0, 30.0),
+        )
+        assert r.status == SiseStatus.OK
+        assert abs(r.position_error_m - 5.0) < 1e-12
+
+    def test_compute_sise_percentile(self) -> None:
+        """95th percentile of 1..100 is 95."""
+        pos = np.arange(1.0, 101.0)
+        vel = np.arange(1.0, 101.0) * 1e-4
+        r = compute_sise_percentile(pos, vel, 0.95)
+        assert r.status == SiseStatus.OK
+        assert abs(r.position_percentile_m - 95.0) < 1e-12
+        assert not r.position_pass  # 95 > 40
+        assert r.velocity_pass  # 0.0095 <= 0.01
 
 
 class TestPrnCode:
@@ -812,7 +851,7 @@ class TestParseSb2:
         sb2_float = np.zeros(SB2_DATA_BITS, dtype=np.float32)
         sb2_float[0] = 1.9  # would truncate to 1 if coerced
         with pytest.raises(TypeError):
-            parse_sb2(sb2_float)
+            parse_sb2(sb2_float)  # type: ignore[arg-type]  # intentional wrong dtype
 
     def test_data_offset_and_payload_size(self):
         """data_offset and payload_size cover the full SB2 data region."""
@@ -999,3 +1038,79 @@ class TestComputeTot:
             + toi_val * FRAME_DURATION_SEC
         )
         assert tot.t_f == float(expected)
+
+
+class TestDecodeVectors:
+    """Validate decode-direction test vectors from test-vectors/decode/."""
+
+    DECODE_DIR = Path(__file__).resolve().parent.parent / "test-vectors" / "decode"
+
+    @pytest.mark.skipif(
+        not (
+            Path(__file__).resolve().parent.parent / "test-vectors" / "decode"
+        ).exists(),
+        reason="decode vectors not generated (run generate_test_vectors.py)",
+    )
+    @pytest.mark.parametrize(
+        "vector_file",
+        sorted(
+            (Path(__file__).resolve().parent.parent / "test-vectors" / "decode").glob(
+                "decode_*.json.gz"
+            )
+        )
+        if (Path(__file__).resolve().parent.parent / "test-vectors" / "decode").exists()
+        else [],
+        ids=lambda p: p.stem,
+    )
+    def test_decode_vector(self, vector_file: Path) -> None:
+        """Load a .bin frame artifact, decode it, compare against expected JSON."""
+        import json
+        import struct
+
+        import gzip
+
+        vector = json.loads(gzip.decompress(vector_file.read_bytes()))
+        expected = vector["expected"]
+
+        # Load the actual .bin artifact referenced by the decode vector
+        bin_path = (vector_file.parent / vector["input_file"]).resolve()
+        assert bin_path.exists(), f"Missing frame artifact: {bin_path}"
+        raw = bin_path.read_bytes()
+
+        # Parse 64-byte interop header: magic(8) + version(4) + framelen(4)
+        #                                + PRN(4) + timestamp(8) + reserved(36)
+        assert len(raw) == 64 + 6000, f"Bad .bin size: {len(raw)}"
+        magic = raw[:8]
+        assert magic == b"LSISAFS\x00", f"Bad magic: {magic!r}"
+        (frame_len,) = struct.unpack_from("<I", raw, 12)
+        assert frame_len == 6000
+
+        # Extract the 6000 binary symbols (each byte is 0x00 or 0x01)
+        frame = np.frombuffer(raw[64:], dtype=np.uint8)
+        assert len(frame) == FRAME_LENGTH
+
+        # Convert to bipolar and decode
+        bipolar = np.where(frame == 0, 1.0, -1.0).astype(np.float32)
+        result, dec_sb2, dec_sb3, dec_sb4, status = frame_decode(bipolar)
+        assert status == FrameDecodeStatus.OK
+        assert int(result.bch.fid) == expected["fid"]
+        assert int(result.bch.toi) == expected["toi"]
+
+        # Bit-exact data recovery against expected payloads
+        sb2_expected = np.array(expected["sb2_data"], dtype=np.uint8)
+        sb3_expected = np.array(expected["sb3_data"], dtype=np.uint8)
+        sb4_expected = np.array(expected["sb4_data"], dtype=np.uint8)
+        np.testing.assert_array_equal(dec_sb2, sb2_expected)
+        np.testing.assert_array_equal(dec_sb3, sb3_expected)
+        np.testing.assert_array_equal(dec_sb4, sb4_expected)
+
+        # Parse SB2 and verify WN/ITOW/ToT
+        sb2_parsed = parse_sb2(dec_sb2)
+        assert sb2_parsed.status == MessageParseStatus.OK
+        assert sb2_parsed.wn == expected["wn"]
+        assert sb2_parsed.itow == expected["itow"]
+
+        if expected.get("tot_valid", True):
+            tot = compute_tot(sb2_parsed.wn, sb2_parsed.itow, expected["toi"])
+            assert tot.status == TotStatus.OK
+            assert tot.t_f == expected["tot_seconds"]

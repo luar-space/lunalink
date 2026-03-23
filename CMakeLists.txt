@@ -129,6 +129,8 @@ add_library(lunalink_core
     cpp/signal/iq_mux.cpp
     cpp/signal/correlator.cpp
     cpp/signal/sync_detector.cpp
+    # core/ — Utilities (Gateway 7)
+    cpp/core/sise.cpp
     # platform/ — System infrastructure
     cpp/platform/sci_header.cpp
     cpp/platform/post.cpp
@@ -196,6 +198,8 @@ if(BUILD_TESTING)
         cpp/tests/signal/test_iq_mux.cpp
         cpp/tests/signal/test_correlator.cpp
         cpp/tests/signal/test_sync_detector.cpp
+        # core/
+        cpp/tests/core/test_sise.cpp
         # platform/
         cpp/tests/platform/test_safety.cpp
         # integration/
@@ -231,6 +235,7 @@ if(BUILD_TESTING)
     # between lunalink_core and the SWIFI test binary.
     if(LUNALINK_FAULT_INJECTION)
     add_executable(lunalink_swifi_tests
+        cpp/tests/core/test_swifi_core.cpp
         cpp/tests/platform/test_swifi_platform.cpp
         cpp/tests/encoding/test_swifi_encoding.cpp
         cpp/tests/signal/test_swifi_signal.cpp

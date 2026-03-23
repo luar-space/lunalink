@@ -182,12 +182,12 @@ Gateway 6: Message Parsing & Time
      - Notes
    * - LSIS-601
      - Message Parsers (8 spec-defined + 14 SISICD types)
-     - TODO
-     - GD6.1
+     - ✅
+     - Implemented in ``message_parser.cpp``; SB2 WN/ITOW, SB3/SB4 type routing
    * - LSIS-720
      - Calculate Time of Transmission (ToT)
-     - TODO
-     - GD6.2
+     - ✅
+     - Implemented [Hardened] in ``time_of_transmission.cpp``; CFI sentinels
    * - LSIS-FIG6
      - MSB-first bit and byte ordering
      - ✅
@@ -206,12 +206,24 @@ Gateway 7: Validation & Utilities
      - Notes
    * - LSIS-SISE
      - Implement SISE position/velocity error calc
-     - TODO
-     - GD7.2
+     - ✅
+     - Implemented [Hardened] in ``sise.cpp``; RSS + 95th percentile; 40 m / 0.01 m/s limits
    * - LSIS-TABLE11
      - All 12 interim test codes working (PRN 1-12)
      - ✅
      - Verified in spreading tests
+   * - LSIS-E2E
+     - End-to-end round-trip: encode → signal → decode → verify
+     - ✅
+     - 9 E2E tests in ``test_e2e.cpp``; PRN 1-12; FER sweep 3 SNR points
+   * - LSIS-INTEROP
+     - Interoperability test vectors (5 std messages, PRN 1-12)
+     - ✅
+     - ``generate_test_vectors.py``; levels 1-5 (codes → signal → parse)
+   * - LSIS-PERF
+     - Performance benchmarks (throughput, latency, real-time)
+     - ✅
+     - Frame decode < 1 s; WCET profiling; BER waterfall; quantization
 
 Gateway 8: Documentation & Examples
 ------------------------------------

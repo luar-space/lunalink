@@ -487,7 +487,7 @@ TEST_CASE("WindowedWatchdog: tick, reset, evaluate", "[safety]") {
 // Coverage: aliasing detection on frame_decode workspace
 // ===========================================================================
 
-TEST_CASE("frame_decode: aliasing workspace with rx_symbols detected", "[safety]") {
+TEST_CASE("[SW-SAF-06] frame_decode: aliasing workspace with rx_symbols detected", "[safety]") {
   // Pass rx_symbols pointing INTO the workspace memory — spans_overlap fires.
   auto ws = std::make_unique<FrameDecodeWorkspace>();
   std::span<const float> aliased_rx(

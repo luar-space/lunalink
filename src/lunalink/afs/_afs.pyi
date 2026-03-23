@@ -391,3 +391,48 @@ TOT_TOI_MAX: int
 SB2_PAYLOAD_BITS: int
 SB3_PAYLOAD_BITS: int
 SB4_PAYLOAD_BITS: int
+
+# Gateway 7: SISE (Signal-In-Space Error)
+
+class SiseStatus(IntEnum):
+    OK = 0x5A
+    INVALID_INPUT = 0xA5
+    EMPTY_DATA = 0x33
+    FAULT_DETECTED = 0x99
+
+class SiseVec:
+    x: float
+    y: float
+    z: float
+    ct: float
+    def __init__(
+        self, x: float = 0.0, y: float = 0.0, z: float = 0.0, ct: float = 0.0
+    ) -> None: ...
+
+class SiseResult:
+    status: SiseStatus
+    position_error_m: float
+    velocity_error_mps: float
+
+class SisePercentileResult:
+    status: SiseStatus
+    position_percentile_m: float
+    velocity_percentile_mps: float
+    position_pass: bool
+    velocity_pass: bool
+
+def compute_sise(
+    pos_true: SiseVec,
+    pos_broadcast: SiseVec,
+    vel_true: SiseVec,
+    vel_broadcast: SiseVec,
+) -> SiseResult: ...
+def compute_sise_percentile(
+    pos_errors_m: NDArray[np.float64],
+    vel_errors_mps: NDArray[np.float64],
+    percentile: float = 0.95,
+) -> SisePercentileResult: ...
+
+SISE_POSITION_LIMIT_M: float
+SISE_VELOCITY_LIMIT_MPS: float
+SPEED_OF_LIGHT_MPS: float

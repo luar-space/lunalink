@@ -1,14 +1,25 @@
 {
   "version": "1.0",
-  "timestamp": "2026-03-11T23:16:56+00:00",
+  "timestamp": "2026-03-23T19:29:06+00:00",
   "frame_id": "test_2_all_ones",
   "description": "All ones (inverse baseline)",
   "subframe1": {
     "fid": 3,
     "toi": 99
   },
-  "subframe2": null,
-  "subframe3": null,
-  "subframe4": null,
-  "notes": "subframes 2-4 not yet implemented (GD3.2 pending)"
+  "subframe2": {
+    "data_bits": 1176,
+    "crc_bits": 24,
+    "total_bits": 1200
+  },
+  "subframe3": {
+    "data_bits": 846,
+    "crc_bits": 24,
+    "total_bits": 870
+  },
+  "subframe4": {
+    "data_bits": 846,
+    "crc_bits": 24,
+    "total_bits": 870
+  }
 }
