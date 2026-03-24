@@ -1,0 +1,16 @@
+# LSIS-AFS Table 14: Frame Structure Constants
+parameter,value,unit,description
+FRAME_SYMBOLS,6000,symbols,Total frame length
+FRAME_DURATION,12.0,seconds,Frame duration
+SYNC_PATTERN_LENGTH,68,symbols,Sync pattern
+SB1_ENCODED_LENGTH,52,symbols,Subframe 1 BCH-encoded
+SB2_DATA_BITS,1176,bits,Subframe 2 data
+SB2_TOTAL_BITS,1200,bits,Subframe 2 data + CRC-24
+SB2_ENCODED_SYMBOLS,2400,symbols,Subframe 2 LDPC-encoded
+SB34_DATA_BITS,846,bits,Subframe 3/4 data
+SB34_TOTAL_BITS,870,bits,Subframe 3/4 data + CRC-24
+SB34_ENCODED_SYMBOLS,1740,symbols,Subframe 3/4 LDPC-encoded
+CRC24_LENGTH,24,bits,CRC-24 checksum
+INTERLEAVER_ROWS,60,,Block interleaver rows
+INTERLEAVER_COLS,98,,Block interleaver columns
+INTERLEAVER_SIZE,5880,symbols,Interleaved symbols (SB2+SB3+SB4)

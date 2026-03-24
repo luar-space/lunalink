@@ -10,7 +10,7 @@ alignas(64) LUNALINK_LUT_SECTION constinit const std::array<WeilParams, 210> kPr
 
     {5111U, 412U},   // PRN 1
     {5109U, 161U},   // PRN 2
-    {4858U, 824U},   // PRN 3
+    {5108U, 1U},     // PRN 3
     {5106U, 303U},   // PRN 4
     {5103U, 207U},   // PRN 5
     {5101U, 4971U},  // PRN 6
@@ -45,7 +45,7 @@ alignas(64) LUNALINK_LUT_SECTION constinit const std::array<WeilParams, 210> kPr
     {4965U, 9489U},  // PRN 35
     {4920U, 4193U},  // PRN 36
     {4917U, 9947U},  // PRN 37
-    {0U, 0U},        // PRN 38
+    {4858U, 824U},   // PRN 38
     {4847U, 864U},   // PRN 39
     {4790U, 347U},   // PRN 40
     {4770U, 677U},   // PRN 41
@@ -347,14 +347,14 @@ alignas(64) LUNALINK_LUT_SECTION constinit const std::array<uint16_t, 210> kTert
     570U, // PRN 124
     573U, // PRN 125
     574U, // PRN 126
-    0U,   // PRN 127
+    575U, // PRN 127
     576U, // PRN 128
     577U, // PRN 129
     578U, // PRN 130
     579U, // PRN 131
-    0U,   // PRN 132
+    580U, // PRN 132
     582U, // PRN 133
-    0U,   // PRN 134
+    586U, // PRN 134
     591U, // PRN 135
     592U, // PRN 136
     594U, // PRN 137

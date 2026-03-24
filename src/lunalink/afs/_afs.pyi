@@ -301,6 +301,46 @@ PRN_COUNT: int
 CHIP_RATE_HZ: float
 DOPPLER_BIN_SPACING_HZ: float
 
+# Signal parameters (signal_parameters.csv)
+CENTER_FREQUENCY_HZ: float
+AFS_I_CHIP_RATE_HZ: float
+AFS_Q_CHIP_RATE_HZ: float
+
+# BCH metadata (encoding_parameters.csv)
+BCH_GENERATOR_POLY: int
+BCH_INPUT_BITS: int
+
+# LDPC metadata (encoding_parameters.csv)
+LDPC_BG2_ROWS: int
+LDPC_BG2_COLS: int
+LDPC_BG2_KB: int
+LDPC_SF2_ZC: int
+LDPC_SF2_ILS: int
+LDPC_SF34_ZC: int
+LDPC_SF34_ILS: int
+
+# Time system (time_system_parameters.csv)
+TOI_COUNT: int
+
+# SB2 field layout (sb2_bit_layout.csv)
+SB2_HEALTH_OFFSET: int
+SB2_HEALTH_BITS: int
+SB2_CED_OFFSET: int
+SB2_CED_BITS: int
+SB2_TIMECONV_OFFSET: int
+SB2_TIMECONV_BITS: int
+SB2_SPARE_OFFSET: int
+SB2_SPARE_BITS: int
+
+# File format magic numbers (file_format_headers.csv)
+MAGIC_IQSG: int
+MAGIC_IQS2: int
+MAGIC_LSIS: int
+MAGIC_FRAM: int
+IQ_HEADER_BYTES: int
+LSIS_HEADER_BYTES: int
+FRAM_HEADER_BYTES: int
+
 def legendre_cache_init() -> LegendreStatus: ...
 def legendre_10223_checksum() -> int: ...
 def legendre_1499_checksum() -> int: ...

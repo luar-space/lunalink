@@ -1,0 +1,13 @@
+# LSIS-AFS Signal Parameters
+parameter,value,unit,description
+CENTER_FREQUENCY,2491.75,MHz,S-band center frequency
+AFS_I_CHIP_RATE,1.023,Mchip/s,AFS-I Gold code chip rate
+AFS_Q_CHIP_RATE,5.115,Mchip/s,AFS-Q Weil code chip rate
+AFS_I_MODULATION,BPSK(1),,AFS-I modulation type
+AFS_Q_MODULATION,BPSK(10),,AFS-Q modulation type
+SYMBOL_RATE,500,symbols/s,Navigation message symbol rate
+GOLD_CODE_LENGTH,2046,chips,AFS-I primary code length
+WEIL_PRIMARY_LENGTH,10230,chips,AFS-Q primary code length
+SECONDARY_CODE_LENGTH,4,chips,AFS-Q secondary code length
+TERTIARY_CODE_LENGTH,1500,chips,AFS-Q tertiary code length
+MAX_PRN,210,,Maximum PRN number

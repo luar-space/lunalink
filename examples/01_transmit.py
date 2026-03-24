@@ -13,8 +13,12 @@ sb2, sb3, sb4 = make_test_payload("zeros")
 
 # 2. Build frame and generate I/Q samples
 frame, iq = transmit_frame(
-    prn_id=1, fid=0, toi=42,
-    sb2_data=sb2, sb3_data=sb3, sb4_data=sb4,
+    prn_id=1,
+    fid=0,
+    toi=42,
+    sb2_data=sb2,
+    sb3_data=sb3,
+    sb4_data=sb4,
 )
 
 # 3. Write to file with LSISIQ header

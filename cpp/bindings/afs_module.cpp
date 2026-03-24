@@ -12,6 +12,7 @@
 #include "lunalink/signal/correlator.hpp"
 #include "lunalink/signal/iq_mux.hpp"
 #include "lunalink/signal/modulator.hpp"
+#include "lunalink/signal/file_format.hpp"
 #include "lunalink/signal/sync_detector.hpp"
 #include "lunalink/core/sise.hpp"
 
@@ -731,6 +732,46 @@ tuple[FrameDecodeResult, ndarray, ndarray, ndarray, FrameDecodeStatus]
   m.attr("PRN_COUNT") = kPrnCount;
   m.attr("CHIP_RATE_HZ") = kChipRateHz;
   m.attr("DOPPLER_BIN_SPACING_HZ") = kDopplerBinSpacingHz;
+
+  // Signal parameters (signal_parameters.csv)
+  m.attr("CENTER_FREQUENCY_HZ") = kCenterFrequencyHz;
+  m.attr("AFS_I_CHIP_RATE_HZ") = kAfsIChipRateHz;
+  m.attr("AFS_Q_CHIP_RATE_HZ") = kAfsQChipRateHz;
+
+  // BCH metadata (encoding_parameters.csv)
+  m.attr("BCH_GENERATOR_POLY") = kBchGeneratorPoly;
+  m.attr("BCH_INPUT_BITS") = kBchInputBits;
+
+  // LDPC metadata (encoding_parameters.csv)
+  m.attr("LDPC_BG2_ROWS") = kLdpcBg2Rows;
+  m.attr("LDPC_BG2_COLS") = kLdpcBg2Cols;
+  m.attr("LDPC_BG2_KB") = kLdpcBg2Kb;
+  m.attr("LDPC_SF2_ZC") = kLdpcSf2Zc;
+  m.attr("LDPC_SF2_ILS") = kLdpcSf2Ils;
+  m.attr("LDPC_SF34_ZC") = kLdpcSf34Zc;
+  m.attr("LDPC_SF34_ILS") = kLdpcSf34Ils;
+
+  // Time system (time_system_parameters.csv)
+  m.attr("TOI_COUNT") = kToiCount;
+
+  // SB2 field layout (sb2_bit_layout.csv)
+  m.attr("SB2_HEALTH_OFFSET") = kSb2HealthOffset;
+  m.attr("SB2_HEALTH_BITS") = kSb2HealthBits;
+  m.attr("SB2_CED_OFFSET") = kSb2CedOffset;
+  m.attr("SB2_CED_BITS") = kSb2CedBits;
+  m.attr("SB2_TIMECONV_OFFSET") = kSb2TimeConvOffset;
+  m.attr("SB2_TIMECONV_BITS") = kSb2TimeConvBits;
+  m.attr("SB2_SPARE_OFFSET") = kSb2SpareOffset;
+  m.attr("SB2_SPARE_BITS") = kSb2SpareBits;
+
+  // File format magic numbers (file_format_headers.csv)
+  m.attr("MAGIC_IQSG") = kMagicIqsg;
+  m.attr("MAGIC_IQS2") = kMagicIqs2;
+  m.attr("MAGIC_LSIS") = kMagicLsis;
+  m.attr("MAGIC_FRAM") = kMagicFram;
+  m.attr("IQ_HEADER_BYTES") = kIqHeaderBytes;
+  m.attr("LSIS_HEADER_BYTES") = kLsisHeaderBytes;
+  m.attr("FRAM_HEADER_BYTES") = kFramHeaderBytes;
 
   // Legendre cache bindings
   py::enum_<LegendreStatus>(m, "LegendreStatus")

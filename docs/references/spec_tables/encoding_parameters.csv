@@ -1,0 +1,20 @@
+# LSIS-AFS Encoding Parameters
+parameter,value,description
+BCH_TYPE,"BCH(51 8)",BCH code for Subframe 1
+BCH_GENERATOR_POLY,0x1F3,"g(x) = x^8 + x^7 + x^6 + x^5 + x + 1"
+BCH_INPUT_BITS,9,SB1 data bits (FID + TOI)
+BCH_OUTPUT_SYMBOLS,52,SB1 encoded symbols (1 prepended + 51 LFSR)
+CRC24_POLY,0x864CFB,"CRC-24/LTE-A polynomial"
+CRC24_INIT,0x000000,Initial CRC register value
+LDPC_BASE_GRAPH,BG2,3GPP TS 38.212 Base Graph 2
+LDPC_SB2_ZC,120,Lifting size for SB2
+LDPC_SB2_ILS,7,Lifting set index for SB2
+LDPC_SB2_K,1200,Systematic bits for SB2
+LDPC_SB2_OUTPUT,2400,Encoded symbols for SB2
+LDPC_SB34_ZC,88,Lifting size for SB3/SB4
+LDPC_SB34_ILS,5,Lifting set index for SB3/SB4
+LDPC_SB34_K,880,"Systematic bits for SB3/SB4 (870 data + 10 filler)"
+LDPC_SB34_OUTPUT,1740,Encoded symbols for SB3/SB4
+LDPC_BG2_ROWS,42,Base graph rows
+LDPC_BG2_COLS,52,Base graph columns
+LDPC_BG2_KB,10,Information columns

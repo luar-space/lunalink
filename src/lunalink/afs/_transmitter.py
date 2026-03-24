@@ -101,6 +101,5 @@ def make_test_payload(
             rng.integers(0, 2, size=n, dtype=np.uint8) for n in sizes
         )
 
-    raise ValueError(
-        f"Unknown pattern {pattern!r}; expected 'zeros', 'ones', 'alternating', or 'random'"
-    )
+    valid = "'zeros', 'ones', 'alternating', or 'random'"
+    raise ValueError(f"Unknown pattern {pattern!r}; expected {valid}")

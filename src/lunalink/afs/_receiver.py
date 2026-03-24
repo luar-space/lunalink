@@ -10,11 +10,12 @@ from lunalink.afs._results import DecodeResult, SubframeResult, TimeOfTransmissi
 from lunalink.afs.signal import (
     BchStatus,
     FrameDecodeStatus,
-    MessageParseStatus,
     TotStatus,
     compute_tot,
-    frame_decode as _frame_decode_low,
     parse_sb2,
+)
+from lunalink.afs.signal import (
+    frame_decode as _frame_decode_low,
 )
 
 
@@ -94,15 +95,14 @@ def receive_frame(
     time: TimeOfTransmission | None = None
     if raw.bch.status == BchStatus.OK and sb2.crc_ok:
         sb2_parsed = parse_sb2(sb2_data)
-        if sb2_parsed.status == MessageParseStatus.OK:
-            tot = compute_tot(sb2_parsed.wn, sb2_parsed.itow, int(raw.bch.toi))
-            if tot.status == TotStatus.OK:
-                time = TimeOfTransmission(
-                    wn=sb2_parsed.wn,
-                    itow=sb2_parsed.itow,
-                    toi=int(raw.bch.toi),
-                    t_f=tot.t_f,
-                )
+        tot = compute_tot(sb2_parsed.wn, sb2_parsed.itow, int(raw.bch.toi))
+        if tot.status == TotStatus.OK:
+            time = TimeOfTransmission(
+                wn=sb2_parsed.wn,
+                itow=sb2_parsed.itow,
+                toi=int(raw.bch.toi),
+                t_f=tot.t_f,
+            )
 
     result = DecodeResult(
         fid=int(raw.bch.fid),

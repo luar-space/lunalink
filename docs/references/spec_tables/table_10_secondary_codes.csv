@@ -1,0 +1,6 @@
+# LSIS-AFS Table 10: Secondary Codes (4 chips each)
+id,chip0,chip1,chip2,chip3
+S0,1,1,1,0
+S1,0,1,1,1
+S2,1,0,1,1
+S3,1,1,0,1

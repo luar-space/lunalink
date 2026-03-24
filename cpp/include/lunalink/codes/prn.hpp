@@ -11,6 +11,13 @@ inline constexpr uint16_t kGoldChipLength = 2046;
 inline constexpr uint16_t kWeil10230ChipLength = 10230;
 inline constexpr uint16_t kWeil1500ChipLength = 1500;
 
+/// S-band center frequency (Hz). LSIS V1.0 §2.3.
+inline constexpr double kCenterFrequencyHz = 2491.75e6;
+/// AFS-I Gold code chip rate (Hz). LSIS V1.0 §2.3.
+inline constexpr double kAfsIChipRateHz = 1.023e6;
+/// AFS-Q Weil code chip rate (Hz). LSIS V1.0 §2.3.
+inline constexpr double kAfsQChipRateHz = 5.115e6;
+
 /// Tag type for nominal type safety via TmrCheckedId.
 struct PrnIdTag {};
 

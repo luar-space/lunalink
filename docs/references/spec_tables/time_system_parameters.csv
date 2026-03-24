@@ -1,0 +1,13 @@
+# LSIS-AFS Time System Parameters (Section 2.5.1)
+parameter,value,unit,description
+SECONDS_PER_WEEK,604800,s,Seconds in one week
+BLOCK_INTERVAL,1200,s,Block interval duration
+TOI_COUNT,100,,TOI values per block interval
+FRAME_DURATION,12.0,s,Frame duration
+WN_BITS,13,bits,Week Number field width
+WN_MAX,8191,,Maximum Week Number
+ITOW_BITS,9,bits,Interval Time of Week field width
+ITOW_MAX,503,,Maximum ITOW
+TOI_MAX,99,,Maximum Time of Interval
+FID_MAX,3,,Maximum Frame ID
+TOT_FORMULA,"wn*604800 + itow*1200 + toi*12",,ToT calculation

@@ -63,12 +63,32 @@ PrnStatus WeilGenerator::generate_tertiary(PrnId prn_id, std::span<uint8_t> out)
   const size_t idx = static_cast<size_t>(repaired) - 1U;
   const uint16_t k = kTertiaryWeilIndices.at(idx);
 
-  // LSIS Figure E-1: Tertiary insertion index is always 1 (prepend).
-  const auto status = construct_weil(1499, k, 1, out.subspan(0, 1499));
-  if (status == PrnStatus::kOk) {
-    out[1499] = 0U; // Append zero per Figure E-1.
+  // Tertiary Weil-1500: W(t;k) = L(t) XOR L((t+k) mod 1499), append 0.
+  // NO expansion sequence — unlike primary Weil-10230, the tertiary code is
+  // simply 1499 Weil chips + 1 appended zero (LSIS Appendix E, Figure E-1).
+  constexpr uint16_t kTertiaryPrime = 1499;
+  const auto legendre = get_cached_legendre(kTertiaryPrime);
+  if (legendre.empty()) [[unlikely]] {
+    secure_scrub(out);                // NOCOVER_BEGIN(DEFENCE_IN_DEPTH)
+    return PrnStatus::kFaultDetected; // FIZ-1
+  } // NOCOVER_END
+
+  uint32_t cfi_count = 0xA5A5A5A5U;
+  for (uint16_t t = 0; t < kTertiaryPrime; ++t) {
+    const auto shifted_t = static_cast<uint16_t>(
+        (static_cast<uint32_t>(t) + k) % kTertiaryPrime);
+    out[t] = static_cast<uint8_t>(legendre[t] ^ legendre[shifted_t]);
+    cfi_count++;
+    wip_tick();
   }
-  return status;
+  out[1499] = 0U; // Append zero per Figure E-1.
+
+  if (cfi_count != (0xA5A5A5A5U + kTertiaryPrime)) [[unlikely]] {
+    secure_scrub(out);                // NOCOVER_BEGIN(DEFENCE_IN_DEPTH)
+    return PrnStatus::kFaultDetected; // FIZ-1
+  } // NOCOVER_END
+
+  return PrnStatus::kOk;
 }
 
 PrnStatus WeilGenerator::construct_weil(uint16_t prime,

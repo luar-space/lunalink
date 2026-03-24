@@ -23,6 +23,25 @@ inline constexpr uint8_t kItowBits = 9;
 /// Total ToT header bits in SB2 (WN + ITOW).
 inline constexpr uint8_t kTotHeaderBits = kWnBits + kItowBits;
 
+// ─── SB2 Field Layout (sb2_bit_layout.csv, §2.4.3.1.6) ─────────────────────
+// Total: 1176 data bits.
+
+/// Health and Safety status field: 8 bits at offset 22.
+inline constexpr uint8_t kSb2HealthOffset = kTotHeaderBits;  // 22
+inline constexpr uint8_t kSb2HealthBits = 8;
+
+/// Clock and Ephemeris Data (CED): 896 bits at offset 30.
+inline constexpr uint8_t kSb2CedOffset = kSb2HealthOffset + kSb2HealthBits; // 30
+inline constexpr uint16_t kSb2CedBits = 896;
+
+/// Time Conversions: 224 bits at offset 926.
+inline constexpr uint16_t kSb2TimeConvOffset = kSb2CedOffset + kSb2CedBits; // 926
+inline constexpr uint16_t kSb2TimeConvBits = 224;
+
+/// Spare bits: 26 bits at offset 1150 (alternating 0/1 per LSIS-300).
+inline constexpr uint16_t kSb2SpareOffset = kSb2TimeConvOffset + kSb2TimeConvBits; // 1150
+inline constexpr uint8_t kSb2SpareBits = 26;
+
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
 /** @brief LSIS message types from Table 21 (LNIS V1.0).

@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import os
 import struct
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import numpy as np
 from numpy.typing import NDArray
@@ -22,8 +22,8 @@ from lunalink.afs.signal import (
     FRAME_LENGTH,
     frame_build,
     prn_code,
-    weil10230_code,
     weil1500_code,
+    weil10230_code,
     write_iq_file,
 )
 
@@ -48,7 +48,7 @@ def export_code_vectors(prn_id: int, output_dir: str) -> str:
     weil_p = weil10230_code(prn_id)
     weil_t = weil1500_code(prn_id)
 
-    ts = datetime.now(timezone.utc).isoformat()
+    ts = datetime.now(UTC).isoformat()
 
     lines = [
         "# LSIS-AFS Code Test Vector",
@@ -97,7 +97,7 @@ def export_frame_vector(
     struct.pack_into("<I", header, 8, 1)  # version
     struct.pack_into("<I", header, 12, FRAME_LENGTH)  # frame length
     struct.pack_into("<I", header, 16, prn_id)
-    struct.pack_into("<q", header, 20, int(datetime.now(timezone.utc).timestamp()))
+    struct.pack_into("<q", header, 20, int(datetime.now(UTC).timestamp()))
 
     os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
     with open(output_path, "wb") as f:
@@ -134,7 +134,7 @@ def export_parsed_json(
     """
     doc: dict = {
         "version": "1.0",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "implementation": "LunaLink",
         "frame_id": frame_id,
         "subframe1": {
@@ -240,8 +240,12 @@ def generate_standard_vectors(
 
         # Level 3: Signal vectors (native rate, one frame)
         frame_obj, iq = transmit_frame(
-            prn_id=prn_id, fid=fid, toi=toi,
-            sb2_data=sb2, sb3_data=sb3, sb4_data=sb4,
+            prn_id=prn_id,
+            fid=fid,
+            toi=toi,
+            sb2_data=sb2,
+            sb3_data=sb3,
+            sb4_data=sb4,
         )
         signal_path = os.path.join(output_dir, "signals", f"{scenario_name}.iq")
         paths["signals"].append(

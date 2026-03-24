@@ -3,7 +3,12 @@
 
 import numpy as np
 
-from lunalink.afs import SyncNotFoundError, receive_frame, frame_build, make_test_payload
+from lunalink.afs import (
+    SyncNotFoundError,
+    frame_build,
+    make_test_payload,
+    receive_frame,
+)
 
 # Build a frame to decode (in practice, these symbols come from a receiver)
 sb2, sb3, sb4 = make_test_payload("zeros")
@@ -20,11 +25,13 @@ except SyncNotFoundError:
     raise SystemExit(1)
 
 print(f"FID={result.fid}  TOI={result.toi}")
-print(f"SB2: LDPC={'OK' if result.sb2.ldpc_converged else 'FAIL'}  CRC={'OK' if result.sb2.crc_ok else 'FAIL'}")
-print(f"SB3: LDPC={'OK' if result.sb3.ldpc_converged else 'FAIL'}  CRC={'OK' if result.sb3.crc_ok else 'FAIL'}")
-print(f"SB4: LDPC={'OK' if result.sb4.ldpc_converged else 'FAIL'}  CRC={'OK' if result.sb4.crc_ok else 'FAIL'}")
+for name, sb in [("SB2", result.sb2), ("SB3", result.sb3), ("SB4", result.sb4)]:
+    ldpc = "OK" if sb.ldpc_converged else "FAIL"
+    crc = "OK" if sb.crc_ok else "FAIL"
+    print(f"{name}: LDPC={ldpc}  CRC={crc}")
 
 if result.time:
-    print(f"Time of Transmission: {result.time.t_f:.1f}s (WN={result.time.wn} ITOW={result.time.itow})")
+    t = result.time
+    print(f"Time of Transmission: {t.t_f:.1f}s (WN={t.wn} ITOW={t.itow})")
 
 print(f"All OK: {result.all_ok}")

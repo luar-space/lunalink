@@ -1064,10 +1064,9 @@ class TestDecodeVectors:
     )
     def test_decode_vector(self, vector_file: Path) -> None:
         """Load a .bin frame artifact, decode it, compare against expected JSON."""
+        import gzip
         import json
         import struct
-
-        import gzip
 
         vector = json.loads(gzip.decompress(vector_file.read_bytes()))
         expected = vector["expected"]

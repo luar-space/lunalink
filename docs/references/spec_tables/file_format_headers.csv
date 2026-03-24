@@ -1,0 +1,6 @@
+# LSIS-AFS Binary File Format Headers
+format,magic_hex,magic_ascii,header_bytes,sample_type,description
+IQSG,0x49515347,IQSG,32,float32,"I/Q signal (4+4+4+4+16 = 32 byte header)"
+IQS2,0x49515332,IQS2,32,int16,"I/Q signal int16 scaled to +/-32767"
+LSIS,0x4C534953,LSIS,16,uint8,"Spreading code (4+2+2+4+4 = 16 byte header)"
+FRAM,0x4652414D,FRAM,16,uint8,"Frame symbols (4+4+4+4 = 16 byte header)"

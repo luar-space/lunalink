@@ -49,6 +49,25 @@ struct LdpcCsrMatrix {
 #endif
 };
 
+// ─── LDPC Base Graph Metadata (encoding_parameters.csv) ─────────────────────
+
+/// 3GPP TS 38.212 Base Graph 2 dimensions.
+inline constexpr uint8_t kLdpcBg2Rows = 42;
+inline constexpr uint8_t kLdpcBg2Cols = 52;
+inline constexpr uint8_t kLdpcBg2Kb = 10;  ///< Information columns.
+
+/// SF2 lifting parameters (LSIS V1.0 §2.4.3).
+inline constexpr uint8_t kLdpcSf2Zc = 120;   ///< Lifting size.
+inline constexpr uint8_t kLdpcSf2Ils = 7;    ///< Lifting set index.
+inline constexpr uint16_t kLdpcSf2K = 1200;  ///< Systematic bits.
+inline constexpr uint16_t kLdpcSf2N = 2400;  ///< Encoded symbols.
+
+/// SF3/SF4 lifting parameters (LSIS V1.0 §2.4.3).
+inline constexpr uint8_t kLdpcSf34Zc = 88;   ///< Lifting size.
+inline constexpr uint8_t kLdpcSf34Ils = 5;   ///< Lifting set index.
+inline constexpr uint16_t kLdpcSf34K = 880;  ///< Systematic bits (870 data + 10 filler).
+inline constexpr uint16_t kLdpcSf34N = 1740; ///< Encoded symbols.
+
 /**
  * LDPC parity-check matrix H = [A B; C D I] in CSR format.
  * SF2: (n=2400, k=1200, rate 1/2).

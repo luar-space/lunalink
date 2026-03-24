@@ -2,7 +2,12 @@
 
 from lunalink.afs._errors import AfsError, DecodeError, SyncNotFoundError
 from lunalink.afs._receiver import receive_frame
-from lunalink.afs._results import DecodeResult, SubframeResult, TimeOfTransmission, TransmitFrame
+from lunalink.afs._results import (
+    DecodeResult,
+    SubframeResult,
+    TimeOfTransmission,
+    TransmitFrame,
+)
 from lunalink.afs._transmitter import make_test_payload, transmit_frame
 from lunalink.afs.signal import (
     AFS_I_CHIP_RATE,

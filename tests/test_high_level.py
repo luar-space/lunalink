@@ -1,3 +1,4 @@
+# ruff: noqa: D101, D102  — test classes and methods are self-documenting by name.
 """Tests for the high-level Python API (receive_frame, transmit_frame, vectors)."""
 
 from __future__ import annotations
@@ -11,30 +12,29 @@ import numpy as np
 import pytest
 
 from lunalink.afs import (
-    AFS_Q_CHIP_RATE,
-    DecodeError,
-    DecodeResult,
-    FrameDecodeStatus,
     SB2_DATA_BITS,
     SB3_DATA_BITS,
     SB4_DATA_BITS,
+    DecodeError,
+    DecodeResult,
     SubframeResult,
     SyncNotFoundError,
     TimeOfTransmission,
     TransmitFrame,
-    receive_frame,
     frame_build,
     make_test_payload,
+    receive_frame,
     transmit_frame,
 )
-
 
 # ── Result dataclass tests ──────────────────────────────────────────────────
 
 
 class TestSubframeResult:
     def test_frozen(self):
-        r = SubframeResult(data=np.zeros(10, dtype=np.uint8), ldpc_converged=True, crc_ok=True)
+        r = SubframeResult(
+            data=np.zeros(10, dtype=np.uint8), ldpc_converged=True, crc_ok=True
+        )
         with pytest.raises(AttributeError):
             r.crc_ok = False  # type: ignore[misc]
 
@@ -170,16 +170,42 @@ class TestDecodeFrame:
                 assert hasattr(e, "result")
                 assert isinstance(e.result, DecodeResult)
 
+    def test_decode_error_raised(self):
+        """Heavy payload corruption triggers DecodeError."""
+        sb2, sb3, sb4 = make_test_payload("zeros")
+        frame = frame_build(0, 42, sb2, sb3, sb4)
+        bipolar = np.where(frame == 0, 1.0, -1.0).astype(np.float32)
+        # Flip ALL payload symbols (after sync=68 + SB1=52 = 120)
+        bipolar[120:] *= -1
+        with pytest.raises(DecodeError) as exc_info:
+            receive_frame(bipolar)
+        assert isinstance(exc_info.value.result, DecodeResult)
+        assert exc_info.value.result.time is None
+
+    def test_decode_error_no_raise(self):
+        """With raise_on_error=False, corrupted frame returns partial result."""
+        sb2, sb3, sb4 = make_test_payload("zeros")
+        frame = frame_build(0, 42, sb2, sb3, sb4)
+        bipolar = np.where(frame == 0, 1.0, -1.0).astype(np.float32)
+        bipolar[120:] *= -1
+        result = receive_frame(bipolar, raise_on_error=False)
+        assert isinstance(result, DecodeResult)
+        assert not result.all_ok
+
 
 # ── transmit_frame tests ────────────────────────────────────────────────────
 
 
-class TestTransmitFrame:
+class TestTransmitFrameFunction:
     def test_basic(self):
         sb2, sb3, sb4 = make_test_payload("zeros")
         frame, iq = transmit_frame(
-            prn_id=1, fid=0, toi=42,
-            sb2_data=sb2, sb3_data=sb3, sb4_data=sb4,
+            prn_id=1,
+            fid=0,
+            toi=42,
+            sb2_data=sb2,
+            sb3_data=sb3,
+            sb4_data=sb4,
         )
         assert isinstance(frame, TransmitFrame)
         assert frame.fid == 0
@@ -192,8 +218,12 @@ class TestTransmitFrame:
         """transmit_frame → receive_frame round-trip."""
         sb2, sb3, sb4 = make_test_payload("ones")
         frame, _iq = transmit_frame(
-            prn_id=1, fid=1, toi=99,
-            sb2_data=sb2, sb3_data=sb3, sb4_data=sb4,
+            prn_id=1,
+            fid=1,
+            toi=99,
+            sb2_data=sb2,
+            sb3_data=sb3,
+            sb4_data=sb4,
         )
         bipolar = np.where(frame.symbols == 0, 1.0, -1.0).astype(np.float32)
         result = receive_frame(bipolar)

@@ -11,6 +11,9 @@ inline constexpr uint32_t kSecWeek = 604800U;
 /// Block Interval duration in seconds (BI_d = F_d × 100 = 1200 s = 20 min).
 inline constexpr uint16_t kBlockIntervalDuration = 1200U;
 
+/// Number of TOI values per block interval (0..99 = 100 frames).
+inline constexpr uint8_t kToiCount = 100U;
+
 /// Frame duration in seconds.
 inline constexpr uint8_t kFrameDurationSec = 12U;
 

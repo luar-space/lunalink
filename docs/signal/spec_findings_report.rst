@@ -33,9 +33,10 @@ interoperability between independent implementations.
 3. Baseband Digital Interchange Format
 --------------------------------------
 
-*   **Observation**: The standard defines the RF waveform but not the digital 
+*   **Observation**: The standard defines the RF waveform but not the digital
     baseband format for SDR interoperability.
-*   **Proposed Resolution**: We propose a standard for **Interleaved Signed 16-bit 
-    IQ (int16)** pairs at the AFS-Q chip rate (5.115 MSPS) as the primary 
+*   **Proposed Resolution**: We propose a standard for **Interleaved Signed 16-bit
+    IQ (int16)** pairs at the AFS-Q chip rate (5.115 MSPS) as the primary
     digital interchange format for hardware-in-the-loop validation.
+
 

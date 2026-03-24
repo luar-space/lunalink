@@ -23,6 +23,10 @@ enum class BchStatus : uint8_t {
 
 /// BCH(51,8) encoder output length: 1 raw MSB + 51 LFSR symbols = 52 symbols.
 inline constexpr uint8_t kBchCodewordLength = 52;
+/// BCH(51,8) input data bits (2-bit FID + 7-bit TOI).
+inline constexpr uint8_t kBchInputBits = 9;
+/// BCH generator polynomial: g(x) = x^8 + x^7 + x^6 + x^5 + x + 1. LSIS Appendix B.
+inline constexpr uint16_t kBchGeneratorPoly = 0x1F3U;
 /// Maximum FID value (inclusive). LSIS §2.4.3.
 inline constexpr uint8_t kBchFidMax = 3;
 /// Maximum TOI value (inclusive). LSIS §2.4.3.

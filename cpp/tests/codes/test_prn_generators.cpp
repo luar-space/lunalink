@@ -77,12 +77,11 @@ TEST_CASE("[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation a
     CHECK(weil_gen.generate_tertiary(good_prn, small) == PrnStatus::kNullOutput);
   }
 
-  SECTION("Weil zero insertion_index (PRN 38) returns kFaultDetected") {
-    // PRN 38 has insertion_index == 0 in weil_parameters.cpp.
-    // Regression test: construct_weil must return kFaultDetected, not silently
-    // skip the expansion and return kOk with a wrong spreading code.
+  SECTION("PRN 38 generates successfully (was zeroed placeholder, now fixed)") {
+    // PRN 38 previously had k=0, p=0 (zeroed placeholder). Fixed to match
+    // spec_tables/appendix_d_weil_primary_params.csv: k=4858, p=824.
     std::array<uint8_t, kWeil10230ChipLength> out{};
     PrnId prn38(38);
-    CHECK(weil_gen.generate_primary(prn38, out) == PrnStatus::kFaultDetected);
+    CHECK(weil_gen.generate_primary(prn38, out) == PrnStatus::kOk);
   }
 }

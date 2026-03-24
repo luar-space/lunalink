@@ -3,13 +3,17 @@
 
 import numpy as np
 
-from lunalink.afs import receive_frame, make_test_payload, transmit_frame
+from lunalink.afs import make_test_payload, receive_frame, transmit_frame
 
 # Transmit
 sb2, sb3, sb4 = make_test_payload("random", seed=42)
 frame, iq = transmit_frame(
-    prn_id=1, fid=2, toi=77,
-    sb2_data=sb2, sb3_data=sb3, sb4_data=sb4,
+    prn_id=1,
+    fid=2,
+    toi=77,
+    sb2_data=sb2,
+    sb3_data=sb3,
+    sb4_data=sb4,
 )
 print(f"TX: PRN={frame.prn_id} FID={frame.fid} TOI={frame.toi}")
 print(f"    {iq.shape[0]:,} I/Q samples")

@@ -1,0 +1,8 @@
+# LSIS-AFS Subframe 2 Bit Layout (1176 data bits)
+field,bit_offset,num_bits,description
+WN,0,13,Week Number (0-8191)
+ITOW,13,9,Interval Time of Week (0-503)
+Health,22,8,Health and Safety status
+CED,30,896,Clock and Ephemeris Data (112 bytes)
+TimeConv,926,224,Time Conversions (28 bytes)
+Spare,1150,26,"Spare bits (alternating 0/1 starting with 0)"
