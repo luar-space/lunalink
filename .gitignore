@@ -33,6 +33,9 @@ docs/_build/
 # Standards PDFs (large binaries — download locally, see docs/standards/)
 docs/standards/**/*.pdf
 
+# Third-party clones (interop testing)
+third_party/
+
 # Editor
 .vscode/
 .idea/

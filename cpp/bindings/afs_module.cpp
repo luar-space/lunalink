@@ -47,6 +47,22 @@ PYBIND11_MODULE(_afs, m) {
       .def(py::init<uint8_t>())
       .def_property_readonly("value", &Fid::value)
       .def("__int__", [](const Fid& f) { return static_cast<uint8_t>(f); })
+      .def("__eq__",
+           [](const Fid& f, py::object other) {
+             if (py::isinstance<Fid>(other))
+               return static_cast<uint8_t>(f) ==
+                      static_cast<uint8_t>(other.cast<Fid>());
+             if (py::isinstance<py::int_>(other))
+               return static_cast<int>(static_cast<uint8_t>(f)) ==
+                      other.cast<int>();
+             return false;
+           })
+      .def("__hash__",
+           [](const Fid& f) { return py::hash(py::int_(static_cast<uint8_t>(f))); })
+      .def("__repr__",
+           [](const Fid& f) {
+             return "Fid(" + std::to_string(static_cast<uint8_t>(f)) + ")";
+           })
       .def_static("NODE1", &Fid::kNode1)
       .def_static("NODE2", &Fid::kNode2)
       .def_static("NODE3", &Fid::kNode3)
@@ -54,8 +70,24 @@ PYBIND11_MODULE(_afs, m) {
 
   py::class_<Toi>(m, "Toi")
       .def(py::init<uint8_t>())
-      .def_property("value", &Toi::value, [](Toi& self, uint8_t v) { self = Toi(v); })
-      .def("__int__", [](const Toi& t) { return static_cast<uint8_t>(t); });
+      .def_property("value", &Toi::value,
+                     [](Toi& self, uint8_t v) { self = Toi(v); })
+      .def("__int__", [](const Toi& t) { return static_cast<uint8_t>(t); })
+      .def("__eq__",
+           [](const Toi& t, py::object other) {
+             if (py::isinstance<Toi>(other))
+               return static_cast<uint8_t>(t) ==
+                      static_cast<uint8_t>(other.cast<Toi>());
+             if (py::isinstance<py::int_>(other))
+               return static_cast<int>(static_cast<uint8_t>(t)) ==
+                      other.cast<int>();
+             return false;
+           })
+      .def("__hash__",
+           [](const Toi& t) { return py::hash(py::int_(static_cast<uint8_t>(t))); })
+      .def("__repr__", [](const Toi& t) {
+        return "Toi(" + std::to_string(static_cast<uint8_t>(t)) + ")";
+      });
 
   py::class_<PrnId>(m, "PrnId")
       .def(py::init<uint8_t>())

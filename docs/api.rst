@@ -65,5 +65,5 @@ lunalink.afs.signal
 
 .. automodule:: lunalink.afs.signal
    :members:
-   :exclude-members: FrameStatus, BchResult, bch_decode, BchStatus, Fid, Toi, LdpcStatus, LdpcSubframe, LdpcWorkspace, LdpcEncodeWorkspace, SyncDetectorStatus, SyncResult, MessageParseStatus, MessageType, Sb2ParseResult, Sb3ParseResult, Sb4ParseResult, TotResult, TotStatus
+   :exclude-members: FrameStatus, BchResult, bch_decode, BchStatus, Fid, Toi, LdpcStatus, LdpcSubframe, LdpcWorkspace, LdpcEncodeWorkspace, SyncDetectorStatus, SyncResult, MessageParseStatus, MessageType, Sb2ParseResult, Sb3ParseResult, Sb4ParseResult, TotResult, TotStatus, SisePercentileResult, SiseResult, SiseStatus, SiseVec
    :show-inheritance:

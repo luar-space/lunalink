@@ -230,6 +230,43 @@ all five interoperability levels:
    python tests/generate_test_vectors.py
    ls test-vectors/
 
+Cross-Implementation Interoperability (LANS-AFS-SIM)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Cross-implementation decode demonstrated with
+`LANS-AFS-SIM <https://github.com/osqzss/LANS-AFS-SIM>`_ (Ebinuma,
+BSD-2-Clause), an independent LSIS-AFS implementation.
+
+.. list-table::
+   :widths: 10 35 15 40
+   :header-rows: 1
+
+   * - Level
+     - Test
+     - Result
+     - Detail
+   * - L1
+     - Gold + Weil code bit-exact (PRN 1–12)
+     - **PASS**
+     - 0 chip mismatches across 24 code comparisons
+   * - L2
+     - Frame encoding bit-exact (5 payloads)
+     - **PASS**
+     - BCH, CRC-24, LDPC, interleaver all match
+   * - L3
+     - C++ correlator acquire + track + decode
+     - **PASS**
+     - PCPS lock, DLL/PLL track, CRC-verified nav data
+
+Full results: :doc:`interop_results`
+
+.. code-block:: bash
+
+   # Reproduce
+   python scripts/interop/build_lans_afs_sim.py
+   pytest tests/test_interop_codes.py tests/test_interop_frames.py \
+          tests/test_interop_decode.py -v
+
 ----
 
 GD7.4 --- Performance Benchmark Validation

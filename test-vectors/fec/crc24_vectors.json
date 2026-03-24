@@ -2,7 +2,7 @@
   "description": "CRC-24Q test vectors. Polynomial G(X)=0x864CFB, seed=0, MSB-first.",
   "spec_ref": "LSIS-FID0-467",
   "crc_bits": 24,
-  "generated": "2026-03-23T19:29:06+00:00",
+  "generated": "2026-03-24T19:52:13+00:00",
   "vectors": [
     {
       "description": "all_zeros_8b",

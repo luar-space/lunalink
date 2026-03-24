@@ -30,6 +30,7 @@ LunaLink AFS reference implementation with C++ core and pybind11 bindings.
    gateway5
    gateway6
    gateway7
+   interop_results
 
 .. toctree::
    :maxdepth: 2
