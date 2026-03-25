@@ -1,10 +1,22 @@
-"""AFS signal generation: PRN codes and BPSK modulation."""
+"""AFS signal generation, codec wrappers, and I/Q file export.
+
+This module re-exports all symbols from the C++ ``_afs`` extension and adds
+three Python-level functions that have logic beyond simple delegation:
+
+- ``generate_iq_epoch`` — C++ epoch generation + optional Python resampling
+- ``generate_iq_frame`` — C++ frame generation with optional C++ resampling
+- ``write_iq_file`` — binary file I/O with LSISIQ header
+"""
 
 from __future__ import annotations
 
 import numpy as np
 from numpy.typing import NDArray
 
+# ── Direct re-exports from the C++ extension ────────────────────────────────
+# These are the public API — no Python wrapper overhead.
+# The `as X` form makes each symbol explicitly public (PEP 484 / pyright).
+# Constants
 from lunalink.afs._afs import AFS_I_CHIP_RATE_HZ as AFS_I_CHIP_RATE_HZ
 from lunalink.afs._afs import AFS_I_CODE_LENGTH as AFS_I_CODE_LENGTH
 from lunalink.afs._afs import AFS_Q_CHIP_RATE_HZ as AFS_Q_CHIP_RATE_HZ
@@ -25,7 +37,12 @@ from lunalink.afs._afs import FRAME_DURATION_SEC as FRAME_DURATION_SEC
 from lunalink.afs._afs import FRAME_LENGTH as FRAME_LENGTH
 from lunalink.afs._afs import GOLD_CHIP_LENGTH as GOLD_CHIP_LENGTH
 from lunalink.afs._afs import INTERIM_ASSIGNMENT_MAX_PRN as INTERIM_ASSIGNMENT_MAX_PRN
+from lunalink.afs._afs import INTERLEAVER_COLS as INTERLEAVER_COLS
+from lunalink.afs._afs import INTERLEAVER_ROWS as INTERLEAVER_ROWS
+from lunalink.afs._afs import INTERLEAVER_SIZE as INTERLEAVER_SIZE
 from lunalink.afs._afs import IQ_HEADER_BYTES as IQ_HEADER_BYTES
+from lunalink.afs._afs import IQ_PAIRS_PER_EPOCH as IQ_PAIRS_PER_EPOCH
+from lunalink.afs._afs import IQ_PAIRS_PER_FRAME as IQ_PAIRS_PER_FRAME
 from lunalink.afs._afs import IQ_SAMPLES_PER_EPOCH as IQ_SAMPLES_PER_EPOCH
 from lunalink.afs._afs import IQ_UPSAMPLE_FACTOR as IQ_UPSAMPLE_FACTOR
 from lunalink.afs._afs import ITOW_BITS as ITOW_BITS
@@ -84,16 +101,20 @@ from lunalink.afs._afs import WEIL_1500_CHIP_LENGTH as WEIL_1500_CHIP_LENGTH
 from lunalink.afs._afs import WEIL_10230_CHIP_LENGTH as WEIL_10230_CHIP_LENGTH
 from lunalink.afs._afs import WN_BITS as WN_BITS
 from lunalink.afs._afs import WN_MAX as WN_MAX
+
+# Types and enums
 from lunalink.afs._afs import AcquisitionResult as AcquisitionResult
 from lunalink.afs._afs import BchResult as BchResult
 from lunalink.afs._afs import BchStatus as BchStatus
 from lunalink.afs._afs import ChannelState as ChannelState
 from lunalink.afs._afs import Correlator as Correlator
 from lunalink.afs._afs import CorrelatorStatus as CorrelatorStatus
+from lunalink.afs._afs import CrcStatus as CrcStatus
 from lunalink.afs._afs import Fid as Fid
 from lunalink.afs._afs import FrameDecodeResult as FrameDecodeResult
 from lunalink.afs._afs import FrameDecodeStatus as FrameDecodeStatus
 from lunalink.afs._afs import FrameStatus as FrameStatus
+from lunalink.afs._afs import InterleaverStatus as InterleaverStatus
 from lunalink.afs._afs import IqMuxStatus as IqMuxStatus
 from lunalink.afs._afs import LdpcEncodeWorkspace as LdpcEncodeWorkspace
 from lunalink.afs._afs import LdpcStatus as LdpcStatus
@@ -109,6 +130,7 @@ from lunalink.afs._afs import PrnStatus as PrnStatus
 from lunalink.afs._afs import Sb2ParseResult as Sb2ParseResult
 from lunalink.afs._afs import Sb3ParseResult as Sb3ParseResult
 from lunalink.afs._afs import Sb4ParseResult as Sb4ParseResult
+from lunalink.afs._afs import SignalGenStatus as SignalGenStatus
 from lunalink.afs._afs import SisePercentileResult as SisePercentileResult
 from lunalink.afs._afs import SiseResult as SiseResult
 from lunalink.afs._afs import SiseStatus as SiseStatus
@@ -121,500 +143,60 @@ from lunalink.afs._afs import TotResult as TotResult
 from lunalink.afs._afs import TotStatus as TotStatus
 from lunalink.afs._afs import TrackingState as TrackingState
 from lunalink.afs._afs import UniformPrior as UniformPrior
-from lunalink.afs._afs import bch_codebook_checksum as _bch_codebook_checksum
-from lunalink.afs._afs import bch_decode as _bch_decode
-from lunalink.afs._afs import bch_encode as _bch_encode
-from lunalink.afs._afs import block_deinterleave_soft as _block_deinterleave_soft
-from lunalink.afs._afs import commit_frame as _commit_frame
-from lunalink.afs._afs import compute_sise as _compute_sise
-from lunalink.afs._afs import compute_sise_percentile as _compute_sise_percentile
-from lunalink.afs._afs import compute_tot as _compute_tot
-from lunalink.afs._afs import default_matched_assignment as _default_matched_assignment
-from lunalink.afs._afs import frame_build as _frame_build
-from lunalink.afs._afs import frame_build_partial as _frame_build_partial
-from lunalink.afs._afs import frame_decode as _frame_decode
-from lunalink.afs._afs import ldpc_decode as _ldpc_decode
-from lunalink.afs._afs import ldpc_encode as _ldpc_encode
-from lunalink.afs._afs import legendre_1499_checksum as _legendre_1499_checksum
-from lunalink.afs._afs import legendre_10223_checksum as _legendre_10223_checksum
-from lunalink.afs._afs import legendre_cache_init as _legendre_cache_init
-from lunalink.afs._afs import matched_code_epoch as _matched_code_epoch
+
+# Functions — direct re-exports (no Python wrapper overhead)
+from lunalink.afs._afs import bch_codebook_checksum as bch_codebook_checksum
+from lunalink.afs._afs import bch_decode as bch_decode
+from lunalink.afs._afs import bch_decode_soft as bch_decode_soft
+from lunalink.afs._afs import bch_encode as bch_encode
+from lunalink.afs._afs import block_deinterleave as block_deinterleave
+from lunalink.afs._afs import block_deinterleave_soft as block_deinterleave_soft
+from lunalink.afs._afs import block_interleave as block_interleave
+from lunalink.afs._afs import commit_frame as commit_frame
+from lunalink.afs._afs import compute_sise as compute_sise
+from lunalink.afs._afs import compute_sise_percentile as compute_sise_percentile
+from lunalink.afs._afs import compute_tot as compute_tot
+from lunalink.afs._afs import crc24_calculate as crc24_calculate
+from lunalink.afs._afs import crc24_verify as crc24_verify
+from lunalink.afs._afs import default_matched_assignment as default_matched_assignment
+from lunalink.afs._afs import frame_build as frame_build
+from lunalink.afs._afs import frame_build_partial as frame_build_partial
+from lunalink.afs._afs import frame_decode as frame_decode
+from lunalink.afs._afs import generate_iq_epoch_float as generate_iq_epoch_float
+from lunalink.afs._afs import generate_iq_epoch_native as generate_iq_epoch_native
+from lunalink.afs._afs import generate_iq_frame_float as generate_iq_frame_float
+from lunalink.afs._afs import generate_iq_frame_native as generate_iq_frame_native
+from lunalink.afs._afs import ldpc_decode as ldpc_decode
+from lunalink.afs._afs import ldpc_encode as ldpc_encode
+from lunalink.afs._afs import legendre_1499_checksum as legendre_1499_checksum
+from lunalink.afs._afs import legendre_10223_checksum as legendre_10223_checksum
+from lunalink.afs._afs import legendre_cache_init as legendre_cache_init
+from lunalink.afs._afs import matched_code_epoch as matched_code_epoch
 from lunalink.afs._afs import (
-    matched_code_epoch_assigned as _matched_code_epoch_assigned,
+    matched_code_epoch_assigned as matched_code_epoch_assigned,
 )
-from lunalink.afs._afs import modulate_i as _modulate_i
-from lunalink.afs._afs import modulate_q as _modulate_q
-from lunalink.afs._afs import multiplex_iq as _multiplex_iq
-from lunalink.afs._afs import parse_sb2 as _parse_sb2
-from lunalink.afs._afs import parse_sb3 as _parse_sb3
-from lunalink.afs._afs import parse_sb4 as _parse_sb4
-from lunalink.afs._afs import prn_code as _prn_code
-from lunalink.afs._afs import subframe_build_sb2 as _subframe_build_sb2
-from lunalink.afs._afs import subframe_build_sb3 as _subframe_build_sb3
-from lunalink.afs._afs import subframe_build_sb4 as _subframe_build_sb4
-from lunalink.afs._afs import sync_detect as _sync_detect
-from lunalink.afs._afs import weil1500_code as _weil1500_code
-from lunalink.afs._afs import weil10230_code as _weil10230_code
-
-__all__ = [
-    "bch_encode",
-    "bch_decode",
-    "bch_codebook_checksum",
-    "ldpc_encode",
-    "ldpc_decode",
-    "LdpcWorkspace",
-    "LdpcEncodeWorkspace",
-    "LdpcSubframe",
-    "LdpcStatus",
-    "BchResult",
-    "BchStatus",
-    "Fid",
-    "Toi",
-    "frame_build",
-    "frame_build_partial",
-    "subframe_build_sb2",
-    "subframe_build_sb3",
-    "subframe_build_sb4",
-    "modulate_i",
-    "modulate_q",
-    "multiplex_iq",
-    "prn_code",
-    "matched_code_epoch",
-    "matched_code_epoch_assigned",
-    "weil10230_code",
-    "weil1500_code",
-    "BCH_CODEWORD_LENGTH",
-    "FRAME_LENGTH",
-    "SYNC_LENGTH",
-    "SB1_LENGTH",
-    "PAYLOAD_LENGTH",
-    "SYMBOL_RATE",
-    "FRAME_DURATION_S",
-    "EPOCHS_PER_FRAME",
-    "SECONDARY_CODE_LENGTH",
-    "SECONDARY_CODE_COUNT",
-    "INTERIM_ASSIGNMENT_MAX_PRN",
-    "TERTIARY_CODE_LENGTH",
-    "IQ_UPSAMPLE_FACTOR",
-    "IQ_SAMPLES_PER_EPOCH",
-    "FrameStatus",
-    "SB2_DATA_BITS",
-    "SB2_MSG_BITS",
-    "SB2_LENGTH",
-    "SB3_DATA_BITS",
-    "SB3_MSG_BITS",
-    "SB3_LENGTH",
-    "SB4_DATA_BITS",
-    "SB4_MSG_BITS",
-    "SB4_LENGTH",
-    "DEFAULT_SYNC_THRESHOLD",
-    "SyncDetectorStatus",
-    "SyncResult",
-    "sync_detect",
-    "FrameDecodeStatus",
-    "FrameDecodeResult",
-    "SubframeDecodeResult",
-    "frame_decode",
-    "CorrelatorStatus",
-    "ChannelState",
-    "AcquisitionResult",
-    "TrackingState",
-    "UniformPrior",
-    "Correlator",
-    "AFS_I_CODE_LENGTH",
-    "FFT_SIZE",
-    "SAMPLE_RATE_HZ",
-    "CODE_PERIOD_S",
-    "MAX_CHANNELS",
-    "GOLD_CHIP_LENGTH",
-    "WEIL_10230_CHIP_LENGTH",
-    "WEIL_1500_CHIP_LENGTH",
-    "PRN_COUNT",
-    "CHIP_RATE_HZ",
-    "DOPPLER_BIN_SPACING_HZ",
-    "PrnId",
-    "PrnStatus",
-    "MatchedCodeStatus",
-    "ModulationStatus",
-    "IqMuxStatus",
-    "LegendreStatus",
-    "block_deinterleave_soft",
-    "commit_frame",
-    "default_matched_assignment",
-    "legendre_cache_init",
-    "legendre_10223_checksum",
-    "legendre_1499_checksum",
-    "generate_iq_epoch",
-    "generate_iq_frame",
-    "write_iq_file",
-    "AFS_I_CHIP_RATE",
-    "AFS_Q_CHIP_RATE",
-    # Gateway 6: Message Parsing
-    "MessageType",
-    "MessageParseStatus",
-    "TotStatus",
-    "Sb2ParseResult",
-    "Sb3ParseResult",
-    "Sb4ParseResult",
-    "TotResult",
-    "parse_sb2",
-    "parse_sb3",
-    "parse_sb4",
-    "compute_tot",
-    "SUBFRAME_TYPE_BITS",
-    "WN_BITS",
-    "ITOW_BITS",
-    "TOT_HEADER_BITS",
-    "SEC_WEEK",
-    "BLOCK_INTERVAL_DURATION",
-    "FRAME_DURATION_SEC",
-    "WN_MAX",
-    "ITOW_MAX",
-    "TOT_TOI_MAX",
-    "SB2_PAYLOAD_BITS",
-    "SB3_PAYLOAD_BITS",
-    "SB4_PAYLOAD_BITS",
-    # Gateway 7: SISE
-    "SiseStatus",
-    "SiseVec",
-    "SPEED_OF_LIGHT_MPS",
-    "SiseResult",
-    "SisePercentileResult",
-    "compute_sise",
-    "compute_sise_percentile",
-    "SISE_POSITION_LIMIT_M",
-    "SISE_VELOCITY_LIMIT_MPS",
-]
-
-
-def prn_code(prn_id: int) -> NDArray[np.uint8]:
-    """Return the Gold-2046 chip sequence for PRN prn_id (1-indexed)."""
-    return _prn_code(prn_id)
-
-
-def weil10230_code(prn_id: int) -> NDArray[np.uint8]:
-    """Return the Weil-10230 chip sequence for PRN prn_id (1-indexed)."""
-    return _weil10230_code(prn_id)
-
-
-def weil1500_code(prn_id: int) -> NDArray[np.uint8]:
-    """Return the Weil-1500 chip sequence for PRN prn_id (1-indexed)."""
-    return _weil1500_code(prn_id)
-
-
-def modulate_i(prn: NDArray[np.uint8], data_symbol: int) -> NDArray[np.int8]:
-    """Modulate a chip sequence with a BPSK data symbol (AFS-I channel)."""
-    return _modulate_i(prn, data_symbol)
-
-
-def modulate_q(chips: NDArray[np.uint8]) -> NDArray[np.int8]:
-    """Modulate a chip sequence for AFS-Q pilot channel (BPSK(5), no data)."""
-    return _modulate_q(chips)
-
-
-def multiplex_iq(
-    i_samples: NDArray[np.int8], q_samples: NDArray[np.int8]
-) -> NDArray[np.int16]:
-    """Multiplex AFS-I and AFS-Q into baseband IQ at 5.115 MSPS."""
-    return _multiplex_iq(i_samples, q_samples)
-
-
-def matched_code_epoch(prn_id: int, epoch_idx: int) -> NDArray[np.uint8]:
-    """Return one primary epoch (10230 chips) of the matched AFS-Q code.
-
-    Uses the default interim mapping for node IDs 1-12.
-
-    Parameters
-    ----------
-    prn_id : int
-        Node ID (1-12).
-    epoch_idx : int
-        Index of the 2ms epoch within the 12s frame (0-5999).
-
-    Returns
-    -------
-    numpy.ndarray
-        The 10230 binary chips.
-    """
-    return _matched_code_epoch(prn_id, epoch_idx)
-
-
-def matched_code_epoch_assigned(
-    primary_prn: int,
-    secondary_code_idx: int,
-    tertiary_prn: int,
-    tertiary_phase_offset: int,
-    epoch_idx: int,
-) -> NDArray[np.uint8]:
-    """Return one primary epoch using explicit AFS-Q code assignments."""
-    return _matched_code_epoch_assigned(
-        primary_prn, secondary_code_idx, tertiary_prn, tertiary_phase_offset, epoch_idx
-    )
-
-
-def bch_encode(fid: int, toi: int) -> NDArray[np.uint8]:
-    """Encode SB1 (FID + TOI) using BCH(51,8) (§2.4.2.1)."""
-    return _bch_encode(fid, toi)
-
-
-def bch_decode(codeword: NDArray[np.uint8]) -> BchResult:
-    """Decode SB1 header using a Maximum Likelihood decoder."""
-    return _bch_decode(codeword)
-
-
-def bch_codebook_checksum() -> int:
-    """Return the XOR-checksum of the static codebook for integrity verification."""
-    return _bch_codebook_checksum()
-
-
-def ldpc_encode(type: LdpcSubframe, msg: NDArray[np.uint8]) -> NDArray[np.uint8]:
-    """Encode subframe payload using LDPC(1/2) (§2.4)."""
-    return _ldpc_encode(type, msg)
-
-
-def ldpc_decode(
-    type: LdpcSubframe,
-    symbols: NDArray[np.float32],
-    iterations: int = 50,
-    workspace: LdpcWorkspace | None = None,
-) -> tuple[NDArray[np.uint8], LdpcStatus]:
-    """Decode LDPC codeword using fixed-point Layered Min-Sum decoder.
-
-    Returns (decoded_bits, status) where status is OK or NOT_CONVERGED.
-    """
-    return _ldpc_decode(type, symbols, iterations, workspace)
-
-
-def frame_build_partial(fid: int, toi: int) -> NDArray[np.uint8]:
-    """Build a partial AFS navigation frame (§2.4)."""
-    return _frame_build_partial(fid, toi)
-
-
-def frame_build(
-    fid: int,
-    toi: int,
-    sb2_data: NDArray[np.uint8],
-    sb3_data: NDArray[np.uint8],
-    sb4_data: NDArray[np.uint8],
-) -> NDArray[np.uint8]:
-    """Build a complete AFS navigation frame (§2.4)."""
-    return _frame_build(fid, toi, sb2_data, sb3_data, sb4_data)
-
-
-def subframe_build_sb2(data: NDArray[np.uint8]) -> NDArray[np.uint8]:
-    """Build Subframe 2: CRC-24 + LDPC SF2 encode (§2.4)."""
-    return _subframe_build_sb2(data)
-
-
-def subframe_build_sb3(data: NDArray[np.uint8]) -> NDArray[np.uint8]:
-    """Build Subframe 3: CRC-24 + LDPC SF3 encode (§2.4)."""
-    return _subframe_build_sb3(data)
-
-
-def subframe_build_sb4(data: NDArray[np.uint8]) -> NDArray[np.uint8]:
-    """Build Subframe 4: CRC-24 + LDPC SF4 encode (§2.4)."""
-    return _subframe_build_sb4(data)
-
-
-def sync_detect(
-    rx_symbols: NDArray[np.float32],
-    threshold: float = 0.0,
-) -> tuple[SyncResult, SyncDetectorStatus]:
-    """Detect the 68-symbol sync pattern in a stream of soft symbols.
-
-    Parameters
-    ----------
-    rx_symbols : array of float32
-        Bipolar soft-decision symbols (+1.0 = bit 0, -1.0 = bit 1).
-    threshold : float, optional
-        Detection threshold. 0 uses the default (50.0).
-
-    Returns
-    -------
-    tuple[SyncResult, SyncDetectorStatus]
-        Detection result and status code.
-    """
-    return _sync_detect(rx_symbols, threshold)
-
-
-def frame_decode(
-    rx_symbols: NDArray[np.float32],
-    ldpc_iterations: int = 50,
-    sync_threshold: float = 0.0,
-) -> tuple[
-    FrameDecodeResult,
-    NDArray[np.uint8],
-    NDArray[np.uint8],
-    NDArray[np.uint8],
-    FrameDecodeStatus,
-]:
-    """Decode a complete AFS navigation frame from soft-decision symbols.
-
-    Parameters
-    ----------
-    rx_symbols : array of float32
-        Bipolar soft-decision symbols (+1.0 = bit 0, -1.0 = bit 1).
-        Must contain at least kFrameLength (6000) symbols after the sync offset.
-    ldpc_iterations : int, optional
-        LDPC BP iteration count (default: 50).
-    sync_threshold : float, optional
-        Sync detection threshold (default: 50.0). Set to 0 to use default.
-
-    Returns
-    -------
-    tuple[FrameDecodeResult, ndarray, ndarray, ndarray, FrameDecodeStatus]
-        (result, sb2_data, sb3_data, sb4_data, status)
-    """
-    return _frame_decode(rx_symbols, ldpc_iterations, sync_threshold)
-
-
-def block_deinterleave_soft(
-    data: NDArray[np.float32],
-) -> NDArray[np.float32]:
-    """Soft-decision 60x98 block de-interleaver for LLR values."""
-    return _block_deinterleave_soft(data)
-
-
-def commit_frame(frame: NDArray[np.uint8]) -> FrameStatus:
-    """CRC-24 post-generation safety gate (SW-SAF-01)."""
-    return _commit_frame(frame)
-
-
-def default_matched_assignment(
-    prn_id: int,
-) -> tuple[int, int, int, int]:
-    """Return the default interim matched-code assignment for a PRN ID.
-
-    Returns (primary_prn, secondary_code_idx, tertiary_prn, tertiary_phase_offset).
-    """
-    return _default_matched_assignment(prn_id)
-
-
-def legendre_cache_init() -> LegendreStatus:
-    """Initialise the Legendre sequence cache and verify golden CRCs."""
-    return _legendre_cache_init()
-
-
-def legendre_10223_checksum() -> int:
-    """Return CRC-32 checksum of the cached Legendre sequence for prime 10223."""
-    return _legendre_10223_checksum()
-
-
-def legendre_1499_checksum() -> int:
-    """Return CRC-32 checksum of the cached Legendre sequence for prime 1499."""
-    return _legendre_1499_checksum()
-
-
-# ---------------------------------------------------------------------------
-# Gateway 6: Message Parsing
-# ---------------------------------------------------------------------------
-
-
-def parse_sb2(sb2_data: NDArray[np.uint8]) -> Sb2ParseResult:
-    """Parse Subframe 2: extract WN and ITOW fields (LSIS-720, Table 22)."""
-    return _parse_sb2(sb2_data)
-
-
-def parse_sb3(sb3_data: NDArray[np.uint8]) -> Sb3ParseResult:
-    """Parse Subframe 3: extract type field (§2.4.3.1.7)."""
-    return _parse_sb3(sb3_data)
-
-
-def parse_sb4(sb4_data: NDArray[np.uint8]) -> Sb4ParseResult:
-    """Parse Subframe 4: extract type field (§2.4.3.1.8)."""
-    return _parse_sb4(sb4_data)
-
-
-def compute_tot(wn: int, itow: int, toi: int, delta_t_lrt: float = 0.0) -> TotResult:
-    """Compute Time of Transmission per LSIS-720.
-
-    Formula: t_F = WN * 604800 + ITOW * 1200 + TOI * 12 + delta_t_lrt
-
-    Parameters
-    ----------
-    wn : int
-        Week Number (0..8191, 13 bits).
-    itow : int
-        Interval Time of Week (0..503, 9 bits).
-    toi : int
-        Time of Interval (0..99, 7 bits).
-    delta_t_lrt : float, optional
-        Node Time offset w.r.t. LRT in seconds (default: 0.0).
-
-    Returns
-    -------
-    TotResult
-        Result with status and t_f (time since LRT epoch in seconds).
-    """
-    return _compute_tot(wn, itow, toi, delta_t_lrt)
-
-
-# ---------------------------------------------------------------------------
-# Gateway 7: SISE (Signal-In-Space Error)
-# ---------------------------------------------------------------------------
-
-
-def compute_sise(
-    pos_true: SiseVec,
-    pos_broadcast: SiseVec,
-    vel_true: SiseVec,
-    vel_broadcast: SiseVec,
-) -> SiseResult:
-    """Compute single-epoch SISE (Signal-In-Space Error).
-
-    RSS of (true - broadcast) position and velocity vectors.
-
-    Parameters
-    ----------
-    pos_true : Vec3
-        True position in metres (any consistent frame).
-    pos_broadcast : Vec3
-        Broadcast position in metres.
-    vel_true : Vec3
-        True velocity in m/s.
-    vel_broadcast : Vec3
-        Broadcast velocity in m/s.
-
-    Returns
-    -------
-    SiseResult
-        Result with status, position_error_m, and velocity_error_mps.
-    """
-    return _compute_sise(pos_true, pos_broadcast, vel_true, vel_broadcast)
-
-
-def compute_sise_percentile(
-    pos_errors_m: NDArray[np.float64],
-    vel_errors_mps: NDArray[np.float64],
-    percentile: float = 0.95,
-) -> SisePercentileResult:
-    """Compute percentile SISE over N epochs.
-
-    Parameters
-    ----------
-    pos_errors_m : array of float64
-        Position errors in metres for each epoch.
-    vel_errors_mps : array of float64
-        Velocity errors in m/s for each epoch.
-    percentile : float, optional
-        Percentile to compute (0.0..1.0, default 0.95).
-
-    Returns
-    -------
-    SisePercentileResult
-        Result with status, percentile values, and pass/fail against spec limits.
-    """
-    return _compute_sise_percentile(pos_errors_m, vel_errors_mps, percentile)
-
-
-# ---------------------------------------------------------------------------
-# I/Q signal generation and file export
-# ---------------------------------------------------------------------------
+from lunalink.afs._afs import modulate_i as modulate_i
+from lunalink.afs._afs import modulate_q as modulate_q
+from lunalink.afs._afs import multiplex_iq as multiplex_iq
+from lunalink.afs._afs import parse_sb2 as parse_sb2
+from lunalink.afs._afs import parse_sb3 as parse_sb3
+from lunalink.afs._afs import parse_sb4 as parse_sb4
+from lunalink.afs._afs import prn_code as prn_code
+from lunalink.afs._afs import subframe_build_sb2 as subframe_build_sb2
+from lunalink.afs._afs import subframe_build_sb3 as subframe_build_sb3
+from lunalink.afs._afs import subframe_build_sb4 as subframe_build_sb4
+from lunalink.afs._afs import sync_detect as sync_detect
+from lunalink.afs._afs import weil1500_code as weil1500_code
+from lunalink.afs._afs import weil10230_code as weil10230_code
+
+# ── Convenience aliases ──────────────────────────────────────────────────────
 
 #: Native AFS-I chip rate (Hz).
-AFS_I_CHIP_RATE = 1_023_000
+AFS_I_CHIP_RATE = AFS_I_CHIP_RATE_HZ
 #: Native AFS-Q chip rate (Hz).
-AFS_Q_CHIP_RATE = 5_115_000
+AFS_Q_CHIP_RATE = AFS_Q_CHIP_RATE_HZ
+
+# ── Python-level functions (add logic beyond simple delegation) ──────────────
 
 
 def generate_iq_epoch(
@@ -643,25 +225,8 @@ def generate_iq_epoch(
     NDArray[np.float32]
         Interleaved I/Q pairs with shape (N, 2) where N depends on sample_rate.
     """
-    gold = prn_code(prn_id)
-    matched = matched_code_epoch(prn_id, epoch_idx)
-
-    i_mod = modulate_i(gold, data_symbol)
-    q_mod = modulate_q(matched)
-    iq = multiplex_iq(i_mod, q_mod)  # (10230, 2) int16
-
-    iq_f32 = iq.astype(np.float32)
-
-    if sample_rate is not None and sample_rate != AFS_Q_CHIP_RATE:
-        native_rate = float(AFS_Q_CHIP_RATE)
-        n_native = iq_f32.shape[0]
-        n_out = int(round(n_native * sample_rate / native_rate))
-        # Nearest-neighbour resampling (zero-order hold, round-half-up
-        # for deterministic chip boundaries across implementations)
-        indices = np.floor(np.linspace(0, n_native - 1, n_out) + 0.5).astype(int)
-        iq_f32 = iq_f32[indices]
-
-    return iq_f32
+    rate = float(sample_rate) if sample_rate is not None else float(AFS_Q_CHIP_RATE)
+    return generate_iq_epoch_float(prn_id, epoch_idx, data_symbol, rate)
 
 
 def generate_iq_frame(
@@ -688,12 +253,10 @@ def generate_iq_frame(
     if len(frame_symbols) != FRAME_LENGTH:
         raise ValueError(f"Expected {FRAME_LENGTH} symbols, got {len(frame_symbols)}")
 
-    epochs = []
-    for epoch in range(EPOCHS_PER_FRAME):
-        data_sym = 1 - 2 * int(frame_symbols[epoch])  # BPSK: 0→+1, 1→-1
-        epochs.append(generate_iq_epoch(prn_id, epoch, data_sym, sample_rate))
-
-    return np.concatenate(epochs, axis=0)
+    # C++ generates all 6000 epochs as float32 in one call.
+    # Handles both native rate and resampled — no Python-side copy or cast.
+    rate = float(sample_rate) if sample_rate is not None else float(AFS_Q_CHIP_RATE)
+    return generate_iq_frame_float(prn_id, frame_symbols, rate)
 
 
 def write_iq_file(
@@ -750,7 +313,7 @@ def write_iq_file(
     buf.write(b"float32" + b"\x00" * 9)  # 16
     buf.write(b"\x00" * (128 - buf.tell()))  # pad to 128
     header = buf.getvalue()
-    assert len(header) == 128
+    assert len(header) == 128  # noqa: S101
 
     interleaved = iq_data.astype(np.float32).ravel()
     with open(path, "wb") as f:

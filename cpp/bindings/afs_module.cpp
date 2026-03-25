@@ -13,26 +13,79 @@
 #include "lunalink/signal/iq_mux.hpp"
 #include "lunalink/signal/modulator.hpp"
 #include "lunalink/signal/file_format.hpp"
+#include "lunalink/signal/signal_gen.hpp"
 #include "lunalink/signal/sync_detector.hpp"
 #include "lunalink/core/sise.hpp"
 
-#include <pybind11/numpy.h>
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/ndarray.h>
+#include <nanobind/stl/tuple.h>
+#include <nanobind/stl/unique_ptr.h>
 
+#include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <span>
 
-namespace py = pybind11;
+namespace nb = nanobind;
+using namespace nb::literals;
 using namespace lunalink::signal;
+
+// Untyped 1-D contiguous CPU array — dtype checked at runtime.
+using ndarray_1d = nb::ndarray<nb::numpy, nb::ndim<1>, nb::c_contig, nb::device::cpu>;
 
 namespace {
 
-py::array_t<uint8_t> unpack_prn(const PrnCode& code) {
-  auto out = py::array_t<uint8_t>(code.chip_length);
-  auto* dst = out.mutable_data();
+// Helpers: allocate a numpy array and return {ndarray, raw pointer}.
+// The capsule owns the heap allocation — the ndarray borrows from it.
+// NOTE: Heap allocation is intentional here.  The binding layer is host-only
+// code (not flight); §DC-1 (zero-dynamic-allocation) applies to lunalink_core.
+template <typename T>
+std::pair<nb::ndarray<nb::numpy, T, nb::ndim<1>>, T*> make_numpy_1d(size_t n) {
+  auto* buf = new T[n];
+  nb::capsule owner(buf, [](void* p) noexcept { delete[] static_cast<T*>(p); });
+  return {nb::ndarray<nb::numpy, T, nb::ndim<1>>(buf, {n}, std::move(owner)), buf};
+}
+
+template <typename T>
+std::pair<nb::ndarray<nb::numpy, T, nb::ndim<2>>, T*> make_numpy_2d(size_t r, size_t c) {
+  auto* buf = new T[r * c];
+  nb::capsule owner(buf, [](void* p) noexcept { delete[] static_cast<T*>(p); });
+  size_t shape[2] = {r, c};
+  return {nb::ndarray<nb::numpy, T, nb::ndim<2>>(buf, 2, shape, std::move(owner)), buf};
+}
+
+/// Reject any array whose dtype is not exactly T.
+/// nanobind's typed ndarray silently converts (e.g. float32 → uint8 via
+/// truncation), which is a data-corruption hazard for binary bit arrays.
+/// This helper enforces strict dtype matching at the Python boundary.
+template <typename T>
+void require_dtype(const ndarray_1d& arr, const char* name) {
+  constexpr auto expected = nb::dtype<T>();
+  if (arr.dtype() != expected) {
+    throw nb::type_error(
+        (std::string(name) + " must have the correct numpy dtype").c_str());
+  }
+}
+
+/// Convenience: validate dtype and return a typed data pointer.
+template <typename T>
+const T* checked_data(const ndarray_1d& arr, const char* name) {
+  require_dtype<T>(arr, name);
+  return static_cast<const T*>(arr.data());
+}
+
+/// Convenience: validate dtype and return a typed span.
+template <typename T>
+std::span<const T> checked_span(const ndarray_1d& arr, const char* name) {
+  return {checked_data<T>(arr, name), arr.shape(0)};
+}
+
+nb::ndarray<nb::numpy, uint8_t, nb::ndim<1>> unpack_prn(const PrnCode& code) {
+  auto [out, dst] = make_numpy_1d<uint8_t>(code.chip_length);
   for (uint32_t i = 0; i < code.chip_length; ++i) {
     if (unpack_chip(code, static_cast<uint16_t>(i), dst[i]) != PrnStatus::kOk) {
-      throw py::value_error("unpack_chip failed");
+      throw nb::value_error("unpack_chip failed");
     }
   }
   return out;
@@ -40,25 +93,25 @@ py::array_t<uint8_t> unpack_prn(const PrnCode& code) {
 
 } // namespace
 
-PYBIND11_MODULE(_afs, m) {
+NB_MODULE(_afs, m) {
   m.doc() = "LunaLink AFS C++ extension module.";
 
-  py::class_<Fid>(m, "Fid")
-      .def(py::init<uint8_t>())
-      .def_property_readonly("value", &Fid::value)
+  nb::class_<Fid>(m, "Fid")
+      .def(nb::init<uint8_t>())
+      .def_prop_ro("value", &Fid::value)
       .def("__int__", [](const Fid& f) { return static_cast<uint8_t>(f); })
       .def("__eq__",
-           [](const Fid& f, py::object other) {
-             if (py::isinstance<Fid>(other))
+           [](const Fid& f, nb::object other) {
+             if (nb::isinstance<Fid>(other))
                return static_cast<uint8_t>(f) ==
-                      static_cast<uint8_t>(other.cast<Fid>());
-             if (py::isinstance<py::int_>(other))
+                      static_cast<uint8_t>(nb::cast<Fid>(other));
+             if (nb::isinstance<nb::int_>(other))
                return static_cast<int>(static_cast<uint8_t>(f)) ==
-                      other.cast<int>();
+                      nb::cast<int>(other);
              return false;
            })
       .def("__hash__",
-           [](const Fid& f) { return py::hash(py::int_(static_cast<uint8_t>(f))); })
+           [](const Fid& f) { return nb::hash(nb::int_(static_cast<uint8_t>(f))); })
       .def("__repr__",
            [](const Fid& f) {
              return "Fid(" + std::to_string(static_cast<uint8_t>(f)) + ")";
@@ -68,34 +121,34 @@ PYBIND11_MODULE(_afs, m) {
       .def_static("NODE3", &Fid::kNode3)
       .def_static("NODE4", &Fid::kNode4);
 
-  py::class_<Toi>(m, "Toi")
-      .def(py::init<uint8_t>())
-      .def_property("value", &Toi::value,
+  nb::class_<Toi>(m, "Toi")
+      .def(nb::init<uint8_t>())
+      .def_prop_rw("value", &Toi::value,
                      [](Toi& self, uint8_t v) { self = Toi(v); })
       .def("__int__", [](const Toi& t) { return static_cast<uint8_t>(t); })
       .def("__eq__",
-           [](const Toi& t, py::object other) {
-             if (py::isinstance<Toi>(other))
+           [](const Toi& t, nb::object other) {
+             if (nb::isinstance<Toi>(other))
                return static_cast<uint8_t>(t) ==
-                      static_cast<uint8_t>(other.cast<Toi>());
-             if (py::isinstance<py::int_>(other))
+                      static_cast<uint8_t>(nb::cast<Toi>(other));
+             if (nb::isinstance<nb::int_>(other))
                return static_cast<int>(static_cast<uint8_t>(t)) ==
-                      other.cast<int>();
+                      nb::cast<int>(other);
              return false;
            })
       .def("__hash__",
-           [](const Toi& t) { return py::hash(py::int_(static_cast<uint8_t>(t))); })
+           [](const Toi& t) { return nb::hash(nb::int_(static_cast<uint8_t>(t))); })
       .def("__repr__", [](const Toi& t) {
         return "Toi(" + std::to_string(static_cast<uint8_t>(t)) + ")";
       });
 
-  py::class_<PrnId>(m, "PrnId")
-      .def(py::init<uint8_t>())
-      .def_property_readonly("value", [](const PrnId& p) { return p.value(); })
+  nb::class_<PrnId>(m, "PrnId")
+      .def(nb::init<uint8_t>())
+      .def_prop_ro("value", [](const PrnId& p) { return p.value(); })
       .def("valid", [](const PrnId& p) { return p.valid(); })
       .def("__int__", [](const PrnId& p) { return p.value(); });
 
-  py::enum_<BchStatus>(m, "BchStatus")
+  nb::enum_<BchStatus>(m, "BchStatus")
       .value("OK", BchStatus::kOk)
       .value("OUTPUT_TOO_SMALL", BchStatus::kOutputTooSmall)
       .value("INVALID_FID", BchStatus::kInvalidFid)
@@ -106,7 +159,7 @@ PYBIND11_MODULE(_afs, m) {
       .value("FAULT_DETECTED", BchStatus::kFaultDetected)
       .export_values();
 
-  py::enum_<FrameStatus>(m, "FrameStatus")
+  nb::enum_<FrameStatus>(m, "FrameStatus")
       .value("OK", FrameStatus::kOk)
       .value("OUTPUT_TOO_SMALL", FrameStatus::kOutputTooSmall)
       .value("INVALID_FID", FrameStatus::kInvalidFid)
@@ -117,7 +170,7 @@ PYBIND11_MODULE(_afs, m) {
       .value("CRC_FAILED", FrameStatus::kCrcFailed)
       .export_values();
 
-  py::enum_<MatchedCodeStatus>(m, "MatchedCodeStatus")
+  nb::enum_<MatchedCodeStatus>(m, "MatchedCodeStatus")
       .value("OK", MatchedCodeStatus::kOk)
       .value("INVALID_PRN", MatchedCodeStatus::kInvalidPrn)
       .value("INVALID_EPOCH", MatchedCodeStatus::kInvalidEpoch)
@@ -126,7 +179,7 @@ PYBIND11_MODULE(_afs, m) {
       .value("FAULT_DETECTED", MatchedCodeStatus::kFaultDetected)
       .export_values();
 
-  py::enum_<ModulationStatus>(m, "ModulationStatus")
+  nb::enum_<ModulationStatus>(m, "ModulationStatus")
       .value("OK", ModulationStatus::kOk)
       .value("INVALID_SYMBOL", ModulationStatus::kInvalidSymbol)
       .value("INVALID_CHIP_VALUE", ModulationStatus::kInvalidChipValue)
@@ -134,7 +187,7 @@ PYBIND11_MODULE(_afs, m) {
       .value("FAULT_DETECTED", ModulationStatus::kFaultDetected)
       .export_values();
 
-  py::enum_<IqMuxStatus>(m, "IqMuxStatus")
+  nb::enum_<IqMuxStatus>(m, "IqMuxStatus")
       .value("OK", IqMuxStatus::kOk)
       .value("INPUT_TOO_SMALL", IqMuxStatus::kInputTooSmall)
       .value("OUTPUT_TOO_SMALL", IqMuxStatus::kOutputTooSmall)
@@ -144,13 +197,13 @@ PYBIND11_MODULE(_afs, m) {
       .value("FAULT_DETECTED", IqMuxStatus::kFaultDetected)
       .export_values();
 
-  py::enum_<LdpcSubframe>(m, "LdpcSubframe")
+  nb::enum_<LdpcSubframe>(m, "LdpcSubframe")
       .value("SF2", LdpcSubframe::kSF2)
       .value("SF3", LdpcSubframe::kSF3)
       .value("SF4", LdpcSubframe::kSF4)
       .export_values();
 
-  py::enum_<LdpcStatus>(m, "LdpcStatus")
+  nb::enum_<LdpcStatus>(m, "LdpcStatus")
       .value("OK", LdpcStatus::kOk)
       .value("INVALID_INPUT", LdpcStatus::kInvalidInput)
       .value("OUTPUT_TOO_SMALL", LdpcStatus::kOutputTooSmall)
@@ -158,26 +211,26 @@ PYBIND11_MODULE(_afs, m) {
       .value("NOT_CONVERGED", LdpcStatus::kNotConverged)
       .export_values();
 
-  py::enum_<CrcStatus>(m, "CrcStatus")
+  nb::enum_<CrcStatus>(m, "CrcStatus")
       .value("OK", CrcStatus::kOk)
       .value("NULL_INPUT", CrcStatus::kNullInput)
       .value("OUTPUT_TOO_SMALL", CrcStatus::kOutputTooSmall)
       .value("FAULT_DETECTED", CrcStatus::kFaultDetected)
       .export_values();
 
-  py::enum_<InterleaverStatus>(m, "InterleaverStatus")
+  nb::enum_<InterleaverStatus>(m, "InterleaverStatus")
       .value("OK", InterleaverStatus::kOk)
       .value("INPUT_TOO_SMALL", InterleaverStatus::kInputTooSmall)
       .value("OUTPUT_TOO_SMALL", InterleaverStatus::kOutputTooSmall)
       .value("FAULT_DETECTED", InterleaverStatus::kFaultDetected)
       .export_values();
 
-  py::class_<LdpcWorkspace>(m, "LdpcWorkspace")
-      .def(py::init<>())
-      .def_readwrite("alpha_numerator", &LdpcWorkspace::alpha_numerator)
-      .def_readwrite("alpha_denominator", &LdpcWorkspace::alpha_denominator);
+  nb::class_<LdpcWorkspace>(m, "LdpcWorkspace")
+      .def(nb::init<>())
+      .def_rw("alpha_numerator", &LdpcWorkspace::alpha_numerator)
+      .def_rw("alpha_denominator", &LdpcWorkspace::alpha_denominator);
 
-  py::enum_<PrnStatus>(m, "PrnStatus")
+  nb::enum_<PrnStatus>(m, "PrnStatus")
       .value("OK", PrnStatus::kOk)
       .value("INVALID_PRN", PrnStatus::kInvalidPrn)
       .value("NULL_OUTPUT", PrnStatus::kNullOutput)
@@ -185,215 +238,216 @@ PYBIND11_MODULE(_afs, m) {
       .value("FAULT_DETECTED", PrnStatus::kFaultDetected)
       .export_values();
 
-  py::class_<BchResult>(m, "BchResult")
-      .def_readonly("status", &BchResult::status)
-      .def_readonly("fid", &BchResult::fid)
-      .def_readonly("toi", &BchResult::toi)
-      .def_readonly("hamming_distance", &BchResult::hamming_distance);
+  nb::class_<BchResult>(m, "BchResult")
+      .def_ro("status", &BchResult::status)
+      .def_ro("fid", &BchResult::fid)
+      .def_ro("toi", &BchResult::toi)
+      .def_ro("hamming_distance", &BchResult::hamming_distance);
 
   m.def("bch_encode", [](uint8_t fid, uint8_t toi) {
-    auto codeword = py::array_t<uint8_t>(52);
+    auto [out, dst] = make_numpy_1d<uint8_t>(52);
     if (bch_encode(static_cast<Fid>(fid),
                    Toi(toi),
-                   std::span<uint8_t, 52>(codeword.mutable_data(), 52)) != BchStatus::kOk)
-      throw py::value_error("Invalid BCH params");
-    return codeword;
+                   std::span<uint8_t, 52>(dst, 52)) != BchStatus::kOk)
+      throw nb::value_error("Invalid BCH params");
+    return out;
   });
 
-  m.def("bch_decode", [](py::array_t<uint8_t> codeword) {
-    if (codeword.size() != 52)
-      throw py::value_error("Must be 52 symbols");
-    return bch_decode(std::span<const uint8_t, 52>(codeword.data(), 52));
+  m.def("bch_decode", [](ndarray_1d codeword) {
+    if (codeword.shape(0) != 52)
+      throw nb::value_error("Must be 52 symbols");
+    return bch_decode(std::span<const uint8_t, 52>(checked_data<uint8_t>(codeword, "codeword"), 52));
   });
 
-  m.def("bch_decode_soft", [](py::array_t<float> llr) {
-    if (llr.size() != 52)
-      throw py::value_error("Must be 52 soft symbols");
-    return bch_decode_soft(std::span<const float, 52>(llr.data(), 52));
+  m.def("bch_decode_soft", [](ndarray_1d llr) {
+    if (llr.shape(0) != 52)
+      throw nb::value_error("Must be 52 soft symbols");
+    return bch_decode_soft(std::span<const float, 52>(checked_data<float>(llr, "llr"), 52));
   });
 
   m.def("bch_codebook_checksum", &bch_codebook_checksum);
 
-  m.def("crc24_calculate", [](py::array_t<uint8_t> data) {
-    auto out = py::array_t<uint8_t>(24);
+  m.def("crc24_calculate", [](ndarray_1d data) {
+    auto [out, dst] = make_numpy_1d<uint8_t>(24);
     std::array<uint8_t, 24> crc{};
     auto status =
-        crc24_calculate(std::span<const uint8_t>(data.data(), static_cast<size_t>(data.size())),
+        crc24_calculate(checked_span<uint8_t>(data, "data"),
                         std::span<uint8_t, 24>(crc.data(), 24));
     if (status != CrcStatus::kOk)
-      throw py::value_error("CRC-24 failed");
-    auto* dst = out.mutable_data();
+      throw nb::value_error("CRC-24 failed");
     for (uint32_t i = 0; i < 24U; ++i)
       dst[i] = crc[i];
     return out;
   });
 
-  m.def("crc24_verify", [](py::array_t<uint8_t> data_with_crc) {
-    return crc24_verify(
-        std::span<const uint8_t>(data_with_crc.data(), static_cast<size_t>(data_with_crc.size())));
+  m.def("crc24_verify", [](ndarray_1d data_with_crc) {
+    return crc24_verify(checked_span<uint8_t>(data_with_crc, "data_with_crc"));
   });
 
-  m.def("block_interleave", [](py::array_t<uint8_t> in) {
-    auto out = py::array_t<uint8_t>(static_cast<ssize_t>(kInterleaverSize));
+  m.def("block_interleave", [](ndarray_1d in) {
+    auto [out, dst] = make_numpy_1d<uint8_t>(kInterleaverSize);
     auto status =
-        block_interleave(std::span<const uint8_t>(in.data(), static_cast<size_t>(in.size())),
-                         std::span<uint8_t>(out.mutable_data(), kInterleaverSize));
+        block_interleave(checked_span<uint8_t>(in, "in"),
+                         std::span<uint8_t>(dst, kInterleaverSize));
     if (status != InterleaverStatus::kOk)
-      throw py::value_error("block_interleave failed: input must be exactly 5880 bits");
+      throw nb::value_error("block_interleave failed: input must be exactly 5880 bits");
     return out;
   });
 
-  m.def("block_deinterleave", [](py::array_t<uint8_t> in) {
-    auto out = py::array_t<uint8_t>(static_cast<ssize_t>(kInterleaverSize));
+  m.def("block_deinterleave", [](ndarray_1d in) {
+    auto [out, dst] = make_numpy_1d<uint8_t>(kInterleaverSize);
     auto status =
-        block_deinterleave(std::span<const uint8_t>(in.data(), static_cast<size_t>(in.size())),
-                           std::span<uint8_t>(out.mutable_data(), kInterleaverSize));
+        block_deinterleave(checked_span<uint8_t>(in, "in"),
+                           std::span<uint8_t>(dst, kInterleaverSize));
     if (status != InterleaverStatus::kOk)
-      throw py::value_error("block_deinterleave failed: input must be exactly 5880 bits");
+      throw nb::value_error("block_deinterleave failed: input must be exactly 5880 bits");
     return out;
   });
 
   m.def("block_deinterleave_soft",
-        [](py::array_t<float, py::array::c_style | py::array::forcecast> in) {
-          auto out = py::array_t<float>(static_cast<ssize_t>(kInterleaverSize));
+        [](nb::ndarray<const float, nb::ndim<1>, nb::c_contig, nb::device::cpu> in) {
+          auto [out, dst] = make_numpy_1d<float>(kInterleaverSize);
           auto status = block_deinterleave_soft(
-              std::span<const float>(in.data(), static_cast<size_t>(in.size())),
-              std::span<float>(out.mutable_data(), kInterleaverSize));
+              std::span<const float>(in.data(), in.shape(0)),
+              std::span<float>(dst, kInterleaverSize));
           if (status != InterleaverStatus::kOk)
-            throw py::value_error("block_deinterleave_soft failed");
+            throw nb::value_error("block_deinterleave_soft failed");
           return out;
         });
 
-  m.def("ldpc_encode", [](LdpcSubframe type, py::array_t<uint8_t> msg) {
+  m.def("ldpc_encode", [](LdpcSubframe type, ndarray_1d msg) {
     const size_t n_out = (type == LdpcSubframe::kSF2) ? 2400U : 1740U;
-    auto out = py::array_t<uint8_t>(static_cast<ssize_t>(n_out));
+    auto [out, dst] = make_numpy_1d<uint8_t>(n_out);
     LdpcEncodeWorkspace enc_ws{};
     auto status = ldpc_encode(type,
-                              std::span<const uint8_t>(msg.data(), static_cast<size_t>(msg.size())),
-                              std::span<uint8_t>(out.mutable_data(), n_out),
+                              checked_span<uint8_t>(msg, "msg"),
+                              std::span<uint8_t>(dst, n_out),
                               enc_ws);
     if (status != LdpcStatus::kOk)
-      throw py::value_error("LDPC encode failed");
+      throw nb::value_error("LDPC encode failed");
     return out;
   });
 
   m.def(
       "ldpc_decode",
-      [](LdpcSubframe type, py::array_t<float> symbols, uint8_t iterations, py::object workspace) {
+      [](LdpcSubframe type,
+         nb::ndarray<const float, nb::ndim<1>, nb::c_contig, nb::device::cpu> symbols,
+         uint8_t iterations,
+         nb::object workspace) {
         const size_t k_nom = (type == LdpcSubframe::kSF2) ? 1200U : 870U;
-        auto out = py::array_t<uint8_t>(static_cast<ssize_t>(k_nom));
+        auto [out, dst] = make_numpy_1d<uint8_t>(k_nom);
         // Stack-allocate workspace to comply with zero-dynamic-allocation mandate (§DC-1).
         LdpcWorkspace local_ws_stack{};
         LdpcWorkspace* ws_ptr;
         if (workspace.is_none()) {
           ws_ptr = &local_ws_stack;
         } else {
-          ws_ptr = workspace.cast<LdpcWorkspace*>();
+          ws_ptr = nb::cast<LdpcWorkspace*>(workspace);
         }
 
         auto status =
             ldpc_decode(type,
-                        std::span<const float>(symbols.data(), static_cast<size_t>(symbols.size())),
+                        std::span<const float>(symbols.data(), symbols.shape(0)),
                         iterations,
-                        std::span<uint8_t>(out.mutable_data(), k_nom),
+                        std::span<uint8_t>(dst, k_nom),
                         *ws_ptr);
         if (status != LdpcStatus::kOk && status != LdpcStatus::kNotConverged)
-          throw py::value_error("LDPC decode failed");
-        return py::make_tuple(out, status);
+          throw nb::value_error("LDPC decode failed");
+        return nb::make_tuple(out, status);
       },
-      py::arg("type"),
-      py::arg("symbols"),
-      py::arg("iterations"),
-      py::arg("workspace") = py::none());
+      "type"_a,
+      "symbols"_a,
+      "iterations"_a,
+      "workspace"_a.none() = nb::none());
 
-  py::class_<LdpcEncodeWorkspace>(m, "LdpcEncodeWorkspace").def(py::init<>());
+  nb::class_<LdpcEncodeWorkspace>(m, "LdpcEncodeWorkspace").def(nb::init<>());
 
   m.def("frame_build_partial", [](uint8_t fid, uint8_t toi) {
-    auto out = py::array_t<uint8_t>(6000);
+    auto [out, dst] = make_numpy_1d<uint8_t>(6000);
     FrameBuildWorkspace fbw{};
     if (frame_build_partial(static_cast<Fid>(fid),
                             Toi(toi),
-                            std::span<uint8_t, 6000>(out.mutable_data(), 6000),
+                            std::span<uint8_t, 6000>(dst, 6000),
                             fbw) != FrameStatus::kOk)
-      throw py::value_error("Frame build failed");
+      throw nb::value_error("Frame build failed");
     return out;
   });
 
   m.def("frame_build",
         [](uint8_t fid,
            uint8_t toi,
-           py::array_t<uint8_t, py::array::c_style | py::array::forcecast> sb2_data,
-           py::array_t<uint8_t, py::array::c_style | py::array::forcecast> sb3_data,
-           py::array_t<uint8_t, py::array::c_style | py::array::forcecast> sb4_data) {
-          if (sb2_data.size() != kSb2DataBits)
-            throw py::value_error("SB2 data must be 1176 bits");
-          if (sb3_data.size() != kSb3DataBits)
-            throw py::value_error("SB3 data must be 846 bits");
-          if (sb4_data.size() != kSb4DataBits)
-            throw py::value_error("SB4 data must be 846 bits");
-          auto out = py::array_t<uint8_t>(static_cast<ssize_t>(kFrameLength));
+           ndarray_1d sb2_data,
+           ndarray_1d sb3_data,
+           ndarray_1d sb4_data) {
+          if (sb2_data.shape(0) != kSb2DataBits)
+            throw nb::value_error("SB2 data must be 1176 bits");
+          if (sb3_data.shape(0) != kSb3DataBits)
+            throw nb::value_error("SB3 data must be 846 bits");
+          if (sb4_data.shape(0) != kSb4DataBits)
+            throw nb::value_error("SB4 data must be 846 bits");
+          auto [out, dst] = make_numpy_1d<uint8_t>(kFrameLength);
           LdpcEncodeWorkspace ws{};
           FrameBuildWorkspace fbw{};
           auto status =
               frame_build(static_cast<Fid>(fid),
                           Toi(toi),
-                          std::span<const uint8_t, kSb2DataBits>(sb2_data.data(), kSb2DataBits),
-                          std::span<const uint8_t, kSb3DataBits>(sb3_data.data(), kSb3DataBits),
-                          std::span<const uint8_t, kSb4DataBits>(sb4_data.data(), kSb4DataBits),
-                          std::span<uint8_t, kFrameLength>(out.mutable_data(), kFrameLength),
+                          std::span<const uint8_t, kSb2DataBits>(checked_data<uint8_t>(sb2_data, "sb2_data"), kSb2DataBits),
+                          std::span<const uint8_t, kSb3DataBits>(checked_data<uint8_t>(sb3_data, "sb3_data"), kSb3DataBits),
+                          std::span<const uint8_t, kSb4DataBits>(checked_data<uint8_t>(sb4_data, "sb4_data"), kSb4DataBits),
+                          std::span<uint8_t, kFrameLength>(dst, kFrameLength),
                           ws,
                           fbw);
           if (status != FrameStatus::kOk)
-            throw py::value_error("Frame build failed");
+            throw nb::value_error("Frame build failed");
           return out;
         });
 
-  m.def("commit_frame", [](py::array_t<uint8_t, py::array::c_style | py::array::forcecast> frame) {
-    return commit_frame(std::span<const uint8_t>(frame.data(), static_cast<size_t>(frame.size())));
+  m.def("commit_frame", [](ndarray_1d frame) {
+    return commit_frame(checked_span<uint8_t>(frame, "frame"));
   });
 
   m.def("subframe_build_sb2",
-        [](py::array_t<uint8_t, py::array::c_style | py::array::forcecast> data) {
-          if (data.size() != kSb2DataBits)
-            throw py::value_error("SB2 data must be 1176 bits");
-          auto out = py::array_t<uint8_t>(static_cast<ssize_t>(kSb2Length));
+        [](ndarray_1d data) {
+          if (data.shape(0) != kSb2DataBits)
+            throw nb::value_error("SB2 data must be 1176 bits");
+          auto [out, dst] = make_numpy_1d<uint8_t>(kSb2Length);
           LdpcEncodeWorkspace ws{};
           auto status =
-              subframe_build_sb2(std::span<const uint8_t, kSb2DataBits>(data.data(), kSb2DataBits),
-                                 std::span<uint8_t, kSb2Length>(out.mutable_data(), kSb2Length),
+              subframe_build_sb2(std::span<const uint8_t, kSb2DataBits>(checked_data<uint8_t>(data, "data"), kSb2DataBits),
+                                 std::span<uint8_t, kSb2Length>(dst, kSb2Length),
                                  ws);
           if (status != FrameStatus::kOk)
-            throw py::value_error("SB2 build failed");
+            throw nb::value_error("SB2 build failed");
           return out;
         });
 
   m.def("subframe_build_sb3",
-        [](py::array_t<uint8_t, py::array::c_style | py::array::forcecast> data) {
-          if (data.size() != kSb3DataBits)
-            throw py::value_error("SB3 data must be 846 bits");
-          auto out = py::array_t<uint8_t>(static_cast<ssize_t>(kSb3Length));
+        [](ndarray_1d data) {
+          if (data.shape(0) != kSb3DataBits)
+            throw nb::value_error("SB3 data must be 846 bits");
+          auto [out, dst] = make_numpy_1d<uint8_t>(kSb3Length);
           LdpcEncodeWorkspace ws{};
           auto status =
-              subframe_build_sb3(std::span<const uint8_t, kSb3DataBits>(data.data(), kSb3DataBits),
-                                 std::span<uint8_t, kSb3Length>(out.mutable_data(), kSb3Length),
+              subframe_build_sb3(std::span<const uint8_t, kSb3DataBits>(checked_data<uint8_t>(data, "data"), kSb3DataBits),
+                                 std::span<uint8_t, kSb3Length>(dst, kSb3Length),
                                  ws);
           if (status != FrameStatus::kOk)
-            throw py::value_error("SB3 build failed");
+            throw nb::value_error("SB3 build failed");
           return out;
         });
 
   m.def("subframe_build_sb4",
-        [](py::array_t<uint8_t, py::array::c_style | py::array::forcecast> data) {
-          if (data.size() != kSb4DataBits)
-            throw py::value_error("SB4 data must be 846 bits");
-          auto out = py::array_t<uint8_t>(static_cast<ssize_t>(kSb4Length));
+        [](ndarray_1d data) {
+          if (data.shape(0) != kSb4DataBits)
+            throw nb::value_error("SB4 data must be 846 bits");
+          auto [out, dst] = make_numpy_1d<uint8_t>(kSb4Length);
           LdpcEncodeWorkspace ws{};
           auto status =
-              subframe_build_sb4(std::span<const uint8_t, kSb4DataBits>(data.data(), kSb4DataBits),
-                                 std::span<uint8_t, kSb4Length>(out.mutable_data(), kSb4Length),
+              subframe_build_sb4(std::span<const uint8_t, kSb4DataBits>(checked_data<uint8_t>(data, "data"), kSb4DataBits),
+                                 std::span<uint8_t, kSb4Length>(dst, kSb4Length),
                                  ws);
           if (status != FrameStatus::kOk)
-            throw py::value_error("SB4 build failed");
+            throw nb::value_error("SB4 build failed");
           return out;
         });
 
@@ -401,66 +455,68 @@ PYBIND11_MODULE(_afs, m) {
     const PrnId id{static_cast<uint8_t>(prn_id)};
     PrnCode p;
     if (gold_prn_packed(id, p) != PrnStatus::kOk)
-      throw py::value_error("Invalid PRN");
+      throw nb::value_error("Invalid PRN");
     return unpack_prn(p);
   });
 
-  m.def("modulate_i", [](py::array_t<uint8_t> prn, int data) {
-    auto r = prn.request();
-    auto out = py::array_t<int8_t>(r.size);
-    if (modulate_bpsk_i(std::span<const uint8_t>(static_cast<const uint8_t*>(r.ptr),
-                                                 static_cast<size_t>(r.size)),
+  m.def("modulate_i", [](ndarray_1d prn, int data) {
+    const size_t n = prn.shape(0);
+    auto [out, dst] = make_numpy_1d<int8_t>(n);
+    if (modulate_bpsk_i(checked_span<uint8_t>(prn, "prn"),
                         static_cast<int8_t>(data),
-                        std::span<int8_t>(out.mutable_data(), static_cast<size_t>(r.size))) !=
+                        std::span<int8_t>(dst, n)) !=
         ModulationStatus::kOk)
-      throw py::value_error("Modulation failed");
+      throw nb::value_error("Modulation failed");
     return out;
   });
 
-  m.def("modulate_q", [](py::array_t<uint8_t> chips) {
-    auto r = chips.request();
-    auto out = py::array_t<int8_t>(r.size);
-    if (modulate_bpsk_q(std::span<const uint8_t>(static_cast<const uint8_t*>(r.ptr),
-                                                 static_cast<size_t>(r.size)),
-                        std::span<int8_t>(out.mutable_data(), static_cast<size_t>(r.size))) !=
+  m.def("modulate_q", [](ndarray_1d chips) {
+    const size_t n = chips.shape(0);
+    auto [out, dst] = make_numpy_1d<int8_t>(n);
+    if (modulate_bpsk_q(checked_span<uint8_t>(chips, "chips"),
+                        std::span<int8_t>(dst, n)) !=
         ModulationStatus::kOk)
-      throw py::value_error("Modulation failed");
+      throw nb::value_error("Modulation failed");
     return out;
   });
 
-  m.def("multiplex_iq", [](py::array_t<int8_t> i, py::array_t<int8_t> q) {
-    auto out = py::array_t<int16_t>(20460);
-    if (multiplex_iq(std::span<const int8_t>(static_cast<const int8_t*>(i.data()), 2046),
-                     std::span<const int8_t>(static_cast<const int8_t*>(q.data()), 10230),
-                     std::span<int16_t>(out.mutable_data(), 20460)) != IqMuxStatus::kOk)
-      throw py::value_error("Mux failed");
-    return out.reshape({10230, 2});
+  m.def("multiplex_iq", [](ndarray_1d i, ndarray_1d q) {
+    if (i.shape(0) != 2046)
+      throw nb::value_error("I channel must be 2046 samples");
+    if (q.shape(0) != 10230)
+      throw nb::value_error("Q channel must be 10230 samples");
+    auto [out, dst] = make_numpy_2d<int16_t>(10230, 2);
+    if (multiplex_iq(std::span<const int8_t>(checked_data<int8_t>(i, "i"), 2046),
+                     std::span<const int8_t>(checked_data<int8_t>(q, "q"), 10230),
+                     std::span<int16_t>(dst, 20460)) != IqMuxStatus::kOk)
+      throw nb::value_error("Mux failed");
+    return out;
   });
 
   m.def("weil10230_code", [](int id) {
     PrnCode p;
     if (weil10230_prn_packed(PrnId{static_cast<uint8_t>(id)}, p) != PrnStatus::kOk)
-      throw py::value_error("Bad ID");
+      throw nb::value_error("Bad ID");
     return unpack_prn(p);
   });
 
   m.def("weil1500_code", [](int id) {
     PrnCode p;
     if (weil1500_prn_packed(PrnId{static_cast<uint8_t>(id)}, p) != PrnStatus::kOk)
-      throw py::value_error("Bad ID");
+      throw nb::value_error("Bad ID");
     return unpack_prn(p);
   });
 
   m.def("matched_code_epoch", [](int id, int epoch) {
-    auto out = py::array_t<uint8_t>(10230);
+    auto [out, dst] = make_numpy_1d<uint8_t>(10230);
     MatchedCodeAssignment a;
     if (default_matched_assignment_checked(PrnId{static_cast<uint8_t>(id)}, a) !=
         MatchedCodeStatus::kOk)
-      throw py::value_error("Bad ID");
+      throw nb::value_error("Bad ID");
     if (matched_code_epoch_checked(
-            a, static_cast<uint16_t>(epoch), std::span<uint8_t>(out.mutable_data(), 10230)) !=
+            a, static_cast<uint16_t>(epoch), std::span<uint8_t>(dst, 10230)) !=
         MatchedCodeStatus::kOk)
-      throw py::value_error("Bad epoch");
+      throw nb::value_error("Bad epoch");
     return out;
   });
 
@@ -477,12 +533,12 @@ PYBIND11_MODULE(_afs, m) {
           a.tertiary_prn = PrnId{static_cast<uint8_t>(tertiary_prn)};
           a.tertiary_phase_offset =
               CheckedRange<uint16_t, 0, 1499>{static_cast<uint16_t>(tertiary_phase_offset)};
-          auto out = py::array_t<uint8_t>(10230);
+          auto [out, dst] = make_numpy_1d<uint8_t>(10230);
           if (matched_code_epoch_checked(a,
                                          static_cast<uint16_t>(epoch_idx),
-                                         std::span<uint8_t>(out.mutable_data(), 10230)) !=
+                                         std::span<uint8_t>(dst, 10230)) !=
               MatchedCodeStatus::kOk)
-            throw py::value_error("Bad assignment");
+            throw nb::value_error("Bad assignment");
           return out;
         });
 
@@ -490,12 +546,122 @@ PYBIND11_MODULE(_afs, m) {
     MatchedCodeAssignment a{};
     auto status = default_matched_assignment_checked(PrnId{static_cast<uint8_t>(prn_id)}, a);
     if (status != MatchedCodeStatus::kOk)
-      throw py::value_error("Invalid PRN for assignment");
-    return py::make_tuple(static_cast<uint8_t>(a.primary_prn),
+      throw nb::value_error("Invalid PRN for assignment");
+    return nb::make_tuple(static_cast<uint8_t>(a.primary_prn),
                           static_cast<uint8_t>(a.secondary_code_idx),
                           static_cast<uint8_t>(a.tertiary_prn),
                           static_cast<uint16_t>(a.tertiary_phase_offset));
   });
+
+  // ─── Signal generation (TX pipeline) ──────────────────────────────────────
+
+  nb::enum_<SignalGenStatus>(m, "SignalGenStatus")
+      .value("OK", SignalGenStatus::kOk)
+      .value("INVALID_PRN", SignalGenStatus::kInvalidPrn)
+      .value("INVALID_INPUT", SignalGenStatus::kInvalidInput)
+      .value("MODULATION_FAILED", SignalGenStatus::kModulationFailed)
+      .value("MUX_FAILED", SignalGenStatus::kMuxFailed)
+      .value("FAULT_DETECTED", SignalGenStatus::kFaultDetected)
+      .export_values();
+
+  m.def("generate_iq_epoch_native",
+        [](int prn_id, int epoch_idx, int data_symbol) {
+          // Unpack Gold code for this single-epoch call.
+          PrnCode gold{};
+          if (gold_prn_packed(PrnId{static_cast<uint8_t>(prn_id)}, gold) != PrnStatus::kOk)
+            throw nb::value_error("Invalid PRN");
+          std::array<uint8_t, kGoldChipLength> gold_chips{};
+          for (uint32_t i = 0; i < kGoldChipLength; ++i) {
+            if (unpack_chip(gold, static_cast<uint16_t>(i), gold_chips[i]) != PrnStatus::kOk)
+              throw nb::value_error("unpack_chip failed");
+          }
+          auto [out, dst] = make_numpy_2d<int16_t>(kIqSamplesPerEpoch, 2);
+          auto status = generate_iq_epoch(
+              std::span<const uint8_t>(gold_chips),
+              PrnId{static_cast<uint8_t>(prn_id)},
+              static_cast<uint16_t>(epoch_idx),
+              static_cast<int8_t>(data_symbol),
+              std::span<int16_t>(dst, kIqPairsPerEpoch));
+          if (status != SignalGenStatus::kOk)
+            throw nb::value_error("generate_iq_epoch failed");
+          return out;
+        },
+        "prn_id"_a, "epoch_idx"_a, "data_symbol"_a = 1,
+        "Generate one 2 ms epoch of interleaved I/Q at native rate (10230x2 int16).");
+
+  m.def("generate_iq_epoch_float",
+        [](int prn_id, int epoch_idx, int data_symbol, double sample_rate) {
+          const auto n_native = static_cast<size_t>(kIqSamplesPerEpoch);
+          const bool is_native =
+              (std::fabs(sample_rate - kNativeSampleRateHz) < 1.0) || (sample_rate <= 0.0);
+          const size_t n_out = is_native
+              ? n_native
+              : static_cast<size_t>(std::lround(
+                    static_cast<double>(n_native) * sample_rate / kNativeSampleRateHz));
+          auto [out, dst] = make_numpy_2d<float>(n_out, 2);
+          size_t written = 0;
+          auto status = generate_iq_epoch_float(
+              PrnId{static_cast<uint8_t>(prn_id)},
+              static_cast<uint16_t>(epoch_idx),
+              static_cast<int8_t>(data_symbol),
+              sample_rate,
+              std::span<float>(dst, n_out * 2),
+              written);
+          if (status != SignalGenStatus::kOk)
+            throw nb::value_error("generate_iq_epoch_float failed");
+          return out;
+        },
+        "prn_id"_a, "epoch_idx"_a, "data_symbol"_a = 1, "sample_rate"_a = kNativeSampleRateHz,
+        "Generate one 2 ms epoch as float32 with optional resampling.");
+
+  m.def("generate_iq_frame_native",
+        [](int prn_id, ndarray_1d frame_symbols) {
+          if (frame_symbols.shape(0) != kEpochsPerFrame)
+            throw nb::value_error("frame_symbols must be 6000 elements");
+          auto [out, dst] = make_numpy_2d<int16_t>(
+              static_cast<size_t>(kEpochsPerFrame) * kIqSamplesPerEpoch, 2);
+          auto status = generate_iq_frame(
+              PrnId{static_cast<uint8_t>(prn_id)},
+              checked_span<uint8_t>(frame_symbols, "frame_symbols"),
+              std::span<int16_t>(dst, kIqPairsPerFrame));
+          if (status != SignalGenStatus::kOk)
+            throw nb::value_error("generate_iq_frame failed");
+          return out;
+        },
+        "prn_id"_a, "frame_symbols"_a,
+        "Generate a full 12 s frame of interleaved I/Q at native rate (int16).");
+
+  m.def("generate_iq_frame_float",
+        [](int prn_id, ndarray_1d frame_symbols, double sample_rate) {
+          if (frame_symbols.shape(0) != kEpochsPerFrame)
+            throw nb::value_error("frame_symbols must be 6000 elements");
+          // Compute output row count.
+          const auto n_native = static_cast<size_t>(kIqSamplesPerEpoch);
+          const bool is_native =
+              (std::fabs(sample_rate - kNativeSampleRateHz) < 1.0) || (sample_rate <= 0.0);
+          const size_t n_out_per_epoch = is_native
+              ? n_native
+              : static_cast<size_t>(std::lround(
+                    static_cast<double>(n_native) * sample_rate / kNativeSampleRateHz));
+          const size_t total_rows = n_out_per_epoch * kEpochsPerFrame;
+          const size_t total_floats = total_rows * 2;
+          auto [out, dst] = make_numpy_2d<float>(total_rows, 2);
+          size_t written = 0;
+          auto status = generate_iq_frame_float(
+              PrnId{static_cast<uint8_t>(prn_id)},
+              checked_span<uint8_t>(frame_symbols, "frame_symbols"),
+              sample_rate,
+              std::span<float>(dst, total_floats),
+              written);
+          if (status != SignalGenStatus::kOk)
+            throw nb::value_error("generate_iq_frame_float failed");
+          return out;
+        },
+        "prn_id"_a, "frame_symbols"_a, "sample_rate"_a,
+        "Generate a full 12 s frame as float32 with optional resampling.");
+
+  m.attr("IQ_PAIRS_PER_EPOCH") = kIqPairsPerEpoch;
+  m.attr("IQ_PAIRS_PER_FRAME") = kIqPairsPerFrame;
 
   m.attr("EPOCHS_PER_FRAME") = kEpochsPerFrame;
   m.attr("SECONDARY_CODE_LENGTH") = kSecondaryCodeLength;
@@ -525,38 +691,38 @@ PYBIND11_MODULE(_afs, m) {
   m.attr("SB4_LENGTH") = kSb4Length;
   m.attr("DEFAULT_SYNC_THRESHOLD") = kDefaultSyncThreshold;
 
-  py::enum_<SyncDetectorStatus>(m, "SyncDetectorStatus")
+  nb::enum_<SyncDetectorStatus>(m, "SyncDetectorStatus")
       .value("OK", SyncDetectorStatus::kOk)
       .value("INVALID_INPUT", SyncDetectorStatus::kInvalidInput)
       .value("NOT_DETECTED", SyncDetectorStatus::kNotDetected)
       .value("FAULT_DETECTED", SyncDetectorStatus::kFaultDetected)
       .export_values();
 
-  py::class_<SyncResult>(m, "SyncResult")
-      .def_readonly("frame_offset", &SyncResult::frame_offset)
-      .def_readonly("peak_metric", &SyncResult::peak_metric)
-      .def_readonly("second_peak", &SyncResult::second_peak)
-      .def_readonly("detected", &SyncResult::detected);
+  nb::class_<SyncResult>(m, "SyncResult")
+      .def_ro("frame_offset", &SyncResult::frame_offset)
+      .def_ro("peak_metric", &SyncResult::peak_metric)
+      .def_ro("second_peak", &SyncResult::second_peak)
+      .def_ro("detected", &SyncResult::detected);
 
   m.def(
       "sync_detect",
-      [](py::array_t<float, py::array::c_style | py::array::forcecast> rx_symbols,
+      [](nb::ndarray<const float, nb::ndim<1>, nb::c_contig, nb::device::cpu> rx_symbols,
          float threshold) {
         NullTelemetryHal hal;
         SyncDetector det(hal);
         if (threshold > 0.0F) {
           if (!det.set_threshold(threshold)) {
-            throw py::value_error("Invalid threshold");
+            throw nb::value_error("Invalid threshold");
           }
         }
         SyncResult result{};
         auto status = det.detect(
-            std::span<const float>(rx_symbols.data(), static_cast<size_t>(rx_symbols.size())),
+            std::span<const float>(rx_symbols.data(), rx_symbols.shape(0)),
             result);
-        return py::make_tuple(result, status);
+        return nb::make_tuple(result, status);
       },
-      py::arg("rx_symbols"),
-      py::arg("threshold") = 0.0F,
+      "rx_symbols"_a,
+      "threshold"_a = 0.0F,
       R"(Detect the 68-symbol sync pattern in a stream of soft symbols.
 
 Parameters
@@ -574,7 +740,7 @@ tuple[SyncResult, SyncDetectorStatus]
 
   // ── Frame Decode (RX Pipeline) ──────────────────────────────────────────
 
-  py::enum_<FrameDecodeStatus>(m, "FrameDecodeStatus")
+  nb::enum_<FrameDecodeStatus>(m, "FrameDecodeStatus")
       .value("OK", FrameDecodeStatus::kOk)
       .value("SYNC_NOT_FOUND", FrameDecodeStatus::kSyncNotFound)
       .value("BCH_FAILED", FrameDecodeStatus::kBchFailed)
@@ -584,21 +750,21 @@ tuple[SyncResult, SyncDetectorStatus]
       .value("FAULT_DETECTED", FrameDecodeStatus::kFaultDetected)
       .export_values();
 
-  py::class_<SubframeDecodeResult>(m, "SubframeDecodeResult")
-      .def_readonly("ldpc_converged", &SubframeDecodeResult::ldpc_converged)
-      .def_readonly("crc_ok", &SubframeDecodeResult::crc_ok);
+  nb::class_<SubframeDecodeResult>(m, "SubframeDecodeResult")
+      .def_ro("ldpc_converged", &SubframeDecodeResult::ldpc_converged)
+      .def_ro("crc_ok", &SubframeDecodeResult::crc_ok);
 
-  py::class_<FrameDecodeResult>(m, "FrameDecodeResult")
-      .def_readonly("status", &FrameDecodeResult::status)
-      .def_readonly("sync", &FrameDecodeResult::sync)
-      .def_readonly("bch", &FrameDecodeResult::bch)
-      .def_readonly("sb2", &FrameDecodeResult::sb2)
-      .def_readonly("sb3", &FrameDecodeResult::sb3)
-      .def_readonly("sb4", &FrameDecodeResult::sb4);
+  nb::class_<FrameDecodeResult>(m, "FrameDecodeResult")
+      .def_ro("status", &FrameDecodeResult::status)
+      .def_ro("sync", &FrameDecodeResult::sync)
+      .def_ro("bch", &FrameDecodeResult::bch)
+      .def_ro("sb2", &FrameDecodeResult::sb2)
+      .def_ro("sb3", &FrameDecodeResult::sb3)
+      .def_ro("sb4", &FrameDecodeResult::sb4);
 
   m.def(
       "frame_decode",
-      [](py::array_t<float, py::array::c_style | py::array::forcecast> rx_symbols,
+      [](nb::ndarray<const float, nb::ndim<1>, nb::c_contig, nb::device::cpu> rx_symbols,
          uint8_t ldpc_iterations,
          float sync_threshold) {
         NullTelemetryHal hal;
@@ -606,7 +772,7 @@ tuple[SyncResult, SyncDetectorStatus]
         auto workspace = std::make_unique<FrameDecodeWorkspace>();
 
         const auto status = frame_decode(
-            std::span<const float>(rx_symbols.data(), static_cast<size_t>(rx_symbols.size())),
+            std::span<const float>(rx_symbols.data(), rx_symbols.shape(0)),
             result,
             *workspace,
             hal,
@@ -616,34 +782,25 @@ tuple[SyncResult, SyncDetectorStatus]
         // Copy decoded data into numpy arrays — only when overall status is kOk
         // AND the individual subframe CRC passed.  On any fault, workspace data
         // buffers have been scrubbed by frame_decode() and must not be copied.
-        auto sb2 = py::array_t<uint8_t>(static_cast<ssize_t>(kSb2DataBits));
-        auto sb3 = py::array_t<uint8_t>(static_cast<ssize_t>(kSb3DataBits));
-        auto sb4 = py::array_t<uint8_t>(static_cast<ssize_t>(kSb4DataBits));
+        auto [sb2, sb2_dst] = make_numpy_1d<uint8_t>(kSb2DataBits);
+        auto [sb3, sb3_dst] = make_numpy_1d<uint8_t>(kSb3DataBits);
+        auto [sb4, sb4_dst] = make_numpy_1d<uint8_t>(kSb4DataBits);
 
         if (status == FrameDecodeStatus::kOk && result.sb2.crc_ok) {
-          auto* dst = sb2.mutable_data();
-          for (size_t i = 0; i < kSb2DataBits; ++i) {
-            dst[i] = workspace->sb2_data[i];
-          }
+          std::memcpy(sb2_dst, workspace->sb2_data.data(), kSb2DataBits);
         }
         if (status == FrameDecodeStatus::kOk && result.sb3.crc_ok) {
-          auto* dst = sb3.mutable_data();
-          for (size_t i = 0; i < kSb3DataBits; ++i) {
-            dst[i] = workspace->sb3_data[i];
-          }
+          std::memcpy(sb3_dst, workspace->sb3_data.data(), kSb3DataBits);
         }
         if (status == FrameDecodeStatus::kOk && result.sb4.crc_ok) {
-          auto* dst = sb4.mutable_data();
-          for (size_t i = 0; i < kSb4DataBits; ++i) {
-            dst[i] = workspace->sb4_data[i];
-          }
+          std::memcpy(sb4_dst, workspace->sb4_data.data(), kSb4DataBits);
         }
 
-        return py::make_tuple(result, sb2, sb3, sb4, status);
+        return nb::make_tuple(result, sb2, sb3, sb4, status);
       },
-      py::arg("rx_symbols"),
-      py::arg("ldpc_iterations") = kFrameDecodeLdpcIterations,
-      py::arg("sync_threshold") = 0.0F,
+      "rx_symbols"_a,
+      "ldpc_iterations"_a = kFrameDecodeLdpcIterations,
+      "sync_threshold"_a = 0.0F,
       R"(Decode a complete AFS navigation frame from soft-decision symbols.
 
 Parameters
@@ -664,7 +821,7 @@ tuple[FrameDecodeResult, ndarray, ndarray, ndarray, FrameDecodeStatus]
 
   // ─── Correlator bindings ───────────────────────────────────────────────────
 
-  py::enum_<CorrelatorStatus>(m, "CorrelatorStatus")
+  nb::enum_<CorrelatorStatus>(m, "CorrelatorStatus")
       .value("OK", CorrelatorStatus::kOk)
       .value("INVALID_INPUT", CorrelatorStatus::kInvalidInput)
       .value("ACQ_FAILED", CorrelatorStatus::kAcqFailed)
@@ -672,84 +829,83 @@ tuple[FrameDecodeResult, ndarray, ndarray, ndarray, FrameDecodeStatus]
       .value("NOT_LOCKED", CorrelatorStatus::kNotLocked)
       .value("TIMEOUT", CorrelatorStatus::kTimeout);
 
-  py::enum_<ChannelState>(m, "ChannelState")
+  nb::enum_<ChannelState>(m, "ChannelState")
       .value("IDLE", ChannelState::kIdle)
       .value("ACQUIRING", ChannelState::kAcquiring)
       .value("TRACKING", ChannelState::kTracking)
       .value("LOST", ChannelState::kLost);
 
-  py::class_<AcquisitionResult>(m, "AcquisitionResult")
-      .def_readonly("code_delay", &AcquisitionResult::code_delay)
-      .def_readonly("doppler_hz", &AcquisitionResult::doppler_hz)
-      .def_readonly("peak_metric", &AcquisitionResult::peak_metric)
-      .def_readonly("locked", &AcquisitionResult::locked);
+  nb::class_<AcquisitionResult>(m, "AcquisitionResult")
+      .def_ro("code_delay", &AcquisitionResult::code_delay)
+      .def_ro("doppler_hz", &AcquisitionResult::doppler_hz)
+      .def_ro("peak_metric", &AcquisitionResult::peak_metric)
+      .def_ro("locked", &AcquisitionResult::locked);
 
-  py::class_<TrackingState>(m, "TrackingState")
-      .def_readonly("code_phase_chips", &TrackingState::code_phase_chips)
-      .def_readonly("carrier_phase_rad", &TrackingState::carrier_phase_rad)
-      .def_readonly("doppler_hz", &TrackingState::doppler_hz)
-      .def_readonly("dll_discriminator", &TrackingState::dll_discriminator)
-      .def_readonly("pll_discriminator", &TrackingState::pll_discriminator)
-      .def_readonly("cn0_estimate", &TrackingState::cn0_estimate)
-      .def_readonly("cn0_smooth", &TrackingState::cn0_smooth);
+  nb::class_<TrackingState>(m, "TrackingState")
+      .def_ro("code_phase_chips", &TrackingState::code_phase_chips)
+      .def_ro("carrier_phase_rad", &TrackingState::carrier_phase_rad)
+      .def_ro("doppler_hz", &TrackingState::doppler_hz)
+      .def_ro("dll_discriminator", &TrackingState::dll_discriminator)
+      .def_ro("pll_discriminator", &TrackingState::pll_discriminator)
+      .def_ro("cn0_estimate", &TrackingState::cn0_estimate)
+      .def_ro("cn0_smooth", &TrackingState::cn0_smooth);
 
-  py::class_<UniformPrior>(m, "UniformPrior").def(py::init<>());
+  nb::class_<UniformPrior>(m, "UniformPrior").def(nb::init<>());
 
-  py::class_<Correlator>(m, "Correlator")
-      .def(py::init([](UniformPrior& prior) {
+  nb::class_<Correlator>(m, "Correlator")
+      .def("__init__", [](Correlator* self, UniformPrior& prior) {
              static NullTelemetryHal hal;
-             return std::make_unique<Correlator>(prior, hal);
-           }),
-           py::arg("prior"),
-           py::keep_alive<1, 2>(),
-           "Construct a correlator with a UniformPrior.")
+             new (self) Correlator(prior, hal);
+           },
+           "prior"_a,
+           nb::keep_alive<1, 2>())
       .def(
           "assign_channel",
           [](Correlator& self, uint8_t ch_idx, uint8_t prn_id) {
             return self.assign_channel(ch_idx, PrnId{prn_id});
           },
-          py::arg("ch_idx"),
-          py::arg("prn_id"))
+          "ch_idx"_a,
+          "prn_id"_a)
       .def(
           "acquire",
           [](Correlator& self,
              uint8_t ch_idx,
-             py::array_t<std::complex<float>, py::array::c_style | py::array::forcecast> rx) {
+             nb::ndarray<const std::complex<float>, nb::ndim<1>, nb::c_contig, nb::device::cpu> rx) {
             AcquisitionResult result{};
             auto status = self.acquire(
                 ch_idx,
-                std::span<const std::complex<float>>(rx.data(), static_cast<size_t>(rx.size())),
+                std::span<const std::complex<float>>(rx.data(), rx.shape(0)),
                 result);
-            return py::make_tuple(result, status);
+            return nb::make_tuple(result, status);
           },
-          py::arg("ch_idx"),
-          py::arg("rx"))
+          "ch_idx"_a,
+          "rx"_a)
       .def(
           "track",
           [](Correlator& self,
              uint8_t ch_idx,
-             py::array_t<std::complex<float>, py::array::c_style | py::array::forcecast> rx) {
+             nb::ndarray<const std::complex<float>, nb::ndim<1>, nb::c_contig, nb::device::cpu> rx) {
             return self.track(
                 ch_idx,
-                std::span<const std::complex<float>>(rx.data(), static_cast<size_t>(rx.size())));
+                std::span<const std::complex<float>>(rx.data(), rx.shape(0)));
           },
-          py::arg("ch_idx"),
-          py::arg("rx"))
+          "ch_idx"_a,
+          "rx"_a)
       .def(
           "pseudorange",
           [](const Correlator& self, uint8_t ch_idx) {
             double meters = 0.0;
             auto status = self.pseudorange(ch_idx, meters);
-            return py::make_tuple(meters, status);
+            return nb::make_tuple(meters, status);
           },
-          py::arg("ch_idx"))
-      .def("channel_state", &Correlator::channel_state, py::arg("ch_idx"))
-      .def("tracking_state", &Correlator::tracking_state, py::arg("ch_idx"))
+          "ch_idx"_a)
+      .def("channel_state", &Correlator::channel_state, "ch_idx"_a)
+      .def("tracking_state", &Correlator::tracking_state, "ch_idx"_a)
       .def("data_symbol",
            &Correlator::data_symbol,
-           py::arg("ch_idx"),
+           "ch_idx"_a,
            "Return the soft data symbol (prompt.real()) after the last track() call.")
-      .def("reset_channel", &Correlator::reset_channel, py::arg("ch_idx"));
+      .def("reset_channel", &Correlator::reset_channel, "ch_idx"_a);
 
   m.attr("AFS_I_CODE_LENGTH") = kAfsICodeLength;
   m.attr("FFT_SIZE") = kFftSize;
@@ -806,7 +962,7 @@ tuple[FrameDecodeResult, ndarray, ndarray, ndarray, FrameDecodeStatus]
   m.attr("FRAM_HEADER_BYTES") = kFramHeaderBytes;
 
   // Legendre cache bindings
-  py::enum_<LegendreStatus>(m, "LegendreStatus")
+  nb::enum_<LegendreStatus>(m, "LegendreStatus")
       .value("OK", LegendreStatus::kOk)
       .value("OUTPUT_TOO_SMALL", LegendreStatus::kOutputTooSmall)
       .value("INVALID_PRIME", LegendreStatus::kInvalidPrime)
@@ -819,7 +975,7 @@ tuple[FrameDecodeResult, ndarray, ndarray, ndarray, FrameDecodeStatus]
 
   // ─── Message Parser bindings (Gateway 6) ──────────────────────────────────
 
-  py::enum_<MessageType>(m, "MessageType")
+  nb::enum_<MessageType>(m, "MessageType")
       .value("G1", MessageType::kG1)
       .value("G2", MessageType::kG2)
       .value("G3", MessageType::kG3)
@@ -846,13 +1002,13 @@ tuple[FrameDecodeResult, ndarray, ndarray, ndarray, FrameDecodeStatus]
       .value("UNKNOWN", MessageType::kUnknown)
       .export_values();
 
-  py::enum_<MessageParseStatus>(m, "MessageParseStatus")
+  nb::enum_<MessageParseStatus>(m, "MessageParseStatus")
       .value("OK", MessageParseStatus::kOk)
       .value("INVALID_INPUT", MessageParseStatus::kInvalidInput)
       .value("FAULT_DETECTED", MessageParseStatus::kFaultDetected)
       .export_values();
 
-  py::enum_<TotStatus>(m, "TotStatus")
+  nb::enum_<TotStatus>(m, "TotStatus")
       .value("OK", TotStatus::kOk)
       .value("INVALID_TOI", TotStatus::kInvalidToi)
       .value("INVALID_ITOW", TotStatus::kInvalidItow)
@@ -861,51 +1017,45 @@ tuple[FrameDecodeResult, ndarray, ndarray, ndarray, FrameDecodeStatus]
       .value("FAULT_DETECTED", TotStatus::kFaultDetected)
       .export_values();
 
-  py::class_<Sb2ParseResult>(m, "Sb2ParseResult")
-      .def_readonly("status", &Sb2ParseResult::status)
-      .def_readonly("wn", &Sb2ParseResult::wn)
-      .def_readonly("itow", &Sb2ParseResult::itow)
-      .def_readonly("data_offset", &Sb2ParseResult::data_offset)
-      .def_readonly("payload_size", &Sb2ParseResult::payload_size);
+  nb::class_<Sb2ParseResult>(m, "Sb2ParseResult")
+      .def_ro("status", &Sb2ParseResult::status)
+      .def_ro("wn", &Sb2ParseResult::wn)
+      .def_ro("itow", &Sb2ParseResult::itow)
+      .def_ro("data_offset", &Sb2ParseResult::data_offset)
+      .def_ro("payload_size", &Sb2ParseResult::payload_size);
 
-  py::class_<Sb3ParseResult>(m, "Sb3ParseResult")
-      .def_readonly("status", &Sb3ParseResult::status)
-      .def_readonly("type_raw", &Sb3ParseResult::type_raw)
-      .def_readonly("type", &Sb3ParseResult::type)
-      .def_readonly("data_offset", &Sb3ParseResult::data_offset)
-      .def_readonly("payload_size", &Sb3ParseResult::payload_size);
+  nb::class_<Sb3ParseResult>(m, "Sb3ParseResult")
+      .def_ro("status", &Sb3ParseResult::status)
+      .def_ro("type_raw", &Sb3ParseResult::type_raw)
+      .def_ro("type", &Sb3ParseResult::type)
+      .def_ro("data_offset", &Sb3ParseResult::data_offset)
+      .def_ro("payload_size", &Sb3ParseResult::payload_size);
 
-  py::class_<Sb4ParseResult>(m, "Sb4ParseResult")
-      .def_readonly("status", &Sb4ParseResult::status)
-      .def_readonly("type_raw", &Sb4ParseResult::type_raw)
-      .def_readonly("type", &Sb4ParseResult::type)
-      .def_readonly("data_offset", &Sb4ParseResult::data_offset)
-      .def_readonly("payload_size", &Sb4ParseResult::payload_size);
+  nb::class_<Sb4ParseResult>(m, "Sb4ParseResult")
+      .def_ro("status", &Sb4ParseResult::status)
+      .def_ro("type_raw", &Sb4ParseResult::type_raw)
+      .def_ro("type", &Sb4ParseResult::type)
+      .def_ro("data_offset", &Sb4ParseResult::data_offset)
+      .def_ro("payload_size", &Sb4ParseResult::payload_size);
 
-  py::class_<TotResult>(m, "TotResult")
-      .def_readonly("status", &TotResult::status)
-      .def_readonly("t_f", &TotResult::t_f);
+  nb::class_<TotResult>(m, "TotResult")
+      .def_ro("status", &TotResult::status)
+      .def_ro("t_f", &TotResult::t_f);
 
-  // parse_sb2/sb3/sb4: accept py::object and validate dtype manually to prevent
-  // silent float-to-int truncation from bypassing the C++ bit-value guard.
-  // pybind11's forcecast and implicit conversion both coerce before the lambda
-  // runs, so we must check the original array's dtype ourselves.
+  // parse_sb2/sb3/sb4: accept nb::ndarray<> (untyped) and validate dtype manually
+  // to prevent silent float-to-int truncation bypassing the C++ bit-value guard.
+  // nanobind's typed ndarray does implicit dtype conversion, so we must check.
   m.def("parse_sb2",
-        [](py::object obj) {
-          auto arr = py::array::ensure(obj);
-          if (!arr || !arr.dtype().is(py::dtype::of<uint8_t>())) {
-            throw py::type_error("sb2_data must be a numpy array with dtype uint8");
-          }
-          auto sb2_data = py::array_t<uint8_t, py::array::c_style>::ensure(obj);
-          if (!sb2_data) {
-            throw py::type_error("sb2_data must be a C-contiguous uint8 array");
-          }
+        [](ndarray_1d sb2_data) {
           Sb2ParseResult result{};
-          (void)parse_sb2(
-              std::span<const uint8_t>(sb2_data.data(), static_cast<size_t>(sb2_data.size())), result);
+          auto status = parse_sb2(checked_span<uint8_t>(sb2_data, "sb2_data"), result);
+          if (status == MessageParseStatus::kFaultDetected)
+            throw nb::value_error("parse_sb2: fault detected");
+          if (status != MessageParseStatus::kOk)
+            throw nb::value_error("parse_sb2 failed");
           return result;
         },
-        py::arg("sb2_data"),
+        "sb2_data"_a,
         R"(Parse Subframe 2: extract WN and ITOW fields. [LSIS-AFS-801]
 
 Parameters
@@ -921,21 +1071,16 @@ Sb2ParseResult
 )");
 
   m.def("parse_sb3",
-        [](py::object obj) {
-          auto arr = py::array::ensure(obj);
-          if (!arr || !arr.dtype().is(py::dtype::of<uint8_t>())) {
-            throw py::type_error("sb3_data must be a numpy array with dtype uint8");
-          }
-          auto sb3_data = py::array_t<uint8_t, py::array::c_style>::ensure(obj);
-          if (!sb3_data) {
-            throw py::type_error("sb3_data must be a C-contiguous uint8 array");
-          }
+        [](ndarray_1d sb3_data) {
           Sb3ParseResult result{};
-          (void)parse_sb3(
-              std::span<const uint8_t>(sb3_data.data(), static_cast<size_t>(sb3_data.size())), result);
+          auto status = parse_sb3(checked_span<uint8_t>(sb3_data, "sb3_data"), result);
+          if (status == MessageParseStatus::kFaultDetected)
+            throw nb::value_error("parse_sb3: fault detected");
+          if (status != MessageParseStatus::kOk)
+            throw nb::value_error("parse_sb3 failed");
           return result;
         },
-        py::arg("sb3_data"),
+        "sb3_data"_a,
         R"(Parse Subframe 3: extract type field. [LSIS-AFS-802]
 
 Parameters
@@ -951,21 +1096,16 @@ Sb3ParseResult
 )");
 
   m.def("parse_sb4",
-        [](py::object obj) {
-          auto arr = py::array::ensure(obj);
-          if (!arr || !arr.dtype().is(py::dtype::of<uint8_t>())) {
-            throw py::type_error("sb4_data must be a numpy array with dtype uint8");
-          }
-          auto sb4_data = py::array_t<uint8_t, py::array::c_style>::ensure(obj);
-          if (!sb4_data) {
-            throw py::type_error("sb4_data must be a C-contiguous uint8 array");
-          }
+        [](ndarray_1d sb4_data) {
           Sb4ParseResult result{};
-          (void)parse_sb4(
-              std::span<const uint8_t>(sb4_data.data(), static_cast<size_t>(sb4_data.size())), result);
+          auto status = parse_sb4(checked_span<uint8_t>(sb4_data, "sb4_data"), result);
+          if (status == MessageParseStatus::kFaultDetected)
+            throw nb::value_error("parse_sb4: fault detected");
+          if (status != MessageParseStatus::kOk)
+            throw nb::value_error("parse_sb4 failed");
           return result;
         },
-        py::arg("sb4_data"),
+        "sb4_data"_a,
         R"(Parse Subframe 4: extract type field. [LSIS-AFS-803]
 
 Parameters
@@ -984,10 +1124,10 @@ Sb4ParseResult
         [](uint16_t wn, uint16_t itow, uint8_t toi, double delta_t_lrt) {
           return compute_tot(wn, itow, toi, delta_t_lrt);
         },
-        py::arg("wn"),
-        py::arg("itow"),
-        py::arg("toi"),
-        py::arg("delta_t_lrt") = 0.0,
+        "wn"_a,
+        "itow"_a,
+        "toi"_a,
+        "delta_t_lrt"_a = 0.0,
         R"(Compute Time of Transmission per LSIS-720. [LSIS-AFS-810]
 
 Formula: t_F = WN * 604800 + ITOW * 1200 + TOI * 12 + delta_t_lrt
@@ -1031,43 +1171,43 @@ TotResult
   using lunalink::core::SiseResult;
   using lunalink::core::SisePercentileResult;
 
-  py::enum_<SiseStatus>(m, "SiseStatus")
+  nb::enum_<SiseStatus>(m, "SiseStatus")
       .value("OK", SiseStatus::kOk)
       .value("INVALID_INPUT", SiseStatus::kInvalidInput)
       .value("EMPTY_DATA", SiseStatus::kEmptyData)
       .value("FAULT_DETECTED", SiseStatus::kFaultDetected)
       .export_values();
 
-  py::class_<SiseVec>(m, "SiseVec")
-      .def(py::init<double, double, double, double>(),
-           py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0,
-           py::arg("ct") = 0.0)
-      .def_readwrite("x", &SiseVec::x)
-      .def_readwrite("y", &SiseVec::y)
-      .def_readwrite("z", &SiseVec::z)
-      .def_readwrite("ct", &SiseVec::ct);
+  nb::class_<SiseVec>(m, "SiseVec")
+      .def(nb::init<double, double, double, double>(),
+           "x"_a = 0.0, "y"_a = 0.0, "z"_a = 0.0,
+           "ct"_a = 0.0)
+      .def_rw("x", &SiseVec::x)
+      .def_rw("y", &SiseVec::y)
+      .def_rw("z", &SiseVec::z)
+      .def_rw("ct", &SiseVec::ct);
 
-  py::class_<SiseResult>(m, "SiseResult")
-      .def_readonly("status", &SiseResult::status)
-      .def_readonly("position_error_m", &SiseResult::position_error_m)
-      .def_readonly("velocity_error_mps", &SiseResult::velocity_error_mps);
+  nb::class_<SiseResult>(m, "SiseResult")
+      .def_ro("status", &SiseResult::status)
+      .def_ro("position_error_m", &SiseResult::position_error_m)
+      .def_ro("velocity_error_mps", &SiseResult::velocity_error_mps);
 
-  py::class_<SisePercentileResult>(m, "SisePercentileResult")
-      .def_readonly("status", &SisePercentileResult::status)
-      .def_readonly("position_percentile_m", &SisePercentileResult::position_percentile_m)
-      .def_readonly("velocity_percentile_mps", &SisePercentileResult::velocity_percentile_mps)
-      .def_readonly("position_pass", &SisePercentileResult::position_pass)
-      .def_readonly("velocity_pass", &SisePercentileResult::velocity_pass);
+  nb::class_<SisePercentileResult>(m, "SisePercentileResult")
+      .def_ro("status", &SisePercentileResult::status)
+      .def_ro("position_percentile_m", &SisePercentileResult::position_percentile_m)
+      .def_ro("velocity_percentile_mps", &SisePercentileResult::velocity_percentile_mps)
+      .def_ro("position_pass", &SisePercentileResult::position_pass)
+      .def_ro("velocity_pass", &SisePercentileResult::velocity_pass);
 
   m.def("compute_sise",
         [](SiseVec pos_true, SiseVec pos_broadcast, SiseVec vel_true, SiseVec vel_broadcast) {
           return lunalink::core::compute_sise(pos_true, pos_broadcast,
                                               vel_true, vel_broadcast);
         },
-        py::arg("pos_true"),
-        py::arg("pos_broadcast"),
-        py::arg("vel_true"),
-        py::arg("vel_broadcast"),
+        "pos_true"_a,
+        "pos_broadcast"_a,
+        "vel_true"_a,
+        "vel_broadcast"_a,
         R"(Compute single-epoch SISE per LSIS V1.0 §2.2.2. [LSIS-SISE]
 
 4-D RSS of (true - broadcast) position+clock and velocity+clock-drift.
@@ -1090,19 +1230,19 @@ SiseResult
 )");
 
   m.def("compute_sise_percentile",
-        [](py::array_t<double, py::array::c_style | py::array::forcecast> pos_errors,
-           py::array_t<double, py::array::c_style | py::array::forcecast> vel_errors,
+        [](nb::ndarray<const double, nb::ndim<1>, nb::c_contig, nb::device::cpu> pos_errors,
+           nb::ndarray<const double, nb::ndim<1>, nb::c_contig, nb::device::cpu> vel_errors,
            double percentile) {
-          const auto n = static_cast<size_t>(pos_errors.size());
-          if (static_cast<size_t>(vel_errors.size()) != n) {
-            throw py::value_error("pos_errors and vel_errors must have same length");
+          const auto n = pos_errors.shape(0);
+          if (vel_errors.shape(0) != n) {
+            throw nb::value_error("pos_errors and vel_errors must have same length");
           }
           return lunalink::core::compute_sise_percentile(
               pos_errors.data(), vel_errors.data(), n, percentile);
         },
-        py::arg("pos_errors_m"),
-        py::arg("vel_errors_mps"),
-        py::arg("percentile") = 0.95,
+        "pos_errors_m"_a,
+        "vel_errors_mps"_a,
+        "percentile"_a = 0.95,
         R"(Compute percentile SISE over N epochs. [LSIS-SISE]
 
 Parameters

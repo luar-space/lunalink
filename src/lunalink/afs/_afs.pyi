@@ -244,6 +244,38 @@ def frame_decode(
     FrameDecodeStatus,
 ]: ...
 
+class SignalGenStatus(IntEnum):
+    OK = 0x5A
+    INVALID_PRN = 0xA5
+    INVALID_INPUT = 0x33
+    MODULATION_FAILED = 0xCC
+    MUX_FAILED = 0x99
+    FAULT_DETECTED = 0x66
+
+def generate_iq_epoch_native(
+    prn_id: int,
+    epoch_idx: int,
+    data_symbol: int = 1,
+) -> NDArray[np.int16]: ...
+def generate_iq_epoch_float(
+    prn_id: int,
+    epoch_idx: int,
+    data_symbol: int = 1,
+    sample_rate: float = ...,
+) -> NDArray[np.float32]: ...
+def generate_iq_frame_native(
+    prn_id: int,
+    frame_symbols: NDArray[np.uint8],
+) -> NDArray[np.int16]: ...
+def generate_iq_frame_float(
+    prn_id: int,
+    frame_symbols: NDArray[np.uint8],
+    sample_rate: float,
+) -> NDArray[np.float32]: ...
+
+IQ_PAIRS_PER_EPOCH: int
+IQ_PAIRS_PER_FRAME: int
+
 class CorrelatorStatus(IntEnum):
     OK = 0x5A
     INVALID_INPUT = 0xA5

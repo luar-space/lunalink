@@ -129,6 +129,7 @@ add_library(lunalink_core
     cpp/signal/iq_mux.cpp
     cpp/signal/correlator.cpp
     cpp/signal/sync_detector.cpp
+    cpp/signal/signal_gen.cpp
     # core/ — Utilities (Gateway 7)
     cpp/core/sise.cpp
     # platform/ — System infrastructure
@@ -152,13 +153,24 @@ endif()
 # --- Python Bindings ---
 if(BUILD_PYTHON_BINDINGS)
     find_package(Python 3.8 COMPONENTS Interpreter Development.Module REQUIRED)
-    find_package(pybind11 CONFIG REQUIRED)
+    execute_process(
+        COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
+        OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE NB_DIR)
+    list(APPEND CMAKE_PREFIX_PATH "${NB_DIR}")
+    find_package(nanobind CONFIG REQUIRED)
 
-    python_add_library(_afs MODULE cpp/bindings/afs_module.cpp)
-    target_link_libraries(_afs PRIVATE lunalink_core pybind11::module)
-    # Bindings get standard warnings but NOT -fno-rtti (needed by pybind11)
+    # NB_STATIC: link nanobind statically (smaller binary, no shared lib dep)
+    # NB_SUPPRESS_WARNINGS: mark nanobind+Python headers as SYSTEM so our
+    #   full warning set applies only to our own code
+    # nanobind_add_module also sets CXX_VISIBILITY_PRESET=hidden internally
+    #   (via nanobind_set_visibility), replacing the explicit set_target_properties
+    #   that the pybind11 build required.
+    # Note: binding code requires exceptions (throw nb::value_error etc.),
+    #   so LUNALINK_CORE_FLAGS (-fno-exceptions -fno-rtti) is NOT applied here.
+    nanobind_add_module(_afs NB_STATIC NB_SUPPRESS_WARNINGS
+        cpp/bindings/afs_module.cpp)
+    target_link_libraries(_afs PRIVATE lunalink_core)
     target_compile_options(_afs PRIVATE ${LUNALINK_WARNING_FLAGS})
-    set_target_properties(_afs PROPERTIES CXX_VISIBILITY_PRESET "hidden")
 
     # Install the extension into the package structure
     install(TARGETS _afs DESTINATION lunalink/afs)

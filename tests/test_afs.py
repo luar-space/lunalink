@@ -841,10 +841,10 @@ class TestParseSb2:
         assert result.itow == 0
 
     def test_wrong_size_rejected(self):
-        """Wrong input size returns INVALID_INPUT."""
+        """Wrong input size raises ValueError."""
         too_small = np.zeros(100, dtype=np.uint8)
-        result = parse_sb2(too_small)
-        assert result.status == MessageParseStatus.INVALID_INPUT
+        with pytest.raises(ValueError, match="parse_sb2 failed"):
+            parse_sb2(too_small)
 
     def test_float_dtype_rejected(self):
         """Non-uint8 dtype is rejected, not silently coerced."""
@@ -906,9 +906,9 @@ class TestParseSb3:
         assert result.type == MessageType.UNKNOWN
 
     def test_wrong_size_rejected(self):
-        """Wrong size returns INVALID_INPUT."""
-        result = parse_sb3(np.zeros(10, dtype=np.uint8))
-        assert result.status == MessageParseStatus.INVALID_INPUT
+        """Wrong size raises ValueError."""
+        with pytest.raises(ValueError, match="parse_sb3 failed"):
+            parse_sb3(np.zeros(10, dtype=np.uint8))
 
     def test_payload_offset_and_size(self):
         """Payload covers bits after the type field."""
@@ -933,9 +933,9 @@ class TestParseSb4:
         assert result.type == MessageType.G1
 
     def test_wrong_size_rejected(self):
-        """Wrong size returns INVALID_INPUT."""
-        result = parse_sb4(np.zeros(10, dtype=np.uint8))
-        assert result.status == MessageParseStatus.INVALID_INPUT
+        """Wrong size raises ValueError."""
+        with pytest.raises(ValueError, match="parse_sb4 failed"):
+            parse_sb4(np.zeros(10, dtype=np.uint8))
 
     def test_payload_offset_and_size(self):
         """Payload covers bits after the type field."""
