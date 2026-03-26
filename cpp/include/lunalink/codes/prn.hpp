@@ -107,8 +107,7 @@ unpack_chip(const PrnCode& code, uint16_t chip_idx, uint8_t& out_chip) noexcept 
   // ESA Safety: Force fail-safe initial state.
   out_chip = 0U;
 
-  if (chip_idx >= code.chip_length || static_cast<uint32_t>(chip_idx >> 3U) >=
-                                          static_cast<uint32_t>(code.data.size())) [[unlikely]] {
+  if (chip_idx >= code.chip_length || (chip_idx >> 3U) >= code.data.size()) [[unlikely]] {
     status = PrnStatus::kInvalidChipIndex;
   } else {
     const auto byte = static_cast<uint32_t>(code.data[chip_idx >> 3U]);
@@ -116,8 +115,5 @@ unpack_chip(const PrnCode& code, uint16_t chip_idx, uint8_t& out_chip) noexcept 
   }
   return status;
 }
-
-// Keep backward-compatible alias.
-inline constexpr uint8_t kGoldPrnCount = kPrnCount;
 
 } // namespace lunalink::signal

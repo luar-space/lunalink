@@ -1,7 +1,5 @@
 #pragma once
-#include <algorithm>
 #include <cstdint>
-#include <limits>
 #include <span>
 
 /**
@@ -77,8 +75,10 @@ template <typename Container> inline void secure_scrub(Container& c) noexcept {
 }
 
 /**
- * @brief Temporal "Work-In-Progress" (WIP) tick for Watchdog feeding.
- * High-reliability loops should call this to prove progress.
+ * @brief File-scope WIP counter for the digital twin.
+ *
+ * In **flight**, the flight HAL must define `LUNALINK_WIP_TICK` before this
+ * header is included to redirect to a hardware watchdog poke.
  *
  * Wrap-around is acceptable for the mission profile: the 12 s frame period
  * yields ~10 M ticks maximum per frame, well within the uint32_t 4 G limit.
@@ -87,13 +87,18 @@ template <typename Container> inline void secure_scrub(Container& c) noexcept {
  * is intentionally NOT used — a saturated counter would stop changing and
  * falsely trigger the watchdog.
  */
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables) -- HAL-replaceable WIP counter
+inline volatile uint32_t g_wip_count = 0;
+
+#ifndef LUNALINK_WIP_TICK
 inline void wip_tick() noexcept {
-  // Flight-specific WIP implementation (e.g., poke a hardware register or
-  // increment a global) Implementation-defined for the specific hardware
-  // digital twin.
-  [[maybe_unused]] volatile static uint32_t wip_count = 0;
-  wip_count = wip_count + 1U;
+  g_wip_count = g_wip_count + 1U;
 }
+#else
+inline void wip_tick() noexcept {
+  LUNALINK_WIP_TICK;
+}
+#endif
 
 /**
  * @brief Runtime aliasing check: returns true if two byte ranges overlap.
@@ -104,6 +109,12 @@ inline void wip_tick() noexcept {
  */
 [[nodiscard]] inline bool
 spans_overlap(const void* a, size_t a_bytes, const void* b, size_t b_bytes) noexcept {
+  if (a == nullptr || b == nullptr) {
+    return false;
+  }
+  if (a_bytes == 0 || b_bytes == 0) {
+    return false;
+  }
   const auto* ab = static_cast<const uint8_t*>(a);
   const auto* bb = static_cast<const uint8_t*>(b);
   // Pointer arithmetic needed for byte-level overlap comparison —
@@ -193,23 +204,43 @@ template <typename T> struct TmrValue {
    * @brief Perform majority vote and repair the corrupted copy.
    * Constant-time complexity (branchless if possible, but repair requires
    * assignment).
+   * @param[out] fault  Set to true if no majority exists (triple-corruption).
+   *                    Caller MUST check this and escalate to Safe Mode.
    * @note Not constexpr because it performs active repair on mutable members.
    */
-  [[nodiscard]] T vote() const noexcept {
+  [[nodiscard]] T vote(bool& fault) const noexcept {
+    fault = false;
     if (v1 == v2) {
+      LUNALINK_CRITICAL_ENTER;
       v3 = v1; // Repair v3 if it flipped
+      LUNALINK_CRITICAL_EXIT;
       return v1;
     }
     if (v1 == v3) {
+      LUNALINK_CRITICAL_ENTER;
       v2 = v1; // Repair v2 if it flipped
+      LUNALINK_CRITICAL_EXIT;
       return v1;
     }
     if (v2 == v3) {
+      LUNALINK_CRITICAL_ENTER;
       v1 = v2; // Repair v1 if it flipped
+      LUNALINK_CRITICAL_EXIT;
       return v2;
     }
-    // Critical Failure: No majority. In flight, this triggers Safe Mode.
+    // Critical Failure: No majority — triple-corruption detected.
+    fault = true;
     return v1;
+  }
+
+  /**
+   * @brief Convenience overload: majority vote with repair, no fault output.
+   * Use only when the caller already has a separate integrity check path
+   * (e.g., CFI terminal verification covers the downstream computation).
+   */
+  [[nodiscard]] T vote() const noexcept {
+    bool fault = false;
+    return vote(fault);
   }
 
   /**
@@ -223,8 +254,12 @@ template <typename T> struct TmrValue {
     return v2;
   }
 
-  constexpr void refresh(T v) noexcept {
-    v1 = v2 = v3 = v;
+  void refresh(T v) noexcept {
+    LUNALINK_CRITICAL_ENTER;
+    v1 = v;
+    v2 = v;
+    v3 = v;
+    LUNALINK_CRITICAL_EXIT;
   }
 
   // Value-type equality comparison required — NOLINTNEXTLINE(fuchsia-overloaded-operator)
@@ -331,7 +366,9 @@ public:
   explicit constexpr CfiGuard(uint32_t magic, uint32_t n) noexcept
       : count_(magic), expected_(magic + n) {}
   void tick() noexcept {
+    LUNALINK_CRITICAL_ENTER;
     count_ = count_ + 1U;
+    LUNALINK_CRITICAL_EXIT;
   }
   [[nodiscard]] bool verify() const noexcept {
     return count_ == expected_;

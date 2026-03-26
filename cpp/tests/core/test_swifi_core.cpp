@@ -13,6 +13,7 @@
 
 #include <array>
 #include <limits>
+#include <span>
 
 using namespace lunalink::core;
 
@@ -65,12 +66,12 @@ TEST_CASE("[LSIS-SISE] SWIFI: compute_sise clock term injection — "
 // FI-38: compute_sise_percentile — CFI milestone skip / input rejection
 // ---------------------------------------------------------------------------
 
-TEST_CASE("[LSIS-SISE] SWIFI: compute_sise_percentile null pointer — "
+TEST_CASE("[LSIS-SISE] SWIFI: compute_sise_percentile mismatched spans — "
           "kInvalidInput, output scrubbed",
           "[swifi][core]") {
     std::array<double, 3> pos = {1.0, 2.0, 3.0};
     const auto result = compute_sise_percentile(
-        pos.data(), nullptr, pos.size(), 0.95);
+        std::span(pos), std::span<double>(), 0.95);
 
     REQUIRE(result.status == SiseStatus::kInvalidInput);
     CHECK(result.position_percentile_m == 0.0);
@@ -85,7 +86,7 @@ TEST_CASE("[LSIS-SISE] SWIFI: compute_sise_percentile NaN in data — "
     std::array<double, 3> pos = {1.0, std::numeric_limits<double>::quiet_NaN(), 3.0};
     std::array<double, 3> vel = {0.001, 0.002, 0.003};
     const auto result = compute_sise_percentile(
-        pos.data(), vel.data(), pos.size(), 0.95);
+        std::span(pos), std::span(vel), 0.95);
 
     REQUIRE(result.status == SiseStatus::kInvalidInput);
     CHECK(result.position_percentile_m == 0.0);
@@ -97,7 +98,7 @@ TEST_CASE("[LSIS-SISE] SWIFI: compute_sise_percentile NaN in data — "
 TEST_CASE("[LSIS-SISE] SWIFI: compute_sise_percentile empty data — "
           "kEmptyData, output scrubbed",
           "[swifi][core]") {
-    const auto result = compute_sise_percentile(nullptr, nullptr, 0, 0.95);
+    const auto result = compute_sise_percentile(std::span<double>(), std::span<double>(), 0.95);
 
     REQUIRE(result.status == SiseStatus::kEmptyData);
     CHECK(result.position_percentile_m == 0.0);
@@ -114,17 +115,17 @@ TEST_CASE("[LSIS-SISE] SWIFI: compute_sise_percentile invalid percentile — "
 
     // Percentile > 1.0
     auto result = compute_sise_percentile(
-        pos.data(), vel.data(), pos.size(), 1.5);
+        std::span(pos), std::span(vel), 1.5);
     REQUIRE(result.status == SiseStatus::kInvalidInput);
 
     // Percentile < 0.0
     result = compute_sise_percentile(
-        pos.data(), vel.data(), pos.size(), -0.1);
+        std::span(pos), std::span(vel), -0.1);
     REQUIRE(result.status == SiseStatus::kInvalidInput);
 
     // Percentile = NaN
     result = compute_sise_percentile(
-        pos.data(), vel.data(), pos.size(),
+        std::span(pos), std::span(vel),
         std::numeric_limits<double>::quiet_NaN());
     REQUIRE(result.status == SiseStatus::kInvalidInput);
 }

@@ -68,7 +68,7 @@ bool SignalChainFsm::on_frame_fault() noexcept {
     consecutive_fault_count_ = 0U;
     return false;
   }
-  consecutive_fault_count_++;
+  consecutive_fault_count_ = consecutive_fault_count_ + 1U;
   if (consecutive_fault_count_ >= 2U) {
     // Two consecutive frame faults → Zone 3. // FIZ-3
     const FaultPacket pkt{ // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): consecutive_fault_count_ >= 2 escalation architecturally unreachable — first fault transitions to kFrameFault, second call caught by precondition guard

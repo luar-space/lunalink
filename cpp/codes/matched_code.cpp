@@ -20,7 +20,7 @@ struct MatchedCodeGenResult {
 };
 
 // Generate primary code and compute sec^tert modifier for a given epoch.
-MatchedCodeGenResult generate_matched_codes(const MatchedCodeAssignment& assignment,
+[[nodiscard]] MatchedCodeGenResult generate_matched_codes(const MatchedCodeAssignment& assignment,
                                             uint16_t epoch_idx) noexcept {
   MatchedCodeGenResult res{};
 
@@ -53,12 +53,12 @@ MatchedCodeGenResult generate_matched_codes(const MatchedCodeAssignment& assignm
 
 // Apply sec^tert modifier to primary code and write unpacked chips to output.
 // Returns kOk on success, kFaultDetected on CFI failure.
-MatchedCodeStatus apply_modifier_to_output(const PrnCode& primary_code,
+[[nodiscard]] MatchedCodeStatus apply_modifier_to_output(const PrnCode& primary_code,
                                            uint8_t modifier,
                                            std::span<uint8_t> out) noexcept {
   const uint8_t byte_modifier = (modifier == 0) ? 0x00U : 0xFFU;
 
-  uint32_t byte_count = 0;
+  volatile uint32_t byte_count = 0;
   // NOLINTBEGIN(hicpp-signed-bitwise) -- bit shifts on unsigned values promoted from
   // uint8_t/uint32_t
   for (uint32_t b = 0; b < kWeil10230FullBytes; ++b) {
@@ -74,7 +74,9 @@ MatchedCodeStatus apply_modifier_to_output(const PrnCode& primary_code,
     out[base + 5U] = (final_byte >> 2U) & 1U;
     out[base + 6U] = (final_byte >> 1U) & 1U;
     out[base + 7U] = (final_byte >> 0U) & 1U;
-    byte_count++;
+    LUNALINK_CRITICAL_ENTER;
+    byte_count = byte_count + 1U;
+    LUNALINK_CRITICAL_EXIT;
     wip_tick();
   }
 
@@ -103,12 +105,6 @@ MatchedCodeStatus matched_code_epoch_checked(const MatchedCodeAssignment& assign
                                              uint16_t epoch_idx,
                                              std::span<uint8_t> out) noexcept {
   MatchedCodeStatus status = MatchedCodeStatus::kOk;
-
-  // ESA/JAXA Safety Policy: Invalidate output immediately to prevent stale data transmission
-  // in case of early return or unhandled failure.
-  if (!out.empty()) {
-    secure_scrub(out);
-  }
 
   if (out.size() < kWeil10230ChipLength) {
     status = MatchedCodeStatus::kOutputTooSmall;

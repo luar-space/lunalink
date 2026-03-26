@@ -7,8 +7,8 @@
 namespace lunalink::signal {
 
 struct WeilParams {
-  uint16_t k;
-  uint16_t p;
+  uint16_t weil_index;       ///< Weil shift parameter w (LSIS Table D-1 / E-1).
+  uint16_t insertion_index;  ///< Expansion insertion point p (LSIS §2.3.5.2).
 };
 
 /**

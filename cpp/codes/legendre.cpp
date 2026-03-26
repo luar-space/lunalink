@@ -68,7 +68,7 @@ LegendreStatus legendre_cache_init() noexcept {
 LegendreStatus generate_legendre_sequence(uint16_t prime, std::span<uint8_t> out) noexcept {
   LegendreStatus status = LegendreStatus::kOk;
   // cppcheck-suppress variableScope -- CFI counter must be at function scope for terminal check
-  uint32_t cfi_count = 0xA5A5A5A5U;
+  volatile uint32_t cfi_count = 0xA5A5A5A5U;
 
   if (out.size() < prime) {
     status = LegendreStatus::kOutputTooSmall;
@@ -95,7 +95,9 @@ LegendreStatus generate_legendre_sequence(uint16_t prime, std::span<uint8_t> out
       if (res < out.size()) {
         out[res] = 1U;
       }
-      cfi_count++;
+      LUNALINK_CRITICAL_ENTER;
+      cfi_count = cfi_count + 1U;
+      LUNALINK_CRITICAL_EXIT;
       wip_tick();
     }
 

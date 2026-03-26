@@ -28,10 +28,10 @@ enum class SyncDetectorStatus : uint8_t {
 // ─── Sync Detection Result ──────────────────────────────────────────────────
 
 struct SyncResult {
-  uint16_t frame_offset; ///< Symbol index where sync pattern starts.
-  float peak_metric;     ///< Peak cross-correlation value (max = 68.0).
-  float second_peak; ///< Second-highest peak (for discrimination); 0 if only one offset searched.
-  bool detected;     ///< True if peak_metric >= threshold.
+  uint16_t frame_offset = 0;  ///< Symbol index where sync pattern starts.
+  float peak_metric = 0.0F;   ///< Peak cross-correlation value (max = 68.0).
+  float second_peak = 0.0F;   ///< Second-highest peak (for discrimination); 0 if only one offset searched.
+  bool detected = false;       ///< True if peak_metric >= threshold.
 };
 
 // ─── Sync Pattern Detector ──────────────────────────────────────────────────

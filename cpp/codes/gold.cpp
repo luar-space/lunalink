@@ -39,7 +39,7 @@ PrnStatus GoldGenerator::generate(PrnId prn_id, std::span<uint8_t> out) noexcept
 
   // CFI: Magic start sentinel
   // cppcheck-suppress variableScope -- CFI counter must be at function scope for terminal check
-  uint32_t cfi_count = 0xA5A5A5A5U;
+  volatile uint32_t cfi_count = 0xA5A5A5A5U;
 
   if (!prn_id.valid()) {
     status = PrnStatus::kInvalidPrn;
@@ -74,7 +74,9 @@ PrnStatus GoldGenerator::generate(PrnId prn_id, std::span<uint8_t> out) noexcept
       } // NOCOVER_END
 
       out[i] = shift();
-      cfi_count++;
+      LUNALINK_CRITICAL_ENTER;
+      cfi_count = cfi_count + 1U;
+      LUNALINK_CRITICAL_EXIT;
       wip_tick();
     }
 
@@ -92,32 +94,21 @@ PrnStatus GoldGenerator::generate(PrnId prn_id, std::span<uint8_t> out) noexcept
 }
 
 uint8_t GoldGenerator::shift() noexcept {
-  /**
-   * @brief Implementation of dual 11-stage LFSR per LSIS Figure C-1.
-   * Logic: Stage 11 of G1 is XORed with Stage 11 of G2 to produce the chip.
-   * G1 Polynomial: x^11 + x^2 + 1
-   * G2 Polynomial: x^11 + x^8 + x^5 + x^2 + 1
-   */
+  // Dual 11-stage LFSR per LSIS Figure C-1.
+  // G1: x^11 + x^2 + 1    G2: x^11 + x^8 + x^5 + x^2 + 1
+  // Widen registers once to avoid repeated static_cast<uint32_t>.
+  const uint32_t g1 = g1_reg_;
+  const uint32_t g2 = g2_reg_;
 
-  const auto g1_out = static_cast<uint8_t>((static_cast<uint32_t>(g1_reg_) >> 10U) & 1U);
-  const auto g2_out = static_cast<uint8_t>((static_cast<uint32_t>(g2_reg_) >> 10U) & 1U);
-  const auto chip = static_cast<uint8_t>(g1_out ^ g2_out);
+  const auto chip = static_cast<uint8_t>(((g1 >> 10U) ^ (g2 >> 10U)) & 1U);
 
-  // G1 feedback: tap 11 and stage 2 (XOR)
-  const auto g1_fb = static_cast<uint16_t>(
-      ((static_cast<uint32_t>(g1_reg_) >> 10U) ^ (static_cast<uint32_t>(g1_reg_) >> 1U)) & 1U);
-  g1_reg_ =
-      static_cast<uint16_t>((static_cast<uint32_t>(g1_reg_) << 1U) | static_cast<uint32_t>(g1_fb)) &
-      0x7FFU;
+  // G1 feedback: taps 11, 2
+  const uint32_t g1_fb = ((g1 >> 10U) ^ (g1 >> 1U)) & 1U;
+  g1_reg_ = static_cast<uint16_t>(((g1 << 1U) | g1_fb) & 0x7FFU);
 
-  // G2 feedback: tap 11, 8, 5, 2 (XOR)
-  const auto g2_fb = static_cast<uint16_t>(
-      ((static_cast<uint32_t>(g2_reg_) >> 10U) ^ (static_cast<uint32_t>(g2_reg_) >> 7U) ^
-       (static_cast<uint32_t>(g2_reg_) >> 4U) ^ (static_cast<uint32_t>(g2_reg_) >> 1U)) &
-      1U);
-  g2_reg_ =
-      static_cast<uint16_t>((static_cast<uint32_t>(g2_reg_) << 1U) | static_cast<uint32_t>(g2_fb)) &
-      0x7FFU;
+  // G2 feedback: taps 11, 8, 5, 2
+  const uint32_t g2_fb = ((g2 >> 10U) ^ (g2 >> 7U) ^ (g2 >> 4U) ^ (g2 >> 1U)) & 1U;
+  g2_reg_ = static_cast<uint16_t>(((g2 << 1U) | g2_fb) & 0x7FFU);
 
   return chip;
 }

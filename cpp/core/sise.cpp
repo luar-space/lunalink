@@ -14,7 +14,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <vector>
 
 namespace lunalink::core {
 
@@ -45,16 +44,18 @@ constexpr uint32_t kCfiMagicPercentile = 0x50435449U; // "PCTI"
 
 /// Validate percentile inputs. Returns kOk if valid; first failing status otherwise.
 [[nodiscard]] SiseStatus validate_percentile_inputs(
-    const double* pos_errors_m, const double* vel_errors_mps,
-    size_t n, double percentile) noexcept {
-    if (n == 0U) { return SiseStatus::kEmptyData; }
-    if (pos_errors_m == nullptr || vel_errors_mps == nullptr) {
+    std::span<const double> pos_errors_m, std::span<const double> vel_errors_mps,
+    double percentile) noexcept {
+    if (pos_errors_m.size() != vel_errors_mps.size()) {
         return SiseStatus::kInvalidInput;
+    }
+    if (pos_errors_m.empty()) {
+        return SiseStatus::kEmptyData;
     }
     if (!std::isfinite(percentile) || percentile < 0.0 || percentile > 1.0) {
         return SiseStatus::kInvalidInput;
     }
-    for (size_t i = 0; i < n; ++i) {
+    for (size_t i = 0; i < pos_errors_m.size(); ++i) {
         if (!std::isfinite(pos_errors_m[i]) || !std::isfinite(vel_errors_mps[i])) {
             return SiseStatus::kInvalidInput;
         }
@@ -62,13 +63,13 @@ constexpr uint32_t kCfiMagicPercentile = 0x50435449U; // "PCTI"
     return SiseStatus::kOk;
 }
 
-/// Compute the value at a given percentile index using nth_element.
-[[nodiscard]] double nth_percentile(const double* data, size_t n, size_t idx) noexcept {
-    std::vector<double> copy(data, data + n);
-    std::nth_element(copy.begin(),
-                     copy.begin() + static_cast<ptrdiff_t>(idx),
-                     copy.end());
-    return copy[idx];
+/// Compute the value at a given percentile index using nth_element in-place.
+/// The span is mutated (reordered) — caller must provide scratch data.
+[[nodiscard]] double nth_percentile_inplace(std::span<double> data, size_t idx) noexcept {
+    std::nth_element(data.begin(),
+                     data.begin() + static_cast<ptrdiff_t>(idx),
+                     data.end());
+    return data[idx];
 }
 
 /// Compute percentile index: ceil(p * n) - 1, clamped to [0, n-1].
@@ -143,16 +144,18 @@ constexpr uint32_t kCfiMagicPercentile = 0x50435449U; // "PCTI"
 }
 
 [[nodiscard]] SisePercentileResult compute_sise_percentile(
-    const double* pos_errors_m, const double* vel_errors_mps,
-    const size_t n, const double percentile) noexcept {
+    std::span<double> pos_errors_m, std::span<double> vel_errors_mps,
+    double percentile) noexcept {
     // [LSIS-SISE] Percentile computation over N epochs.
+    // Input spans are mutable: nth_element operates in-place, avoiding
+    // std::vector (forbidden in flight code). Caller provides scratch copies.
     SisePercentileResult result{};
     SiseStatus status = SiseStatus::kFaultDetected; // Pessimistic default
     volatile uint32_t cfi_count = kCfiMagicPercentile;
 
     // Input validation.
     const auto input_status = validate_percentile_inputs(
-        pos_errors_m, vel_errors_mps, n, percentile);
+        pos_errors_m, vel_errors_mps, percentile);
     bool ok = (input_status == SiseStatus::kOk);
     if (!ok) {
         status = input_status;
@@ -165,12 +168,13 @@ constexpr uint32_t kCfiMagicPercentile = 0x50435449U; // "PCTI"
         LUNALINK_CRITICAL_EXIT;
     }
 
-    // Compute percentile via partial sort.
+    // Compute percentile via in-place partial sort (no heap allocation).
     // cppcheck-suppress duplicateCondition  ; single-exit accumulator pattern
     if (ok) {
+        const size_t n = pos_errors_m.size();
         const size_t idx = percentile_index(percentile, n);
-        result.position_percentile_m = nth_percentile(pos_errors_m, n, idx);
-        result.velocity_percentile_mps = nth_percentile(vel_errors_mps, n, idx);
+        result.position_percentile_m = nth_percentile_inplace(pos_errors_m, idx);
+        result.velocity_percentile_mps = nth_percentile_inplace(vel_errors_mps, idx);
         result.position_pass = (result.position_percentile_m <= kSisePositionLimitM);
         result.velocity_pass = (result.velocity_percentile_mps <= kSiseVelocityLimitMps);
 

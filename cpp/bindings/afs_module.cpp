@@ -26,6 +26,7 @@
 #include <cstdint>
 #include <cstring>
 #include <span>
+#include <vector>
 
 namespace nb = nanobind;
 using namespace nb::literals;
@@ -227,8 +228,12 @@ NB_MODULE(_afs, m) {
 
   nb::class_<LdpcWorkspace>(m, "LdpcWorkspace")
       .def(nb::init<>())
-      .def_rw("alpha_numerator", &LdpcWorkspace::alpha_numerator)
-      .def_rw("alpha_denominator", &LdpcWorkspace::alpha_denominator);
+      .def_prop_rw("alpha_numerator",
+                    [](const LdpcWorkspace& ws) { return ws.alpha.numerator; },
+                    [](LdpcWorkspace& ws, int16_t v) { ws.alpha.numerator = v; })
+      .def_prop_rw("alpha_denominator",
+                    [](const LdpcWorkspace& ws) { return ws.alpha.denominator; },
+                    [](LdpcWorkspace& ws, int16_t v) { ws.alpha.denominator = v; });
 
   nb::enum_<PrnStatus>(m, "PrnStatus")
       .value("OK", PrnStatus::kOk)
@@ -1237,8 +1242,11 @@ SiseResult
           if (vel_errors.shape(0) != n) {
             throw nb::value_error("pos_errors and vel_errors must have same length");
           }
+          // Create mutable scratch copies — compute_sise_percentile reorders in-place.
+          std::vector<double> pos_copy(pos_errors.data(), pos_errors.data() + n);
+          std::vector<double> vel_copy(vel_errors.data(), vel_errors.data() + n);
           return lunalink::core::compute_sise_percentile(
-              pos_errors.data(), vel_errors.data(), n, percentile);
+              std::span<double>(pos_copy), std::span<double>(vel_copy), percentile);
         },
         "pos_errors_m"_a,
         "vel_errors_mps"_a,

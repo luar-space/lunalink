@@ -17,6 +17,17 @@ inline constexpr uint64_t kCodewordMask = 0x000FFFFFFFFFFFFFULL;
 /// Number of TOI values: kBchToiMax + 1 (used as FID/TOI index stride).
 constexpr uint32_t kBchToiCount = kBchToiMax + 1U;
 
+// Build a BchResult, scrubbing FID/TOI on fault.
+[[nodiscard]] BchResult make_bch_result(BchStatus status, uint32_t best_idx, uint8_t dist) noexcept {
+  if (status == BchStatus::kFaultDetected) {
+    return BchResult{status, Fid{}, Toi{}, 255U};
+  }
+  return BchResult{status,
+                   Fid(static_cast<uint8_t>(best_idx / kBchToiCount)),
+                   Toi(static_cast<uint8_t>(best_idx % kBchToiCount)),
+                   dist};
+}
+
 // Hard ML search result.
 struct BchHardSearchResult {
   uint32_t best_idx = 0;
@@ -26,9 +37,9 @@ struct BchHardSearchResult {
 };
 
 // Hard ML search: find minimum Hamming distance codeword.
-BchHardSearchResult bch_hard_search(uint64_t received) noexcept {
+[[nodiscard]] BchHardSearchResult bch_hard_search(uint64_t received) noexcept {
   BchHardSearchResult res{};
-  uint32_t cfi_count = 0xA5A5A5A5U;
+  volatile uint32_t cfi_count = 0xA5A5A5A5U;
 
   for (uint32_t i = 0; i < kBchCodebook.size(); ++i) {
     const uint64_t codeword = kBchCodebook.at(i);
@@ -39,7 +50,9 @@ BchHardSearchResult bch_hard_search(uint64_t received) noexcept {
     res.best_idx = is_new_min ? i : res.best_idx;
     res.min_dist = is_new_min ? dist : res.min_dist;
 
-    cfi_count++;
+    LUNALINK_CRITICAL_ENTER;
+    cfi_count = cfi_count + 1U;
+    LUNALINK_CRITICAL_EXIT;
     wip_tick();
   }
   res.cfi_ok = (cfi_count == (0xA5A5A5A5U + static_cast<uint32_t>(kBchCodebook.size())));
@@ -56,26 +69,36 @@ struct BchSoftSearchResult {
 };
 
 // Soft ML search: find maximum correlation codeword.
-BchSoftSearchResult bch_soft_search(std::span<const float, 52ULL> llr) noexcept {
+[[nodiscard]] BchSoftSearchResult bch_soft_search(std::span<const float, 52ULL> llr) noexcept {
   constexpr float kLlrClamp = 100.0F;
   BchSoftSearchResult res{};
-  uint32_t cfi_count = 0xA5A5A5A5U;
+  volatile uint32_t cfi_count = 0xA5A5A5A5U;
+
+  // Clamp LLRs once outside the search loop (avoiding 20,800 clamp operations).
+  std::array<float, 52> llr_clamped{};
+  for (uint32_t j = 0; j < 52U; ++j) {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index) -- j bounded by loop < 52
+    llr_clamped[j] = std::clamp(llr[j], -kLlrClamp, kLlrClamp);
+  }
 
   for (uint32_t i = 0; i < kBchCodebook.size(); ++i) {
     const uint64_t codeword = kBchCodebook.at(i);
     float metric = 0.0F;
     for (uint32_t j = 0; j < 52U; ++j) {
       const float s = 1.0F - 2.0F * static_cast<float>((codeword >> j) & 1ULL);
-      const float cl = std::clamp(llr[j], -kLlrClamp, kLlrClamp);
-      metric += cl * s;
-      wip_tick();
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index) -- j bounded by loop < 52
+      metric += llr_clamped[j] * s;
     }
+    // WIP tick per codeword (not per bit) — sufficient for watchdog at 400 Hz.
+    wip_tick();
     if (metric > res.best_metric) {
       res.best_metric = metric;
       res.best_idx = i;
       res.best_idx_mir = ~i;
     }
-    cfi_count++;
+    LUNALINK_CRITICAL_ENTER;
+    cfi_count = cfi_count + 1U;
+    LUNALINK_CRITICAL_EXIT;
   }
 
   res.cfi_ok = (cfi_count == (0xA5A5A5A5U + static_cast<uint32_t>(kBchCodebook.size())));
@@ -137,10 +160,7 @@ BchResult bch_decode(std::span<const uint8_t, 52ULL> in) noexcept {
     status = BchStatus::kNullOutput;
   }
 
-  const bool fault = (status == BchStatus::kFaultDetected);
-  const auto fid = Fid(fault ? 0U : static_cast<uint8_t>(sr.best_idx / kBchToiCount));
-  const auto toi = Toi(fault ? 0U : static_cast<uint8_t>(sr.best_idx % kBchToiCount));
-  return BchResult(status, fid, toi, fault ? 255U : static_cast<uint8_t>(sr.min_dist));
+  return make_bch_result(status, sr.best_idx, static_cast<uint8_t>(sr.min_dist));
 }
 
 BchResult bch_decode_soft(std::span<const float, 52ULL> llr) noexcept {
@@ -169,11 +189,8 @@ BchResult bch_decode_soft(std::span<const float, 52ULL> llr) noexcept {
     }
   }
 
-  const bool fault = (status == BchStatus::kFaultDetected);
-  const auto fid = Fid(fault ? 0U : static_cast<uint8_t>(sr.best_idx / kBchToiCount));
-  const auto toi = Toi(fault ? 0U : static_cast<uint8_t>(sr.best_idx % kBchToiCount));
   // 0xFF: soft-decode sentinel — hamming_distance is not a Hamming distance here.
-  return BchResult(status, fid, toi, 0xFFU);
+  return make_bch_result(status, sr.best_idx, 0xFFU);
 }
 
 uint64_t bch_codebook_checksum() noexcept {

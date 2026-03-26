@@ -10,7 +10,10 @@ namespace lunalink::signal {
 [[nodiscard]] constexpr uint32_t crc32_ieee_byte(uint32_t crc, uint8_t byte) noexcept {
   crc ^= byte;
   for (uint32_t j = 0; j < 8U; ++j) {
-    crc = (crc >> 1U) ^ (0xEDB88320U & (-(crc & 1U)));
+    // Branchless feedback: mask is 0xFFFFFFFF if LSB is 1, else 0.
+    // Route through int32_t to avoid unary minus on unsigned. [MISRA 7.0.5]
+    const uint32_t mask = static_cast<uint32_t>(-(static_cast<int32_t>(crc & 1U)));
+    crc = (crc >> 1U) ^ (0xEDB88320U & mask);
   }
   return crc;
 }

@@ -58,7 +58,7 @@ struct FrameBuildWorkspace {
 /// Symbol rate: 500 sps.
 inline constexpr uint16_t kSymbolRate = 500;
 
-/// Frame duration: 12.0 seconds.
+/// Frame duration: 12.0 seconds. Must agree with kFrameDurationSec in time_of_transmission.hpp.
 inline constexpr float kFrameDurationS = 12.0F;
 
 /** @brief Status codes for frame assembly (sync + SB1-SB4 + interleave). [LSIS-AFS-601]

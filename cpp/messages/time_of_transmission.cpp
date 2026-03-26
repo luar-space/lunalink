@@ -26,10 +26,10 @@ constexpr uint32_t kCfiMagicTot = 0x4D4D4D4DU;
     return TotStatus::kOk;
 }
 
-[[nodiscard]] TotResult compute_tot(const uint16_t wn,
-                                    const uint16_t itow,
-                                    const uint8_t toi,
-                                    const double delta_t_lrt) noexcept {
+[[nodiscard]] TotResult compute_tot(uint16_t wn,
+                                    uint16_t itow,
+                                    uint8_t toi,
+                                    double delta_t_lrt) noexcept {
     // [LSIS-AFS-810] Time of Transmission computation.
     TotResult result{};
     TotStatus status = TotStatus::kFaultDetected; // Pessimistic default

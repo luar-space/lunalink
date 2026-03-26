@@ -51,7 +51,9 @@ InterleaverStatus block_interleave(std::span<const uint8_t> in, std::span<uint8_
 
       out[out_idx] = in[in_idx];
       in_idx_acc++;
+      LUNALINK_CRITICAL_ENTER;
       cfi_count = cfi_count + 1U;
+      LUNALINK_CRITICAL_EXIT;
       wip_tick();
     }
   }
@@ -88,7 +90,9 @@ InterleaverStatus block_deinterleave(std::span<const uint8_t> in, std::span<uint
 
       out[out_idx] = in[in_idx];
       in_idx_acc++;
+      LUNALINK_CRITICAL_ENTER;
       cfi_count = cfi_count + 1U;
+      LUNALINK_CRITICAL_EXIT;
       wip_tick();
     }
   }
@@ -127,7 +131,9 @@ InterleaverStatus block_deinterleave_soft(std::span<const float> in,
 
       out[out_idx] = in[in_idx];
       in_idx_acc++;
+      LUNALINK_CRITICAL_ENTER;
       cfi_count = cfi_count + 1U;
+      LUNALINK_CRITICAL_EXIT;
       wip_tick();
     }
   }

@@ -80,13 +80,15 @@ struct LdpcWorkspace {
   std::array<int16_t, 32000> L_cv{};         // Check-to-variable messages (Sparse parts)
   std::array<int16_t, 4560> L_cv_identity{}; // Messages for identity part
 
-  // NMS scaling factor α = alpha_numerator / alpha_denominator.
-  // Default 2/3 ≈ 0.667 — optimized empirically for the LSIS-AFS LDPC
-  // codes (n=2400 rate-1/2 and n=1740 rate-1/2). Outperforms the standard
-  // α=3/4 by ~0.3 dB in the waterfall region.
-  // Valid range: numerator in [1,7], denominator in [1,8], numerator <= denominator.
-  int16_t alpha_numerator = 2;
-  int16_t alpha_denominator = 3;
+  /// NMS scaling factor α = numerator / denominator.
+  /// Default 2/3 ≈ 0.667 — optimized empirically for the LSIS-AFS LDPC
+  /// codes (n=2400 rate-1/2 and n=1740 rate-1/2). Outperforms the standard
+  /// α=3/4 by ~0.3 dB in the waterfall region.
+  /// Valid range: numerator in [1,7], denominator in [1,8], numerator <= denominator.
+  struct NmsAlpha {
+    int16_t numerator = 2;
+    int16_t denominator = 3;
+  } alpha{};
 };
 
 /**

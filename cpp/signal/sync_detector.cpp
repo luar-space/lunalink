@@ -18,7 +18,7 @@ struct SyncSearchResult {
 };
 
 // Search all valid offsets for the best sync pattern cross-correlation.
-SyncSearchResult sync_correlate_search(std::span<const float> rx_symbols,
+[[nodiscard]] SyncSearchResult sync_correlate_search(std::span<const float> rx_symbols,
                                        std::span<const float> sync_ref,
                                        uint32_t search_len) noexcept {
   SyncSearchResult res{};

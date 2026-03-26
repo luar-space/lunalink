@@ -8,7 +8,7 @@ namespace lunalink::signal {
 namespace {
 
 // Validate IQ mux input sizes and aliasing.
-IqMuxStatus validate_iq_inputs(std::span<const int8_t> i_samples,
+[[nodiscard]] IqMuxStatus validate_iq_inputs(std::span<const int8_t> i_samples,
                                std::span<const int8_t> q_samples,
                                std::span<int16_t> out) noexcept {
   if (i_samples.size() < kGoldChipLength || q_samples.size() < kWeil10230ChipLength) [[unlikely]] {
@@ -33,7 +33,7 @@ IqMuxStatus validate_iq_inputs(std::span<const int8_t> i_samples,
 // Validate that an IQ sample pair is in {-1, 1}.
 // NOLINTBEGIN(bugprone-signed-char-misuse) -- int8_t samples are +/-1 BPSK symbols, signedness
 // intentional
-IqMuxStatus validate_iq_sample(int8_t i_raw, int8_t q_raw) noexcept {
+[[nodiscard]] IqMuxStatus validate_iq_sample(int8_t i_raw, int8_t q_raw) noexcept {
   if (static_cast<int>(i_raw) * static_cast<int>(i_raw) != 1) [[unlikely]] {
     return IqMuxStatus::kInvalidISample;
   }
@@ -52,15 +52,10 @@ IqMuxStatus validate_iq_sample(int8_t i_raw, int8_t q_raw) noexcept {
 IqMuxStatus multiplex_iq(std::span<const int8_t> i_samples,
                          std::span<const int8_t> q_samples,
                          std::span<int16_t> out) noexcept {
-  // ESA/JAXA Safety Policy: Pre-initialise buffer.
-  if (!out.empty()) {
-    secure_scrub(out);
-  }
-
   IqMuxStatus status = validate_iq_inputs(i_samples, q_samples, out);
 
   if (status == IqMuxStatus::kOk) {
-    uint32_t loop_count = 0;
+    volatile uint32_t loop_count = 0;
     for (uint32_t n = 0; n < kIqSamplesPerEpoch; ++n) {
       const auto i_raw = i_samples[n / kIqUpsampleFactor];
       const auto q_raw = q_samples[n];
@@ -75,7 +70,9 @@ IqMuxStatus multiplex_iq(std::span<const int8_t> i_samples,
       out[idx] = static_cast<int16_t>(i_raw);
       out[idx + 1U] = static_cast<int16_t>(q_raw);
       // NOLINTEND(bugprone-signed-char-misuse)
-      loop_count++;
+      LUNALINK_CRITICAL_ENTER;
+      loop_count = loop_count + 1U;
+      LUNALINK_CRITICAL_EXIT;
       wip_tick();
     }
 

@@ -3,6 +3,7 @@
 #include "lunalink/codes/prn_table.hpp"
 #include "lunalink/codes/prn_table_weil10230.hpp"
 #include "lunalink/codes/prn_table_weil1500.hpp"
+#include "lunalink/core/crc32.hpp"
 #include "lunalink/core/safety.hpp"
 
 #include <algorithm> // for std::fill
@@ -63,10 +64,7 @@ uint64_t weil10230_codebook_checksum() noexcept {
   uint32_t crc = 0xFFFFFFFFU;
   for (const auto& row : kWeil10230PrnsPacked) {
     for (const uint8_t val : row) {
-      crc ^= val;
-      for (uint32_t i = 0; i < 8U; i++) {
-        crc = (crc >> 1U) ^ (0xEDB88320U & (-(crc & 1U)));
-      }
+      crc = crc32_ieee_byte(crc, val);
       wip_tick();
     }
   }
@@ -77,10 +75,7 @@ uint64_t weil1500_codebook_checksum() noexcept {
   uint32_t crc = 0xFFFFFFFFU;
   for (const auto& row : kWeil1500PrnsPacked) {
     for (const uint8_t val : row) {
-      crc ^= val;
-      for (uint32_t i = 0; i < 8U; i++) {
-        crc = (crc >> 1U) ^ (0xEDB88320U & (-(crc & 1U)));
-      }
+      crc = crc32_ieee_byte(crc, val);
       wip_tick();
     }
   }

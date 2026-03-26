@@ -97,8 +97,8 @@ TEST_CASE("Gateway 2: LDPC Decode Throughput", "[wcet]") {
     for (const auto& cfg : configs) {
       std::array<uint8_t, 1200> decoded{};
       LdpcWorkspace ws{};
-      ws.alpha_numerator = cfg.num;
-      ws.alpha_denominator = cfg.den;
+      ws.alpha.numerator = cfg.num;
+      ws.alpha.denominator = cfg.den;
 
       BENCHMARK("LDPC decode SF2 alpha=0.75") {
         return ldpc_decode(LdpcSubframe::kSF2, soft, 50, decoded, ws);

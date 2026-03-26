@@ -39,7 +39,9 @@ FrameStatus frame_build_partial(Fid fid,
   if (ok) {
     std::ranges::fill(out, 0U);
     std::ranges::copy(kSyncPattern, out.begin());
+    LUNALINK_CRITICAL_ENTER;
     cfi_count = cfi_count + 1U; // milestone 1: sync copied
+    LUNALINK_CRITICAL_EXIT;
   }
 
   // 2. SB1 (FID + TOI): 52 symbols BCH(51,8).
@@ -59,7 +61,9 @@ FrameStatus frame_build_partial(Fid fid,
         break; // NOCOVER_END
       }
     } else {
+      LUNALINK_CRITICAL_ENTER;
       cfi_count = cfi_count + 1U; // milestone 2: SB1 done
+      LUNALINK_CRITICAL_EXIT;
     }
   }
 
@@ -78,7 +82,9 @@ FrameStatus frame_build_partial(Fid fid,
       ok = false; // NOCOVER(DEFENCE_IN_DEPTH): interleaver fault path
       status = FrameStatus::kFaultDetected; // FIZ-2
     } else {
+      LUNALINK_CRITICAL_ENTER;
       cfi_count = cfi_count + 1U; // milestone 3: interleave done
+      LUNALINK_CRITICAL_EXIT;
     }
   }
   // Always scrub caller-owned staging (§7) — unconditional to prevent
@@ -193,7 +199,9 @@ encode_bch_header(Fid fid, Toi toi, std::span<uint8_t> sb1_out, FrameStatus& sta
   if (ok) {
     auto msg = std::span(msg_buf).subspan(0, expected_msg_bits);
     std::ranges::copy(data, msg.begin());
+    LUNALINK_CRITICAL_ENTER;
     cfi_count = cfi_count + 1U; // milestone 1: data copied
+    LUNALINK_CRITICAL_EXIT;
   }
 
   // Step 2: Compute CRC-24Q over data and append.
@@ -206,7 +214,9 @@ encode_bch_header(Fid fid, Toi toi, std::span<uint8_t> sb1_out, FrameStatus& sta
     } else {
       auto msg = std::span(msg_buf).subspan(0, expected_msg_bits);
       std::ranges::copy(crc, msg.begin() + static_cast<ptrdiff_t>(data.size()));
+      LUNALINK_CRITICAL_ENTER;
       cfi_count = cfi_count + 1U; // milestone 2: CRC appended
+      LUNALINK_CRITICAL_EXIT;
     }
   }
 
@@ -218,7 +228,9 @@ encode_bch_header(Fid fid, Toi toi, std::span<uint8_t> sb1_out, FrameStatus& sta
       ok = false; // NOCOVER(DEFENCE_IN_DEPTH): LDPC failure in subframe_build_ldpc
       status = FrameStatus::kLdpcFailed; // FIZ-1
     } else {
+      LUNALINK_CRITICAL_ENTER;
       cfi_count = cfi_count + 1U; // milestone 3: LDPC done
+      LUNALINK_CRITICAL_EXIT;
     }
   }
 
@@ -270,7 +282,9 @@ struct SubframeBuildParams {
       status = s; // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): build_subframes failure path
       return false;
     } // NOCOVER_END
+    LUNALINK_CRITICAL_ENTER;
     cfi_count = cfi_count + 1U;
+    LUNALINK_CRITICAL_EXIT;
   }
   return true;
 }
@@ -320,7 +334,9 @@ FrameStatus frame_build(Fid fid,
   if (ok) {
     std::ranges::fill(out, 0U);
     std::ranges::copy(kSyncPattern, out.begin());
+    LUNALINK_CRITICAL_ENTER;
     cfi_count = cfi_count + 1U; // milestone 1: sync copied
+    LUNALINK_CRITICAL_EXIT;
   }
 
   // Step 2: SB1 header — BCH(51,8) encode FID + TOI.
@@ -328,7 +344,9 @@ FrameStatus frame_build(Fid fid,
   if (ok) {
     ok = encode_bch_header(fid, toi, out.subspan<kSyncLength, kSb1Length>(), status);
     if (ok) {
+      LUNALINK_CRITICAL_ENTER;
       cfi_count = cfi_count + 1U;
+      LUNALINK_CRITICAL_EXIT;
     } // milestone 2: SB1 done
   }
 
@@ -359,7 +377,9 @@ FrameStatus frame_build(Fid fid,
       ok = false; // NOCOVER(DEFENCE_IN_DEPTH): interleaver fault in frame_build
       status = FrameStatus::kFaultDetected; // FIZ-2
     } else {
+      LUNALINK_CRITICAL_ENTER;
       cfi_count = cfi_count + 1U; // milestone 6: interleave done
+      LUNALINK_CRITICAL_EXIT;
     }
   }
 

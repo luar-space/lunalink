@@ -8,6 +8,7 @@
 
 #include <cmath>
 #include <limits>
+#include <span>
 #include <vector>
 
 using namespace lunalink::core;
@@ -140,7 +141,7 @@ TEST_CASE("[LSIS-SISE][core] percentile sorted data", "[core]") {
         vel[i] = static_cast<double>(i + 1) * 1e-4; // 0.0001..0.01 m/s
     }
 
-    const auto r = compute_sise_percentile(pos.data(), vel.data(), 100, 0.95);
+    const auto r = compute_sise_percentile(std::span(pos), std::span(vel), 0.95);
     REQUIRE(r.status == SiseStatus::kOk);
     REQUIRE_THAT(r.position_percentile_m, WithinAbs(95.0, 1e-12));
     REQUIRE_THAT(r.velocity_percentile_mps, WithinAbs(0.0095, 1e-12));
@@ -152,7 +153,7 @@ TEST_CASE("[LSIS-SISE][core] percentile all pass", "[core]") {
     std::vector<double> pos(20, 5.0);   // 5 m (< 40 m)
     std::vector<double> vel(20, 0.001); // 0.001 m/s (< 0.01 m/s)
 
-    const auto r = compute_sise_percentile(pos.data(), vel.data(), 20, 0.95);
+    const auto r = compute_sise_percentile(std::span(pos), std::span(vel), 0.95);
     REQUIRE(r.status == SiseStatus::kOk);
     REQUIRE(r.position_pass);
     REQUIRE(r.velocity_pass);
@@ -162,20 +163,20 @@ TEST_CASE("[LSIS-SISE][core] percentile boundary at limit", "[core]") {
     std::vector<double> pos(10, 40.0);
     std::vector<double> vel(10, 0.01);
 
-    const auto r = compute_sise_percentile(pos.data(), vel.data(), 10, 0.95);
+    const auto r = compute_sise_percentile(std::span(pos), std::span(vel), 0.95);
     REQUIRE(r.status == SiseStatus::kOk);
     REQUIRE(r.position_pass);  // 40.0 <= 40.0
     REQUIRE(r.velocity_pass);  // 0.01 <= 0.01
 }
 
 TEST_CASE("[LSIS-SISE][core] percentile empty data", "[core]") {
-    const auto r = compute_sise_percentile(nullptr, nullptr, 0, 0.95);
+    const auto r = compute_sise_percentile(std::span<double>(), std::span<double>(), 0.95);
     REQUIRE(r.status == SiseStatus::kEmptyData);
 }
 
-TEST_CASE("[LSIS-SISE][core] percentile null pointer", "[core]") {
+TEST_CASE("[LSIS-SISE][core] percentile mismatched spans", "[core]") {
     double pos = 1.0;
-    const auto r = compute_sise_percentile(&pos, nullptr, 1, 0.95);
+    const auto r = compute_sise_percentile(std::span<double>(&pos, 1), std::span<double>(), 0.95);
     REQUIRE(r.status == SiseStatus::kInvalidInput);
 }
 
@@ -184,16 +185,16 @@ TEST_CASE("[LSIS-SISE][core] percentile invalid percentile value", "[core]") {
     double vel = 0.001;
 
     SECTION("percentile > 1") {
-        const auto r = compute_sise_percentile(&pos, &vel, 1, 1.5);
+        const auto r = compute_sise_percentile(std::span<double>(&pos, 1), std::span<double>(&vel, 1), 1.5);
         REQUIRE(r.status == SiseStatus::kInvalidInput);
     }
     SECTION("percentile < 0") {
-        const auto r = compute_sise_percentile(&pos, &vel, 1, -0.1);
+        const auto r = compute_sise_percentile(std::span<double>(&pos, 1), std::span<double>(&vel, 1), -0.1);
         REQUIRE(r.status == SiseStatus::kInvalidInput);
     }
     SECTION("percentile NaN") {
         const auto r = compute_sise_percentile(
-            &pos, &vel, 1, std::numeric_limits<double>::quiet_NaN());
+            std::span<double>(&pos, 1), std::span<double>(&vel, 1), std::numeric_limits<double>::quiet_NaN());
         REQUIRE(r.status == SiseStatus::kInvalidInput);
     }
 }
@@ -202,7 +203,7 @@ TEST_CASE("[LSIS-SISE][core] percentile NaN in data", "[core]") {
     std::vector<double> pos = {1.0, std::numeric_limits<double>::quiet_NaN(), 3.0};
     std::vector<double> vel = {0.001, 0.002, 0.003};
 
-    const auto r = compute_sise_percentile(pos.data(), vel.data(), 3, 0.95);
+    const auto r = compute_sise_percentile(std::span(pos), std::span(vel), 0.95);
     REQUIRE(r.status == SiseStatus::kInvalidInput);
 }
 
@@ -210,7 +211,7 @@ TEST_CASE("[LSIS-SISE][core] percentile single sample", "[core]") {
     double pos = 25.0;
     double vel = 0.005;
 
-    const auto r = compute_sise_percentile(&pos, &vel, 1, 0.95);
+    const auto r = compute_sise_percentile(std::span<double>(&pos, 1), std::span<double>(&vel, 1), 0.95);
     REQUIRE(r.status == SiseStatus::kOk);
     REQUIRE_THAT(r.position_percentile_m, WithinAbs(25.0, 1e-12));
     REQUIRE_THAT(r.velocity_percentile_mps, WithinAbs(0.005, 1e-12));
@@ -227,17 +228,21 @@ TEST_CASE("[LSIS-SISE][core] percentile large dataset", "[core]") {
         vel[i] = 1e-5 + static_cast<double>(i) * (0.01 - 1e-5) / static_cast<double>(kN - 1);
     }
 
-    const auto r = compute_sise_percentile(pos.data(), vel.data(), kN, 0.95);
+    // Save expected values before the call — spans are mutated in-place.
+    const double expected_pos = pos[949];
+    const double expected_vel = vel[949];
+
+    const auto r = compute_sise_percentile(std::span(pos), std::span(vel), 0.95);
     REQUIRE(r.status == SiseStatus::kOk);
-    REQUIRE_THAT(r.position_percentile_m, WithinRel(pos[949], 1e-10));
-    REQUIRE_THAT(r.velocity_percentile_mps, WithinRel(vel[949], 1e-10));
+    REQUIRE_THAT(r.position_percentile_m, WithinRel(expected_pos, 1e-10));
+    REQUIRE_THAT(r.velocity_percentile_mps, WithinRel(expected_vel, 1e-10));
 }
 
 TEST_CASE("[LSIS-SISE][core] percentile 50th (median)", "[core]") {
     std::vector<double> pos = {10.0, 20.0, 30.0, 40.0, 50.0};
     std::vector<double> vel = {0.001, 0.002, 0.003, 0.004, 0.005};
 
-    const auto r = compute_sise_percentile(pos.data(), vel.data(), 5, 0.5);
+    const auto r = compute_sise_percentile(std::span(pos), std::span(vel), 0.5);
     REQUIRE(r.status == SiseStatus::kOk);
     REQUIRE_THAT(r.position_percentile_m, WithinAbs(30.0, 1e-12));
 }
@@ -267,7 +272,7 @@ TEST_CASE("[LSIS-SISE][core] 24-hour SISE trajectory with age-of-data growth", "
             vel_errors[i] = pos_errors[i] * 1e-4;
         }
 
-        const auto r = compute_sise_percentile(pos_errors.data(), vel_errors.data(), kEpochs);
+        const auto r = compute_sise_percentile(std::span(pos_errors), std::span(vel_errors));
         REQUIRE(r.status == SiseStatus::kOk);
         CHECK_FALSE(r.position_pass);
         CHECK(r.velocity_pass);
@@ -284,7 +289,7 @@ TEST_CASE("[LSIS-SISE][core] 24-hour SISE trajectory with age-of-data growth", "
             vel_errors[i] = pos_errors[i] * 1e-4;
         }
 
-        const auto r = compute_sise_percentile(pos_errors.data(), vel_errors.data(), kEpochs);
+        const auto r = compute_sise_percentile(std::span(pos_errors), std::span(vel_errors));
         REQUIRE(r.status == SiseStatus::kOk);
         CHECK(r.position_pass);
         CHECK(r.velocity_pass);

@@ -72,9 +72,6 @@ struct alignas(8) BchResult {
   Fid fid;
   Toi toi;
   uint8_t hamming_distance;
-
-  constexpr BchResult(BchStatus s, Fid f, Toi t, uint8_t d) noexcept
-      : status(s), fid(f), toi(t), hamming_distance(d) {}
 };
 
 /**

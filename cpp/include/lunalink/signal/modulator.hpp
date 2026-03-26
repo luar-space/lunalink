@@ -45,15 +45,10 @@ enum class ModulationStatus : uint8_t {
 [[nodiscard]] inline ModulationStatus modulate_bpsk_generic(std::span<const uint8_t> chips,
                                                             int8_t data_symbol,
                                                             std::span<int8_t> out) noexcept {
-  // ESA/JAXA Safety Policy: Pre-initialise buffer.
-  if (!out.empty()) {
-    secure_scrub(out);
-  }
-
   ModulationStatus status = validate_modulation_inputs(chips, data_symbol, out);
 
   if (status == ModulationStatus::kOk) {
-    uint32_t loop_count = 0;
+    volatile uint32_t loop_count = 0;
     for (std::size_t i = 0; i < chips.size(); ++i) {
       const uint8_t chip = chips[i];
       if (chip > 1) [[unlikely]] {
@@ -63,7 +58,9 @@ enum class ModulationStatus : uint8_t {
       // Branchless mapping: 0 -> +1, 1 -> -1
       out[i] =
           static_cast<int8_t>((1 - 2 * static_cast<int>(chip)) * static_cast<int>(data_symbol));
-      loop_count++;
+      LUNALINK_CRITICAL_ENTER;
+      loop_count = loop_count + 1U;
+      LUNALINK_CRITICAL_EXIT;
       wip_tick();
     }
 

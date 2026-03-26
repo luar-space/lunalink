@@ -1,6 +1,7 @@
 #pragma once
 #include <cstddef>
 #include <cstdint>
+#include <span>
 
 namespace lunalink::core {
 
@@ -89,13 +90,17 @@ struct SisePercentileResult {
 /// Uses partial sort (nth_element) to find the requested percentile.
 /// Index = ceil(p * n) - 1, clamped to [0, n-1].
 ///
-/// @param pos_errors_m   Array of N position errors in metres.
-/// @param vel_errors_mps Array of N velocity errors in m/s.
-/// @param n              Number of samples (must be > 0).
+/// The input spans are **mutable** because nth_element operates in-place,
+/// eliminating the need for heap allocation (std::vector is forbidden in
+/// flight code). The caller must provide scratch copies — the contents
+/// will be reordered on return.
+///
+/// @param pos_errors_m   Mutable scratch span of N position errors in metres.
+/// @param vel_errors_mps Mutable scratch span of N velocity errors in m/s.
 /// @param percentile     Percentile to compute (0.0..1.0, default 0.95).
 /// @return SisePercentileResult with status, values, and pass/fail flags.
 [[nodiscard]] SisePercentileResult compute_sise_percentile(
-    const double* pos_errors_m, const double* vel_errors_mps,
-    size_t n, double percentile = 0.95) noexcept;
+    std::span<double> pos_errors_m, std::span<double> vel_errors_mps,
+    double percentile = 0.95) noexcept;
 
 } // namespace lunalink::core

@@ -250,8 +250,8 @@ TEST_CASE("[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip", "[ldpc]") 
 
     std::array<uint8_t, kSb2MsgBits> decoded{};
     LdpcWorkspace ws{};
-    ws.alpha_numerator = 5;
-    ws.alpha_denominator = 8;
+    ws.alpha.numerator = 5;
+    ws.alpha.denominator = 8;
     REQUIRE(ldpc_decode(LdpcSubframe::kSF2, soft, 50, decoded, ws) == LdpcStatus::kOk);
     CHECK(std::ranges::equal(message, decoded));
   }
@@ -263,8 +263,8 @@ TEST_CASE("[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip", "[ldpc]") 
 
     std::array<uint8_t, kSb2MsgBits> decoded{};
     LdpcWorkspace ws{};
-    ws.alpha_numerator = 9; // out of range
-    ws.alpha_denominator = 4;
+    ws.alpha.numerator = 9; // out of range
+    ws.alpha.denominator = 4;
     CHECK(ldpc_decode(LdpcSubframe::kSF2, soft, 5, decoded, ws) == LdpcStatus::kFaultDetected);
   }
 
@@ -275,8 +275,8 @@ TEST_CASE("[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip", "[ldpc]") 
 
     std::array<uint8_t, kSb2MsgBits> decoded{};
     LdpcWorkspace ws{};
-    ws.alpha_numerator = 5;
-    ws.alpha_denominator = 3; // num > den
+    ws.alpha.numerator = 5;
+    ws.alpha.denominator = 3; // num > den
     CHECK(ldpc_decode(LdpcSubframe::kSF2, soft, 5, decoded, ws) == LdpcStatus::kFaultDetected);
   }
 
@@ -287,8 +287,8 @@ TEST_CASE("[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip", "[ldpc]") 
 
     std::array<uint8_t, kSb2MsgBits> decoded{};
     LdpcWorkspace ws{};
-    ws.alpha_numerator = 1;
-    ws.alpha_denominator = 0; // zero — division hazard
+    ws.alpha.numerator = 1;
+    ws.alpha.denominator = 0; // zero — division hazard
     CHECK(ldpc_decode(LdpcSubframe::kSF2, soft, 5, decoded, ws) == LdpcStatus::kFaultDetected);
   }
 

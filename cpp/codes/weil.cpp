@@ -42,7 +42,7 @@ PrnStatus WeilGenerator::generate_primary(PrnId prn_id, std::span<uint8_t> out) 
   const size_t idx = static_cast<size_t>(repaired) - 1U;
   const auto params = kPrimaryWeilParams.at(idx);
 
-  return construct_weil(10223, params.k, params.p, out);
+  return construct_weil(10223, params.weil_index, params.insertion_index, out);
 }
 
 PrnStatus WeilGenerator::generate_tertiary(PrnId prn_id, std::span<uint8_t> out) noexcept {

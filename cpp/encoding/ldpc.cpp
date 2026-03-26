@@ -42,17 +42,17 @@ constexpr uint32_t kCfiMagicDecode = 0x5A5A5A5AU;
 // SAFETY: All values entering abs16 are produced by sat_add/sat_sub (which
 // clamp to [-32767, +32767]) or by compute_cv_messages (where max output is
 // 32767 * 7/8 = 28671). INT16_MIN (-32768) cannot occur in this pipeline.
-inline int16_t abs16(int16_t x) noexcept {
+[[nodiscard]] inline int16_t abs16(int16_t x) noexcept {
   return static_cast<int16_t>((x < 0) ? -static_cast<int32_t>(x) : static_cast<int32_t>(x));
 }
 
-inline uint8_t get_sign(int16_t val) noexcept {
+[[nodiscard]] inline uint8_t get_sign(int16_t val) noexcept {
   return static_cast<uint8_t>((static_cast<uint16_t>(val) >> 15U) & 1U);
 }
 
 // Saturating arithmetic clamped to [-32767, +32767] (symmetric range).
 // Avoids -32768 so that abs16() is always safe without UB on INT16_MIN.
-inline int16_t sat_add(int16_t a, int16_t b) noexcept {
+[[nodiscard]] inline int16_t sat_add(int16_t a, int16_t b) noexcept {
   int32_t res = static_cast<int32_t>(a) + static_cast<int32_t>(b);
   if (res > 32767) {
     res = 32767;
@@ -63,7 +63,7 @@ inline int16_t sat_add(int16_t a, int16_t b) noexcept {
   return static_cast<int16_t>(res);
 }
 
-inline int16_t sat_sub(int16_t a, int16_t b) noexcept {
+[[nodiscard]] inline int16_t sat_sub(int16_t a, int16_t b) noexcept {
   int32_t res = static_cast<int32_t>(a) - static_cast<int32_t>(b);
   if (res > 32767) {
     res = 32767;
@@ -338,17 +338,26 @@ void gather_identity_entry(RowGatherResult& res,
   return res;
 }
 
+/// Precompute Q15 scaling factor for NMS alpha = num/den.
+/// Returns (num * 32768 + den/2) / den, so val * num / den ≈ (val * q15) >> 15.
+/// Valid for num in [1,7], den in [1,8], num <= den.
+[[nodiscard]] constexpr int32_t nms_q15_scale(int16_t nms_num, int16_t nms_den) noexcept {
+  return (static_cast<int32_t>(nms_num) * 32768 + nms_den / 2) / nms_den;
+}
+
 // Compute new check-to-variable messages in batch (contiguous, auto-vectorizable).
+// Uses Q15 fixed-point multiply instead of integer division for ~5× speedup on
+// in-order cores (RISC-V div ~20 cycles vs mul+shift ~4 cycles).
 void compute_cv_messages(const RowGatherResult& gr,
-                         int16_t nms_num,
-                         int16_t nms_den,
+                         int32_t nms_scale_q15,
                          std::array<int16_t, kMaxRowDegree>& cv_new) noexcept {
   for (uint8_t d = 0; d < gr.degree; ++d) {
     int16_t abs_v = abs16(gr.L_vc[d]);
     int16_t min_val = (abs_v == gr.min1) ? gr.min2 : gr.min1;
-    // C1: max output = 32767 * 7 / 1 = 229369 as int, then truncated to int16_t.
-    // But valid α has num <= den, so max = 32767 * 7/8 = 28671 — safe for int16_t.
-    int16_t val = static_cast<int16_t>((static_cast<int>(min_val) * nms_num) / nms_den);
+    // Q15 fixed-point: val = (min_val * scale + 16384) >> 15.
+    // Max output: 32767 * 28672 >> 15 = 28671 — safe for int16_t.
+    int16_t val = static_cast<int16_t>(
+        (static_cast<int32_t>(min_val) * nms_scale_q15 + 16384) >> 15);
     uint8_t out_sign = gr.sign ^ get_sign(gr.L_vc[d]);
     cv_new[d] = (out_sign == 0U) ? val : static_cast<int16_t>(-val);
   }
@@ -429,8 +438,7 @@ void compute_cv_messages(const RowGatherResult& gr,
                                       const size_t* col_offsets,
                                       size_t num_matrices,
                                       size_t identity_col_offset,
-                                      int16_t nms_num,
-                                      int16_t nms_den,
+                                      int32_t nms_scale_q15,
                                       std::span<int16_t> L_v,
                                       std::span<int16_t> L_cv,
                                       std::span<int16_t> L_cv_identity) noexcept {
@@ -441,7 +449,7 @@ void compute_cv_messages(const RowGatherResult& gr,
 
   const bool has_identity = (identity_col_offset != kNoIdentity);
   size_t cv_ptr = 0;
-  uint16_t rows_processed = 0; // H5: CFI row counter
+  volatile uint16_t rows_processed = 0; // H5: CFI row counter
 
   for (uint16_t r = 0; r < num_rows; ++r) {
     RowGatherResult gr = gather_row(matrices,
@@ -458,7 +466,7 @@ void compute_cv_messages(const RowGatherResult& gr,
     } // NOCOVER_END
 
     std::array<int16_t, kMaxRowDegree> cv_new{};
-    compute_cv_messages(gr, nms_num, nms_den, cv_new);
+    compute_cv_messages(gr, nms_scale_q15, cv_new);
     if (!scatter_row(gr, cv_new, identity_col_offset, r, L_v, L_cv, L_cv_identity, cv_ptr)) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): scatter bounds checks require corrupted .rodata
       return false;
     } // NOCOVER_END
@@ -467,7 +475,9 @@ void compute_cv_messages(const RowGatherResult& gr,
     if (cv_ptr > L_cv.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted row degree accumulation
       return false;
     } // NOCOVER_END
-    rows_processed = rows_processed + 1U;
+    LUNALINK_CRITICAL_ENTER;
+    rows_processed = static_cast<uint16_t>(rows_processed + 1U);
+    LUNALINK_CRITICAL_EXIT;
   }
 
   // H5: Verify all rows were processed (detects radiation-induced loop skip).
@@ -579,7 +589,9 @@ void scrub_workspace(LdpcWorkspace& ws) noexcept {
   for (size_t i = 0; i < static_cast<size_t>(K_nominal); ++i) {
     s[i] = msg[i];
   }
+  LUNALINK_CRITICAL_ENTER;
   cfi_count = cfi_count + 1U; // milestone 1: input copied
+  LUNALINK_CRITICAL_EXIT;
 
   bool ok = multiply_sparse_hardened(
                 mA, std::span(s).subspan(0, K_full), std::span(t_as).subspan(0, mA.num_rows)) &&
@@ -591,19 +603,25 @@ void scrub_workspace(LdpcWorkspace& ws) noexcept {
             multiply_sparse_hardened(mD,
                                      std::span(p1).subspan(0, mD.num_cols),
                                      std::span(t_dp1).subspan(0, mD.num_rows));
+  LUNALINK_CRITICAL_ENTER;
   cfi_count = cfi_count + 1U; // milestone 2: sparse multiplies done
+  LUNALINK_CRITICAL_EXIT;
 
   if (ok) {
     for (uint16_t i = 0; i < mC.num_rows; ++i) {
       p2_full[i] = static_cast<uint8_t>(t_cs[i] ^ t_dp1[i]);
     }
+    LUNALINK_CRITICAL_ENTER;
     cfi_count = cfi_count + 1U; // milestone 3: p2 computed
+    LUNALINK_CRITICAL_EXIT;
 
     ok = verify_codeword(type,
                          std::span(s).subspan(0, K_full),
                          std::span(p1).subspan(0, mA.num_rows),
                          std::span(p2_full).subspan(0, mC.num_rows));
+    LUNALINK_CRITICAL_ENTER;
     cfi_count = cfi_count + 1U; // milestone 4: H*c=0 verified
+    LUNALINK_CRITICAL_EXIT;
   }
   return ok;
 }
@@ -611,50 +629,69 @@ void scrub_workspace(LdpcWorkspace& ws) noexcept {
 // Pack encoded output bits per LSIS §2.4.4: (K_nominal - z) systematic bits
 // (skipping z filler), p1_count parity-1 bits, then p2 parity-2 bits.
 // Total = N_output.
-void pack_output_bits(const LdpcEncodeWorkspace& ws, std::span<uint8_t> out, bool is_sf2) noexcept {
+// C4: All output writes bounds-checked against out.size(). [MA §11]
+[[nodiscard]] bool pack_output_bits(const LdpcEncodeWorkspace& ws,
+                                    std::span<uint8_t> out,
+                                    bool is_sf2) noexcept {
   const uint16_t K_nominal = is_sf2 ? 1200U : 870U;
   const uint16_t z = is_sf2 ? 240U : 176U;
   const uint16_t N_output = is_sf2 ? 2400U : 1740U;
   const uint16_t p1_count = is_sf2 ? 480U : 352U;
 
+  if (out.size() < static_cast<size_t>(N_output)) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted N_output or out.size()
+    return false;
+  } // NOCOVER_END
+
   size_t out_idx = 0;
-  for (size_t i = z; i < static_cast<size_t>(K_nominal); ++i) {
+  for (size_t i = z; i < static_cast<size_t>(K_nominal) && out_idx < out.size(); ++i) {
     out[out_idx++] = ws.s[i];
   }
-  for (size_t i = 0; i < static_cast<size_t>(p1_count); ++i) {
+  for (size_t i = 0; i < static_cast<size_t>(p1_count) && out_idx < out.size(); ++i) {
     out[out_idx++] = ws.p1[i];
   }
   const size_t p2_needed = static_cast<size_t>(N_output) - out_idx;
-  for (size_t i = 0; i < p2_needed && i < ws.p2.size(); ++i) {
+  for (size_t i = 0; i < p2_needed && i < ws.p2.size() && out_idx < out.size(); ++i) {
     out[out_idx++] = ws.p2[i];
   }
+  return (out_idx == static_cast<size_t>(N_output));
 }
 
 // Load channel LLRs from received symbols into the L_v workspace.
 // Convert float LLR to Q8.7 fixed-point (x128). Clamp to [-32000, +32000]
 // symmetric range. Filler bits for SF3/SF4 shortening set to kFillerLlr
 // (high-confidence zero).
-void load_channel_llrs(std::span<const float> symbols,
-                       std::span<int16_t> L_v,
-                       uint16_t z,
-                       uint16_t K_nominal,
-                       uint16_t K_full,
-                       uint16_t p1_count,
-                       size_t p1_start,
-                       size_t p2_start) noexcept {
+// C4: All L_v writes bounds-checked against L_v.size(). [MA §11]
+[[nodiscard]] bool load_channel_llrs(std::span<const float> symbols,
+                                     std::span<int16_t> L_v,
+                                     uint16_t z,
+                                     uint16_t K_nominal,
+                                     uint16_t K_full,
+                                     uint16_t p1_count,
+                                     size_t p1_start,
+                                     size_t p2_start) noexcept {
   size_t sym_idx = 0;
   for (size_t i = z; i < static_cast<size_t>(K_nominal); ++i) {
+    if (i >= L_v.size() || sym_idx >= symbols.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted parameters
+      return false;
+    } // NOCOVER_END
     L_v[i] = static_cast<int16_t>(std::clamp(symbols[sym_idx++] * 128.0F, -32000.0F, 32000.0F));
   }
   for (size_t i = K_nominal; i < static_cast<size_t>(K_full); ++i) {
+    if (i >= L_v.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted K_full
+      return false;
+    } // NOCOVER_END
     L_v[i] = kFillerLlr;
   }
   for (size_t i = p1_start; i < (p1_start + p1_count); ++i) {
+    if (i >= L_v.size() || sym_idx >= symbols.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted p1_start/p1_count
+      return false;
+    } // NOCOVER_END
     L_v[i] = static_cast<int16_t>(std::clamp(symbols[sym_idx++] * 128.0F, -32000.0F, 32000.0F));
   }
   for (size_t i = p2_start; i < L_v.size() && sym_idx < symbols.size(); ++i) {
     L_v[i] = static_cast<int16_t>(std::clamp(symbols[sym_idx++] * 128.0F, -32000.0F, 32000.0F));
   }
+  return true;
 }
 
 // Result of belief propagation iteration loop.
@@ -692,12 +729,16 @@ BpResult run_bp_iterations(LdpcSubframe type,
   BpResult result{check_syndrome(type, L_v), false}; // noiseless short-circuit
 
   for (uint8_t iter = 0; iter < iterations && !result.converged; ++iter) {
+    // Precompute Q15 scaling factor from volatile NMS alpha (re-read each iteration
+    // for A3 SEU detection). Replaces per-variable-node integer division with
+    // a single multiply+shift (~5× faster on in-order RISC-V cores).
+    const int32_t scale_q15 = nms_q15_scale(nms_num, nms_den);
+
     if (!update_check_layer(l1_mats.data(),
                             l1_offs.data(),
                             2,
                             kNoIdentity,
-                            nms_num,
-                            nms_den,
+                            scale_q15,
                             L_v,
                             L_cv,
                             L_cv_identity)) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): layer update fault requires corrupted .rodata or SEU
@@ -709,8 +750,7 @@ BpResult run_bp_iterations(LdpcSubframe type,
                             l2_offs.data(),
                             2,
                             p2_start,
-                            nms_num,
-                            nms_den,
+                            scale_q15,
                             L_v,
                             L_cv.subspan(l1_cv_count),
                             L_cv_identity)) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): layer update fault requires corrupted .rodata or SEU
@@ -788,8 +828,12 @@ void extract_hard_bits(std::span<const int16_t> L_v,
   bool dsp_ok = encode_compute_parity(type, msg, workspace, cfi_count);
 
   if (dsp_ok) {
-    pack_output_bits(workspace, out, is_sf2);
-    cfi_count = cfi_count + 1U; // milestone 5: output written
+    dsp_ok = pack_output_bits(workspace, out, is_sf2);
+    if (dsp_ok) {
+      LUNALINK_CRITICAL_ENTER;
+      cfi_count = cfi_count + 1U; // milestone 5: output written
+      LUNALINK_CRITICAL_EXIT;
+    }
   }
 
   constexpr uint32_t kExpectedCfi = kCfiMagicEncode + 5U;
@@ -841,6 +885,82 @@ LdpcStatus ldpc_encode(LdpcSubframe type,
   return status;
 }
 
+// Decoder DSP core: load LLRs, run BP, extract hard bits. [LSIS-AFS-321]
+// Returns the decode status; milestones 1-4 tracked via cfi_count reference.
+[[nodiscard]] LdpcStatus decode_dsp_core(LdpcSubframe type,
+                                         const LdpcParams& p,
+                                         std::span<const float> symbols,
+                                         uint8_t iterations,
+                                         std::span<uint8_t> out,
+                                         LdpcWorkspace& workspace,
+                                         volatile uint32_t& cfi_count) noexcept {
+  std::span<int16_t> L_v(workspace.L_v);
+  std::span<int16_t> L_cv(workspace.L_cv);
+  std::span<int16_t> L_cv_identity(workspace.L_cv_identity);
+
+  // P5: Read NMS scaling factor from workspace.
+  const int16_t nms_num_init = workspace.alpha.numerator;
+  const int16_t nms_den_init = workspace.alpha.denominator;
+
+  const size_t l1_cv_count = p.mA->num_entries + p.mB->num_entries;
+  const size_t l2_cv_count = p.mC->num_entries + p.mD->num_entries;
+  const size_t p1_start = p.K_full;
+  const size_t p2_start = p1_start + p.mA->num_rows;
+
+  bool ok = validate_nms_alpha(nms_num_init, nms_den_init) &&
+            (l1_cv_count + l2_cv_count <= L_cv.size()) &&
+            (p.mC->num_rows <= L_cv_identity.size());
+  LUNALINK_CRITICAL_ENTER;
+  cfi_count = cfi_count + 1U; // milestone 1: bounds validated
+  LUNALINK_CRITICAL_EXIT;
+
+  // cppcheck-suppress duplicateCondition ; single-exit accumulator pattern
+  if (ok) {
+    std::ranges::fill(L_v, static_cast<int16_t>(0));
+    std::ranges::fill(L_cv, static_cast<int16_t>(0));
+    std::ranges::fill(L_cv_identity, static_cast<int16_t>(0));
+
+    ok = load_channel_llrs(
+        symbols, L_v, p.z, p.K_nominal, p.K_full, p.mA->num_rows, p1_start, p2_start);
+    LUNALINK_CRITICAL_ENTER;
+    cfi_count = cfi_count + 1U; // milestone 2: LLRs loaded
+    LUNALINK_CRITICAL_EXIT;
+  }
+
+  // cppcheck-suppress duplicateCondition ; single-exit accumulator pattern
+  if (ok) {
+    auto bp = run_bp_iterations(type,
+                                *p.mA,
+                                *p.mB,
+                                *p.mC,
+                                *p.mD,
+                                p.K_full,
+                                l1_cv_count,
+                                p2_start,
+                                nms_num_init,
+                                nms_den_init,
+                                iterations,
+                                L_v,
+                                L_cv,
+                                L_cv_identity);
+    LUNALINK_CRITICAL_ENTER;
+    cfi_count = cfi_count + 1U; // milestone 3: iteration loop complete
+    LUNALINK_CRITICAL_EXIT;
+
+    extract_hard_bits(L_v, p.K_nominal, out);
+    LUNALINK_CRITICAL_ENTER;
+    cfi_count = cfi_count + 1U; // milestone 4: output extracted
+    LUNALINK_CRITICAL_EXIT;
+
+    scrub_workspace(workspace);
+    return decode_final_status(bp, cfi_count);
+  }
+
+  // Fault path: scrub workspace to prevent partial LLR data leakage. [MA §7]
+  scrub_workspace(workspace);
+  return LdpcStatus::kFaultDetected;
+}
+
 // --- Decoder (A4: single exit, A5: CFI sentinel) ---
 
 LdpcStatus ldpc_decode(LdpcSubframe type,
@@ -860,6 +980,7 @@ LdpcStatus ldpc_decode(LdpcSubframe type,
   // --- Precondition checks ---
   // M4: Reject zero iterations. M5: Validate symbol count matches N_output.
   if (iterations == 0 || symbols.size() != static_cast<size_t>(p.N_output)) {
+    // cppcheck-suppress redundantInitialization ; pessimistic default is intentional safety pattern
     status = LdpcStatus::kInvalidInput;
   } else if (out.size() < static_cast<size_t>(p.K_nominal)) {
     status = LdpcStatus::kOutputTooSmall;
@@ -867,59 +988,13 @@ LdpcStatus ldpc_decode(LdpcSubframe type,
              !verify_tables(type)) {
     status = LdpcStatus::kFaultDetected; // NOCOVER(DEFENCE_IN_DEPTH): aliasing/LUT integrity requires corrupted pointers or .rodata
   } else {
-    // --- DSP core ---
-    std::span<int16_t> L_v(workspace.L_v);
-    std::span<int16_t> L_cv(workspace.L_cv);
-    std::span<int16_t> L_cv_identity(workspace.L_cv_identity);
+    status = decode_dsp_core(type, p, symbols, iterations, out, workspace, cfi_count);
+  }
 
-    // P5: Read NMS scaling factor from workspace.
-    const int16_t nms_num_init = workspace.alpha_numerator;
-    const int16_t nms_den_init = workspace.alpha_denominator;
-
-    const size_t l1_cv_count = p.mA->num_entries + p.mB->num_entries;
-    const size_t l2_cv_count = p.mC->num_entries + p.mD->num_entries;
-    const size_t p1_start = p.K_full;
-    const size_t p2_start = p1_start + p.mA->num_rows;
-
-    bool bounds_ok = validate_nms_alpha(nms_num_init, nms_den_init) &&
-                     (l1_cv_count + l2_cv_count <= L_cv.size()) &&
-                     (p.mC->num_rows <= L_cv_identity.size());
-    cfi_count = cfi_count + 1U; // milestone 1: bounds validated
-
-    if (bounds_ok) {
-      // Initialize workspace
-      std::ranges::fill(L_v, static_cast<int16_t>(0));
-      std::ranges::fill(L_cv, static_cast<int16_t>(0));
-      std::ranges::fill(L_cv_identity, static_cast<int16_t>(0));
-
-      load_channel_llrs(
-          symbols, L_v, p.z, p.K_nominal, p.K_full, p.mA->num_rows, p1_start, p2_start);
-      cfi_count = cfi_count + 1U; // milestone 2: LLRs loaded
-
-      auto bp = run_bp_iterations(type,
-                                  *p.mA,
-                                  *p.mB,
-                                  *p.mC,
-                                  *p.mD,
-                                  p.K_full,
-                                  l1_cv_count,
-                                  p2_start,
-                                  nms_num_init,
-                                  nms_den_init,
-                                  iterations,
-                                  L_v,
-                                  L_cv,
-                                  L_cv_identity);
-      cfi_count = cfi_count + 1U; // milestone 3: iteration loop complete
-
-      extract_hard_bits(L_v, p.K_nominal, out);
-      cfi_count = cfi_count + 1U; // milestone 4: output extracted
-
-      scrub_workspace(workspace);
-
-      const uint32_t final_cfi = cfi_count; // read volatile
-      status = decode_final_status(bp, final_cfi);
-    }
+  // Scrub output on any non-OK status (including kNotConverged) — unreliable
+  // hard-decision bits must not be available to the caller. [MA §7]
+  if (status != LdpcStatus::kOk) {
+    secure_scrub(out);
   }
 
   return status;

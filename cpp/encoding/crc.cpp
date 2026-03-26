@@ -22,7 +22,7 @@ CrcStatus crc24_calculate(std::span<const uint8_t> in, std::span<uint8_t, 24ULL>
   } // NOCOVER_END
 
   CrcStatus status = CrcStatus::kOk;
-  uint32_t cfi_count = 0xA5A5A5A5U;
+  volatile uint32_t cfi_count = 0xA5A5A5A5U;
 
   // Standard bit-by-bit CRC calculation (Galois LFSR)
   uint32_t register_state = 0U; // Seed is 0 per Appendix H
@@ -48,7 +48,9 @@ CrcStatus crc24_calculate(std::span<const uint8_t> in, std::span<uint8_t, 24ULL>
     const uint32_t mask = static_cast<uint32_t>(-(static_cast<int32_t>(msb ^ bit)));
     register_state ^= (kCrc24Poly & mask);
 
-    cfi_count++;
+    LUNALINK_CRITICAL_ENTER;
+    cfi_count = cfi_count + 1U;
+    LUNALINK_CRITICAL_EXIT;
     wip_tick();
   }
 
