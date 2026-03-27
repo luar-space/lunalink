@@ -520,6 +520,9 @@ wheels = [
 [[package]]
 name = "lunalink"
 source = { editable = "." }
+dependencies = [
+    { name = "numpy" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -542,6 +545,7 @@ test = [
 ]
 
 [package.metadata]
+requires-dist = [{ name = "numpy", specifier = ">=1.24" }]
 provides-extras = ["private"]
 
 [package.metadata.requires-dev]
