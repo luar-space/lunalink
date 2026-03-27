@@ -20,13 +20,15 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering",
 ]
-dependencies = ["numpy>=1.24"]
+dependencies = ["numpy>=1.24", "jaxtyping>=0.2.28", "beartype>=0.18"]
 
 [dependency-groups]
 test = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
     "numpy>=1.24",
+    "jaxtyping>=0.2.28",
+    "beartype>=0.18",
 ]
 dev = [
     {include-group = "test"},
@@ -35,6 +37,9 @@ dev = [
     "radon>=6.0",
     "ruff>=0.9",
     "sphinx>=7.0",
+    "nbsphinx>=0.9",
+    "ipython>=8.0",
+    "sphinx-rtd-theme>=2.0",
     "furo>=2024.1.29",
     "sphinx-autobuild>=2024.0.0",
     "pyright>=1.1",
@@ -59,7 +64,7 @@ ninja.make-fallback = true
 [tool.cibuildwheel]
 build = "cp312-* cp313-* cp314-*"
 skip = "*-musllinux_*"
-test-requires = ["pytest", "numpy"]
+test-requires = ["pytest", "numpy", "jaxtyping", "beartype"]
 test-command = "python -m pytest {project}/tests -x -q --override-ini='addopts='"
 
 [tool.cibuildwheel.linux]
@@ -98,6 +103,12 @@ select = [
     "UP",  # pyupgrade
     "C90", # mccabe complexity
 ]
+
+[tool.ruff.lint.per-file-ignores]
+# Notebooks: allow long lines, uppercase math vars, missing docstrings on helpers
+"notebooks/*.ipynb" = ["E501", "N806", "D103"]
+# Utility scripts: allow complexity and missing docstrings
+"scripts/sync_docstrings.py" = ["C901", "D103"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10

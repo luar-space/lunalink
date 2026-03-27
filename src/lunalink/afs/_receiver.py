@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-import numpy as np
-from numpy.typing import NDArray
+from beartype import beartype
+from jaxtyping import jaxtyped
 
+from lunalink.afs._array_types import SoftSymbols
 from lunalink.afs._errors import DecodeError, SyncNotFoundError
 from lunalink.afs._results import (
     DecodeResult,
@@ -24,8 +25,9 @@ from lunalink.afs.signal import (
 )
 
 
+@jaxtyped(typechecker=beartype)
 def receive_frame(
-    rx_symbols: NDArray[np.float32],
+    rx_symbols: SoftSymbols,
     *,
     ldpc_iterations: int = 50,
     sync_threshold: float = 0.0,
@@ -40,7 +42,7 @@ def receive_frame(
 
     Parameters
     ----------
-    rx_symbols : array of float32
+    rx_symbols : SoftSymbols
         Bipolar soft-decision symbols (+1.0 = bit 0, -1.0 = bit 1).
         Must contain at least 6000 symbols after the sync offset.
     ldpc_iterations : int

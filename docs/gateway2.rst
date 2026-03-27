@@ -443,32 +443,32 @@ extension module (pybind11).  Stubs are in ``src/lunalink/afs/_afs.pyi``.
      - Signature
      - Notes
    * - ``bch_encode``
-     - ``(fid, toi) → NDArray[uint8]``
-     - Returns 52-element bit array
+     - ``(fid, toi) → BchCodeword``
+     - Returns 52-element bit array (``uint8``)
    * - ``bch_decode``
-     - ``(cw: NDArray[uint8]) → BchResult``
+     - ``(cw: BchCodeword) → BchResult``
      - Hard-decision ML
    * - ``bch_decode_soft``
-     - ``(llr: NDArray[float32]) → BchResult``
-     - Soft-decision ML (52 LLRs)
+     - ``(llr: BchSoftInput) → BchResult``
+     - Soft-decision ML (52 LLRs, ``float32``)
    * - ``ldpc_encode``
      - ``(sf: LdpcSubframe, msg) → NDArray[uint8]``
-     - SF2/SF3/SF4 supported
+     - SF2/SF3/SF4 supported (variable-length output)
    * - ``ldpc_decode``
      - ``(sf, soft, max_iters) → (status, NDArray[uint8])``
-     - Returns decoded bits
+     - Returns decoded bits (variable-length)
    * - ``crc24_calculate``
-     - ``(data: NDArray[uint8]) → NDArray[uint8]``
-     - Returns 24-element bit array
+     - ``(data: BitArray) → BitArray``
+     - Returns data + 24-bit CRC
    * - ``crc24_verify``
-     - ``(data_with_crc: NDArray[uint8]) → bool``
+     - ``(data_with_crc: BitArray) → bool``
      - Appended-CRC convention
    * - ``block_interleave``
-     - ``(data: NDArray[uint8]) → NDArray[uint8]``
-     - Input must be exactly 5880 bits
+     - ``(data: InterleaverBlock) → InterleaverBlock``
+     - Exactly 5880 bits (``uint8``)
    * - ``block_deinterleave``
-     - ``(data: NDArray[uint8]) → NDArray[uint8]``
-     - Input must be exactly 5880 bits
+     - ``(data: InterleaverBlock) → InterleaverBlock``
+     - Exactly 5880 bits (``uint8``)
 
 Python tests:
 

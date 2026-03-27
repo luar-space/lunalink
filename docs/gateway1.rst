@@ -388,19 +388,19 @@ All GD1 components are exposed to Python via ``lunalink.afs``.
      - Signature
      - Notes
    * - ``prn_code``
-     - ``(prn_id: int) -> NDArray[uint8]``
-     - Gold-2046 (2046 chips)
+     - ``(prn_id: int) -> GoldCode``
+     - Gold-2046 (2046 chips, ``uint8``)
    * - ``weil10230_code``
-     - ``(prn_id: int) -> NDArray[uint8]``
-     - Weil-10230 (10230 chips)
+     - ``(prn_id: int) -> WeilPrimary``
+     - Weil-10230 (10230 chips, ``uint8``)
    * - ``weil1500_code``
-     - ``(prn_id: int) -> NDArray[uint8]``
-     - Weil-1500 (1500 chips)
+     - ``(prn_id: int) -> WeilTertiary``
+     - Weil-1500 (1500 chips, ``uint8``)
    * - ``matched_code_epoch``
-     - ``(prn_id: int, epoch_idx: int) -> NDArray[uint8]``
+     - ``(prn_id: int, epoch_idx: int) -> MatchedCode``
      - Default interim mapping (PRN 1--12)
    * - ``matched_code_epoch_assigned``
-     - ``(p_prn, s_idx, t_prn, t_phase, epoch) -> NDArray[uint8]``
+     - ``(p_prn, s_idx, t_prn, t_phase, epoch) -> MatchedCode``
      - Explicit assignment (any PRN)
 
 Python tests: ``task test-py`` (file: ``tests/test_afs.py``)

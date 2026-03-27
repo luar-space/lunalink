@@ -600,8 +600,10 @@ class TestGenerateIqFrame:
         assert iq.dtype == np.float32
 
     def test_wrong_length_raises(self):
-        """Frame with wrong length raises ValueError."""
-        with pytest.raises(ValueError, match="Expected 6000"):
+        """Frame with wrong shape raises TypeCheckError."""
+        from jaxtyping import TypeCheckError
+
+        with pytest.raises(TypeCheckError, match="frame_symbols"):
             generate_iq_frame(1, np.zeros(100, dtype=np.uint8))
 
 
@@ -637,11 +639,13 @@ class TestWriteIqFile:
             os.unlink(path)
 
     def test_wrong_shape_raises(self):
-        """1D input raises ValueError."""
+        """1D input raises TypeCheckError."""
+        from jaxtyping import TypeCheckError
+
         with tempfile.NamedTemporaryFile(suffix=".iq", delete=False) as f:
             path = f.name
         try:
-            with pytest.raises(ValueError, match="shape"):
+            with pytest.raises(TypeCheckError, match="iq_data"):
                 write_iq_file(path, np.zeros(100, dtype=np.float32), 1e6, 1)
         finally:
             os.unlink(path)

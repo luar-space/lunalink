@@ -137,16 +137,21 @@ def extract_cpp_params(headers_dir: Path) -> dict[str, set[str]]:
                 current_params.add(m.group(1))
             # Function declaration line (heuristic: contains '(' and ends with
             # ';', ')' or '{' and has a return type)
-            elif current_params and re.search(
-                r"\b(\w+)\s*\(", line
-            ):
+            elif current_params and re.search(r"\b(\w+)\s*\(", line):
                 # Extract function name
                 fn_match = re.search(r"\b(\w+)\s*\(", line)
                 if fn_match:
                     fn_name = fn_match.group(1)
                     if fn_name not in (
-                        "if", "for", "while", "switch", "return", "throw",
-                        "static_cast", "const_cast", "reinterpret_cast",
+                        "if",
+                        "for",
+                        "while",
+                        "switch",
+                        "return",
+                        "throw",
+                        "static_cast",
+                        "const_cast",
+                        "reinterpret_cast",
                     ):
                         if fn_name in result:
                             result[fn_name] |= current_params
@@ -154,7 +159,11 @@ def extract_cpp_params(headers_dir: Path) -> dict[str, set[str]]:
                             result[fn_name] = set(current_params)
                         current_params = set()
             elif not line.strip().startswith("*") and not line.strip().startswith("//"):
-                if current_params and line.strip() and not line.strip().startswith("/**"):
+                if (
+                    current_params
+                    and line.strip()
+                    and not line.strip().startswith("/**")
+                ):
                     current_params = set()
 
     return result
@@ -257,7 +266,7 @@ def main() -> int:
         # Skip internal/generated names
         if fn.startswith("_"):
             continue
-        errors.append(f"  MISSING DOCSTRING: m.def(\"{fn}\") has no R\"(...)\" docstring")
+        errors.append(f'  MISSING DOCSTRING: m.def("{fn}") has no R"(...)" docstring')
 
     # Check param sync for documented bindings
     for py_name, binding_ps in sorted(binding_params.items()):

@@ -3,8 +3,15 @@
 from __future__ import annotations
 
 import numpy as np
-from numpy.typing import NDArray
+from beartype import beartype
+from jaxtyping import jaxtyped
 
+from lunalink.afs._array_types import (
+    IqPairFloat,
+    Sb2Payload,
+    Sb3Payload,
+    Sb4Payload,
+)
 from lunalink.afs._results import TransmitFrame, _readonly
 from lunalink.afs.signal import (
     SB2_DATA_BITS,
@@ -15,16 +22,17 @@ from lunalink.afs.signal import (
 )
 
 
+@jaxtyped(typechecker=beartype)
 def transmit_frame(
     *,
     prn_id: int,
     fid: int,
     toi: int,
-    sb2_data: NDArray[np.uint8],
-    sb3_data: NDArray[np.uint8],
-    sb4_data: NDArray[np.uint8],
+    sb2_data: Sb2Payload,
+    sb3_data: Sb3Payload,
+    sb4_data: Sb4Payload,
     sample_rate: float | None = None,
-) -> tuple[TransmitFrame, NDArray[np.float32]]:
+) -> tuple[TransmitFrame, IqPairFloat]:
     """Build and modulate a complete AFS navigation frame.
 
     Combines :func:`~lunalink.afs.frame_build` and
@@ -38,14 +46,14 @@ def transmit_frame(
         Frame ID / node identity (0-3).
     toi : int
         Time of Interval (0-99).
-    sb2_data, sb3_data, sb4_data : NDArray[np.uint8]
+    sb2_data, sb3_data, sb4_data : Sb2Payload, Sb3Payload, Sb4Payload
         Raw subframe payload bits (1176, 846, 846 respectively).
     sample_rate : float, optional
         Output sample rate in Hz.  ``None`` for native 5.115 MHz.
 
     Returns
     -------
-    tuple[TransmitFrame, NDArray[np.float32]]
+    tuple[TransmitFrame, IqPairFloat]
         (frame_metadata, iq_samples).
 
     Examples
@@ -66,7 +74,7 @@ def transmit_frame(
 def make_test_payload(
     pattern: str = "zeros",
     seed: int = 0x12345678,
-) -> tuple[NDArray[np.uint8], NDArray[np.uint8], NDArray[np.uint8]]:
+) -> tuple[Sb2Payload, Sb3Payload, Sb4Payload]:
     """Generate standard test payloads for SB2, SB3, SB4.
 
     Parameters
@@ -78,7 +86,7 @@ def make_test_payload(
 
     Returns
     -------
-    tuple[NDArray, NDArray, NDArray]
+    tuple[Sb2Payload, Sb3Payload, Sb4Payload]
         ``(sb2_data, sb3_data, sb4_data)`` ready for
         :func:`~lunalink.afs.frame_build` or :func:`transmit_frame`.
     """

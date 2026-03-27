@@ -13,7 +13,8 @@ from __future__ import annotations
 import os
 
 import numpy as np
-from numpy.typing import NDArray
+from beartype import beartype
+from jaxtyping import jaxtyped
 
 # ── Direct re-exports from the C++ extension ────────────────────────────────
 # These are the public API — no Python wrapper overhead.
@@ -190,6 +191,7 @@ from lunalink.afs._afs import subframe_build_sb4 as subframe_build_sb4
 from lunalink.afs._afs import sync_detect as sync_detect
 from lunalink.afs._afs import weil1500_code as weil1500_code
 from lunalink.afs._afs import weil10230_code as weil10230_code
+from lunalink.afs._array_types import FrameSymbols, IqPairFloat
 
 # ── Public aliases (canonical names, matching spec_tables CSVs) ──────────────
 # The C++ binding exports ``AFS_I_CHIP_RATE_HZ`` / ``AFS_Q_CHIP_RATE_HZ``.
@@ -203,12 +205,13 @@ AFS_Q_CHIP_RATE = AFS_Q_CHIP_RATE_HZ
 # ── Python-level functions (add logic beyond simple delegation) ──────────────
 
 
+@jaxtyped(typechecker=beartype)
 def generate_iq_epoch(
     prn_id: int,
     epoch_idx: int,
     data_symbol: int = 1,
     sample_rate: float | None = None,
-) -> NDArray[np.float32]:
+) -> IqPairFloat:
     """Generate one 2 ms epoch of baseband I/Q samples.
 
     Parameters
@@ -226,46 +229,43 @@ def generate_iq_epoch(
 
     Returns
     -------
-    NDArray[np.float32]
+    IqPairFloat
         Interleaved I/Q pairs with shape (N, 2) where N depends on sample_rate.
     """
     rate = float(sample_rate) if sample_rate is not None else float(AFS_Q_CHIP_RATE)
     return generate_iq_epoch_float(prn_id, epoch_idx, data_symbol, rate)
 
 
+@jaxtyped(typechecker=beartype)
 def generate_iq_frame(
     prn_id: int,
-    frame_symbols: NDArray[np.uint8],
+    frame_symbols: FrameSymbols,
     sample_rate: float | None = None,
-) -> NDArray[np.float32]:
+) -> IqPairFloat:
     """Generate a full 12 s frame of baseband I/Q samples.
 
     Parameters
     ----------
     prn_id : int
         PRN ID (1-12 for interim codes).
-    frame_symbols : NDArray[np.uint8]
+    frame_symbols : FrameSymbols
         6000 binary frame symbols (from ``frame_build``).
     sample_rate : float, optional
         Output sample rate in Hz. ``None`` for native 5.115 MHz.
 
     Returns
     -------
-    NDArray[np.float32]
+    IqPairFloat
         Interleaved I/Q pairs with shape (N, 2).
     """
-    if len(frame_symbols) != FRAME_LENGTH:
-        raise ValueError(f"Expected {FRAME_LENGTH} symbols, got {len(frame_symbols)}")
-
-    # C++ generates all 6000 epochs as float32 in one call.
-    # Handles both native rate and resampled — no Python-side copy or cast.
     rate = float(sample_rate) if sample_rate is not None else float(AFS_Q_CHIP_RATE)
     return generate_iq_frame_float(prn_id, frame_symbols, rate)
 
 
+@jaxtyped(typechecker=beartype)
 def write_iq_file(
     path: str | os.PathLike[str],
-    iq_data: NDArray[np.float32],
+    iq_data: IqPairFloat,
     sample_rate: float,
     prn_id: int,
     duration_s: float | None = None,
@@ -287,7 +287,7 @@ def write_iq_file(
     ----------
     path : str or os.PathLike
         Output file path.
-    iq_data : NDArray[np.float32]
+    iq_data : IqPairFloat
         I/Q data with shape (N, 2).
     sample_rate : float
         Sample rate in Hz.
@@ -298,9 +298,6 @@ def write_iq_file(
     """
     import io
     import struct
-
-    if iq_data.ndim != 2 or iq_data.shape[1] != 2:
-        raise ValueError("iq_data must have shape (N, 2)")
 
     n_samples = iq_data.shape[0]
     if duration_s is None:
@@ -317,8 +314,6 @@ def write_iq_file(
     buf.write(b"float32" + b"\x00" * 9)  # 16
     buf.write(b"\x00" * (128 - buf.tell()))  # pad to 128
     header = buf.getvalue()
-    if len(header) != 128:
-        raise RuntimeError(f"IQ header must be 128 bytes, got {len(header)}")
 
     interleaved = iq_data.astype(np.float32).ravel()
     with open(path, "wb") as f:

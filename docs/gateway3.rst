@@ -460,19 +460,19 @@ All GD3 components are exposed to Python via ``lunalink.afs``.
      - Signature
      - Notes
    * - ``frame_build_partial``
-     - ``(fid: int, toi: int) -> NDArray[uint8]``
+     - ``(fid: int, toi: int) -> FrameSymbols``
      - SP + SB1 only (6000 symbols, payload zeroed)
    * - ``frame_build``
-     - ``(fid, toi, sb2_data, sb3_data, sb4_data) -> NDArray[uint8]``
+     - ``(fid, toi, sb2: Sb2Payload, sb3: Sb3Payload, sb4: Sb4Payload) -> FrameSymbols``
      - Full 6000-symbol frame
    * - ``subframe_build_sb2``
-     - ``(data: NDArray[uint8]) -> NDArray[uint8]``
+     - ``(data: Sb2Payload) -> NDArray[uint8]``
      - 1176 bits |rarr| 2400 encoded symbols
    * - ``subframe_build_sb3``
-     - ``(data: NDArray[uint8]) -> NDArray[uint8]``
+     - ``(data: Sb3Payload) -> NDArray[uint8]``
      - 846 bits |rarr| 1740 encoded symbols
    * - ``subframe_build_sb4``
-     - ``(data: NDArray[uint8]) -> NDArray[uint8]``
+     - ``(data: Sb4Payload) -> NDArray[uint8]``
      - 846 bits |rarr| 1740 encoded symbols
 
 Python tests: ``task test-py`` (file: ``tests/test_afs.py``)

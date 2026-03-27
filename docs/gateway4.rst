@@ -292,13 +292,13 @@ All GD4 components are exposed to Python via ``lunalink.afs``.
      - Signature
      - Notes
    * - ``modulate_i``
-     - ``(prn: NDArray[uint8], data: int) -> NDArray[int8]``
+     - ``(prn: GoldCode, data: int) -> BpskChipsI``
      - AFS-I BPSK(1) with data symbol
    * - ``modulate_q``
-     - ``(chips: NDArray[uint8]) -> NDArray[int8]``
+     - ``(chips: WeilPrimary) -> BpskChipsQ``
      - AFS-Q BPSK(5) pilot
    * - ``multiplex_iq``
-     - ``(i: NDArray[int8], q: NDArray[int8]) -> NDArray[int16]``
+     - ``(i: BpskChipsI, q: BpskChipsQ) -> IqMuxNative``
      - Interleaved IQ at 5.115 MSPS
 
 Python tests: ``task test-py`` (file: ``tests/test_afs.py``)

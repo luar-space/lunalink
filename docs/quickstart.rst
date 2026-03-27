@@ -138,7 +138,7 @@ The :class:`~lunalink.afs.DecodeResult` dataclass
 
 Each :class:`~lunalink.afs.SubframeResult` contains:
 
-- ``data`` — decoded payload bits (``NDArray[np.uint8]``)
+- ``data`` — decoded payload bits (``Sb2Payload`` / ``Sb3Payload`` / ``Sb4Payload``)
 - ``ldpc_converged`` — whether the LDPC decoder converged
 - ``crc_ok`` — whether the CRC-24 check passed
 

@@ -33,7 +33,7 @@ extensions = [
 nbsphinx_execute = "never"
 
 # Suppress warnings for forward-references to notebooks not yet written
-suppress_warnings = ["nbsphinx.localfile"]
+suppress_warnings = ["nbsphinx.localfile", "ref.python"]
 
 napoleon_numpy_docstring = True
 napoleon_google_docstring = False

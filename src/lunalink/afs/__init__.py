@@ -1,5 +1,26 @@
 """LunaLink AFS subpackage — Augmented Forward Signal implementation."""
 
+from lunalink.afs._array_types import BchCodeword as BchCodeword
+from lunalink.afs._array_types import BchSoftInput as BchSoftInput
+from lunalink.afs._array_types import BitArray as BitArray
+from lunalink.afs._array_types import BpskChipsI as BpskChipsI
+from lunalink.afs._array_types import BpskChipsQ as BpskChipsQ
+from lunalink.afs._array_types import ErrorSeries as ErrorSeries
+from lunalink.afs._array_types import FrameSymbols as FrameSymbols
+from lunalink.afs._array_types import GoldCode as GoldCode
+from lunalink.afs._array_types import InterleaverBlock as InterleaverBlock
+from lunalink.afs._array_types import InterleaverBlockSoft as InterleaverBlockSoft
+from lunalink.afs._array_types import IqMuxNative as IqMuxNative
+from lunalink.afs._array_types import IqPairFloat as IqPairFloat
+from lunalink.afs._array_types import IqPairNative as IqPairNative
+from lunalink.afs._array_types import MatchedCode as MatchedCode
+from lunalink.afs._array_types import RxSamples as RxSamples
+from lunalink.afs._array_types import Sb2Payload as Sb2Payload
+from lunalink.afs._array_types import Sb3Payload as Sb3Payload
+from lunalink.afs._array_types import Sb4Payload as Sb4Payload
+from lunalink.afs._array_types import SoftSymbols as SoftSymbols
+from lunalink.afs._array_types import WeilPrimary as WeilPrimary
+from lunalink.afs._array_types import WeilTertiary as WeilTertiary
 from lunalink.afs._errors import AfsError, DecodeError, SyncNotFoundError
 from lunalink.afs._receiver import receive_frame
 from lunalink.afs._results import (
@@ -119,6 +140,28 @@ from lunalink.afs.signal import (
 # sync but is intentionally not the authority.
 
 __all__ = [
+    # Array types (jaxtyping semantic aliases)
+    "GoldCode",
+    "WeilPrimary",
+    "WeilTertiary",
+    "MatchedCode",
+    "BpskChipsI",
+    "BpskChipsQ",
+    "IqMuxNative",
+    "BchCodeword",
+    "BchSoftInput",
+    "InterleaverBlock",
+    "InterleaverBlockSoft",
+    "Sb2Payload",
+    "Sb3Payload",
+    "Sb4Payload",
+    "FrameSymbols",
+    "IqPairFloat",
+    "IqPairNative",
+    "RxSamples",
+    "SoftSymbols",
+    "BitArray",
+    "ErrorSeries",
     # High-level TX / RX
     "transmit_frame",
     "receive_frame",
