@@ -22,7 +22,18 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
+    "nbsphinx",
 ]
+
+# nbsphinx: notebooks are pre-executed (outputs committed) so figures render
+# without needing a build-time kernel. Re-execute locally with:
+#   jupyter nbconvert --execute --inplace notebooks/*.ipynb
+# Before building docs, copy notebooks into docs/notebooks/ (gitignored):
+#   cp -r notebooks/ docs/notebooks/
+nbsphinx_execute = "never"
+
+# Suppress warnings for forward-references to notebooks not yet written
+suppress_warnings = ["nbsphinx.localfile"]
 
 napoleon_numpy_docstring = True
 napoleon_google_docstring = False
@@ -48,7 +59,7 @@ exclude_patterns = [
     # [[private-end]]
 ]
 
-html_theme = "furo"
+html_theme = "sphinx_rtd_theme"
 
 # -- LaTeX / PDF output -------------------------------------------------------
 

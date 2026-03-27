@@ -104,6 +104,12 @@ LunaLink AFS reference implementation with C++ core and pybind11 bindings.
 
 .. toctree::
    :maxdepth: 2
+   :caption: Tutorials:
+
+   notebooks/01_spreading_codes
+
+.. toctree::
+   :maxdepth: 2
    :caption: Developer & Interoperability:
 
    quickstart
