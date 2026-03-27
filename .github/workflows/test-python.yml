@@ -8,39 +8,43 @@ on:
       - 'docs/**'
       - '*.md'
       - '*.rst'
-  # TODO: re-enable pull_request trigger after restructure PR is merged
-  #   pull_request:
-  #     paths-ignore:
-  #       - 'docs/**'
-  #       - '*.md'
-  #       - '*.rst'
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '*.rst'
 
 
 jobs:
   test:
-    name: Test (Python ${{ matrix.python-version }})
-    runs-on: ubuntu-latest
+    name: Test (Python ${{ matrix.python-version }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.12", "3.13", "3.14"]
+        # PRs: single fast job. Main: full matrix.
+        python-version: ${{ github.event_name == 'pull_request' && fromJSON('["3.13"]') || fromJSON('["3.12", "3.13", "3.14"]') }}
+        os: [ubuntu-latest]
+        include: ${{ github.event_name != 'pull_request' && fromJSON('[{"python-version": "3.12", "os": "windows-latest"}, {"python-version": "3.12", "os": "macos-14"}]') || fromJSON('[]') }}
     steps:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - name: Install Ninja
+      - name: Install Ninja (Linux)
+        if: runner.os == 'Linux'
         run: sudo apt-get install -y ninja-build
       - uses: hendrikmuhs/ccache-action@v1
+        if: runner.os != 'Windows'
         with:
-          key: python-${{ matrix.python-version }}
+          key: python-${{ matrix.python-version }}-${{ matrix.os }}
       - uses: arduino/setup-task@v2
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: ${{ matrix.python-version }}
       - run: uv sync --group test
         env:
-          CMAKE_C_COMPILER_LAUNCHER: ccache
-          CMAKE_CXX_COMPILER_LAUNCHER: ccache
+          CMAKE_C_COMPILER_LAUNCHER: ${{ runner.os != 'Windows' && 'ccache' || '' }}
+          CMAKE_CXX_COMPILER_LAUNCHER: ${{ runner.os != 'Windows' && 'ccache' || '' }}
       - run: task test-py
 
       - name: Generate coverage JSON

@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <span>
+#include <type_traits>
 
 /**
  * @brief Critical-section macros for ISR-safe atomic invariant writes.
@@ -29,16 +30,60 @@
 #define LUNALINK_CRITICAL_EXIT  ((void)0)
 #endif
 
+// ── Compiler abstraction macros ──────────────────────────────────────────────
+// These isolate GCC/Clang-specific constructs behind portable macros so
+// the same source compiles under MSVC for the Tier 3 (Python wheel) build.
+// Flight builds (Tier 1/2) always use GCC/Clang and get the real attributes.
+// See docs/assurance/build_policy.rst for the three-tier model.
+
 /**
- * @brief Macro for portable memory section pinning of LUTs.
- * ELF (Linux/RTEMS): .lunalink_lut
- * Mach-O (macOS): __TEXT,lunalink_lut
+ * @brief Portable memory section pinning for LUTs and constant tables.
+ *
+ * - ELF (Linux/RTEMS):  `.lunalink_lut`
+ * - Mach-O (macOS):     `__TEXT,lunalink_lut`
+ * - MSVC (Windows):     no-op (section pinning is a flight/linker-script concern)
  */
-#if defined(__APPLE__)
+#if defined(_MSC_VER)
+#define LUNALINK_LUT_SECTION /* no-op on MSVC — section pinning is Tier 1 only */
+#elif defined(__APPLE__)
 #define LUNALINK_LUT_SECTION [[gnu::section("__TEXT,lunalink_lut")]]
 #else
 #define LUNALINK_LUT_SECTION [[gnu::section(".lunalink_lut")]]
 #endif
+
+/**
+ * @brief Portable struct packing.
+ *
+ * Usage:
+ *   LUNALINK_PACKED_BEGIN
+ *   struct Foo { ... };
+ *   LUNALINK_PACKED_END
+ *
+ * GCC/Clang: `__attribute__((packed))` via pragma.
+ * MSVC: `#pragma pack(push, 1)` / `#pragma pack(pop)`.
+ */
+#if defined(_MSC_VER)
+#define LUNALINK_PACKED_BEGIN __pragma(pack(push, 1))
+#define LUNALINK_PACKED_END   __pragma(pack(pop))
+#define LUNALINK_PACKED_ATTR  /* attribute on struct not needed with pragma */
+#else
+#define LUNALINK_PACKED_BEGIN /* GCC/Clang use attribute syntax directly */
+#define LUNALINK_PACKED_END
+#define LUNALINK_PACKED_ATTR [[gnu::packed]]
+#endif
+
+/**
+ * @brief SFINAE helper: detect if T has a `force_set(U)` method.
+ *
+ * Replaces `if constexpr (requires { ... })` which MSVC < 17.4 rejects.
+ */
+template <typename T, typename U, typename = void>
+struct has_force_set : std::false_type {};
+template <typename T, typename U>
+struct has_force_set<T, U, std::void_t<decltype(std::declval<T&>().force_set(std::declval<U>()))>>
+    : std::true_type {};
+template <typename T, typename U>
+inline constexpr bool has_force_set_v = has_force_set<T, U>::value;
 
 namespace lunalink::signal {
 
@@ -296,7 +341,7 @@ template <typename T> struct TmrValue {
    * Bypasses CheckedRange saturating logic if T is CheckedRange.
    */
   template <typename RawT> void force_fault(RawT raw_bad_value) noexcept {
-    if constexpr (requires { v1.force_set(raw_bad_value); }) {
+    if constexpr (has_force_set_v<T, RawT>) {
       v1.force_set(raw_bad_value);
       v2.force_set(raw_bad_value);
       v3.force_set(raw_bad_value);

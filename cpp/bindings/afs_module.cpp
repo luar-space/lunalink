@@ -256,21 +256,116 @@ NB_MODULE(_afs, m) {
                    std::span<uint8_t, 52>(dst, 52)) != BchStatus::kOk)
       throw nb::value_error("Invalid BCH params");
     return out;
-  });
+  },
+  "fid"_a, "toi"_a,
+  R"(Encode a navigation sub-block header (SB1) using BCH(51,8). [LSIS-AFS-501]
+
+The 9-bit input (2-bit FID + 7-bit TOI) is encoded into a 52-symbol
+codeword (1 raw MSB + 51 LFSR symbols). TMR-hardened.
+
+Parameters
+----------
+fid : int
+    Frame ID / node identity (0--3).
+toi : int
+    Time of Interval (0--99).
+
+Returns
+-------
+ndarray of uint8
+    52 binary symbols (values in {0, 1}).
+
+Raises
+------
+ValueError
+    If *fid* > 3 or *toi* > 99.
+
+Examples
+--------
+>>> from lunalink.afs import bch_encode, bch_decode
+>>> codeword = bch_encode(0, 42)
+>>> codeword.shape
+(52,)
+>>> result = bch_decode(codeword)
+>>> int(result.toi)
+42
+)");
 
   m.def("bch_decode", [](ndarray_1d codeword) {
     if (codeword.shape(0) != 52)
       throw nb::value_error("Must be 52 symbols");
     return bch_decode(std::span<const uint8_t, 52>(checked_data<uint8_t>(codeword, "codeword"), 52));
-  });
+  },
+  "codeword"_a,
+  R"(Maximum-likelihood BCH decoder (hard decision). [LSIS-AFS-501]
+
+Corrects up to 2 bit errors using a pre-computed exhaustive codebook.
+
+Parameters
+----------
+codeword : ndarray of uint8
+    52 binary symbols (values in {0, 1}).
+
+Returns
+-------
+BchResult
+    Decoded result with ``status``, ``fid``, ``toi``, and
+    ``hamming_distance`` (number of corrected bits, 0--2).
+
+Examples
+--------
+>>> from lunalink.afs import bch_encode, bch_decode
+>>> cw = bch_encode(1, 50)
+>>> cw[0] ^= 1  # inject 1-bit error
+>>> r = bch_decode(cw)
+>>> r.status == BchStatus.OK
+True
+>>> r.hamming_distance
+1
+)");
 
   m.def("bch_decode_soft", [](ndarray_1d llr) {
     if (llr.shape(0) != 52)
       throw nb::value_error("Must be 52 soft symbols");
     return bch_decode_soft(std::span<const float, 52>(checked_data<float>(llr, "llr"), 52));
-  });
+  },
+  "llr"_a,
+  R"(Soft-decision maximum-likelihood BCH decoder. [LSIS-AFS-501]
 
-  m.def("bch_codebook_checksum", &bch_codebook_checksum);
+Selects the codebook entry maximising the inner-product metric
+over 52 channel LLRs, giving ~2 dB gain over hard-decision ML.
+
+Parameters
+----------
+llr : ndarray of float32
+    52 channel log-likelihood ratios.  Positive favours bit 0,
+    negative favours bit 1 (BPSK AWGN: L = 2y/sigma^2).
+
+Returns
+-------
+BchResult
+    Decoded result.  ``hamming_distance`` is always 0xFF (soft sentinel).
+    ``status`` is OK for all finite inputs — caller must judge confidence
+    from the LDPC/CRC results, not from BCH status alone.
+
+Notes
+-----
+- Non-finite (NaN/Inf) LLRs yield ``BchStatus.INVALID_INPUT``.
+- Values are internally clamped to +/-100; saturation does not raise.
+- No ambiguity detection: ties broken by lowest codebook index.
+)");
+
+  m.def("bch_codebook_checksum", &bch_codebook_checksum,
+  R"(Compute the JIT codebook checksum for CBIT integrity. [NASA-FSW-CBIT]
+
+Returns a 64-bit CRC-like checksum of the internal BCH codebook memory.
+Used by power-on self-test to verify codebook ROM integrity.
+
+Returns
+-------
+int
+    64-bit checksum value.
+)");
 
   m.def("crc24_calculate", [](ndarray_1d data) {
     auto [out, dst] = make_numpy_1d<uint8_t>(24);
@@ -283,11 +378,51 @@ NB_MODULE(_afs, m) {
     for (uint32_t i = 0; i < 24U; ++i)
       dst[i] = crc[i];
     return out;
-  });
+  },
+  "data"_a,
+  R"(Calculate CRC-24Q over a bit sequence. [LSIS-FID0-467]
+
+Polynomial: G(X) = 0x864CFB, seed 0, MSB-first.
+
+Parameters
+----------
+data : ndarray of uint8
+    Input bits (one bit per byte, values in {0, 1}).
+
+Returns
+-------
+ndarray of uint8
+    24-bit CRC (one bit per byte).
+
+Examples
+--------
+>>> import numpy as np
+>>> from lunalink.afs.signal import crc24_calculate, crc24_verify
+>>> data = np.zeros(100, dtype=np.uint8)
+>>> crc = crc24_calculate(data)
+>>> crc.shape
+(24,)
+>>> combined = np.concatenate([data, crc])
+>>> crc24_verify(combined)
+True
+)");
 
   m.def("crc24_verify", [](ndarray_1d data_with_crc) {
     return crc24_verify(checked_span<uint8_t>(data_with_crc, "data_with_crc"));
-  });
+  },
+  "data_with_crc"_a,
+  R"(Verify CRC-24Q appended to a bit sequence. [LSIS-FID0-467]
+
+Parameters
+----------
+data_with_crc : ndarray of uint8
+    Input bits with 24-bit CRC appended (one bit per byte).
+
+Returns
+-------
+bool
+    True if CRC matches.
+)");
 
   m.def("block_interleave", [](ndarray_1d in) {
     auto [out, dst] = make_numpy_1d<uint8_t>(kInterleaverSize);
@@ -297,7 +432,20 @@ NB_MODULE(_afs, m) {
     if (status != InterleaverStatus::kOk)
       throw nb::value_error("block_interleave failed: input must be exactly 5880 bits");
     return out;
-  });
+  },
+  "data"_a,
+  R"(60x98 block interleaver (write row-wise, read column-wise). [LSIS-FID0-470]
+
+Parameters
+----------
+data : ndarray of uint8
+    5880 binary symbols to interleave.
+
+Returns
+-------
+ndarray of uint8
+    5880 interleaved symbols.
+)");
 
   m.def("block_deinterleave", [](ndarray_1d in) {
     auto [out, dst] = make_numpy_1d<uint8_t>(kInterleaverSize);
@@ -307,7 +455,20 @@ NB_MODULE(_afs, m) {
     if (status != InterleaverStatus::kOk)
       throw nb::value_error("block_deinterleave failed: input must be exactly 5880 bits");
     return out;
-  });
+  },
+  "data"_a,
+  R"(60x98 block de-interleaver (write column-wise, read row-wise). [LSIS-FID0-470]
+
+Parameters
+----------
+data : ndarray of uint8
+    5880 interleaved binary symbols.
+
+Returns
+-------
+ndarray of uint8
+    5880 de-interleaved symbols.
+)");
 
   m.def("block_deinterleave_soft",
         [](nb::ndarray<const float, nb::ndim<1>, nb::c_contig, nb::device::cpu> in) {
@@ -318,7 +479,23 @@ NB_MODULE(_afs, m) {
           if (status != InterleaverStatus::kOk)
             throw nb::value_error("block_deinterleave_soft failed");
           return out;
-        });
+        },
+  "data"_a,
+  R"(Soft-decision 60x98 block de-interleaver. [LSIS-AFS-471]
+
+Same permutation as ``block_deinterleave`` but preserves float
+soft-decision values (LLRs) for FEC decoding.
+
+Parameters
+----------
+data : ndarray of float32
+    5880 soft-decision values (interleaved).
+
+Returns
+-------
+ndarray of float32
+    5880 de-interleaved soft values.
+)");
 
   m.def("ldpc_encode", [](LdpcSubframe type, ndarray_1d msg) {
     const size_t n_out = (type == LdpcSubframe::kSF2) ? 2400U : 1740U;
@@ -331,7 +508,31 @@ NB_MODULE(_afs, m) {
     if (status != LdpcStatus::kOk)
       throw nb::value_error("LDPC encode failed");
     return out;
-  });
+  },
+  "type"_a, "msg"_a,
+  R"(Encode a subframe using rate-1/2 5G NR LDPC (Base Graph 2). [LSIS-AFS-320]
+
+Parameters
+----------
+type : LdpcSubframe
+    Subframe type: ``SF2`` (1200 -> 2400) or ``SF3``/``SF4`` (870 -> 1740).
+msg : ndarray of uint8
+    Message bits including 24-bit CRC (1200 or 870 bits).
+
+Returns
+-------
+ndarray of uint8
+    Encoded symbols (2400 or 1740 bits).
+
+Examples
+--------
+>>> import numpy as np
+>>> from lunalink.afs import ldpc_encode, ldpc_decode, LdpcSubframe
+>>> msg = np.zeros(1200, dtype=np.uint8)
+>>> encoded = ldpc_encode(LdpcSubframe.SF2, msg)
+>>> encoded.shape
+(2400,)
+)");
 
   m.def(
       "ldpc_decode",
@@ -363,7 +564,41 @@ NB_MODULE(_afs, m) {
       "type"_a,
       "symbols"_a,
       "iterations"_a,
-      "workspace"_a.none() = nb::none());
+      "workspace"_a.none() = nb::none(),
+      R"(Decode a subframe using Layered Normalized Min-Sum BP. [LSIS-AFS-321]
+
+Parameters
+----------
+type : LdpcSubframe
+    Subframe type: ``SF2`` (2400 -> 1200) or ``SF3``/``SF4`` (1740 -> 870).
+symbols : ndarray of float32
+    Channel LLRs.  Positive favours bit 0, negative favours bit 1
+    (BPSK AWGN: L = 2y/sigma^2).
+iterations : int
+    Maximum belief-propagation iterations (typically 50).
+workspace : LdpcWorkspace or None, optional
+    Reusable scratchpad.  ``None`` allocates a fresh workspace.
+    Pass a persistent workspace to tune the NMS alpha parameter
+    (``workspace.alpha_numerator`` / ``workspace.alpha_denominator``).
+
+Returns
+-------
+tuple[ndarray of uint8, LdpcStatus]
+    (decoded_bits, status).  Status is ``OK`` on convergence,
+    ``NOT_CONVERGED`` if iteration limit reached (bits may still be usable
+    — check CRC).
+
+Examples
+--------
+>>> import numpy as np
+>>> from lunalink.afs import ldpc_encode, ldpc_decode, LdpcSubframe
+>>> msg = np.zeros(1200, dtype=np.uint8)
+>>> enc = ldpc_encode(LdpcSubframe.SF2, msg)
+>>> soft = np.where(enc == 0, 5.0, -5.0).astype(np.float32)
+>>> decoded, status = ldpc_decode(LdpcSubframe.SF2, soft, 50)
+>>> np.array_equal(decoded, msg)
+True
+)");
 
   nb::class_<LdpcEncodeWorkspace>(m, "LdpcEncodeWorkspace").def(nb::init<>());
 
@@ -376,7 +611,24 @@ NB_MODULE(_afs, m) {
                             fbw) != FrameStatus::kOk)
       throw nb::value_error("Frame build failed");
     return out;
-  });
+  },
+  "fid"_a, "toi"_a,
+  R"(Build a partial AFS frame: sync + BCH header + zero payload. [LSIS-AFS-601]
+
+Useful for testing sync detection and BCH decoding in isolation.
+
+Parameters
+----------
+fid : int
+    Frame ID (0--3).
+toi : int
+    Time of Interval (0--99).
+
+Returns
+-------
+ndarray of uint8
+    6000 binary symbols (sync + SB1 + zero-padded payload).
+)");
 
   m.def("frame_build",
         [](uint8_t fid,
@@ -405,11 +657,61 @@ NB_MODULE(_afs, m) {
           if (status != FrameStatus::kOk)
             throw nb::value_error("Frame build failed");
           return out;
-        });
+        },
+  "fid"_a, "toi"_a, "sb2_data"_a, "sb3_data"_a, "sb4_data"_a,
+  R"(Build a complete AFS navigation frame. [LSIS-AFS-605]
+
+Pipeline: data -> CRC-24 -> LDPC encode -> concatenate -> block interleave.
+Output is 68 sync + 52 BCH + 5880 interleaved = 6000 symbols.
+
+Parameters
+----------
+fid : int
+    Frame ID / node identity (0--3).
+toi : int
+    Time of Interval (0--99).
+sb2_data : ndarray of uint8
+    Subframe 2 navigation data (1176 bits).
+sb3_data : ndarray of uint8
+    Subframe 3 navigation data (846 bits).
+sb4_data : ndarray of uint8
+    Subframe 4 navigation data (846 bits).
+
+Returns
+-------
+ndarray of uint8
+    6000 binary symbols ready for modulation.
+
+Examples
+--------
+>>> import numpy as np
+>>> from lunalink.afs import frame_build
+>>> sb2 = np.zeros(1176, dtype=np.uint8)
+>>> sb3 = np.zeros(846, dtype=np.uint8)
+>>> sb4 = np.zeros(846, dtype=np.uint8)
+>>> frame = frame_build(0, 42, sb2, sb3, sb4)
+>>> frame.shape
+(6000,)
+)");
 
   m.def("commit_frame", [](ndarray_1d frame) {
     return commit_frame(checked_span<uint8_t>(frame, "frame"));
-  });
+  },
+  "frame"_a,
+  R"(Frame commit gate: verify assembled frame integrity via CRC-24Q. [LSIS-AFS-606]
+
+Defence-in-depth check — no frame shall be transmitted unless this passes.
+
+Parameters
+----------
+frame : ndarray of uint8
+    Assembled frame buffer (must be at least 25 symbols).
+
+Returns
+-------
+FrameStatus
+    ``OK`` if CRC matches; ``FAULT_DETECTED`` otherwise.
+)");
 
   m.def("subframe_build_sb2",
         [](ndarray_1d data) {
@@ -424,7 +726,20 @@ NB_MODULE(_afs, m) {
           if (status != FrameStatus::kOk)
             throw nb::value_error("SB2 build failed");
           return out;
-        });
+        },
+  "data"_a,
+  R"(Build Subframe 2: CRC-24 + LDPC SF2 encode. [LSIS-AFS-602]
+
+Parameters
+----------
+data : ndarray of uint8
+    SB2 navigation data (1176 bits).
+
+Returns
+-------
+ndarray of uint8
+    2400 encoded symbols.
+)");
 
   m.def("subframe_build_sb3",
         [](ndarray_1d data) {
@@ -439,7 +754,20 @@ NB_MODULE(_afs, m) {
           if (status != FrameStatus::kOk)
             throw nb::value_error("SB3 build failed");
           return out;
-        });
+        },
+  "data"_a,
+  R"(Build Subframe 3: CRC-24 + LDPC SF3 encode. [LSIS-AFS-603]
+
+Parameters
+----------
+data : ndarray of uint8
+    SB3 navigation data (846 bits).
+
+Returns
+-------
+ndarray of uint8
+    1740 encoded symbols.
+)");
 
   m.def("subframe_build_sb4",
         [](ndarray_1d data) {
@@ -454,7 +782,20 @@ NB_MODULE(_afs, m) {
           if (status != FrameStatus::kOk)
             throw nb::value_error("SB4 build failed");
           return out;
-        });
+        },
+  "data"_a,
+  R"(Build Subframe 4: CRC-24 + LDPC SF4 encode. [LSIS-AFS-604]
+
+Parameters
+----------
+data : ndarray of uint8
+    SB4 navigation data (846 bits).
+
+Returns
+-------
+ndarray of uint8
+    1740 encoded symbols.
+)");
 
   m.def("prn_code", [](int prn_id) {
     const PrnId id{static_cast<uint8_t>(prn_id)};
@@ -462,7 +803,27 @@ NB_MODULE(_afs, m) {
     if (gold_prn_packed(id, p) != PrnStatus::kOk)
       throw nb::value_error("Invalid PRN");
     return unpack_prn(p);
-  });
+  },
+  "prn_id"_a,
+  R"(Get the Gold-2046 spreading code for AFS-I. [LSIS-AFS-101]
+
+Parameters
+----------
+prn_id : int
+    PRN identifier (1--12 for interim assignments).
+
+Returns
+-------
+ndarray of uint8
+    2046 binary chips (values in {0, 1}).
+
+Examples
+--------
+>>> from lunalink.afs import prn_code
+>>> gold = prn_code(1)
+>>> gold.shape
+(2046,)
+)");
 
   m.def("modulate_i", [](ndarray_1d prn, int data) {
     const size_t n = prn.shape(0);
@@ -473,7 +834,24 @@ NB_MODULE(_afs, m) {
         ModulationStatus::kOk)
       throw nb::value_error("Modulation failed");
     return out;
-  });
+  },
+  "prn"_a, "data"_a,
+  R"(BPSK-modulate a chip sequence for the AFS-I data channel. [LSIS-AFS-201]
+
+Mapping: chip XOR data -> {+1, -1} (0 -> +1, 1 -> -1).
+
+Parameters
+----------
+prn : ndarray of uint8
+    Spreading code chips (values in {0, 1}).
+data : int
+    Navigation data symbol (+1 or -1).
+
+Returns
+-------
+ndarray of int8
+    Modulated bipolar samples.
+)");
 
   m.def("modulate_q", [](ndarray_1d chips) {
     const size_t n = chips.shape(0);
@@ -483,7 +861,22 @@ NB_MODULE(_afs, m) {
         ModulationStatus::kOk)
       throw nb::value_error("Modulation failed");
     return out;
-  });
+  },
+  "chips"_a,
+  R"(BPSK-modulate a chip sequence for the AFS-Q pilot channel. [LSIS-AFS-201]
+
+Mapping: 0 -> +1, 1 -> -1 (no data symbol — pilot is dataless).
+
+Parameters
+----------
+chips : ndarray of uint8
+    Spreading code chips (values in {0, 1}).
+
+Returns
+-------
+ndarray of int8
+    Modulated bipolar samples.
+)");
 
   m.def("multiplex_iq", [](ndarray_1d i, ndarray_1d q) {
     if (i.shape(0) != 2046)
@@ -496,21 +889,65 @@ NB_MODULE(_afs, m) {
                      std::span<int16_t>(dst, 20460)) != IqMuxStatus::kOk)
       throw nb::value_error("Mux failed");
     return out;
-  });
+  },
+  "i"_a, "q"_a,
+  R"(Multiplex I and Q channels into interleaved I/Q pairs. [LSIS-AFS-301]
+
+The I channel (2046 samples) is upsampled 5x to match the Q channel
+rate (10230 samples).  Output: [I0, Q0, I1, Q1, ...].
+
+Parameters
+----------
+i : ndarray of int8
+    In-phase modulated chips (2046 samples).
+q : ndarray of int8
+    Quadrature modulated chips (10230 samples).
+
+Returns
+-------
+ndarray of int16, shape (10230, 2)
+    Interleaved I/Q pairs at Q-channel rate.
+)");
 
   m.def("weil10230_code", [](int id) {
     PrnCode p;
     if (weil10230_prn_packed(PrnId{static_cast<uint8_t>(id)}, p) != PrnStatus::kOk)
       throw nb::value_error("Bad ID");
     return unpack_prn(p);
-  });
+  },
+  "prn_id"_a,
+  R"(Get the Weil-10230 primary spreading code for AFS-Q. [LSIS-AFS-102]
+
+Parameters
+----------
+prn_id : int
+    PRN identifier (1--12 for interim assignments).
+
+Returns
+-------
+ndarray of uint8
+    10230 binary chips.
+)");
 
   m.def("weil1500_code", [](int id) {
     PrnCode p;
     if (weil1500_prn_packed(PrnId{static_cast<uint8_t>(id)}, p) != PrnStatus::kOk)
       throw nb::value_error("Bad ID");
     return unpack_prn(p);
-  });
+  },
+  "prn_id"_a,
+  R"(Get the Weil-1500 tertiary spreading code for AFS-Q. [LSIS-AFS-102]
+
+Parameters
+----------
+prn_id : int
+    PRN identifier (1--12 for interim assignments).
+
+Returns
+-------
+ndarray of uint8
+    1500 binary chips.
+)");
 
   m.def("matched_code_epoch", [](int id, int epoch) {
     auto [out, dst] = make_numpy_1d<uint8_t>(10230);
@@ -523,7 +960,32 @@ NB_MODULE(_afs, m) {
         MatchedCodeStatus::kOk)
       throw nb::value_error("Bad epoch");
     return out;
-  });
+  },
+  "prn_id"_a, "epoch"_a,
+  R"(Generate one epoch of the AFS-Q matched code using default assignments. [LSIS-AFS-401]
+
+Combines primary (Weil-10230), secondary (4-chip Hadamard), and tertiary
+(Weil-1500) codes per LSIS Table 11 interim assignments.
+
+Parameters
+----------
+prn_id : int
+    PRN identifier (1--12).
+epoch : int
+    Epoch index within the 12 s frame (0--5999).
+
+Returns
+-------
+ndarray of uint8
+    10230 binary chips for one 2 ms epoch.
+
+Examples
+--------
+>>> from lunalink.afs import matched_code_epoch
+>>> chips = matched_code_epoch(1, 0)
+>>> chips.shape
+(10230,)
+)");
 
   m.def("matched_code_epoch_assigned",
         [](int primary_prn,
@@ -545,7 +1007,29 @@ NB_MODULE(_afs, m) {
               MatchedCodeStatus::kOk)
             throw nb::value_error("Bad assignment");
           return out;
-        });
+        },
+  "primary_prn"_a, "secondary_code_idx"_a, "tertiary_prn"_a,
+  "tertiary_phase_offset"_a, "epoch_idx"_a,
+  R"(Generate one epoch of AFS-Q matched code with explicit assignments. [LSIS-AFS-401]
+
+Parameters
+----------
+primary_prn : int
+    Primary Weil-10230 PRN (1--12).
+secondary_code_idx : int
+    Secondary Hadamard code index (0--3).
+tertiary_prn : int
+    Tertiary Weil-1500 PRN (1--12).
+tertiary_phase_offset : int
+    Tertiary code phase offset (0--1499 chips).
+epoch_idx : int
+    Epoch index within the frame (0--5999).
+
+Returns
+-------
+ndarray of uint8
+    10230 binary chips.
+)");
 
   m.def("default_matched_assignment", [](int prn_id) {
     MatchedCodeAssignment a{};
@@ -556,7 +1040,22 @@ NB_MODULE(_afs, m) {
                           static_cast<uint8_t>(a.secondary_code_idx),
                           static_cast<uint8_t>(a.tertiary_prn),
                           static_cast<uint16_t>(a.tertiary_phase_offset));
-  });
+  },
+  "prn_id"_a,
+  R"(Get the default interim code assignment for a PRN. [LSIS-AFS-401]
+
+Per LSIS Table 11.  Only PRN 1--12 have interim assignments.
+
+Parameters
+----------
+prn_id : int
+    PRN identifier (1--12).
+
+Returns
+-------
+tuple[int, int, int, int]
+    (primary_prn, secondary_code_idx, tertiary_prn, tertiary_phase_offset).
+)");
 
   // ─── Signal generation (TX pipeline) ──────────────────────────────────────
 
@@ -640,7 +1139,6 @@ NB_MODULE(_afs, m) {
         [](int prn_id, ndarray_1d frame_symbols, double sample_rate) {
           if (frame_symbols.shape(0) != kEpochsPerFrame)
             throw nb::value_error("frame_symbols must be 6000 elements");
-          // Compute output row count.
           const auto n_native = static_cast<size_t>(kIqSamplesPerEpoch);
           const bool is_native =
               (std::fabs(sample_rate - kNativeSampleRateHz) < 1.0) || (sample_rate <= 0.0);
@@ -857,7 +1355,18 @@ tuple[FrameDecodeResult, ndarray, ndarray, ndarray, FrameDecodeStatus]
 
   nb::class_<UniformPrior>(m, "UniformPrior").def(nb::init<>());
 
-  nb::class_<Correlator>(m, "Correlator")
+  nb::class_<Correlator>(m, "Correlator",
+      R"(Multi-channel AFS correlator engine. [LSIS-AFS-701]
+
+Supports acquisition (PCPS), tracking (DLL/PLL), pseudorange
+extraction, and data symbol demodulation.
+
+Examples
+--------
+>>> from lunalink.afs.signal import Correlator, UniformPrior
+>>> cor = Correlator(UniformPrior())
+>>> cor.assign_channel(0, 1)  # channel 0, PRN 1
+)")
       .def("__init__", [](Correlator* self, UniformPrior& prior) {
              static NullTelemetryHal hal;
              new (self) Correlator(prior, hal);
@@ -870,7 +1379,21 @@ tuple[FrameDecodeResult, ndarray, ndarray, ndarray, FrameDecodeStatus]
             return self.assign_channel(ch_idx, PrnId{prn_id});
           },
           "ch_idx"_a,
-          "prn_id"_a)
+          "prn_id"_a,
+          R"(Assign a PRN to a correlator channel. [LSIS-AFS-701]
+
+Parameters
+----------
+ch_idx : int
+    Channel index (0 to MAX_CHANNELS-1).
+prn_id : int
+    PRN identifier (1--12).
+
+Returns
+-------
+CorrelatorStatus
+    ``OK`` on success.
+)")
       .def(
           "acquire",
           [](Correlator& self,
@@ -884,7 +1407,24 @@ tuple[FrameDecodeResult, ndarray, ndarray, ndarray, FrameDecodeStatus]
             return nb::make_tuple(result, status);
           },
           "ch_idx"_a,
-          "rx"_a)
+          "rx"_a,
+          R"(Run PCPS acquisition on a channel. [LSIS-AFS-702]
+
+Searches code delay and Doppler space.  Pass one or more epochs
+(N x FFT_SIZE complex samples) for non-coherent integration.
+
+Parameters
+----------
+ch_idx : int
+    Channel index.
+rx : ndarray of complex64
+    Received IQ samples (N epochs x FFT_SIZE).
+
+Returns
+-------
+tuple[AcquisitionResult, CorrelatorStatus]
+    Result with code_delay, doppler_hz, peak_metric, locked flag.
+)")
       .def(
           "track",
           [](Correlator& self,
@@ -895,7 +1435,23 @@ tuple[FrameDecodeResult, ndarray, ndarray, ndarray, FrameDecodeStatus]
                 std::span<const std::complex<float>>(rx.data(), rx.shape(0)));
           },
           "ch_idx"_a,
-          "rx"_a)
+          "rx"_a,
+          R"(Update DLL/PLL tracking loops for one code period. [LSIS-AFS-703]
+
+Channel must be in TRACKING state (call acquire() first).
+
+Parameters
+----------
+ch_idx : int
+    Channel index.
+rx : ndarray of complex64
+    One code period of IQ samples.
+
+Returns
+-------
+CorrelatorStatus
+    ``OK`` on success; ``NOT_LOCKED`` if tracking lost.
+)")
       .def(
           "pseudorange",
           [](const Correlator& self, uint8_t ch_idx) {
@@ -903,14 +1459,39 @@ tuple[FrameDecodeResult, ndarray, ndarray, ndarray, FrameDecodeStatus]
             auto status = self.pseudorange(ch_idx, meters);
             return nb::make_tuple(meters, status);
           },
-          "ch_idx"_a)
-      .def("channel_state", &Correlator::channel_state, "ch_idx"_a)
-      .def("tracking_state", &Correlator::tracking_state, "ch_idx"_a)
+          "ch_idx"_a,
+          R"(Get the latest pseudorange measurement. [LSIS-AFS-704]
+
+Parameters
+----------
+ch_idx : int
+    Channel index.
+
+Returns
+-------
+tuple[float, CorrelatorStatus]
+    (pseudorange_metres, status).  ``NOT_LOCKED`` if not tracking.
+)")
+      .def("channel_state", &Correlator::channel_state, "ch_idx"_a,
+           "Get channel state: IDLE, ACQUIRING, TRACKING, or LOST.")
+      .def("tracking_state", &Correlator::tracking_state, "ch_idx"_a,
+           R"(Get detailed tracking state for a channel.
+
+Returns
+-------
+TrackingState
+    Code phase, carrier phase, Doppler, DLL/PLL discriminators, C/N0.
+)")
       .def("data_symbol",
            &Correlator::data_symbol,
            "ch_idx"_a,
-           "Return the soft data symbol (prompt.real()) after the last track() call.")
-      .def("reset_channel", &Correlator::reset_channel, "ch_idx"_a);
+           R"(Get the soft data symbol from the last track() call.
+
+Sign gives the hard decision (+ve -> bit 0, -ve -> bit 1);
+magnitude gives confidence.  Returns 0.0 if channel out of range.
+)")
+      .def("reset_channel", &Correlator::reset_channel, "ch_idx"_a,
+           "Reset a channel back to IDLE state.");
 
   m.attr("AFS_I_CODE_LENGTH") = kAfsICodeLength;
   m.attr("FFT_SIZE") = kFftSize;
@@ -974,9 +1555,35 @@ tuple[FrameDecodeResult, ndarray, ndarray, ndarray, FrameDecodeStatus]
       .value("FAULT_DETECTED", LegendreStatus::kFaultDetected)
       .export_values();
 
-  m.def("legendre_cache_init", []() { return legendre_cache_init(); });
-  m.def("legendre_10223_checksum", &legendre_10223_checksum);
-  m.def("legendre_1499_checksum", &legendre_1499_checksum);
+  m.def("legendre_cache_init", []() { return legendre_cache_init(); },
+  R"(Initialise the Legendre sequence cache (POST step).
+
+Generates both sequences (p=10223, p=1499) and verifies against
+golden CRCs.  Must be called before any Weil code generation.
+
+Returns
+-------
+LegendreStatus
+    ``OK`` on success; ``FAULT_DETECTED`` if CRC mismatch.
+)");
+
+  m.def("legendre_10223_checksum", &legendre_10223_checksum,
+  R"(CRC-32 checksum of the cached Legendre-10223 sequence.
+
+Returns
+-------
+int
+    CRC-32 (IEEE 802.3) checksum.
+)");
+
+  m.def("legendre_1499_checksum", &legendre_1499_checksum,
+  R"(CRC-32 checksum of the cached Legendre-1499 sequence.
+
+Returns
+-------
+int
+    CRC-32 (IEEE 802.3) checksum.
+)");
 
   // ─── Message Parser bindings (Gateway 6) ──────────────────────────────────
 

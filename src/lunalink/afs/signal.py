@@ -10,6 +10,8 @@ three Python-level functions that have logic beyond simple delegation:
 
 from __future__ import annotations
 
+import os
+
 import numpy as np
 from numpy.typing import NDArray
 
@@ -189,11 +191,13 @@ from lunalink.afs._afs import sync_detect as sync_detect
 from lunalink.afs._afs import weil1500_code as weil1500_code
 from lunalink.afs._afs import weil10230_code as weil10230_code
 
-# ── Convenience aliases ──────────────────────────────────────────────────────
+# ── Public aliases (canonical names, matching spec_tables CSVs) ──────────────
+# The C++ binding exports ``AFS_I_CHIP_RATE_HZ`` / ``AFS_Q_CHIP_RATE_HZ``.
+# The public Python API uses the shorter spec names without the ``_HZ`` suffix.
 
-#: Native AFS-I chip rate (Hz).
+#: Native AFS-I chip rate (Hz).  Canonical name — prefer over ``AFS_I_CHIP_RATE_HZ``.
 AFS_I_CHIP_RATE = AFS_I_CHIP_RATE_HZ
-#: Native AFS-Q chip rate (Hz).
+#: Native AFS-Q chip rate (Hz).  Canonical name — prefer over ``AFS_Q_CHIP_RATE_HZ``.
 AFS_Q_CHIP_RATE = AFS_Q_CHIP_RATE_HZ
 
 # ── Python-level functions (add logic beyond simple delegation) ──────────────
@@ -260,7 +264,7 @@ def generate_iq_frame(
 
 
 def write_iq_file(
-    path: str,
+    path: str | os.PathLike[str],
     iq_data: NDArray[np.float32],
     sample_rate: float,
     prn_id: int,
@@ -281,7 +285,7 @@ def write_iq_file(
 
     Parameters
     ----------
-    path : str
+    path : str or os.PathLike
         Output file path.
     iq_data : NDArray[np.float32]
         I/Q data with shape (N, 2).
@@ -313,7 +317,8 @@ def write_iq_file(
     buf.write(b"float32" + b"\x00" * 9)  # 16
     buf.write(b"\x00" * (128 - buf.tell()))  # pad to 128
     header = buf.getvalue()
-    assert len(header) == 128  # noqa: S101
+    if len(header) != 128:
+        raise RuntimeError(f"IQ header must be 128 bytes, got {len(header)}")
 
     interleaved = iq_data.astype(np.float32).ravel()
     with open(path, "wb") as f:

@@ -6,7 +6,12 @@ import numpy as np
 from numpy.typing import NDArray
 
 from lunalink.afs._errors import DecodeError, SyncNotFoundError
-from lunalink.afs._results import DecodeResult, SubframeResult, TimeOfTransmission
+from lunalink.afs._results import (
+    DecodeResult,
+    SubframeResult,
+    TimeOfTransmission,
+    _readonly,
+)
 from lunalink.afs.signal import (
     BchStatus,
     FrameDecodeStatus,
@@ -75,18 +80,39 @@ def receive_frame(
         rx_symbols, ldpc_iterations, sync_threshold
     )
 
+    # Fail fast: when sync is not found the remaining fields are meaningless.
+    if status == FrameDecodeStatus.SYNC_NOT_FOUND:
+        if raise_on_error:
+            raise SyncNotFoundError("Sync pattern not detected in symbol stream")
+        return DecodeResult(
+            fid=0,
+            toi=0,
+            sb2=SubframeResult(
+                data=_readonly(sb2_data), ldpc_converged=False, crc_ok=False
+            ),
+            sb3=SubframeResult(
+                data=_readonly(sb3_data), ldpc_converged=False, crc_ok=False
+            ),
+            sb4=SubframeResult(
+                data=_readonly(sb4_data), ldpc_converged=False, crc_ok=False
+            ),
+            time=None,
+            sync_offset=raw.sync.frame_offset,
+            sync_metric=raw.sync.peak_metric,
+        )
+
     sb2 = SubframeResult(
-        data=sb2_data,
+        data=_readonly(sb2_data),
         ldpc_converged=raw.sb2.ldpc_converged,
         crc_ok=raw.sb2.crc_ok,
     )
     sb3 = SubframeResult(
-        data=sb3_data,
+        data=_readonly(sb3_data),
         ldpc_converged=raw.sb3.ldpc_converged,
         crc_ok=raw.sb3.crc_ok,
     )
     sb4 = SubframeResult(
-        data=sb4_data,
+        data=_readonly(sb4_data),
         ldpc_converged=raw.sb4.ldpc_converged,
         crc_ok=raw.sb4.crc_ok,
     )
@@ -115,10 +141,7 @@ def receive_frame(
         sync_metric=raw.sync.peak_metric,
     )
 
-    if raise_on_error:
-        if status == FrameDecodeStatus.SYNC_NOT_FOUND:
-            raise SyncNotFoundError("Sync pattern not detected in symbol stream")
-        if status != FrameDecodeStatus.OK:
-            raise DecodeError(status, result)
+    if raise_on_error and status != FrameDecodeStatus.OK:
+        raise DecodeError(status, result)
 
     return result

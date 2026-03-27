@@ -8,9 +8,20 @@ import numpy as np
 from numpy.typing import NDArray
 
 
+def _readonly(arr: NDArray[np.uint8]) -> NDArray[np.uint8]:
+    """Return a read-only view of *arr* to prevent accidental mutation."""
+    view = arr.view()
+    view.flags.writeable = False
+    return view
+
+
 @dataclass(frozen=True, slots=True)
 class SubframeResult:
-    """Decoded subframe with quality metadata."""
+    """Decoded subframe with quality metadata.
+
+    The ``data`` array is a read-only view — attempting to write to it
+    raises ``ValueError``.
+    """
 
     data: NDArray[np.uint8]
     ldpc_converged: bool
@@ -61,7 +72,11 @@ class DecodeResult:
 
 @dataclass(frozen=True, slots=True)
 class TransmitFrame:
-    """A ready-to-modulate AFS frame with metadata."""
+    """A ready-to-modulate AFS frame with metadata.
+
+    The ``symbols`` array is a read-only view — attempting to write to it
+    raises ``ValueError``.
+    """
 
     symbols: NDArray[np.uint8]  # 6000 binary symbols
     fid: int

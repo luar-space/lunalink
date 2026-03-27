@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 from numpy.typing import NDArray
 
-from lunalink.afs._results import TransmitFrame
+from lunalink.afs._results import TransmitFrame, _readonly
 from lunalink.afs.signal import (
     SB2_DATA_BITS,
     SB3_DATA_BITS,
@@ -59,7 +59,7 @@ def transmit_frame(
     """
     symbols = frame_build(fid, toi, sb2_data, sb3_data, sb4_data)
     iq = generate_iq_frame(prn_id, symbols, sample_rate)
-    meta = TransmitFrame(symbols=symbols, fid=fid, toi=toi, prn_id=prn_id)
+    meta = TransmitFrame(symbols=_readonly(symbols), fid=fid, toi=toi, prn_id=prn_id)
     return meta, iq
 
 
@@ -82,23 +82,35 @@ def make_test_payload(
         ``(sb2_data, sb3_data, sb4_data)`` ready for
         :func:`~lunalink.afs.frame_build` or :func:`transmit_frame`.
     """
-    sizes = (SB2_DATA_BITS, SB3_DATA_BITS, SB4_DATA_BITS)
+    n2, n3, n4 = SB2_DATA_BITS, SB3_DATA_BITS, SB4_DATA_BITS
 
     if pattern == "zeros":
-        return tuple(np.zeros(n, dtype=np.uint8) for n in sizes)  # type: ignore[return-value]
+        return (
+            np.zeros(n2, dtype=np.uint8),
+            np.zeros(n3, dtype=np.uint8),
+            np.zeros(n4, dtype=np.uint8),
+        )
 
     if pattern == "ones":
-        return tuple(np.ones(n, dtype=np.uint8) for n in sizes)  # type: ignore[return-value]
+        return (
+            np.ones(n2, dtype=np.uint8),
+            np.ones(n3, dtype=np.uint8),
+            np.ones(n4, dtype=np.uint8),
+        )
 
     if pattern == "alternating":
-        return tuple(  # type: ignore[return-value]
-            np.array([i % 2 for i in range(n)], dtype=np.uint8) for n in sizes
+        return (
+            np.array([i % 2 for i in range(n2)], dtype=np.uint8),
+            np.array([i % 2 for i in range(n3)], dtype=np.uint8),
+            np.array([i % 2 for i in range(n4)], dtype=np.uint8),
         )
 
     if pattern == "random":
         rng = np.random.default_rng(seed)
-        return tuple(  # type: ignore[return-value]
-            rng.integers(0, 2, size=n, dtype=np.uint8) for n in sizes
+        return (
+            rng.integers(0, 2, size=n2, dtype=np.uint8),
+            rng.integers(0, 2, size=n3, dtype=np.uint8),
+            rng.integers(0, 2, size=n4, dtype=np.uint8),
         )
 
     valid = "'zeros', 'ones', 'alternating', or 'random'"

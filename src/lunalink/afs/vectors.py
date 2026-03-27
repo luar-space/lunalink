@@ -27,6 +27,8 @@ from lunalink.afs.signal import (
     write_iq_file,
 )
 
+StrPath = str | os.PathLike[str]
+
 
 def _bits_to_hex(bits: NDArray[np.uint8]) -> str:
     """Pack a bit array to a hex string."""
@@ -36,7 +38,7 @@ def _bits_to_hex(bits: NDArray[np.uint8]) -> str:
     return np.packbits(bits).tobytes().hex()
 
 
-def export_code_vectors(prn_id: int, output_dir: str) -> str:
+def export_code_vectors(prn_id: int, output_dir: StrPath) -> str:
     """Export spreading codes for one PRN in hex format (Level 1).
 
     Returns the path to the written file.
@@ -83,7 +85,7 @@ def export_frame_vector(
     sb2_data: NDArray[np.uint8],
     sb3_data: NDArray[np.uint8],
     sb4_data: NDArray[np.uint8],
-    output_path: str,
+    output_path: StrPath,
 ) -> str:
     """Export an encoded frame as binary with 64-byte header (Level 2).
 
@@ -99,33 +101,35 @@ def export_frame_vector(
     struct.pack_into("<I", header, 16, prn_id)
     struct.pack_into("<q", header, 20, int(datetime.now(UTC).timestamp()))
 
-    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
-    with open(output_path, "wb") as f:
+    path_str = os.fspath(output_path)
+    os.makedirs(os.path.dirname(path_str) or ".", exist_ok=True)
+    with open(path_str, "wb") as f:
         f.write(bytes(header))
         f.write(frame.astype(np.uint8).tobytes())
 
-    return output_path
+    return path_str
 
 
 def export_signal_vector(
     prn_id: int,
     iq_data: NDArray[np.float32],
     sample_rate: float,
-    output_path: str,
+    output_path: StrPath,
 ) -> str:
     """Export baseband IQ signal with 128-byte LSISIQ header (Level 3).
 
     Delegates to :func:`~lunalink.afs.write_iq_file`.
     Returns the path to the written file.
     """
-    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
-    write_iq_file(output_path, iq_data, sample_rate, prn_id)
-    return output_path
+    path_str = os.fspath(output_path)
+    os.makedirs(os.path.dirname(path_str) or ".", exist_ok=True)
+    write_iq_file(path_str, iq_data, sample_rate, prn_id)
+    return path_str
 
 
 def export_parsed_json(
     result: DecodeResult,
-    output_path: str,
+    output_path: StrPath,
     frame_id: str = "test_001",
 ) -> str:
     """Export parsed navigation data as JSON (Level 5).
@@ -174,11 +178,12 @@ def export_parsed_json(
             "seconds_of_week": result.time.seconds_of_week,
         }
 
-    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
-    with open(output_path, "w") as f:
+    path_str = os.fspath(output_path)
+    os.makedirs(os.path.dirname(path_str) or ".", exist_ok=True)
+    with open(path_str, "w") as f:
         json.dump(doc, f, indent=2)
 
-    return output_path
+    return path_str
 
 
 # ── Standard test scenarios ─────────────────────────────────────────────────
@@ -192,7 +197,7 @@ _SCENARIOS: list[tuple[str, str]] = [
 
 
 def generate_standard_vectors(
-    output_dir: str,
+    output_dir: StrPath,
     prn_id: int = 1,
     fid: int = 0,
     toi: int = 42,

@@ -10,7 +10,8 @@ namespace lunalink::signal {
  * Embedded in the binary at link time. POST step 1 verifies the CRC-32.
  * [SW-SAF-04, FM-034]
  */
-struct [[gnu::packed]] SciHeader {
+LUNALINK_PACKED_BEGIN
+struct LUNALINK_PACKED_ATTR SciHeader {
   // NOLINTBEGIN(hicpp-avoid-c-arrays) — C-style char arrays required for packed
   // binary layout and direct CRC computation over raw bytes; std::array<char,N>
   // cannot guarantee the same ABI without additional indirection.
@@ -21,6 +22,7 @@ struct [[gnu::packed]] SciHeader {
   uint32_t build_timestamp; // seconds since J2000 (2000-01-01T12:00:00 UTC)
   uint32_t header_crc32;    // CRC-32 (IEEE 802.3) of the preceding four fields
 };
+LUNALINK_PACKED_END
 
 static_assert(sizeof(SciHeader) == 41U + 16U + 24U + 4U + 4U,
               "SciHeader size must be exactly 89 bytes");

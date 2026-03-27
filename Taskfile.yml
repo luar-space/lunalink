@@ -96,12 +96,17 @@ tasks:
       - ctest --test-dir {{.BUILD_DIR}} --output-on-failure --parallel
     silent: false
 
+  sync-docstrings:
+    desc: Check C++ header @param tags and binding docstrings are in sync.
+    cmd: uv run python scripts/sync_docstrings.py
+
   lint:
     desc: Run all static analysis tools (type checking, linting, formatting).
     cmds:
       - task: pyright
       - task: cppcheck
       - task: ruff-fix
+      - task: sync-docstrings
     silent: false
 
   lint-check:
@@ -109,6 +114,7 @@ tasks:
     cmds:
       - task: pyright
       - task: cppcheck
+      - task: sync-docstrings
       - uv run ruff format --check .
       - uv run ruff check .
     silent: false

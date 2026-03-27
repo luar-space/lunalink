@@ -69,6 +69,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Warning Flags (NASA/ESA/JAXA Compliance)
 if(MSVC)
     set(LUNALINK_WARNING_FLAGS /W4 /WX /permissive- /GS /volatile:iso)
+    set(LUNALINK_CORE_FLAGS /EHs-c- /GR- /fp:strict)
 else()
     set(LUNALINK_WARNING_FLAGS
         -Wall -Wextra -Wpedantic -Werror

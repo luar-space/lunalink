@@ -9,7 +9,7 @@ description = "LunaLink — AFS reference implementation for lunar navigation"
 readme = "README.md"
 requires-python = ">=3.12"
 license = {text = "Apache-2.0"}
-authors = [{name = "LunaLink"}]
+authors = [{name = "Marco Fiscato", email = "marco.fiscato@gmail.com"}]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
@@ -20,7 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering",
 ]
-dependencies = []
+dependencies = ["numpy>=1.24"]
 
 [dependency-groups]
 test = [
@@ -55,6 +55,21 @@ minimum-version = "0.9"
 wheel.packages = ["src/lunalink"]
 metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
 ninja.make-fallback = true
+
+[tool.cibuildwheel]
+build = "cp312-* cp313-* cp314-*"
+skip = "*-musllinux_*"
+test-requires = ["pytest", "numpy"]
+test-command = "python -m pytest {project}/tests -x -q --override-ini='addopts='"
+
+[tool.cibuildwheel.linux]
+archs = ["x86_64", "aarch64"]
+
+[tool.cibuildwheel.macos]
+archs = ["x86_64", "arm64"]
+
+[tool.cibuildwheel.windows]
+archs = ["AMD64"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
