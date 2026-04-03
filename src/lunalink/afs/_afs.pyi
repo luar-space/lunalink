@@ -64,8 +64,6 @@ class LdpcStatus(IntEnum):
     NOT_CONVERGED = 0x66
 
 class LdpcWorkspace:
-    alpha_numerator: int
-    alpha_denominator: int
     def __init__(self) -> None: ...
 
 class BchStatus(IntEnum):

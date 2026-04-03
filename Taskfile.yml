@@ -96,6 +96,20 @@ tasks:
       - ctest --test-dir {{.BUILD_DIR}} --output-on-failure --parallel
     silent: false
 
+  ldpc-algo-card:
+    desc: Generate LDPC algorithm performance card (parallel simulations + plots).
+    vars:
+      GENERATOR:
+        sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
+    cmds:
+      - cmake -B build/algo_card -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release
+      - cmake --build build/algo_card --target ldpc_characterise --parallel
+      - mkdir -p docs/_static/algo_card
+      - ./build/algo_card/ldpc_characterise > build/algo_card/sp_results.json
+      - uv run python scripts/plot_algo_card.py build/algo_card/sp_results.json docs/_static/algo_card/
+      - echo "Algorithm card generated. Figures in docs/_static/algo_card/"
+    silent: false
+
   sync-docstrings:
     desc: Check C++ header @param tags and binding docstrings are in sync.
     cmd: uv run python scripts/sync_docstrings.py
@@ -494,7 +508,9 @@ tasks:
   docs-build:
     desc: Build the HTML documentation with Sphinx.
     cmds:
+      - cp -r notebooks/ docs/notebooks/
       - uv run python -m sphinx -b html docs/ docs/_build/html -W
+      - rm -rf docs/notebooks/
     silent: false
 
   docs-pdf:
@@ -696,7 +712,9 @@ tasks:
         echo "Building Sphinx docs in exported tree..."
         cd build/oss-export
         uv sync --group dev
+        cp -r notebooks/ docs/notebooks/
         uv run python -m sphinx -b html docs/ docs/_build/html -W
+        rm -rf docs/notebooks/
         echo "PASS: Sphinx build succeeded (zero warnings)"
 
   # [[private-begin]]

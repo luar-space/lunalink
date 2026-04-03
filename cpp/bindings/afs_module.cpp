@@ -227,13 +227,7 @@ NB_MODULE(_afs, m) {
       .export_values();
 
   nb::class_<LdpcWorkspace>(m, "LdpcWorkspace")
-      .def(nb::init<>())
-      .def_prop_rw("alpha_numerator",
-                    [](const LdpcWorkspace& ws) { return ws.alpha.numerator; },
-                    [](LdpcWorkspace& ws, int16_t v) { ws.alpha.numerator = v; })
-      .def_prop_rw("alpha_denominator",
-                    [](const LdpcWorkspace& ws) { return ws.alpha.denominator; },
-                    [](LdpcWorkspace& ws, int16_t v) { ws.alpha.denominator = v; });
+      .def(nb::init<>());
 
   nb::enum_<PrnStatus>(m, "PrnStatus")
       .value("OK", PrnStatus::kOk)
@@ -578,8 +572,7 @@ iterations : int
     Maximum belief-propagation iterations (typically 50).
 workspace : LdpcWorkspace or None, optional
     Reusable scratchpad.  ``None`` allocates a fresh workspace.
-    Pass a persistent workspace to tune the NMS alpha parameter
-    (``workspace.alpha_numerator`` / ``workspace.alpha_denominator``).
+    Pass a persistent workspace for decoder state (re-entrancy).
 
 Returns
 -------

@@ -237,7 +237,7 @@ if(BUILD_TESTING)
         cpp/tests/tool_validation/test_coverage_canary.cpp
         # performance/
         cpp/tests/performance/test_bch_ber.cpp
-        cpp/tests/performance/test_ldpc_ber.cpp
+        cpp/tests/performance/test_ldpc_reference.cpp
         cpp/tests/performance/test_correlator_perf.cpp
         cpp/tests/performance/test_sync_detection_rate.cpp
         cpp/tests/performance/test_wcet.cpp
@@ -306,7 +306,31 @@ if(BUILD_TESTING)
             )
         endif()
     endif() # BUILD_PROPRIETARY
+
+    # AMS parameter sweep tool (proprietary — only builds with AMS decoder)
+    # add_executable(ldpc_sweep scripts/ldpc_sweep.cpp)
+    # target_link_libraries(ldpc_sweep PRIVATE lunalink_core)
+    # target_include_directories(ldpc_sweep PRIVATE ${CMAKE_SOURCE_DIR}/cpp/include)
+
+    # LDPC performance characterisation tool (parallel, outputs JSON for algo card)
+    add_executable(ldpc_characterise scripts/ldpc_characterise.cpp)
+    target_link_libraries(ldpc_characterise PRIVATE lunalink_core)
+    target_include_directories(ldpc_characterise PRIVATE ${CMAKE_SOURCE_DIR}/cpp/include)
+    set_target_properties(ldpc_characterise PROPERTIES EXCLUDE_FROM_ALL TRUE)
 endif() # BUILD_TESTING
+
+# --- Proprietary AMS decoder (tidy-only, not linked) ---
+# Provides compile_commands.json entry for clang-tidy static analysis.
+# This target is never linked into the library or tests — the OSS build
+# uses the sum-product decoder in cpp/encoding/ldpc.cpp.
+if(EXISTS "${CMAKE_SOURCE_DIR}/cpp/proprietary/ldpc_ams.cpp")
+    add_library(lunalink_ams_tidy OBJECT cpp/proprietary/ldpc_ams.cpp)
+    target_include_directories(lunalink_ams_tidy PRIVATE
+        ${CMAKE_SOURCE_DIR}/cpp/include
+        ${CMAKE_SOURCE_DIR}/cpp/proprietary)
+    target_compile_options(lunalink_ams_tidy PRIVATE ${LUNALINK_WARNING_FLAGS})
+    set_target_properties(lunalink_ams_tidy PROPERTIES EXCLUDE_FROM_ALL TRUE)
+endif()
 
 # --- Coverage Analysis ---
 if(ENABLE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")

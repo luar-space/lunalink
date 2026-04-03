@@ -86,10 +86,10 @@ inline constexpr uint8_t kFrameDecodeLdpcIterations = 50;
 /// Minimum input size: must contain at least one complete frame.
 inline constexpr size_t kFrameDecodeMinInput = kFrameLength;
 
-/// Workspace size for flight memory budgeting.
-/// ~120 KB — must be heap-allocated or placed in a dedicated memory section.
+/// Workspace size for memory budgeting.
+/// ~375 KB with float64 sum-product decoder — must be heap-allocated.
 inline constexpr size_t kFrameDecodeWorkspaceBytes = sizeof(FrameDecodeWorkspace);
-static_assert(kFrameDecodeWorkspaceBytes < 200'000, "FrameDecodeWorkspace exceeds 200 KB budget");
+static_assert(kFrameDecodeWorkspaceBytes < 400'000, "FrameDecodeWorkspace exceeds 400 KB budget");
 
 // ─── Frame Decoder ───────────────────────────────────────────────────────────
 

@@ -250,46 +250,8 @@ TEST_CASE("[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip", "[ldpc]") 
 
     std::array<uint8_t, kSb2MsgBits> decoded{};
     LdpcWorkspace ws{};
-    ws.alpha.numerator = 5;
-    ws.alpha.denominator = 8;
     REQUIRE(ldpc_decode(LdpcSubframe::kSF2, soft, 50, decoded, ws) == LdpcStatus::kOk);
     CHECK(std::ranges::equal(message, decoded));
-  }
-
-  SECTION("SF2 - Invalid alpha rejected (num out of range)") {
-    std::array<float, kSb2Length> soft{};
-    for (auto& s : soft)
-      s = 1.0f;
-
-    std::array<uint8_t, kSb2MsgBits> decoded{};
-    LdpcWorkspace ws{};
-    ws.alpha.numerator = 9; // out of range
-    ws.alpha.denominator = 4;
-    CHECK(ldpc_decode(LdpcSubframe::kSF2, soft, 5, decoded, ws) == LdpcStatus::kFaultDetected);
-  }
-
-  SECTION("SF2 - Invalid alpha rejected (num > den)") {
-    std::array<float, kSb2Length> soft{};
-    for (auto& s : soft)
-      s = 1.0f;
-
-    std::array<uint8_t, kSb2MsgBits> decoded{};
-    LdpcWorkspace ws{};
-    ws.alpha.numerator = 5;
-    ws.alpha.denominator = 3; // num > den
-    CHECK(ldpc_decode(LdpcSubframe::kSF2, soft, 5, decoded, ws) == LdpcStatus::kFaultDetected);
-  }
-
-  SECTION("SF2 - Invalid alpha rejected (zero denominator)") {
-    std::array<float, kSb2Length> soft{};
-    for (auto& s : soft)
-      s = 1.0f;
-
-    std::array<uint8_t, kSb2MsgBits> decoded{};
-    LdpcWorkspace ws{};
-    ws.alpha.numerator = 1;
-    ws.alpha.denominator = 0; // zero — division hazard
-    CHECK(ldpc_decode(LdpcSubframe::kSF2, soft, 5, decoded, ws) == LdpcStatus::kFaultDetected);
   }
 
   SECTION("SF2 - Decoder returns kNotConverged on corrupted input") {

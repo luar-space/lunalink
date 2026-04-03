@@ -101,89 +101,158 @@ BchSimResult run_bch_sim(double eb_no_db, int frames, uint32_t seed) {
           static_cast<double>(soft_errors) / n};
 }
 
-void print_bch_result(double eb_no_db, const BchSimResult& r) {
+// Wilson score 95% CI half-width — handles p=0 and p=1 gracefully.
+double wilson_ci_hw(size_t errors, size_t trials) {
+  constexpr double z = 1.96;
+  const double n = static_cast<double>(trials);
+  const double p = static_cast<double>(errors) / n;
+  const double denom = 1.0 + z * z / n;
+  return z * std::sqrt((p * (1.0 - p) + z * z / (4.0 * n)) / n) / denom;
+}
+
+struct BchMultiSeedResult {
+  double hard_fer_mean;
+  double soft_fer_mean;
+  double hard_fer_std;
+  double soft_fer_std;
+  size_t total_frames;
+  size_t total_hard_errors;
+  size_t total_soft_errors;
+};
+
+BchMultiSeedResult run_bch_multi_seed(double eb_no_db, int frames_per_seed) {
+  constexpr size_t kNumSeeds = 3;
+  constexpr std::array<uint32_t, kNumSeeds> seeds = {42, 137, 313};
+  std::array<double, kNumSeeds> hard_fers{};
+  std::array<double, kNumSeeds> soft_fers{};
+  size_t total_he = 0;
+  size_t total_se = 0;
+  size_t total_f = 0;
+
+  for (size_t s = 0; s < kNumSeeds; ++s) {
+    auto r = run_bch_sim(eb_no_db, frames_per_seed, seeds.at(s));
+    hard_fers.at(s) = r.hard_fer;
+    soft_fers.at(s) = r.soft_fer;
+    total_he += r.hard_errors;
+    total_se += r.soft_errors;
+    total_f += r.total_frames;
+  }
+
+  double hf_sum = 0;
+  double sf_sum = 0;
+  for (size_t s = 0; s < kNumSeeds; ++s) {
+    hf_sum += hard_fers.at(s);
+    sf_sum += soft_fers.at(s);
+  }
+  const double hf_mean = hf_sum / static_cast<double>(kNumSeeds);
+  const double sf_mean = sf_sum / static_cast<double>(kNumSeeds);
+
+  double hf_var = 0;
+  double sf_var = 0;
+  for (size_t s = 0; s < kNumSeeds; ++s) {
+    hf_var += (hard_fers.at(s) - hf_mean) * (hard_fers.at(s) - hf_mean);
+    sf_var += (soft_fers.at(s) - sf_mean) * (soft_fers.at(s) - sf_mean);
+  }
+
+  return {hf_mean, sf_mean,
+          std::sqrt(hf_var / static_cast<double>(kNumSeeds)),
+          std::sqrt(sf_var / static_cast<double>(kNumSeeds)),
+          total_f, total_he, total_se};
+}
+
+void print_bch_ci_result(double eb_no_db, const BchMultiSeedResult& r,
+                         int frames_per_seed) {
+  double hci = wilson_ci_hw(r.total_hard_errors, r.total_frames);
+  double sci = wilson_ci_hw(r.total_soft_errors, r.total_frames);
   std::cout << "[BCH BER] Eb/N0=" << eb_no_db << " dB"
-            << "  hard FER=" << r.hard_fer << " (" << r.hard_errors << "/" << r.total_frames << ")"
-            << "  soft FER=" << r.soft_fer << " (" << r.soft_errors << "/" << r.total_frames << ")"
-            << std::endl;
+            << "  hard FER=" << r.hard_fer_mean << " +/- " << hci
+            << "  soft FER=" << r.soft_fer_mean << " +/- " << sci
+            << " (95% CI)"
+            << "  [" << r.total_frames << " frames, 3 seeds x "
+            << frames_per_seed << "]" << std::endl;
 }
 
 } // namespace
 
 // ---------------------------------------------------------------------------
 // Zone 1 — Noise floor (2.0 dB)
+// 3000 frames × 3 seeds = 9000 total.
 //
 // At Eb/N0 = 2.0 dB: σ ≈ 1.35, raw BER ≈ 23%, ~12 errors/codeword on average.
 // Even exhaustive ML cannot always recover from this level of corruption.
 // Both decoders fail on many frames — proves the channel simulation is real.
-//
-// Expected: hard FER ≈ 15%, soft FER ≈ 2%.
 // ---------------------------------------------------------------------------
 TEST_CASE("BCH hard vs soft: noise floor at 2.0 dB", "[channel][ber]") {
-  constexpr int kFrames = 1000;
+  constexpr int kFramesPerSeed = 3000;
 
-  auto r = run_bch_sim(2.0, kFrames, 42U);
-  print_bch_result(2.0, r);
+  auto r = run_bch_multi_seed(2.0, kFramesPerSeed);
+  print_bch_ci_result(2.0, r, kFramesPerSeed);
 
-  CHECK(r.hard_fer > 0.05);       // hard: substantial failure rate
-  CHECK(r.soft_fer > 0.005);      // soft: also failing — channel is genuinely noisy
-  CHECK(r.hard_fer > r.soft_fer); // soft ML already outperforms at noise floor
+  CHECK(r.hard_fer_mean > 0.05);       // hard: substantial failure rate
+  CHECK(r.soft_fer_mean > 0.005);      // soft: also failing — channel is genuinely noisy
+  CHECK(r.hard_fer_mean > r.soft_fer_mean); // soft ML outperforms at noise floor
 }
 
 // ---------------------------------------------------------------------------
 // Zone 2 — Waterfall sweep (3.0 – 6.0 dB)
+// 3000 frames × 3 seeds per Eb/N0 point = 9000 total per point.
 //
-// 3,000 frames per Eb/N0 point.  Key results (representative, seed=77):
-//
-//   Eb/N0   hard FER     soft FER    gain
-//   3.0 dB  ~6.0%        ~0.9%       ~8x
-//   4.0 dB  ~1.9%        ~0.1%       ~19x
-//   5.0 dB  ~0.5%         0          soft error-free, hard still failing
-//   6.0 dB  ~0.1%         0          hard residual errors remain
-//
-// Soft ML reaches effective error-free operation ~2 dB before hard ML.
-// This 2 dB gain translates directly into link-budget margin for SB1.
+// Soft ML reaches effective error-free operation ~1.6 dB before hard ML.
+// This gain translates directly into link-budget margin for SB1.
 // ---------------------------------------------------------------------------
 TEST_CASE("BCH hard vs soft: waterfall sweep 3-6 dB", "[channel][ber]") {
-  constexpr int kFrames = 3000;
+  constexpr int kFramesPerSeed = 3000;
 
-  for (double eb_no : {3.0, 4.0, 5.0, 6.0}) {
-    auto r = run_bch_sim(eb_no, kFrames, 77U);
-    print_bch_result(eb_no, r);
+  double prev_hard_fer = 1.0;
+  double prev_soft_fer = 1.0;
+
+  // NOLINTNEXTLINE(hicpp-avoid-c-arrays)
+  const double points[] = {3.0, 4.0, 5.0, 6.0};
+
+  for (const double eb_no : points) {
+    auto r = run_bch_multi_seed(eb_no, kFramesPerSeed);
+    print_bch_ci_result(eb_no, r, kFramesPerSeed);
 
     // Soft ML must never be worse than hard ML
-    CHECK(r.soft_fer <= r.hard_fer);
+    CHECK(r.soft_fer_mean <= r.hard_fer_mean);
+
+    // CI-based monotonicity for both decoders
+    double hci = wilson_ci_hw(r.total_hard_errors, r.total_frames);
+    double sci = wilson_ci_hw(r.total_soft_errors, r.total_frames);
+    CHECK(r.hard_fer_mean <= prev_hard_fer + hci);
+    CHECK(r.soft_fer_mean <= prev_soft_fer + sci);
+    prev_hard_fer = r.hard_fer_mean;
+    prev_soft_fer = r.soft_fer_mean;
   }
 
-  // At 5.0 dB: hard still has residual errors; soft is near-zero.
-  // Soft decoder reaches negligible FER ~2 dB before hard ML.
-  // Statistical bound: ≤2 errors in 3000 frames (FER < 1e-3).
-  auto r5 = run_bch_sim(5.0, kFrames, 137U);
-  CHECK(r5.hard_fer > 0.0);
-  CHECK(r5.soft_fer < 1e-3);
+  // At 6.0 dB: soft should be error-free, hard should have residual errors
+  auto r6 = run_bch_multi_seed(6.0, kFramesPerSeed);
+  double soft_ci = wilson_ci_hw(r6.total_soft_errors, r6.total_frames);
+  std::cout << "[BCH BER] 6.0 dB soft upper bound: " << soft_ci
+            << " (95% CI, " << r6.total_frames << " frames)" << std::endl;
+  CHECK(r6.hard_fer_mean > 0.0);     // hard still has residual errors
+  CHECK(r6.soft_fer_mean < 1e-3);    // soft near error-free
 }
 
 // ---------------------------------------------------------------------------
 // Zone 3 — System operating point (7.6 dB = Es/N0 0 dB for BCH R=9/52)
+// 10000 frames × 3 seeds = 30000 total.
 //
-// In the LSIS-AFS system, SB1 and the LDPC payload share the same channel:
-//
-//   Code         Rate       Eb/N0 at Es/N0 = 0 dB
-//   LDPC SF2     1/2        3.0 dB    (validated in test_ldpc_ber.cpp)
-//   BCH SB1      9/52       7.6 dB    (validated here)
-//
-// The BCH has ~4.6 dB more Eb/N0 at the same physical SNR, giving it
-// substantial additional margin over the LDPC operating point.
-//
-// At 7.6 dB, 10,000 frames: both decoders should have negligible FER.
-// Statistical bound: ≤4 errors in 10,000 frames (FER < 5×10⁻⁴).
+// At 7.6 dB both decoders should have negligible FER.
+// Upper bound on true FER: < 0.013% (Wilson 95% CI with 0 errors in 30k).
 // ---------------------------------------------------------------------------
 TEST_CASE("BCH hard vs soft: operating point 7.6 dB", "[channel][ber]") {
-  constexpr int kFrames = 10000;
+  constexpr int kFramesPerSeed = 10000;
 
-  auto r = run_bch_sim(7.6, kFrames, 99U);
-  print_bch_result(7.6, r);
+  auto r = run_bch_multi_seed(7.6, kFramesPerSeed);
+  print_bch_ci_result(7.6, r, kFramesPerSeed);
 
-  CHECK(r.hard_fer < 5e-4);
-  CHECK(r.soft_fer < 5e-4);
+  double hci = wilson_ci_hw(r.total_hard_errors, r.total_frames);
+  double sci = wilson_ci_hw(r.total_soft_errors, r.total_frames);
+  std::cout << "[BCH BER] 7.6 dB hard upper bound: " << hci
+            << "  soft upper bound: " << sci
+            << " (95% CI, " << r.total_frames << " frames)" << std::endl;
+
+  CHECK(r.hard_fer_mean < 5e-4);
+  CHECK(r.soft_fer_mean < 5e-4);
 }

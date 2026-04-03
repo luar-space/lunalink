@@ -85,22 +85,11 @@ TEST_CASE("Gateway 2: LDPC Decode Throughput", "[wcet]") {
     std::array<float, 2400> soft{};
     prepare_soft_symbols(LdpcSubframe::kSF2, soft);
 
-    struct AlphaConfig {
-      int16_t num;
-      int16_t den;
-      const char* label;
-    };
-    AlphaConfig configs[] = {
-        {3, 4, "3/4 (0.75)"},
-    };
-
-    for (const auto& cfg : configs) {
+    {
       std::array<uint8_t, 1200> decoded{};
       LdpcWorkspace ws{};
-      ws.alpha.numerator = cfg.num;
-      ws.alpha.denominator = cfg.den;
 
-      BENCHMARK("LDPC decode SF2 alpha=0.75") {
+      BENCHMARK("LDPC decode SF2 sum-product") {
         return ldpc_decode(LdpcSubframe::kSF2, soft, 50, decoded, ws);
       };
     }

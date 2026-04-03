@@ -24,15 +24,20 @@ void binary_to_bipolar(std::span<const uint8_t> bits, std::span<float> out) {
   }
 }
 
-/// Add AWGN noise to bipolar symbols at a given Eb/N0 (dB).
-/// For BPSK: Es/N0 = Eb/N0 (since 1 bit per symbol).
-/// sigma = sqrt(1 / (2 * 10^(EbN0_dB/10)))
-void add_awgn(std::span<float> symbols, float eb_n0_db, std::mt19937& rng) {
+/// Add AWGN noise to bipolar symbols at a given Eb/N0 (dB) and convert to
+/// channel LLRs: L(y) = 2*y/σ². For rate-1/2 BPSK: σ² = 1/(2*R*Eb/N0).
+/// Output is proper log-likelihood ratios. Decoder-agnostic: the SP decoder
+/// uses LLRs directly; the AMS decoder's load_channel_llrs() applies Q8.7
+/// scaling (×128) on top, which is correct for both raw and LLR-scaled input.
+void add_awgn_llr(std::span<float> symbols, float eb_n0_db, std::mt19937& rng,
+                  float code_rate = 0.5F) {
   const auto eb_n0_lin = std::pow(10.0F, eb_n0_db / 10.0F);
-  const auto sigma = std::sqrt(1.0F / (2.0F * eb_n0_lin));
+  const auto sigma_sq = 1.0F / (2.0F * code_rate * eb_n0_lin);
+  const auto sigma = std::sqrt(sigma_sq);
+  const auto llr_scale = 2.0F / sigma_sq;
   auto dist = std::normal_distribution<float>(0.0F, sigma);
   for (auto& s : symbols) {
-    s += dist(rng);
+    s = (s + dist(rng)) * llr_scale;
   }
 }
 
@@ -71,7 +76,7 @@ TEST_CASE("[LSIS-AFS-720] E2E round-trip: TX → AWGN → RX → bit-exact recov
   // ── Channel: binary → bipolar → AWGN at Eb/N0 = 3 dB ────────────────
   std::array<float, kFrameLength> rx_symbols{};
   binary_to_bipolar(tx_frame, rx_symbols);
-  add_awgn(rx_symbols, 3.0F, rng);
+  add_awgn_llr(rx_symbols, 3.0F, rng);
 
   // ── RX: Decode ───────────────────────────────────────────────────────
   NullTelemetryHal hal;
@@ -240,7 +245,7 @@ TEST_CASE("Gateway 5: frame-level FER sweep", "[channel][fer][e2e][rx]") {
 
       std::array<float, kFrameLength> rx{};
       binary_to_bipolar(tx, rx);
-      add_awgn(rx, pt.eb_n0_db, rng);
+      add_awgn_llr(rx, pt.eb_n0_db, rng);
 
       FrameDecodeResult result{};
       const auto status = frame_decode(rx, result, *workspace, hal);
@@ -324,7 +329,7 @@ TEST_CASE("E2E round-trip: FID=0 TOI=99 with random offset", "[e2e][rx]") {
     rx_buf[kPadding + i] = (tx_frame[i] == 0U) ? 1.0F : -1.0F;
   }
   // Add light noise (Eb/N0 = 6 dB)
-  add_awgn(std::span<float>(rx_buf).subspan(kPadding, kFrameLength), 6.0F, rng);
+  add_awgn_llr(std::span<float>(rx_buf).subspan(kPadding, kFrameLength), 6.0F, rng);
 
   NullTelemetryHal hal;
   FrameDecodeResult result{};
@@ -496,7 +501,7 @@ TEST_CASE("E2E: consecutive frames with incrementing TOI", "[e2e][rx]") {
 
     std::array<float, kFrameLength> rx{};
     binary_to_bipolar(tx, rx);
-    add_awgn(rx, 3.0F, rng);
+    add_awgn_llr(rx, 3.0F, rng);
 
     FrameDecodeResult result{};
     const auto status = frame_decode(rx, result, *workspace, hal);
@@ -620,7 +625,7 @@ TEST_CASE("[LSIS-TABLE11][e2e] all 12 interim codes round-trip", "[e2e]") {
       // Channel: binary → bipolar → AWGN at Eb/N0 = 3 dB
       std::array<float, kFrameLength> rx_symbols{};
       binary_to_bipolar(tx_frame, rx_symbols);
-      add_awgn(rx_symbols, 3.0F, rng);
+      add_awgn_llr(rx_symbols, 3.0F, rng);
 
       // RX: Decode
       NullTelemetryHal hal;

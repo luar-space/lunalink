@@ -1,4 +1,16 @@
 #pragma once
+/// @file ldpc.hpp
+/// @brief LDPC encoder and sum-product BP decoder for LSIS-AFS subframes.
+///
+/// **Hardening rationale:** This open-source decoder uses float64 arithmetic
+/// (not flight-suitable for targets without FPU). The structural hardening
+/// patterns (CFI sentinels, TMR mirroring, bounds checks, secure scrub) are
+/// retained deliberately: they demonstrate the assurance framework that the
+/// flight decoder (proprietary AMS variant, Q8.7 integer) inherits. Removing
+/// them from the OSS decoder would break the assurance evidence chain — the
+/// SWIFI tests, FMEA, and fault_coverage.rst reference these patterns by name.
+/// The hardening cost on desktop hardware is negligible (<2% overhead).
+
 #include "lunalink/core/safety.hpp"
 #include "lunalink/encoding/ldpc_tables.hpp"
 
@@ -8,8 +20,8 @@
 
 namespace lunalink::signal {
 
-/** @brief Status codes for LDPC encode and layered NMS belief-propagation decode. [LSIS-AFS-320]
- * SEU-hardened with high Hamming distance bit patterns. */
+/** @brief Status codes for LDPC encode and layered sum-product belief-propagation decode.
+ * [LSIS-AFS-320] SEU-hardened with high Hamming distance bit patterns. */
 enum class LdpcStatus : uint8_t {
   kOk = 0x5AU,             ///< Operation completed successfully.
   kInvalidInput = 0xA5U,   ///< Input parameters out of range or invalid.
@@ -70,29 +82,25 @@ struct LdpcEncodeWorkspace {
 /**
  * @brief Scratchpad memory for LDPC decoding to ensure re-entrancy.
  * Large buffers are moved out of the function stack and static memory.
- * Uses 16-bit fixed-point (Q8.7) to ensure determinism and efficiency.
+ * Uses float64 for exact sum-product belief propagation.
  *
- * WARNING: ~85 KB total. Must be heap-allocated or placed in a dedicated
- * memory section on flight hardware. Do NOT allocate on a task stack.
+ * WARNING: ~342 KB total. Must be heap-allocated; do NOT allocate on stack.
  */
 struct LdpcWorkspace {
-  std::array<int16_t, 6240> L_v{};           // Variable-node LLRs (Mother length)
-  std::array<int16_t, 32000> L_cv{};         // Check-to-variable messages (Sparse parts)
-  std::array<int16_t, 4560> L_cv_identity{}; // Messages for identity part
+  std::array<double, 6240> L_v{};           // Variable-node LLRs (Mother length)
+  std::array<double, 32000> L_cv{};         // Check-to-variable messages (Sparse parts)
+  std::array<double, 4560> L_cv_identity{}; // Messages for identity part
 
-  /// NMS scaling factor α = numerator / denominator.
-  /// Default 2/3 ≈ 0.667 — optimized empirically for the LSIS-AFS LDPC
-  /// codes (n=2400 rate-1/2 and n=1740 rate-1/2). Outperforms the standard
-  /// α=3/4 by ~0.3 dB in the waterfall region.
-  /// Valid range: numerator in [1,7], denominator in [1,8], numerator <= denominator.
-  struct NmsAlpha {
-    int16_t numerator = 2;
-    int16_t denominator = 3;
-  } alpha{};
+#ifdef LUNALINK_FAULT_INJECTION
+  /// SWIFI FI-41: when non-zero, XOR this mask into the phi_sum_mir field
+  /// of the first row's RowGatherResult after gather. Exercises the TMR
+  /// bitwise mirror detection path in verify_mirrors(). [SW-SAF-06]
+  uint64_t fi_corrupt_phi_mirror = 0;
+#endif
 };
 
 /**
- * @brief Decode a navigation sub-block using Layered Normalized Min-Sum BP. [LSIS-AFS-321]
+ * @brief Decode a navigation sub-block using Layered Sum-Product BP. [LSIS-AFS-321]
  *
  * @param type       Subframe type.
  * @param symbols    Input channel LLRs (log-likelihood ratios).

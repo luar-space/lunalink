@@ -99,6 +99,7 @@ LunaLink AFS reference implementation with C++ core and pybind11 bindings.
    signal/bch_decoder_design
    signal/bch_performance
    signal/ldpc_performance
+   signal/ldpc_algo_card
    signal/sisicd
    signal/icd
 
