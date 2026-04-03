@@ -524,6 +524,27 @@ tasks:
       - echo "PDF built at docs/_build/latex/LunaLink-Gateway0-Phase1.pdf"
     silent: false
 
+  paper:
+    desc: "Build a paper PDF. Usage: task paper -- lugre_characterisation"
+    cmds:
+      - |
+        PAPER_DIR="docs/papers/{{.CLI_ARGS}}"
+        if [ ! -f "$PAPER_DIR/main.tex" ]; then
+          echo "Paper not found: $PAPER_DIR/main.tex"
+          echo "Available papers:"
+          ls -d docs/papers/*/main.tex 2>/dev/null | sed 's|docs/papers/||;s|/main.tex||'
+          exit 1
+        fi
+        cd "$PAPER_DIR" && latexmk -pdf -interaction=nonstopmode main.tex
+        echo "PDF built at $PAPER_DIR/main.pdf"
+    silent: false
+
+  paper-clean:
+    desc: "Clean paper build artifacts. Usage: task paper-clean -- lugre_characterisation"
+    cmds:
+      - cd "docs/papers/{{.CLI_ARGS}}" && latexmk -C
+    silent: false
+
   docs-serve:
     desc: Serve the documentation locally with auto-reload.
     cmds:
