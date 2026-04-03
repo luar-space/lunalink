@@ -138,7 +138,7 @@ tasks:
           --suppressions-list=cppcheck.suppressions \
           --template='{file}:{line}: [{severity}] {id}: {message}' \
           --quiet \
-          cpp/include/ cpp/codes/ cpp/encoding/ cpp/messages/ cpp/signal/ cpp/platform/
+          cpp/include/ cpp/codes/ cpp/encoding/ cpp/messages/ cpp/signal/ cpp/platform/ cpp/proprietary/
     silent: false
 
   pyright:
@@ -312,7 +312,7 @@ tasks:
           echo "clang-tidy not found; skipping tidy. Install LLVM (for example: brew install llvm) to enable this task."
           exit 0
         fi
-        find cpp/ -name '*.cpp' ! -path '*/bindings/*' ! -path 'cpp/tests/*' -print0 | xargs -0 -n 1 -P "{{.TIDY_JOBS}}" "{{.CLANG_TIDY}}" -p build/tidy -quiet --extra-arg=-Wno-unknown-warning-option --extra-arg=-Wno-error=unknown-warning-option
+        find cpp/ -name '*.cpp' ! -path '*/bindings/*' ! -path '*/tests/*' -print0 | xargs -0 -n 1 -P "{{.TIDY_JOBS}}" "{{.CLANG_TIDY}}" -p build/tidy -quiet --extra-arg=-Wno-unknown-warning-option --extra-arg=-Wno-error=unknown-warning-option
     silent: false
 
   tidy-staged:
@@ -356,7 +356,7 @@ tasks:
           exit 0
         fi
         # Collect staged .cpp source files (exclude bindings and tests)
-        STAGED=$(git diff --cached --name-only --diff-filter=ACM -- 'cpp/codes/*.cpp' 'cpp/encoding/*.cpp' 'cpp/messages/*.cpp' 'cpp/signal/*.cpp' 'cpp/platform/*.cpp' 'cpp/include/*.hpp')
+        STAGED=$(git diff --cached --name-only --diff-filter=ACM -- 'cpp/codes/*.cpp' 'cpp/encoding/*.cpp' 'cpp/messages/*.cpp' 'cpp/signal/*.cpp' 'cpp/platform/*.cpp' 'cpp/proprietary/codes/*.cpp' 'cpp/proprietary/signal/*.hpp' 'cpp/include/*.hpp')
         if [ -z "$STAGED" ]; then
           echo "No staged C++ source files — skipping tidy."
           exit 0

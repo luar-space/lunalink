@@ -151,6 +151,22 @@ if(LUNALINK_FAULT_INJECTION)
     target_compile_definitions(lunalink_core PUBLIC LUNALINK_FAULT_INJECTION=1)
 endif()
 
+# --- Proprietary Receiver Library ---
+# Multi-signal receiver code (GPS, Galileo, BeiDou). Export-excluded.
+# Same flight flags as lunalink_core (-fno-exceptions, -fno-rtti).
+option(BUILD_PROPRIETARY "Build proprietary receiver library" ON)
+
+if(BUILD_PROPRIETARY AND EXISTS "${CMAKE_SOURCE_DIR}/cpp/proprietary")
+    add_library(lunalink_proprietary
+        cpp/proprietary/codes/gold_gps.cpp
+    )
+    target_include_directories(lunalink_proprietary PUBLIC cpp/proprietary)
+    target_link_libraries(lunalink_proprietary PUBLIC lunalink_core)
+    set_target_properties(lunalink_proprietary PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    target_compile_options(lunalink_proprietary PRIVATE ${LUNALINK_WARNING_FLAGS} ${LUNALINK_CORE_FLAGS})
+    target_link_options(lunalink_proprietary PRIVATE ${LUNALINK_LINKER_FLAGS})
+endif()
+
 # --- Python Bindings ---
 if(BUILD_PYTHON_BINDINGS)
     find_package(Python 3.8 COMPONENTS Interpreter Development.Module REQUIRED)
@@ -271,15 +287,41 @@ if(BUILD_TESTING)
         )
     endif()
     endif() # LUNALINK_FAULT_INJECTION
+
+    # --- Proprietary Receiver Tests ---
+    if(BUILD_PROPRIETARY AND TARGET lunalink_proprietary)
+        add_executable(test_receiver
+            cpp/proprietary/tests/codes/test_gold_gps.cpp
+            cpp/proprietary/tests/signal/test_signal_config.cpp
+        )
+        target_link_libraries(test_receiver PRIVATE lunalink_proprietary Catch2::Catch2WithMain)
+        target_include_directories(test_receiver PRIVATE cpp/proprietary)
+        target_compile_options(test_receiver PRIVATE ${LUNALINK_WARNING_FLAGS}
+            $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Wno-unknown-warning-option -Wno-c2y-extensions -Wno-pgo-coverage>)
+
+        if(CATCH_MODULE_FOUND)
+            catch_discover_tests(test_receiver
+                TEST_PREFIX "receiver."
+                PROPERTIES LABELS receiver
+            )
+        endif()
+    endif() # BUILD_PROPRIETARY
 endif() # BUILD_TESTING
 
 # --- Coverage Analysis ---
 if(ENABLE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(lunalink_core PRIVATE --coverage)
     target_link_options(lunalink_core PRIVATE --coverage)
-    
+
     target_compile_options(test_lunalink PRIVATE --coverage)
     target_link_options(test_lunalink PRIVATE --coverage)
+
+    if(TARGET lunalink_proprietary)
+        target_compile_options(lunalink_proprietary PRIVATE --coverage)
+        target_link_options(lunalink_proprietary PRIVATE --coverage)
+        target_compile_options(test_receiver PRIVATE --coverage)
+        target_link_options(test_receiver PRIVATE --coverage)
+    endif()
 endif()
 
 # --- LLVM Source-Based Coverage (MC/DC) ---
@@ -298,6 +340,10 @@ if(ENABLE_LLVM_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
             target_compile_options(lunalink_swifi_tests PRIVATE ${LLVM_COV_FLAGS})
             target_link_options(lunalink_swifi_tests PRIVATE ${LLVM_COV_FLAGS})
         endif()
+        if(TARGET test_receiver)
+            target_compile_options(test_receiver PRIVATE ${LLVM_COV_FLAGS})
+            target_link_options(test_receiver PRIVATE ${LLVM_COV_FLAGS})
+        endif()
     endif()
 elseif(ENABLE_LLVM_COVERAGE AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     message(WARNING "ENABLE_LLVM_COVERAGE requires Clang. Use CC=clang CXX=clang++.")
@@ -315,6 +361,13 @@ if(ENABLE_SANITIZERS AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     if(TARGET lunalink_swifi_tests)
         target_compile_options(lunalink_swifi_tests PRIVATE ${SANITIZE_FLAGS})
         target_link_options(lunalink_swifi_tests PRIVATE ${SANITIZE_FLAGS})
+    endif()
+
+    if(TARGET lunalink_proprietary)
+        target_compile_options(lunalink_proprietary PRIVATE ${SANITIZE_FLAGS})
+        target_link_options(lunalink_proprietary PRIVATE ${SANITIZE_FLAGS})
+        target_compile_options(test_receiver PRIVATE ${SANITIZE_FLAGS})
+        target_link_options(test_receiver PRIVATE ${SANITIZE_FLAGS})
     endif()
 endif()
 
