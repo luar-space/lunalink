@@ -191,6 +191,18 @@ if(BUILD_PYTHON_BINDINGS)
 
     # Install the extension into the package structure
     install(TARGETS _afs DESTINATION lunalink/afs)
+
+    # --- Proprietary Receiver Bindings ---
+    # Note: binding code requires exceptions (throw nb::value_error etc.),
+    #   so LUNALINK_CORE_FLAGS (-fno-exceptions -fno-rtti) is NOT applied here.
+    if(BUILD_PROPRIETARY AND TARGET lunalink_proprietary)
+        nanobind_add_module(_receiver NB_STATIC NB_SUPPRESS_WARNINGS
+            cpp/proprietary/bindings/receiver_module.cpp)
+        target_link_libraries(_receiver PRIVATE lunalink_proprietary)
+        target_include_directories(_receiver PRIVATE cpp/proprietary)
+        target_compile_options(_receiver PRIVATE ${LUNALINK_WARNING_FLAGS})
+        install(TARGETS _receiver DESTINATION lunalink/receiver)
+    endif()
 endif()
 
 # --- Unit Tests ---
@@ -293,6 +305,7 @@ if(BUILD_TESTING)
         add_executable(test_receiver
             cpp/proprietary/tests/codes/test_gold_gps.cpp
             cpp/proprietary/tests/signal/test_signal_config.cpp
+            cpp/proprietary/tests/signal/test_fft_sizes.cpp
         )
         target_link_libraries(test_receiver PRIVATE lunalink_proprietary Catch2::Catch2WithMain)
         target_include_directories(test_receiver PRIVATE cpp/proprietary)

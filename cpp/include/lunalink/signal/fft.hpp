@@ -163,4 +163,15 @@ using Fft2048 = Fft<2048>;
 /// ambiguity from the 2048/2046 mismatch (spec finding SF-004).
 using Fft4096 = Fft<4096>;
 
+/// 16384-pt FFT for multi-signal PCPS acquisition:
+///   - GPS L1 C/A at 8 spc (1023 × 8 = 8184 samples, zero-padded)
+///   - BeiDou B1C at 1 spc (10230 chips, zero-padded)
+///   - AFS-Q at 1 spc (10230 chips, zero-padded)
+using Fft16384 = Fft<16384>;
+
+/// 32768-pt FFT for GPS L5 acquisition at 2 samples/chip and
+/// Galileo E1 at 8 samples/chip (4092 × 8 = 32736 samples).
+/// Zero-padded for linear cross-correlation.
+using Fft32768 = Fft<32768>;
+
 } // namespace lunalink::signal

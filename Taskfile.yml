@@ -707,6 +707,28 @@ tasks:
         fi
         echo "PASS: no SWIFI references in build system"
 
+        # No proprietary/ directories
+        if find "$EXPORT_DIR" -type d -name proprietary 2>/dev/null | grep -q .; then
+          echo "FAIL: proprietary/ directories found in export"
+          find "$EXPORT_DIR" -type d -name proprietary
+          exit 1
+        fi
+        echo "PASS: no proprietary/ directories"
+
+        # No receiver Python package (src/lunalink/receiver/)
+        if [ -d "$EXPORT_DIR/src/lunalink/receiver" ]; then
+          echo "FAIL: src/lunalink/receiver/ found in export"
+          exit 1
+        fi
+        echo "PASS: no receiver package"
+
+        # No proprietary test file
+        if find "$EXPORT_DIR" -name "test_receiver.py" | grep -q .; then
+          echo "FAIL: test_receiver.py found in export"
+          exit 1
+        fi
+        echo "PASS: no proprietary test files"
+
         echo "=== All export validation checks passed ==="
       - |
         echo "Building Sphinx docs in exported tree..."
