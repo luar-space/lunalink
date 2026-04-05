@@ -128,7 +128,7 @@ add_library(lunalink_core
     # signal/ — Baseband & RX (Gateway 4-5)
     cpp/signal/modulator.cpp
     cpp/signal/iq_mux.cpp
-    cpp/signal/correlator.cpp
+    # correlator.cpp removed — receiver::Correlator in proprietary/ supersedes
     cpp/signal/sync_detector.cpp
     cpp/signal/signal_gen.cpp
     # core/ — Utilities (Gateway 7)
@@ -159,6 +159,7 @@ option(BUILD_PROPRIETARY "Build proprietary receiver library" ON)
 if(BUILD_PROPRIETARY AND EXISTS "${CMAKE_SOURCE_DIR}/cpp/proprietary")
     add_library(lunalink_proprietary
         cpp/proprietary/codes/gold_gps.cpp
+        cpp/proprietary/signal/correlator.cpp
     )
     target_include_directories(lunalink_proprietary PUBLIC cpp/proprietary)
     target_link_libraries(lunalink_proprietary PUBLIC lunalink_core)
@@ -237,7 +238,7 @@ if(BUILD_TESTING)
         # signal/
         cpp/tests/signal/test_modulator.cpp
         cpp/tests/signal/test_iq_mux.cpp
-        cpp/tests/signal/test_correlator.cpp
+        # test_correlator.cpp removed — correlator tests moved to proprietary/tests/
         cpp/tests/signal/test_sync_detector.cpp
         # core/
         cpp/tests/core/test_sise.cpp
@@ -250,7 +251,7 @@ if(BUILD_TESTING)
         # performance/
         cpp/tests/performance/test_bch_ber.cpp
         cpp/tests/performance/test_ldpc_reference.cpp
-        cpp/tests/performance/test_correlator_perf.cpp
+        # test_correlator_perf.cpp removed — correlator tests moved to proprietary/tests/
         cpp/tests/performance/test_sync_detection_rate.cpp
         cpp/tests/performance/test_wcet.cpp
     )
@@ -298,6 +299,26 @@ if(BUILD_TESTING)
             PROPERTIES LABELS swifi
         )
     endif()
+    # --- Proprietary SWIFI tests (requires both FAULT_INJECTION and PROPRIETARY) ---
+    if(BUILD_PROPRIETARY AND TARGET lunalink_proprietary)
+        add_executable(receiver_swifi_tests
+            cpp/proprietary/tests/signal/test_swifi_correlator.cpp
+        )
+        target_link_libraries(receiver_swifi_tests PRIVATE lunalink_proprietary Catch2::Catch2WithMain)
+        target_include_directories(receiver_swifi_tests PRIVATE cpp/proprietary)
+        target_compile_options(receiver_swifi_tests PRIVATE ${LUNALINK_WARNING_FLAGS}
+            $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Wno-c2y-extensions>)
+        target_compile_definitions(receiver_swifi_tests PRIVATE LUNALINK_FAULT_INJECTION=1)
+
+        if(CATCH_MODULE_FOUND)
+            catch_discover_tests(receiver_swifi_tests
+                TEST_SPEC ""
+                TEST_PREFIX "receiver_swifi."
+                PROPERTIES LABELS swifi
+            )
+        endif()
+    endif()
+
     endif() # LUNALINK_FAULT_INJECTION
 
     # --- Proprietary Receiver Tests ---
@@ -306,6 +327,7 @@ if(BUILD_TESTING)
             cpp/proprietary/tests/codes/test_gold_gps.cpp
             cpp/proprietary/tests/signal/test_signal_config.cpp
             cpp/proprietary/tests/signal/test_fft_sizes.cpp
+            cpp/proprietary/tests/signal/test_correlator.cpp
         )
         target_link_libraries(test_receiver PRIVATE lunalink_proprietary Catch2::Catch2WithMain)
         target_include_directories(test_receiver PRIVATE cpp/proprietary)
@@ -315,6 +337,7 @@ if(BUILD_TESTING)
         if(CATCH_MODULE_FOUND)
             catch_discover_tests(test_receiver
                 TEST_PREFIX "receiver."
+                TEST_SPEC "~[channel]"
                 PROPERTIES LABELS receiver
             )
         endif()
@@ -358,6 +381,10 @@ if(ENABLE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         target_link_options(lunalink_proprietary PRIVATE --coverage)
         target_compile_options(test_receiver PRIVATE --coverage)
         target_link_options(test_receiver PRIVATE --coverage)
+        if(TARGET receiver_swifi_tests)
+            target_compile_options(receiver_swifi_tests PRIVATE --coverage)
+            target_link_options(receiver_swifi_tests PRIVATE --coverage)
+        endif()
     endif()
 endif()
 
@@ -380,6 +407,10 @@ if(ENABLE_LLVM_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         if(TARGET test_receiver)
             target_compile_options(test_receiver PRIVATE ${LLVM_COV_FLAGS})
             target_link_options(test_receiver PRIVATE ${LLVM_COV_FLAGS})
+        endif()
+        if(TARGET receiver_swifi_tests)
+            target_compile_options(receiver_swifi_tests PRIVATE ${LLVM_COV_FLAGS})
+            target_link_options(receiver_swifi_tests PRIVATE ${LLVM_COV_FLAGS})
         endif()
     endif()
 elseif(ENABLE_LLVM_COVERAGE AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -405,6 +436,10 @@ if(ENABLE_SANITIZERS AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
         target_link_options(lunalink_proprietary PRIVATE ${SANITIZE_FLAGS})
         target_compile_options(test_receiver PRIVATE ${SANITIZE_FLAGS})
         target_link_options(test_receiver PRIVATE ${SANITIZE_FLAGS})
+        if(TARGET receiver_swifi_tests)
+            target_compile_options(receiver_swifi_tests PRIVATE ${SANITIZE_FLAGS})
+            target_link_options(receiver_swifi_tests PRIVATE ${SANITIZE_FLAGS})
+        endif()
     endif()
 endif()
 

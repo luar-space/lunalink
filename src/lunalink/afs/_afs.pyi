@@ -20,7 +20,6 @@ from lunalink.afs._array_types import (
     IqPairFloat,
     IqPairNative,
     MatchedCode,
-    RxSamples,
     Sb2Payload,
     Sb3Payload,
     Sb4Payload,
@@ -319,64 +318,16 @@ def generate_iq_frame_float(
 IQ_PAIRS_PER_EPOCH: int
 IQ_PAIRS_PER_FRAME: int
 
-# ── Correlator ───────────────────────────────────────────────────────────────
-
-class CorrelatorStatus(IntEnum):
-    OK = 0x5A
-    INVALID_INPUT = 0xA5
-    ACQ_FAILED = 0x33
-    FAULT_DETECTED = 0xCC
-    NOT_LOCKED = 0x99
-    TIMEOUT = 0x66
-
-class ChannelState(IntEnum):
-    IDLE = 0x1E
-    ACQUIRING = 0x69
-    TRACKING = 0x96
-    LOST = 0xE1
-
-class AcquisitionResult:
-    code_delay: float
-    doppler_hz: float
-    peak_metric: float
-    locked: bool
-
-class TrackingState:
-    code_phase_chips: float
-    carrier_phase_rad: float
-    doppler_hz: float
-    dll_discriminator: float
-    pll_discriminator: float
-    cn0_estimate: float
-    cn0_smooth: float
-
-class UniformPrior:
-    def __init__(self) -> None: ...
-
-class Correlator:
-    def __init__(self, prior: UniformPrior) -> None: ...
-    def assign_channel(self, ch_idx: int, prn_id: int) -> CorrelatorStatus: ...
-    def acquire(
-        self, ch_idx: int, rx: RxSamples
-    ) -> tuple[AcquisitionResult, CorrelatorStatus]: ...
-    def track(self, ch_idx: int, rx: RxSamples) -> CorrelatorStatus: ...
-    def pseudorange(self, ch_idx: int) -> tuple[float, CorrelatorStatus]: ...
-    def channel_state(self, ch_idx: int) -> ChannelState: ...
-    def tracking_state(self, ch_idx: int) -> TrackingState: ...
-    def data_symbol(self, ch_idx: int) -> float: ...
-    def reset_channel(self, ch_idx: int) -> None: ...
+# Correlator types and class moved to lunalink.receiver._receiver (proprietary).
 
 AFS_I_CODE_LENGTH: int
-FFT_SIZE: int
-SAMPLE_RATE_HZ: float
-CODE_PERIOD_S: float
-MAX_CHANNELS: int
+# V1 correlator constants removed (FFT_SIZE, SAMPLE_RATE_HZ, etc.).
 GOLD_CHIP_LENGTH: int
 WEIL_10230_CHIP_LENGTH: int
 WEIL_1500_CHIP_LENGTH: int
 PRN_COUNT: int
 CHIP_RATE_HZ: float
-DOPPLER_BIN_SPACING_HZ: float
+# DOPPLER_BIN_SPACING_HZ removed — was V1 correlator constant.
 
 # Signal parameters (signal_parameters.csv)
 CENTER_FREQUENCY_HZ: float

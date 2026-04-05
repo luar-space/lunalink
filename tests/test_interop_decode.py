@@ -19,13 +19,6 @@ import numpy as np
 import pytest
 
 from lunalink.afs import receive_frame
-from lunalink.afs._afs import (
-    FFT_SIZE,
-    ChannelState,
-    Correlator,
-    CorrelatorStatus,
-    UniformPrior,
-)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 AFS_SIM = REPO_ROOT / "third_party" / "LANS-AFS-SIM" / "afs_sim"
@@ -70,15 +63,6 @@ def _load_and_decimate(path: Path) -> np.ndarray:
     raw = np.fromfile(path, dtype=np.int16)
     iq_full = raw[0::2].astype(np.float32) + 1j * raw[1::2].astype(np.float32)
     return iq_full[::DECIMATION_FACTOR]
-
-
-def _epoch_block(iq: np.ndarray, epoch: int) -> np.ndarray:
-    """Extract one 2048-sample epoch from decimated I/Q (2046 chips + 2 zero-pad)."""
-    start = epoch * CHIPS_PER_EPOCH
-    chunk = iq[start : start + CHIPS_PER_EPOCH]
-    padded = np.zeros(FFT_SIZE, dtype=np.complex64)
-    padded[: len(chunk)] = chunk
-    return padded
 
 
 def _pcps_acquire(
@@ -223,152 +207,30 @@ class TestInteropDecode:
         if result.time is not None:
             assert result.time.wn == 2277
 
+    # ── C++ correlator tests ─────────────────────────────────────────────
+    # These depend on the proprietary receiver::Correlator. They are excluded
+    # from the OSS export and will be ported to the V2 API in Phase 3
+    # (needs native sample-rate processing, not 1.023 MSPS decimation).
+
+    @pytest.mark.skip(
+        reason="Requires proprietary receiver::Correlator — port to V2 API in Phase 3"
+    )
     def test_cpp_correlator_acquire(self, lans_iq: np.ndarray) -> None:
         """C++ PCPS correlator acquires a LANS-AFS-SIM signal."""
-        prior = UniformPrior()
-        correlator = Correlator(prior)
-        status = correlator.assign_channel(0, 3)
-        assert status == CorrelatorStatus.OK
 
-        padded = _epoch_block(lans_iq, 0)
-        result, status = correlator.acquire(0, padded)
-        assert status == CorrelatorStatus.OK, f"acquire failed: {status}"
-        assert result.locked, (
-            f"Acquisition did not lock (metric={result.peak_metric:.1f}, "
-            f"delay={result.code_delay:.1f}, doppler={result.doppler_hz:.1f})"
-        )
-
+    @pytest.mark.skip(
+        reason="Requires proprietary receiver::Correlator — port to V2 API in Phase 3"
+    )
     def test_cpp_correlator_track_decode(self, lans_iq: np.ndarray) -> None:
-        """C++ correlator acquire + track + frame decode.
-
-        The headline test: LunaLink's flight-grade C++ correlator
-        (PCPS acquisition, DLL+PLL tracking, data symbol extraction)
-        processes an independently generated LSIS-AFS signal end-to-end.
-        """
-        prior = UniformPrior()
-        correlator = Correlator(prior)
-        correlator.assign_channel(0, 3)
-
-        n_epochs = len(lans_iq) // CHIPS_PER_EPOCH
-        symbols = []
-
-        for epoch in range(n_epochs):
-            padded = _epoch_block(lans_iq, epoch)
-            state = correlator.channel_state(0)
-
-            if state in (ChannelState.IDLE, ChannelState.ACQUIRING):
-                result, _ = correlator.acquire(0, padded)
-                if result.locked:
-                    correlator.track(0, padded)
-            elif state == ChannelState.TRACKING:
-                status = correlator.track(0, padded)
-                if status == CorrelatorStatus.OK:
-                    symbols.append(correlator.data_symbol(0))
-            elif state == ChannelState.LOST:
-                correlator.reset_channel(0)
-                correlator.assign_channel(0, 3)
-
-        symbols = np.array(symbols, dtype=np.float32)
-
-        assert len(symbols) >= 6068, (
-            f"Only {len(symbols)} symbols tracked, need >= 6068"
-        )
-
-        bipolar = np.sign(symbols).astype(np.float32)
-        result = receive_frame(bipolar, raise_on_error=True)
-
-        assert result.fid == 0, f"Expected FID=0, got {result.fid}"
-        assert result.sb2.crc_ok, "SB2 CRC failed — C++ PLL tracking error"
-        assert result.sb3.crc_ok, "SB3 CRC failed"
-        assert result.sb4.crc_ok, "SB4 CRC failed"
+        """C++ correlator acquire + track + frame decode."""
 
     @pytest.mark.xfail(
-        reason="Correlator V1 operates at 1.023 MSPS — aliases Q-channel pilot "
-        "as noise. 2-bit 7-SV acquisition requires pilot-channel "
-        "processing at composite rate (V2).",
+        reason="Requires 5.115 MSPS processing to avoid Q-channel aliasing. "
+        "Phase 3 adds native sample-rate support via LuGRE loader.",
         strict=True,
     )
-    def test_cpp_correlator_awgn_decode(
-        self, tmp_path_factory: pytest.TempPathFactory
-    ) -> None:
-        """C++ correlator decode of LANS-AFS-SIM 2-bit quantised signal with AWGN.
-
-        Uses -b 2 mode (thermal noise + 2-bit ADC: {-3, -1, +1, +3}) with
-        7 visible SVs. Non-coherent integration (N=10 epochs, 20 ms) enables
-        acquisition at the low per-SV SNR. Demonstrates realistic receiver
-        performance under conditions more challenging than the operational
-        Moonlight constellation (3-4 SVs).
-        """
-        tmpdir = tmp_path_factory.mktemp("lans_awgn")
-        outfile = tmpdir / "lans_awgn.bin"
-        subprocess.run(
-            [
-                str(AFS_SIM),
-                "-t",
-                str(FRAME_DURATION_S),
-                "-s",
-                str(LANS_SAMPLE_RATE_HZ),
-                "-b",
-                "2",
-                str(outfile),
-            ],
-            cwd=AFS_SIM.parent,
-            check=True,
-            capture_output=True,
-        )
-
-        # Load int8 I/Q (2-bit mode writes int8, not int16)
-        raw = np.fromfile(str(outfile), dtype=np.int8)
-        iq_full = raw[0::2].astype(np.float32) + 1j * raw[1::2].astype(np.float32)
-        iq = iq_full[::DECIMATION_FACTOR]
-
-        prior = UniformPrior()
-        correlator = Correlator(prior)
-        correlator.assign_channel(0, 3)
-
-        n_epochs = len(iq) // CHIPS_PER_EPOCH
-        integration_epochs = 10  # non-coherent integration for weak signal
-        symbols = []
-
-        epoch = 0
-        while epoch < n_epochs:
-            state = correlator.channel_state(0)
-
-            if state in (ChannelState.IDLE, ChannelState.ACQUIRING):
-                # Multi-epoch acquisition: feed N epochs at once
-                end = min(epoch + integration_epochs, n_epochs)
-                acq_samples = []
-                for e in range(epoch, end):
-                    acq_samples.append(_epoch_block(iq, e))
-                acq_block = np.concatenate(acq_samples)
-                result, _ = correlator.acquire(0, acq_block)
-                if result.locked:
-                    # Start tracking from the last epoch used for acquisition
-                    epoch = end - 1
-                    correlator.track(0, _epoch_block(iq, epoch))
-                else:
-                    epoch = end
-                    continue
-            elif state == ChannelState.TRACKING:
-                padded = _epoch_block(iq, epoch)
-                status = correlator.track(0, padded)
-                if status == CorrelatorStatus.OK:
-                    symbols.append(correlator.data_symbol(0))
-            elif state == ChannelState.LOST:
-                correlator.reset_channel(0)
-                correlator.assign_channel(0, 3)
-
-            epoch += 1
-
-        symbols_arr = np.array(symbols, dtype=np.float32)
-        assert len(symbols_arr) >= 6068, (
-            f"Only {len(symbols_arr)} symbols tracked with AWGN, need >= 6068"
-        )
-
-        bipolar = np.sign(symbols_arr).astype(np.float32)
-        result = receive_frame(bipolar, raise_on_error=True)
-
-        assert result.fid == 0, f"Expected FID=0, got {result.fid}"
-        assert result.sb2.crc_ok, "SB2 CRC failed under AWGN"
-        assert result.sb3.crc_ok, "SB3 CRC failed under AWGN"
-        assert result.sb4.crc_ok, "SB4 CRC failed under AWGN"
+    @pytest.mark.skip(
+        reason="Requires proprietary receiver::Correlator — port in Phase 3"
+    )
+    def test_cpp_correlator_awgn_decode(self, lans_iq: np.ndarray) -> None:
+        """C++ correlator decode of 2-bit quantised 7-SV signal with AWGN."""

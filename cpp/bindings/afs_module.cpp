@@ -9,7 +9,7 @@
 #include "lunalink/messages/frame_decode.hpp"
 #include "lunalink/messages/message_parser.hpp"
 #include "lunalink/messages/time_of_transmission.hpp"
-#include "lunalink/signal/correlator.hpp"
+// correlator.hpp removed — correlator is proprietary (receiver module).
 #include "lunalink/signal/iq_mux.hpp"
 #include "lunalink/signal/modulator.hpp"
 #include "lunalink/signal/file_format.hpp"
@@ -1316,190 +1316,18 @@ tuple[FrameDecodeResult, ndarray, ndarray, ndarray, FrameDecodeStatus]
     (result, sb2_data, sb3_data, sb4_data, status)
 )");
 
-  // ─── Correlator bindings ───────────────────────────────────────────────────
+  // ─── AFS-I signal constants (derived from prn.hpp spec values) ──────────
 
-  nb::enum_<CorrelatorStatus>(m, "CorrelatorStatus")
-      .value("OK", CorrelatorStatus::kOk)
-      .value("INVALID_INPUT", CorrelatorStatus::kInvalidInput)
-      .value("ACQ_FAILED", CorrelatorStatus::kAcqFailed)
-      .value("FAULT_DETECTED", CorrelatorStatus::kFaultDetected)
-      .value("NOT_LOCKED", CorrelatorStatus::kNotLocked)
-      .value("TIMEOUT", CorrelatorStatus::kTimeout);
-
-  nb::enum_<ChannelState>(m, "ChannelState")
-      .value("IDLE", ChannelState::kIdle)
-      .value("ACQUIRING", ChannelState::kAcquiring)
-      .value("TRACKING", ChannelState::kTracking)
-      .value("LOST", ChannelState::kLost);
-
-  nb::class_<AcquisitionResult>(m, "AcquisitionResult")
-      .def_ro("code_delay", &AcquisitionResult::code_delay)
-      .def_ro("doppler_hz", &AcquisitionResult::doppler_hz)
-      .def_ro("peak_metric", &AcquisitionResult::peak_metric)
-      .def_ro("locked", &AcquisitionResult::locked);
-
-  nb::class_<TrackingState>(m, "TrackingState")
-      .def_ro("code_phase_chips", &TrackingState::code_phase_chips)
-      .def_ro("carrier_phase_rad", &TrackingState::carrier_phase_rad)
-      .def_ro("doppler_hz", &TrackingState::doppler_hz)
-      .def_ro("dll_discriminator", &TrackingState::dll_discriminator)
-      .def_ro("pll_discriminator", &TrackingState::pll_discriminator)
-      .def_ro("cn0_estimate", &TrackingState::cn0_estimate)
-      .def_ro("cn0_smooth", &TrackingState::cn0_smooth);
-
-  nb::class_<UniformPrior>(m, "UniformPrior").def(nb::init<>());
-
-  nb::class_<Correlator>(m, "Correlator",
-      R"(Multi-channel AFS correlator engine. [LSIS-AFS-701]
-
-Supports acquisition (PCPS), tracking (DLL/PLL), pseudorange
-extraction, and data symbol demodulation.
-
-Examples
---------
->>> from lunalink.afs.signal import Correlator, UniformPrior
->>> cor = Correlator(UniformPrior())
->>> cor.assign_channel(0, 1)  # channel 0, PRN 1
-)")
-      .def("__init__", [](Correlator* self, UniformPrior& prior) {
-             static NullTelemetryHal hal;
-             new (self) Correlator(prior, hal);
-           },
-           "prior"_a,
-           nb::keep_alive<1, 2>())
-      .def(
-          "assign_channel",
-          [](Correlator& self, uint8_t ch_idx, uint8_t prn_id) {
-            return self.assign_channel(ch_idx, PrnId{prn_id});
-          },
-          "ch_idx"_a,
-          "prn_id"_a,
-          R"(Assign a PRN to a correlator channel. [LSIS-AFS-701]
-
-Parameters
-----------
-ch_idx : int
-    Channel index (0 to MAX_CHANNELS-1).
-prn_id : int
-    PRN identifier (1--12).
-
-Returns
--------
-CorrelatorStatus
-    ``OK`` on success.
-)")
-      .def(
-          "acquire",
-          [](Correlator& self,
-             uint8_t ch_idx,
-             nb::ndarray<const std::complex<float>, nb::ndim<1>, nb::c_contig, nb::device::cpu> rx) {
-            AcquisitionResult result{};
-            auto status = self.acquire(
-                ch_idx,
-                std::span<const std::complex<float>>(rx.data(), rx.shape(0)),
-                result);
-            return nb::make_tuple(result, status);
-          },
-          "ch_idx"_a,
-          "rx"_a,
-          R"(Run PCPS acquisition on a channel. [LSIS-AFS-702]
-
-Searches code delay and Doppler space.  Pass one or more epochs
-(N x FFT_SIZE complex samples) for non-coherent integration.
-
-Parameters
-----------
-ch_idx : int
-    Channel index.
-rx : ndarray of complex64
-    Received IQ samples (N epochs x FFT_SIZE).
-
-Returns
--------
-tuple[AcquisitionResult, CorrelatorStatus]
-    Result with code_delay, doppler_hz, peak_metric, locked flag.
-)")
-      .def(
-          "track",
-          [](Correlator& self,
-             uint8_t ch_idx,
-             nb::ndarray<const std::complex<float>, nb::ndim<1>, nb::c_contig, nb::device::cpu> rx) {
-            return self.track(
-                ch_idx,
-                std::span<const std::complex<float>>(rx.data(), rx.shape(0)));
-          },
-          "ch_idx"_a,
-          "rx"_a,
-          R"(Update DLL/PLL tracking loops for one code period. [LSIS-AFS-703]
-
-Channel must be in TRACKING state (call acquire() first).
-
-Parameters
-----------
-ch_idx : int
-    Channel index.
-rx : ndarray of complex64
-    One code period of IQ samples.
-
-Returns
--------
-CorrelatorStatus
-    ``OK`` on success; ``NOT_LOCKED`` if tracking lost.
-)")
-      .def(
-          "pseudorange",
-          [](const Correlator& self, uint8_t ch_idx) {
-            double meters = 0.0;
-            auto status = self.pseudorange(ch_idx, meters);
-            return nb::make_tuple(meters, status);
-          },
-          "ch_idx"_a,
-          R"(Get the latest pseudorange measurement. [LSIS-AFS-704]
-
-Parameters
-----------
-ch_idx : int
-    Channel index.
-
-Returns
--------
-tuple[float, CorrelatorStatus]
-    (pseudorange_metres, status).  ``NOT_LOCKED`` if not tracking.
-)")
-      .def("channel_state", &Correlator::channel_state, "ch_idx"_a,
-           "Get channel state: IDLE, ACQUIRING, TRACKING, or LOST.")
-      .def("tracking_state", &Correlator::tracking_state, "ch_idx"_a,
-           R"(Get detailed tracking state for a channel.
-
-Returns
--------
-TrackingState
-    Code phase, carrier phase, Doppler, DLL/PLL discriminators, C/N0.
-)")
-      .def("data_symbol",
-           &Correlator::data_symbol,
-           "ch_idx"_a,
-           R"(Get the soft data symbol from the last track() call.
-
-Sign gives the hard decision (+ve -> bit 0, -ve -> bit 1);
-magnitude gives confidence.  Returns 0.0 if channel out of range.
-)")
-      .def("reset_channel", &Correlator::reset_channel, "ch_idx"_a,
-           "Reset a channel back to IDLE state.");
-
-  m.attr("AFS_I_CODE_LENGTH") = kAfsICodeLength;
-  m.attr("FFT_SIZE") = kFftSize;
-  m.attr("SAMPLE_RATE_HZ") = kSampleRateHz;
-  m.attr("CODE_PERIOD_S") = kCodePeriodS;
-  m.attr("MAX_CHANNELS") = kMaxChannels;
+  m.attr("AFS_I_CODE_LENGTH") = kGoldChipLength;                                  // 2046
+  m.attr("AFS_I_CHIP_RATE_HZ") = kAfsIChipRateHz;                                // 1.023e6
 
   // PRN code constants
   m.attr("GOLD_CHIP_LENGTH") = kGoldChipLength;
   m.attr("WEIL_10230_CHIP_LENGTH") = kWeil10230ChipLength;
   m.attr("WEIL_1500_CHIP_LENGTH") = kWeil1500ChipLength;
   m.attr("PRN_COUNT") = kPrnCount;
-  m.attr("CHIP_RATE_HZ") = kChipRateHz;
-  m.attr("DOPPLER_BIN_SPACING_HZ") = kDopplerBinSpacingHz;
+  m.attr("CHIP_RATE_HZ") = kAfsIChipRateHz;     // 1.023e6 (from prn.hpp)
+  // DOPPLER_BIN_SPACING_HZ removed — was V1 correlator constant.
 
   // Signal parameters (signal_parameters.csv)
   m.attr("CENTER_FREQUENCY_HZ") = kCenterFrequencyHz;
