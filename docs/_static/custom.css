@@ -1,0 +1,17 @@
+/* Widen the content area for notebook code and output readability. */
+.wy-nav-content {
+    max-width: 900px;
+}
+
+/* Prevent code cells from wrapping — horizontal scroll instead. */
+.nbinput .highlight pre,
+.nboutput .highlight pre,
+.nboutput .output_area pre {
+    white-space: pre;
+    overflow-x: auto;
+}
+
+/* Slightly larger font in notebook output for readability. */
+.nboutput .output_area pre {
+    font-size: 0.85em;
+}

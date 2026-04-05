@@ -506,11 +506,10 @@ tasks:
     silent: false
 
   docs-build:
-    desc: Build the HTML documentation with Sphinx.
+    desc: Execute notebooks and build the HTML documentation with Sphinx.
     cmds:
-      - cp -r notebooks/ docs/notebooks/
+      - uv run jupyter nbconvert --to notebook --execute --inplace docs/notebooks/*.ipynb
       - uv run python -m sphinx -b html docs/ docs/_build/html -W
-      - rm -rf docs/notebooks/
     silent: false
 
   docs-pdf:

@@ -49,7 +49,6 @@ LuPNT_data.zip
 default.profraw
 LuPNT_data.zip
 
-# Sphinx copies notebooks from notebooks/ to docs/notebooks/ at build time
-docs/notebooks/
 .obsidian
 .claude
+.ipynb_checkpoints/

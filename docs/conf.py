@@ -25,11 +25,8 @@ extensions = [
     "nbsphinx",
 ]
 
-# nbsphinx: notebooks are pre-executed (outputs committed) so figures render
-# without needing a build-time kernel. Re-execute locally with:
-#   jupyter nbconvert --execute --inplace notebooks/*.ipynb
-# Before building docs, copy notebooks into docs/notebooks/ (gitignored):
-#   cp -r notebooks/ docs/notebooks/
+# nbsphinx: notebooks are pre-executed by `task docs-build` so figures render
+# without needing a build-time kernel. Notebooks live in docs/notebooks/.
 nbsphinx_execute = "never"
 
 # Suppress warnings for forward-references to notebooks not yet written
@@ -60,6 +57,8 @@ exclude_patterns = [
 ]
 
 html_theme = "sphinx_rtd_theme"
+html_static_path = ["_static"]
+html_css_files = ["custom.css"]
 
 # -- LaTeX / PDF output -------------------------------------------------------
 

@@ -1,7 +1,7 @@
 # LSIS-AFS Encoding Parameters
 parameter,value,description
 BCH_TYPE,"BCH(51 8)",BCH code for Subframe 1
-BCH_GENERATOR_POLY,0x1F3,"g(x) = x^8 + x^7 + x^6 + x^5 + x + 1"
+BCH_GENERATOR_POLY,0x1F3,"g(x) = x^8 + x^7 + x^6 + x^5 + x^4 + x + 1"
 BCH_INPUT_BITS,9,SB1 data bits (FID + TOI)
 BCH_OUTPUT_SYMBOLS,52,SB1 encoded symbols (1 prepended + 51 LFSR)
 CRC24_POLY,0x864CFB,"CRC-24/LTE-A polynomial"

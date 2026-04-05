@@ -19,6 +19,7 @@
 
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
+#include <nanobind/stl/string.h>
 #include <nanobind/stl/tuple.h>
 #include <nanobind/stl/unique_ptr.h>
 
@@ -115,7 +116,7 @@ NB_MODULE(_afs, m) {
            [](const Fid& f) { return nb::hash(nb::int_(static_cast<uint8_t>(f))); })
       .def("__repr__",
            [](const Fid& f) {
-             return "Fid(" + std::to_string(static_cast<uint8_t>(f)) + ")";
+             return "Fid(" + std::to_string(static_cast<int>(f.value())) + ")";
            })
       .def_static("NODE1", &Fid::kNode1)
       .def_static("NODE2", &Fid::kNode2)
@@ -140,7 +141,7 @@ NB_MODULE(_afs, m) {
       .def("__hash__",
            [](const Toi& t) { return nb::hash(nb::int_(static_cast<uint8_t>(t))); })
       .def("__repr__", [](const Toi& t) {
-        return "Toi(" + std::to_string(static_cast<uint8_t>(t)) + ")";
+        return "Toi(" + std::to_string(static_cast<int>(t.value())) + ")";
       });
 
   nb::class_<PrnId>(m, "PrnId")

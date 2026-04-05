@@ -106,7 +106,7 @@ select = [
 
 [tool.ruff.lint.per-file-ignores]
 # Notebooks: allow long lines, uppercase math vars, missing docstrings on helpers
-"notebooks/*.ipynb" = ["E501", "N806", "D103"]
+"docs/notebooks/*.ipynb" = ["E501", "N806", "D103"]
 # Utility scripts: allow complexity and missing docstrings
 "scripts/sync_docstrings.py" = ["C901", "D103"]
 
