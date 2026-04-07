@@ -159,6 +159,9 @@ option(BUILD_PROPRIETARY "Build proprietary receiver library" ON)
 if(BUILD_PROPRIETARY AND EXISTS "${CMAKE_SOURCE_DIR}/cpp/proprietary")
     add_library(lunalink_proprietary
         cpp/proprietary/codes/gold_gps.cpp
+        cpp/proprietary/codes/gps_l5.cpp
+        cpp/proprietary/codes/bds_b1c.cpp
+        cpp/proprietary/codes/galileo_e1.cpp
         cpp/proprietary/signal/correlator.cpp
     )
     target_include_directories(lunalink_proprietary PUBLIC cpp/proprietary)
@@ -325,6 +328,10 @@ if(BUILD_TESTING)
     if(BUILD_PROPRIETARY AND TARGET lunalink_proprietary)
         add_executable(test_receiver
             cpp/proprietary/tests/codes/test_gold_gps.cpp
+            cpp/proprietary/tests/codes/test_gps_l5.cpp
+            cpp/proprietary/tests/codes/test_bds_b1c.cpp
+            cpp/proprietary/tests/codes/test_galileo_e1.cpp
+            cpp/proprietary/tests/codes/test_swifi_codegen.cpp
             cpp/proprietary/tests/signal/test_signal_config.cpp
             cpp/proprietary/tests/signal/test_fft_sizes.cpp
             cpp/proprietary/tests/signal/test_correlator.cpp

@@ -11,7 +11,7 @@ namespace lunalink::signal {
 enum class LegendreStatus : uint8_t {
   kOk = 0x5AU,             ///< Operation completed successfully.
   kOutputTooSmall = 0xCCU, ///< Output buffer too small for sequence.
-  kInvalidPrime = 0x33U,   ///< Prime not in supported set {1499, 10223}.
+  kInvalidPrime = 0x33U,   ///< Prime not in supported set {1499, 10223, 10243}.
   kFaultDetected = 0x99U,  ///< CFI, TMR, or integrity check failed (FIZ-1/2/3).
 };
 
@@ -27,7 +27,7 @@ enum class LegendreStatus : uint8_t {
 /**
  * @brief Explicitly initialise the Legendre sequence cache.
  *
- * Generates both Legendre sequences (p=10223, p=1499) and verifies them
+ * Generates all three Legendre sequences (p=10223, p=1499, p=10243) and verifies them
  * against build-time golden CRCs.  Must be called before any call to
  * get_cached_legendre().  Designed to be called from the POST sequence
  * to eliminate hidden __cxa_guard dynamic initialisation.
@@ -59,5 +59,12 @@ enum class LegendreStatus : uint8_t {
  * @brief Compute CRC-32 checksum of the cached Legendre sequence for prime 1499.
  */
 [[nodiscard]] uint64_t legendre_1499_checksum() noexcept;
+
+/**
+ * @brief Compute CRC-32 checksum of the cached Legendre sequence for prime 10243.
+ *
+ * BeiDou B1C uses Weil-10230 with Legendre prime p=10243 (BDS-SIS-ICD-B1C-1.0).
+ */
+[[nodiscard]] uint64_t legendre_10243_checksum() noexcept;
 
 } // namespace lunalink::signal

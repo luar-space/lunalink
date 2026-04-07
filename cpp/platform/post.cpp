@@ -72,7 +72,7 @@ PostResult run_post() noexcept {
     return {PostStatus::kFaultDetected, 2}; // FIZ-3 // NOCOVER(DEFENCE_IN_DEPTH): codebook checksum mismatch requires SEU on .rodata
   }
   // Legendre cache: explicit deterministic initialisation.
-  // Generates both sequences and verifies against golden CRCs internally.
+  // Generates all three sequences (p=10223, p=1499, p=10243) and verifies against golden CRCs.
   // Eliminates hidden __cxa_guard dynamic init (TOCTOU integrity gap closure).
   if (legendre_cache_init() != LegendreStatus::kOk) {
     return {PostStatus::kFaultDetected, 2}; // FIZ-3 // NOCOVER(DEFENCE_IN_DEPTH): Legendre CRC mismatch requires SEU during generation

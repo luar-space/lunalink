@@ -21,9 +21,11 @@ uint64_t crc32_ieee_u64(std::span<const uint8_t> data) noexcept {
 // Must be explicitly initialized via legendre_cache_init() before use.
 constexpr uint16_t kPrime10223 = 10223;
 constexpr uint16_t kPrime1499 = 1499;
+constexpr uint16_t kPrime10243 = 10243;
 
 alignas(64) std::array<uint8_t, kPrime10223> g_data10223{};
 alignas(64) std::array<uint8_t, kPrime1499> g_data1499{};
+alignas(64) std::array<uint8_t, kPrime10243> g_data10243{};
 
 // P0-7: NOT atomic by design.  legendre_cache_init() must be called once from
 // Power-On Self-Test (POST) on the boot core *before* any concurrent reader
@@ -40,6 +42,7 @@ LegendreStatus legendre_cache_init() noexcept {
   if (s1 != LegendreStatus::kOk) [[unlikely]] {
     secure_scrub(g_data10223); // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CRC mismatch on Legendre cache init — scrub + return failure
     secure_scrub(g_data1499);
+    secure_scrub(g_data10243);
     g_initialized = false;
     return s1;
   } // NOCOVER_END
@@ -48,15 +51,27 @@ LegendreStatus legendre_cache_init() noexcept {
   if (s2 != LegendreStatus::kOk) [[unlikely]] {
     secure_scrub(g_data10223); // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CRC mismatch on Legendre cache init — scrub + return failure
     secure_scrub(g_data1499);
+    secure_scrub(g_data10243);
     g_initialized = false;
     return s2;
   } // NOCOVER_END
 
-  // Verify against golden CRCs — reject corrupted generation.
-  if (crc32_ieee_u64(std::span(g_data10223)) != kLegendre10223Checksum ||
-      crc32_ieee_u64(std::span(g_data1499)) != kLegendre1499Checksum) {
+  const auto s3 = generate_legendre_sequence(kPrime10243, std::span(g_data10243));
+  if (s3 != LegendreStatus::kOk) [[unlikely]] {
     secure_scrub(g_data10223); // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CRC mismatch on Legendre cache init — scrub + return failure
     secure_scrub(g_data1499);
+    secure_scrub(g_data10243);
+    g_initialized = false;
+    return s3;
+  } // NOCOVER_END
+
+  // Verify against golden CRCs — reject corrupted generation.
+  if (crc32_ieee_u64(std::span(g_data10223)) != kLegendre10223Checksum ||
+      crc32_ieee_u64(std::span(g_data1499)) != kLegendre1499Checksum ||
+      crc32_ieee_u64(std::span(g_data10243)) != kLegendre10243Checksum) {
+    secure_scrub(g_data10223); // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CRC mismatch on Legendre cache init — scrub + return failure
+    secure_scrub(g_data1499);
+    secure_scrub(g_data10243);
     g_initialized = false;
     return LegendreStatus::kFaultDetected;
   } // NOCOVER_END
@@ -120,9 +135,12 @@ LegendreStatus generate_legendre_sequence(uint16_t prime, std::span<uint8_t> out
     }
   }
 
-  // Verify against golden CRCs on every access.
+  // Verify against golden CRCs on every access — detects SEU between calls.
+  // WCET note: CRC-32 over ~22 KB total (10223 + 1499 + 10243 bytes).
+  // The p=10243 addition (BDS B1C) adds ~10 KB overhead per call.
   if (crc32_ieee_u64(std::span(g_data10223)) != kLegendre10223Checksum ||
-      crc32_ieee_u64(std::span(g_data1499)) != kLegendre1499Checksum) [[unlikely]] {
+      crc32_ieee_u64(std::span(g_data1499)) != kLegendre1499Checksum ||
+      crc32_ieee_u64(std::span(g_data10243)) != kLegendre10243Checksum) [[unlikely]] {
     return {}; // NOCOVER(DEFENCE_IN_DEPTH): bounds/validity check on cache lookup
   }
 
@@ -131,6 +149,9 @@ LegendreStatus generate_legendre_sequence(uint16_t prime, std::span<uint8_t> out
   }
   if (prime == kPrime1499) {
     return {g_data1499.data(), kPrime1499};
+  }
+  if (prime == kPrime10243) {
+    return {g_data10243.data(), kPrime10243};
   }
   return {};
 }
@@ -151,6 +172,11 @@ uint64_t legendre_10223_checksum() noexcept {
 uint64_t legendre_1499_checksum() noexcept {
   ensure_legendre_initialized();
   return crc32_ieee_u64(std::span(g_data1499));
+}
+
+uint64_t legendre_10243_checksum() noexcept {
+  ensure_legendre_initialized();
+  return crc32_ieee_u64(std::span(g_data10243));
 }
 
 } // namespace lunalink::signal
