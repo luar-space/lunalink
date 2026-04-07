@@ -163,6 +163,10 @@ using Fft2048 = Fft<2048>;
 /// ambiguity from the 2048/2046 mismatch (spec finding SF-004).
 using Fft4096 = Fft<4096>;
 
+/// 8192-pt FFT for GPS L1 C/A acquisition at 8 spc with dynamic FFT sizing
+/// (next_pow2(8184) = 8192).
+using Fft8192 = Fft<8192>;
+
 /// 16384-pt FFT for multi-signal PCPS acquisition:
 ///   - GPS L1 C/A at 8 spc (1023 × 8 = 8184 samples, zero-padded)
 ///   - BeiDou B1C at 1 spc (10230 chips, zero-padded)
