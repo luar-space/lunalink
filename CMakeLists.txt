@@ -145,6 +145,13 @@ set_target_properties(lunalink_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_options(lunalink_core PRIVATE ${LUNALINK_WARNING_FLAGS} ${LUNALINK_CORE_FLAGS})
 target_link_options(lunalink_core PRIVATE ${LUNALINK_LINKER_FLAGS})
 
+# Apple Accelerate framework — vDSP FFT backend (fft.hpp).
+# PUBLIC because fft.hpp is a public header; any consumer that includes it
+# needs the framework on the link line.
+if(APPLE)
+    target_link_libraries(lunalink_core PUBLIC "-framework Accelerate")
+endif()
+
 # Fault injection APIs are only enabled by the explicit CMake option.
 # The lunalink_swifi_tests target sets its own definition independently.
 if(LUNALINK_FAULT_INJECTION)
