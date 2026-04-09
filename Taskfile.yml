@@ -1,5 +1,8 @@
 version: '3'
 
+set: [pipefail]
+shopt: [globstar]
+
 tasks:
   install:
     desc: Install or update project dependencies.
@@ -84,16 +87,64 @@ tasks:
     silent: false
 
   test-cpp:
-    desc: Build and run C++ unit tests with CTest (uses Ninja if available).
+    desc: "Fast CI gate: unit + integration tests (excludes slow acceptance tests)."
     vars:
       GENERATOR:
         sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
       BUILD_DIR:
         sh: which ninja >/dev/null 2>&1 && echo "build/cpp-tests-ninja" || echo "build/cpp-tests-make"
+      NCPU:
+        sh: sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 4
+      RNG_SEED: '{{.RNG_SEED | default "0"}}'
     cmds:
       - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug
       - cmake --build {{.BUILD_DIR}} --parallel
-      - ctest --test-dir {{.BUILD_DIR}} --output-on-failure --parallel
+      - mkdir -p {{.BUILD_DIR}}/test-results
+      - |
+        {{.BUILD_DIR}}/test_lunalink "~[ber]~[fer]~[channel]~[wcet]~[e2e]" \
+          --abort --rng-seed {{.RNG_SEED}} \
+          --reporter console \
+          --reporter "junit::out={{.BUILD_DIR}}/test-results/lunalink.xml"
+      - |
+        SHARDS={{.NCPU}}
+        PIDS=()
+        for i in $(seq 0 $((SHARDS - 1))); do
+          {{.BUILD_DIR}}/test_receiver "~[slow]~[deep]~[pfa]~[swifi]" \
+            --shard-count "$SHARDS" --shard-index "$i" --abort \
+            --rng-seed {{.RNG_SEED}} \
+            --reporter console \
+            --reporter "junit::out={{.BUILD_DIR}}/test-results/receiver_shard_${i}.xml" &
+          PIDS+=($!)
+        done
+        RESULT=0
+        for pid in "${PIDS[@]}"; do
+          wait "$pid" || RESULT=1
+        done
+        exit $RESULT
+    silent: false
+
+  test-acceptance:
+    desc: "Slow acceptance tests: Monte Carlo Pd, BER, channel, E2E, WCET. Nightly / pre-release."
+    vars:
+      GENERATOR:
+        sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
+      BUILD_DIR:
+        sh: which ninja >/dev/null 2>&1 && echo "build/cpp-tests-ninja" || echo "build/cpp-tests-make"
+      RNG_SEED: '{{.RNG_SEED | default "0"}}'
+    cmds:
+      - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug
+      - cmake --build {{.BUILD_DIR}} --parallel
+      - mkdir -p {{.BUILD_DIR}}/test-results
+      - |
+        {{.BUILD_DIR}}/test_lunalink \
+          --abort --rng-seed {{.RNG_SEED}} \
+          --reporter console \
+          --reporter "junit::out={{.BUILD_DIR}}/test-results/lunalink_acceptance.xml"
+      - |
+        {{.BUILD_DIR}}/test_receiver \
+          --abort --rng-seed {{.RNG_SEED}} \
+          --reporter console \
+          --reporter "junit::out={{.BUILD_DIR}}/test-results/receiver_acceptance.xml"
     silent: false
 
   ldpc-algo-card:
@@ -597,7 +648,6 @@ tasks:
       - task: clang-sa
       - task: check-flags
       - task: test-cpp
-      - task: integration
       - task: swifi
       - task: traceability
       - task: coverage-cpp

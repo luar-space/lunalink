@@ -29,6 +29,9 @@ inline constexpr uint64_t kWeil1500Checksum = 0xffffffff031ee19dULL;
 // Recompute with `task compute-golden-checksums` if generate_legendre_sequence() changes.
 inline constexpr uint64_t kLegendre10223Checksum = 0xffffffff29cddcc8ULL;
 inline constexpr uint64_t kLegendre1499Checksum = 0xffffffff6f7f944fULL;
+// BeiDou B1C secondary codes use Legendre prime p=3607 (BDS-SIS-ICD-B1C-1.0 §5.2.2).
+// Recompute with `task compute-golden-checksums` if generate_legendre_sequence() changes.
+inline constexpr uint64_t kLegendre3607Checksum = 0xffffffff719927f1ULL;
 // BeiDou B1C Weil-10230 uses Legendre prime p=10243 (BDS-SIS-ICD-B1C-1.0).
 // Recompute with `task compute-golden-checksums` if generate_legendre_sequence() changes.
 inline constexpr uint64_t kLegendre10243Checksum = 0xffffffff8d63e0cbULL;

@@ -61,7 +61,18 @@ jobs:
       - name: Run unit tests
         run: |
           chmod +x build/test_lunalink
-          build/test_lunalink "~[wcet]~[channel]~[e2e]" --reporter console
+          mkdir -p build/test-results
+          build/test_lunalink "~[ber]~[fer]~[channel]~[wcet]~[e2e]" \
+            --abort --rng-seed 42 \
+            --reporter console \
+            --reporter "junit::out=build/test-results/lunalink.xml"
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: unit-test-results
+          path: build/test-results/
+          retention-days: 90
 
   swifi:
     name: SWIFI fault-injection tests

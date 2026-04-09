@@ -1,0 +1,50 @@
+name: Acceptance Tests
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  # schedule:
+  #   - cron: '0 4 * * *'  # nightly at 04:00 UTC
+  workflow_dispatch:
+
+# NOTE: This workflow only covers test_lunalink (OSS). Tier 2 receiver tests
+# (test_receiver — full suite) require proprietary code and run locally via
+# `task test-acceptance`. See docs/assurance/private/test_procedures.rst.
+
+jobs:
+  acceptance:
+    name: Acceptance (BER, E2E, channel, WCET)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Install Ninja
+        run: sudo apt-get install -y ninja-build
+      - uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: acceptance
+      - name: Configure & Build
+        run: |
+          cmake -B build -S . -G Ninja \
+            -DBUILD_PYTHON_BINDINGS=OFF \
+            -DBUILD_TESTING=ON \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake --build build --parallel
+      - name: Run acceptance tests
+        run: |
+          mkdir -p build/test-results
+          build/test_lunalink \
+            --abort --rng-seed 42 \
+            --reporter console \
+            --reporter "junit::out=build/test-results/lunalink_acceptance.xml"
+      - name: Upload acceptance results
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: acceptance-test-results
+          path: build/test-results/
+          retention-days: 90
