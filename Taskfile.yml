@@ -783,9 +783,7 @@ tasks:
         echo "Building Sphinx docs in exported tree..."
         cd build/oss-export
         uv sync --group dev
-        cp -r notebooks/ docs/notebooks/
         uv run python -m sphinx -b html docs/ docs/_build/html -W
-        rm -rf docs/notebooks/
         echo "PASS: Sphinx build succeeded (zero warnings)"
 
   # [[private-begin]]

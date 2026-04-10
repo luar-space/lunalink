@@ -109,6 +109,7 @@ LunaLink AFS reference implementation with C++ core and pybind11 bindings.
 
    notebooks/01_spreading_codes
    notebooks/02_error_correction
+   notebooks/03_navigation_message
 
 .. toctree::
    :maxdepth: 2

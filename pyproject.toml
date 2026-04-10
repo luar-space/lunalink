@@ -38,6 +38,8 @@ dev = [
     "ruff>=0.9",
     "sphinx>=7.0",
     "nbsphinx>=0.9",
+    "nbconvert>=7.0",
+    "ipykernel>=6.0",
     "ipython>=8.0",
     "sphinx-rtd-theme>=2.0",
     "furo>=2024.1.29",
@@ -110,8 +112,11 @@ select = [
 [tool.ruff.lint.per-file-ignores]
 # Notebooks: allow long lines, uppercase math vars, missing docstrings on helpers
 "docs/notebooks/*.ipynb" = ["E501", "N806", "D103"]
-# Utility scripts: allow complexity and missing docstrings
+# Utility scripts: allow complexity, missing docstrings, long lines, ambiguous vars
 "scripts/sync_docstrings.py" = ["C901", "D103"]
+"scripts/cn0_recompute_at_tlm.py" = ["C901", "D103", "E402", "E501", "F401", "F541"]
+"scripts/cn0_validation.py" = ["C901", "D102", "D103", "E501", "E741", "F541", "I001"]
+"scripts/parse_tlm.py" = ["D102", "D103"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
