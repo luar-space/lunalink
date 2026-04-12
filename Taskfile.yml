@@ -452,7 +452,8 @@ tasks:
       - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DLUNALINK_FAULT_INJECTION=ON
       - cmake --build {{.BUILD_DIR}} --parallel
       - "{{.BUILD_DIR}}/lunalink_swifi_tests --reporter junit::out={{.BUILD_DIR}}/swifi_results.xml --reporter console"
-      - python3 scripts/swifi_report.py --xml {{.BUILD_DIR}}/swifi_results.xml
+      - "{{.BUILD_DIR}}/receiver_swifi_tests --reporter junit::out={{.BUILD_DIR}}/receiver_swifi_results.xml --reporter console"
+      - python3 scripts/swifi_report.py --xml {{.BUILD_DIR}}/swifi_results.xml --xml {{.BUILD_DIR}}/receiver_swifi_results.xml
     silent: false
 
   traceability:
@@ -639,6 +640,16 @@ tasks:
       - task: docs-build
     silent: false
 
+  swifi-reconcile:
+    desc: >-
+      SWIFI traceability dry-run — parse `fault_coverage.rst` vs. `// FI-NN`
+      test-comment anchors in `cpp/tests` and `cpp/proprietary/tests`.
+      Fails (exit 1) on any missing anchor or orphan row.  No binary run
+      required, so this is safe to call from `task ci-checks` without
+      building the SWIFI binary.
+    cmds:
+      - python3 scripts/swifi_report.py --reconcile-only
+
   ci-checks:
     desc: Full CI gate — replaces all GitHub Actions workflows locally (excludes BER/WCET, run those with `task performance`).
     cmds:
@@ -648,6 +659,7 @@ tasks:
       - task: clang-sa
       - task: check-flags
       - task: test-cpp
+      - task: swifi-reconcile
       - task: swifi
       - task: traceability
       - task: coverage-cpp

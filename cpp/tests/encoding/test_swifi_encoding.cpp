@@ -16,9 +16,9 @@
 using namespace lunalink::signal;
 
 // ---------------------------------------------------------------------------
-// LDPC matrix bit-flip — verify_integrity() detects it
+// FI-05 — LDPC packed-CSR matrix single-bit flip: CRC-32 mismatch detected
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: lut_bit_flip_ldpc_matrix — integrity check fails") {
+TEST_CASE("SWIFI: FI-05 — lut_bit_flip_ldpc_matrix — integrity check fails") {
   // Baseline: uninjected matrix passes
   REQUIRE(kLdpc_sf2_a.verify_integrity() == true);
 

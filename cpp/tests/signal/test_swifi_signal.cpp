@@ -26,9 +26,9 @@
 using namespace lunalink::signal;
 
 // ---------------------------------------------------------------------------
-// Aliasing — overlapping spans to modulate_bpsk_generic
+// FI-06 — Aliasing: overlapping input/output spans to modulate_bpsk_generic
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: aliasing_overlap_modulator — kFaultDetected before write") {
+TEST_CASE("SWIFI: FI-06 — aliasing_overlap_modulator — kFaultDetected before write") {
   // Chip buffer doubles as output buffer (aliasing)
   std::array<uint8_t, 64> buf{};
   buf.fill(0U);
@@ -48,9 +48,9 @@ TEST_CASE("SWIFI: aliasing_overlap_modulator — kFaultDetected before write") {
 }
 
 // ---------------------------------------------------------------------------
-// Aliasing — overlapping spans to multiplex_iq
+// FI-07 — Aliasing: overlapping input/output spans to multiplex_iq
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: aliasing_overlap_iq_mux — kFaultDetected before write") {
+TEST_CASE("SWIFI: FI-07 — aliasing_overlap_iq_mux — kFaultDetected before write") {
   // Create a single backing array large enough for out, reused as i_samples
   constexpr size_t kOutSize = 2U * kIqSamplesPerEpoch;
   std::vector<int16_t> out_buf(kOutSize, 0);

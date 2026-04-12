@@ -26,9 +26,9 @@
 using namespace lunalink::signal;
 
 // ---------------------------------------------------------------------------
-// TMR — single copy corruption
+// FI-01 — TMR single-copy corruption: vote repairs minority copy
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: tmr_single_copy_corrupt — vote() corrects minority copy") {
+TEST_CASE("SWIFI: FI-01 — tmr_single_copy_corrupt — vote() corrects minority copy") {
   constexpr uint32_t kGood = 0xA5A5A5A5U;
   constexpr uint32_t kBad = 0xDEADBEEFU;
 
@@ -100,9 +100,9 @@ TEST_CASE("SWIFI: tmr_two_of_three_same — wrong majority wins") {
 }
 
 // ---------------------------------------------------------------------------
-// TMR — all copies corrupted (residual risk, no majority)
+// FI-02 — TMR all-copies corruption: residual risk documentation
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: tmr_all_copies_same_corrupt — documents residual risk") {
+TEST_CASE("SWIFI: FI-02 — tmr_all_copies_same_corrupt — documents residual risk") {
   // When all three copies hold the same wrong value, TMR cannot detect the
   // error (no majority disagreement). This is an acknowledged residual risk
   // in the FMEA. The test documents and verifies this is the only undetectable
@@ -116,9 +116,9 @@ TEST_CASE("SWIFI: tmr_all_copies_same_corrupt — documents residual risk") {
 }
 
 // ---------------------------------------------------------------------------
-// CheckedRange — force beyond max, next assignment saturates
+// FI-03 — CheckedRange force beyond max: next assignment re-saturates
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: checked_range_force_beyond_max — next write saturates") {
+TEST_CASE("SWIFI: FI-03 — checked_range_force_beyond_max — next write saturates") {
   CheckedRange<uint8_t, 0U, 10U> cr(5U);
 
   // force_set bypasses saturation
@@ -131,9 +131,9 @@ TEST_CASE("SWIFI: checked_range_force_beyond_max — next write saturates") {
 }
 
 // ---------------------------------------------------------------------------
-// CfiGuard — inject_skip causes verify() to return false
+// FI-04 — CfiGuard injected skip: verify() returns false, caller faults
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: cfi_guard_inject_skip — detect skipped step") {
+TEST_CASE("SWIFI: FI-04 — cfi_guard_inject_skip — detect skipped step") {
   // Guard expects 3 ticks
   CfiGuard guard(0xBEEF0000U, 3U);
   guard.tick();
@@ -149,9 +149,9 @@ TEST_CASE("SWIFI: cfi_guard_inject_skip — detect skipped step") {
 }
 
 // ---------------------------------------------------------------------------
-// FSM — illegal transition detected, telemetry captured
+// FI-08 — FSM illegal transition: detection and Zone-3 telemetry emission
 // ---------------------------------------------------------------------------
-TEST_CASE("[SW-SAF-03] SWIFI: fsm_illegal_transition — Zone 3, telemetry packet emitted") {
+TEST_CASE("[SW-SAF-03] SWIFI: FI-08 — fsm_illegal_transition — Zone 3, telemetry packet emitted") {
   CaptureTelemetryHal<4> capture;
   SignalChainFsm fsm(capture);
 
@@ -171,9 +171,9 @@ TEST_CASE("[SW-SAF-03] SWIFI: fsm_illegal_transition — Zone 3, telemetry packe
 }
 
 // ---------------------------------------------------------------------------
-// FSM — two consecutive frame faults escalate to Zone 3
+// FI-09 — FSM two consecutive frame faults: Zone-2 → Zone-3 escalation
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: fsm_two_consecutive_frame_faults — escalates to kSafeMode") {
+TEST_CASE("SWIFI: FI-09 — fsm_two_consecutive_frame_faults — escalates to kSafeMode") {
   CaptureTelemetryHal<4> capture;
   SignalChainFsm fsm(capture);
 
@@ -194,9 +194,9 @@ TEST_CASE("SWIFI: fsm_two_consecutive_frame_faults — escalates to kSafeMode") 
 }
 
 // ---------------------------------------------------------------------------
-// Saturating arithmetic — CheckedRange clamps over- and under-range values
+// FI-11 — Saturating arithmetic: CheckedRange clamps over/under-range writes
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: saturating_arithmetic_clamp — CheckedRange clamps out-of-range correctly") {
+TEST_CASE("SWIFI: FI-11 — saturating_arithmetic_clamp — CheckedRange clamps out-of-range correctly") {
   // Use a narrow range (0..100) so clamping is observable at the type level.
   using Sat = CheckedRange<int32_t, 0, 100>;
 
@@ -223,9 +223,9 @@ TEST_CASE("SWIFI: saturating_arithmetic_clamp — CheckedRange clamps out-of-ran
 }
 
 // ---------------------------------------------------------------------------
-// FM-033 — Windowed Watchdog lower-bound trip (Zone 2 → Zone 3 escalation)
+// FI-12 — Windowed watchdog lower-bound violation (FM-033 Zone 2 escalation)
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: watchdog_lower_bound_trip — FaultPacket emitted on under-run") {
+TEST_CASE("SWIFI: FI-12 — watchdog_lower_bound_trip — FaultPacket emitted on under-run") {
   constexpr uint32_t kTMin = 100U;
   constexpr uint32_t kTMax = 10000U;
   WindowedWatchdog wdog(kTMin, kTMax);
@@ -345,9 +345,9 @@ TEST_CASE("SWIFI: watchdog_boundary_ticks — exact t_min and t_max pass") {
 }
 
 // ---------------------------------------------------------------------------
-// FSM — on_frame_fault from kSafeMode: FIZ-3 telemetry, stays in kSafeMode
+// FI-10 — FSM on_frame_fault from kSafeMode: precondition guard + FIZ-3 packet
 // ---------------------------------------------------------------------------
-TEST_CASE("FSM: on_frame_fault from kSafeMode emits FIZ-3 telemetry and stays in kSafeMode") {
+TEST_CASE("SWIFI: FI-10 — fsm_on_frame_fault_from_kSafeMode — FIZ-3 telemetry, stays in kSafeMode") {
   CaptureTelemetryHal<4> capture;
   SignalChainFsm fsm(capture);
 
