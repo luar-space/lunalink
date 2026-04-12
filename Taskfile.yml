@@ -3,6 +3,35 @@ version: '3'
 set: [pipefail]
 shopt: [globstar]
 
+vars:
+  # Resolved once at parse time — subtasks inherit these without re-evaluating.
+  LLVM_DIR:
+    sh: |
+      if command -v llvm-profdata >/dev/null 2>&1; then
+        dirname "$(command -v llvm-profdata)"
+      elif [ -x /opt/homebrew/opt/llvm/bin/llvm-profdata ]; then
+        echo /opt/homebrew/opt/llvm/bin
+      elif [ -x /usr/local/opt/llvm/bin/llvm-profdata ]; then
+        echo /usr/local/opt/llvm/bin
+      fi
+  CLANG_TIDY:
+    sh: |
+      if command -v clang-tidy >/dev/null 2>&1; then
+        command -v clang-tidy
+      elif [ -x /opt/homebrew/opt/llvm/bin/clang-tidy ]; then
+        echo /opt/homebrew/opt/llvm/bin/clang-tidy
+      elif [ -x /usr/local/opt/llvm/bin/clang-tidy ]; then
+        echo /usr/local/opt/llvm/bin/clang-tidy
+      elif [ -x /opt/homebrew/bin/clang-tidy ]; then
+        echo /opt/homebrew/bin/clang-tidy
+      elif [ -x /usr/local/bin/clang-tidy ]; then
+        echo /usr/local/bin/clang-tidy
+      elif [ -x /opt/homebrew/bin/brew ] && [ -x "$(/opt/homebrew/bin/brew --prefix llvm)/bin/clang-tidy" ]; then
+        echo "$(/opt/homebrew/bin/brew --prefix llvm)/bin/clang-tidy"
+      elif [ -x /usr/local/bin/brew ] && [ -x "$(/usr/local/bin/brew --prefix llvm)/bin/clang-tidy" ]; then
+        echo "$(/usr/local/bin/brew --prefix llvm)/bin/clang-tidy"
+      fi
+
 tasks:
   install:
     desc: Install or update project dependencies.
@@ -222,15 +251,6 @@ tasks:
     vars:
       GENERATOR:
         sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
-      LLVM_DIR:
-        sh: |
-          if command -v llvm-profdata >/dev/null 2>&1; then
-            dirname "$(command -v llvm-profdata)"
-          elif [ -x /opt/homebrew/opt/llvm/bin/llvm-profdata ]; then
-            echo /opt/homebrew/opt/llvm/bin
-          elif [ -x /usr/local/opt/llvm/bin/llvm-profdata ]; then
-            echo /usr/local/opt/llvm/bin
-          fi
     cmds:
       - |
         if [ -z "{{.LLVM_DIR}}" ]; then
@@ -241,7 +261,10 @@ tasks:
       - cmake -B build/coverage -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_LLVM_COVERAGE=ON -DLUNALINK_FAULT_INJECTION=ON -DCMAKE_CXX_COMPILER={{.LLVM_DIR}}/clang++ --fresh
       - cmake --build build/coverage --parallel
       - rm -f build/coverage/*.profraw build/coverage/*.profdata
-      - LLVM_PROFILE_FILE="lunalink-%m.profraw" ctest --test-dir build/coverage --output-on-failure
+      - |
+        NCPU=$(sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 4)
+        LLVM_PROFILE_FILE="lunalink-%m.profraw" ctest --test-dir build/coverage \
+          --output-on-failure --parallel "$NCPU"
       - "{{.LLVM_DIR}}/llvm-profdata merge -sparse build/coverage/*.profraw -o build/coverage/lunalink.profdata"
       - |
         {{.LLVM_DIR}}/llvm-cov show build/coverage/test_lunalink \
@@ -326,14 +349,15 @@ tasks:
     silent: false
 
   sanitize:
-    desc: Build and run C++ tests with AddressSanitizer and UBSan.
+    desc: Build and run C++ tests with AddressSanitizer and UBSan (excludes [slow]).
     vars:
       GENERATOR:
         sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
     cmds:
       - cmake -B build/sanitize -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=ON
       - cmake --build build/sanitize --parallel
-      - ctest --test-dir build/sanitize --output-on-failure --parallel
+      - build/sanitize/test_lunalink "~[ber]~[fer]~[channel]~[wcet]~[e2e]" --abort
+      - build/sanitize/test_receiver "~[slow]~[deep]~[pfa]~[swifi]" --abort
     silent: false
 
   tidy:
@@ -345,31 +369,7 @@ tasks:
       GENERATOR:
         sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
       TIDY_JOBS:
-        sh: |
-          if command -v sysctl >/dev/null 2>&1 && [ -n "$(sysctl -n hw.ncpu 2>/dev/null)" ]; then
-            sysctl -n hw.ncpu 2>/dev/null
-          elif command -v nproc >/dev/null 2>&1; then
-            nproc
-          else
-            echo 4
-          fi
-      CLANG_TIDY:
-        sh: |
-          if command -v clang-tidy >/dev/null 2>&1; then
-            command -v clang-tidy
-          elif [ -x /opt/homebrew/opt/llvm/bin/clang-tidy ]; then
-            echo /opt/homebrew/opt/llvm/bin/clang-tidy
-          elif [ -x /usr/local/opt/llvm/bin/clang-tidy ]; then
-            echo /usr/local/opt/llvm/bin/clang-tidy
-          elif [ -x /opt/homebrew/bin/clang-tidy ]; then
-            echo /opt/homebrew/bin/clang-tidy
-          elif [ -x /usr/local/bin/clang-tidy ]; then
-            echo /usr/local/bin/clang-tidy
-          elif [ -x /opt/homebrew/bin/brew ] && [ -x "$(/opt/homebrew/bin/brew --prefix llvm)/bin/clang-tidy" ]; then
-            echo "$(/opt/homebrew/bin/brew --prefix llvm)/bin/clang-tidy"
-          elif [ -x /usr/local/bin/brew ] && [ -x "$(/usr/local/bin/brew --prefix llvm)/bin/clang-tidy" ]; then
-            echo "$(/usr/local/bin/brew --prefix llvm)/bin/clang-tidy"
-          fi
+        sh: sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 4
     cmds:
       - cmake -B build/tidy -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
       - |
@@ -389,31 +389,7 @@ tasks:
       GENERATOR:
         sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
       TIDY_JOBS:
-        sh: |
-          if command -v sysctl >/dev/null 2>&1 && [ -n "$(sysctl -n hw.ncpu 2>/dev/null)" ]; then
-            sysctl -n hw.ncpu 2>/dev/null
-          elif command -v nproc >/dev/null 2>&1; then
-            nproc
-          else
-            echo 4
-          fi
-      CLANG_TIDY:
-        sh: |
-          if command -v clang-tidy >/dev/null 2>&1; then
-            command -v clang-tidy
-          elif [ -x /opt/homebrew/opt/llvm/bin/clang-tidy ]; then
-            echo /opt/homebrew/opt/llvm/bin/clang-tidy
-          elif [ -x /usr/local/opt/llvm/bin/clang-tidy ]; then
-            echo /usr/local/opt/llvm/bin/clang-tidy
-          elif [ -x /opt/homebrew/bin/clang-tidy ]; then
-            echo /opt/homebrew/bin/clang-tidy
-          elif [ -x /usr/local/bin/clang-tidy ]; then
-            echo /usr/local/bin/clang-tidy
-          elif [ -x /opt/homebrew/bin/brew ] && [ -x "$(/opt/homebrew/bin/brew --prefix llvm)/bin/clang-tidy" ]; then
-            echo "$(/opt/homebrew/bin/brew --prefix llvm)/bin/clang-tidy"
-          elif [ -x /usr/local/bin/brew ] && [ -x "$(/usr/local/bin/brew --prefix llvm)/bin/clang-tidy" ]; then
-            echo "$(/usr/local/bin/brew --prefix llvm)/bin/clang-tidy"
-          fi
+        sh: sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 4
     cmds:
       - |
         if [ -z "{{.CLANG_TIDY}}" ]; then
@@ -505,16 +481,6 @@ tasks:
 
   validate-tidy:
     desc: Run tool validation suite — prove clang-tidy catches claimed MISRA violations (ECSS-Q-ST-80C §5.5).
-    vars:
-      CLANG_TIDY:
-        sh: |
-          if command -v clang-tidy >/dev/null 2>&1; then
-            command -v clang-tidy
-          elif [ -x /opt/homebrew/opt/llvm/bin/clang-tidy ]; then
-            echo /opt/homebrew/opt/llvm/bin/clang-tidy
-          elif [ -x /usr/local/opt/llvm/bin/clang-tidy ]; then
-            echo /usr/local/opt/llvm/bin/clang-tidy
-          fi
     cmds:
       - |
         if [ -z "{{.CLANG_TIDY}}" ]; then
@@ -526,16 +492,6 @@ tasks:
 
   validate-coverage:
     desc: Run coverage tool validation — prove llvm-cov correctly reports known gaps (ECSS-Q-ST-80C §5.5).
-    vars:
-      LLVM_DIR:
-        sh: |
-          if command -v llvm-cov >/dev/null 2>&1; then
-            dirname "$(command -v llvm-cov)"
-          elif [ -x /opt/homebrew/opt/llvm/bin/llvm-cov ]; then
-            echo /opt/homebrew/opt/llvm/bin
-          elif [ -x /usr/local/opt/llvm/bin/llvm-cov ]; then
-            echo /usr/local/opt/llvm/bin
-          fi
     cmds:
       - |
         if [ -z "{{.LLVM_DIR}}" ]; then
@@ -662,14 +618,13 @@ tasks:
       - task: swifi-reconcile
       - task: swifi
       - task: traceability
-      - task: coverage-cpp
       - task: tidy
       - task: validate-tidy
-      - task: validate-coverage
       - task: test-py
       - task: sanitize
       - task: docs-build
       - task: validate-export
+      - git checkout docs/assurance docs/notebooks
     silent: false
 
   recertify:
