@@ -229,4 +229,9 @@ using Fft16384 = Fft<16384>;
 /// Zero-padded for linear cross-correlation.
 using Fft32768 = Fft<32768>;
 
+/// 65536-pt FFT for deep coherent integration on long-code signals:
+///   - AFS-Q at t_coh=4 epochs (10230 × 4 = 40920 samples)
+///   - BeiDou B1C / NavIC at t_coh=2+ epochs
+using Fft65536 = Fft<65536>;
+
 } // namespace lunalink::signal
