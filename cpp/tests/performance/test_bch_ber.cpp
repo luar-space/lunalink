@@ -182,7 +182,7 @@ void print_bch_ci_result(double eb_no_db, const BchMultiSeedResult& r,
 // Even exhaustive ML cannot always recover from this level of corruption.
 // Both decoders fail on many frames — proves the channel simulation is real.
 // ---------------------------------------------------------------------------
-TEST_CASE("BCH hard vs soft: noise floor at 2.0 dB", "[channel][ber]") {
+TEST_CASE("BCH hard vs soft: noise floor at 2.0 dB", "[channel][ber][reference][slow]") {
   constexpr int kFramesPerSeed = 3000;
 
   auto r = run_bch_multi_seed(2.0, kFramesPerSeed);
@@ -200,7 +200,7 @@ TEST_CASE("BCH hard vs soft: noise floor at 2.0 dB", "[channel][ber]") {
 // Soft ML reaches effective error-free operation ~1.6 dB before hard ML.
 // This gain translates directly into link-budget margin for SB1.
 // ---------------------------------------------------------------------------
-TEST_CASE("BCH hard vs soft: waterfall sweep 3-6 dB", "[channel][ber]") {
+TEST_CASE("BCH hard vs soft: waterfall sweep 3-6 dB", "[channel][ber][reference][slow]") {
   constexpr int kFramesPerSeed = 3000;
 
   double prev_hard_fer = 1.0;
@@ -241,7 +241,7 @@ TEST_CASE("BCH hard vs soft: waterfall sweep 3-6 dB", "[channel][ber]") {
 // At 7.6 dB both decoders should have negligible FER.
 // Upper bound on true FER: < 0.013% (Wilson 95% CI with 0 errors in 30k).
 // ---------------------------------------------------------------------------
-TEST_CASE("BCH hard vs soft: operating point 7.6 dB", "[channel][ber]") {
+TEST_CASE("BCH hard vs soft: operating point 7.6 dB", "[channel][ber][reference][slow]") {
   constexpr int kFramesPerSeed = 10000;
 
   auto r = run_bch_multi_seed(7.6, kFramesPerSeed);

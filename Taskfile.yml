@@ -3,6 +3,14 @@ version: '3'
 set: [pipefail]
 shopt: [globstar]
 
+# Route C/C++ compilation through ccache when available. Each build dir
+# (debug, tidy, sanitize, swifi, oss-export…) has its own cmake flags, but
+# ~90% of translation units are shared, so the cache is highly effective
+# across the five cmake invocations inside `task ci-checks`.
+env:
+  CMAKE_C_COMPILER_LAUNCHER: ccache
+  CMAKE_CXX_COMPILER_LAUNCHER: ccache
+
 vars:
   # Resolved once at parse time — subtasks inherit these without re-evaluating.
   LLVM_DIR:
@@ -116,7 +124,7 @@ tasks:
     silent: false
 
   test-cpp:
-    desc: "Fast CI gate: unit + integration tests (excludes slow acceptance tests)."
+    desc: "Fast CI gate: unit + integration tests (excludes [slow] acceptance tests)."
     vars:
       GENERATOR:
         sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
@@ -126,11 +134,12 @@ tasks:
         sh: sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 4
       RNG_SEED: '{{.RNG_SEED | default "0"}}'
     cmds:
+      - python3 scripts/lint_test_tags.py
       - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug
       - cmake --build {{.BUILD_DIR}} --parallel
       - mkdir -p {{.BUILD_DIR}}/test-results
       - |
-        {{.BUILD_DIR}}/test_lunalink "~[ber]~[fer]~[channel]~[wcet]~[e2e]" \
+        {{.BUILD_DIR}}/test_lunalink "~[slow]" \
           --abort --rng-seed {{.RNG_SEED}} \
           --reporter console \
           --reporter "junit::out={{.BUILD_DIR}}/test-results/lunalink.xml"
@@ -138,7 +147,7 @@ tasks:
         SHARDS={{.NCPU}}
         PIDS=()
         for i in $(seq 0 $((SHARDS - 1))); do
-          {{.BUILD_DIR}}/test_receiver "~[slow]~[deep]~[pfa]~[swifi]" \
+          {{.BUILD_DIR}}/test_receiver "~[slow]" \
             --shard-count "$SHARDS" --shard-index "$i" --abort \
             --rng-seed {{.RNG_SEED}} \
             --reporter console \
@@ -150,6 +159,13 @@ tasks:
           wait "$pid" || RESULT=1
         done
         exit $RESULT
+      - |
+        python3 scripts/check_test_durations.py \
+          --xml {{.BUILD_DIR}}/test-results/lunalink.xml \
+          $(for f in {{.BUILD_DIR}}/test-results/receiver_shard_*.xml; do echo "--xml $f"; done) \
+          --binary {{.BUILD_DIR}}/test_lunalink \
+          --binary {{.BUILD_DIR}}/test_receiver \
+          --threshold 5.0
     silent: false
 
   test-acceptance:
@@ -356,8 +372,8 @@ tasks:
     cmds:
       - cmake -B build/sanitize -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=ON
       - cmake --build build/sanitize --parallel
-      - build/sanitize/test_lunalink "~[ber]~[fer]~[channel]~[wcet]~[e2e]" --abort
-      - build/sanitize/test_receiver "~[slow]~[deep]~[pfa]~[swifi]" --abort
+      - build/sanitize/test_lunalink "~[slow]" --abort
+      - build/sanitize/test_receiver "~[slow]" --abort
     silent: false
 
   tidy:
@@ -447,7 +463,7 @@ tasks:
     cmds:
       - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug
       - cmake --build {{.BUILD_DIR}} --parallel
-      - '"{{.BUILD_DIR}}/test_lunalink" -r junit -o build/test_results.xml "~[wcet]~[channel]~[e2e]"'
+      - '"{{.BUILD_DIR}}/test_lunalink" -r junit -o build/test_results.xml "~[slow]"'
       - '"{{.BUILD_DIR}}/test_lunalink" -r junit -o build/test_e2e.xml "[e2e]"'
       - task: swifi
       - python3 scripts/compliance_report.py
@@ -623,7 +639,9 @@ tasks:
       - task: test-py
       - task: sanitize
       - task: docs-build
-      - task: validate-export
+      # validate-export is CI-only (.github/workflows/validate-export.yml runs on
+      # push to main). It rebuilds a fresh venv inside the exported tree, which
+      # adds ~60s locally for a check whose audience is a fresh-clone user.
       - git checkout docs/assurance docs/notebooks
     silent: false
 

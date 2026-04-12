@@ -51,7 +51,7 @@ void random_bits(std::span<uint8_t> out, std::mt19937& rng) {
 
 } // namespace
 
-TEST_CASE("[LSIS-AFS-720] E2E round-trip: TX → AWGN → RX → bit-exact recovery", "[e2e][rx]") {
+TEST_CASE("[LSIS-AFS-720] E2E round-trip: TX → AWGN → RX → bit-exact recovery", "[e2e][rx][slow]") {
   std::mt19937 rng(42);
 
   // Generate random navigation data for all subframes
@@ -106,7 +106,7 @@ TEST_CASE("[LSIS-AFS-720] E2E round-trip: TX → AWGN → RX → bit-exact recov
   CHECK(std::equal(sb4_data.begin(), sb4_data.end(), workspace->sb4_data.begin()));
 }
 
-TEST_CASE("[LSIS-AFS-810] E2E: TX → RX → parse → ToT round-trip", "[e2e][rx]") {
+TEST_CASE("[LSIS-AFS-810] E2E: TX → RX → parse → ToT round-trip", "[e2e][rx][slow]") {
   // Pack known WN, ITOW into SB2 data; known type into SB3/SB4.
   // Build frame → decode → parse → compute_tot → verify time matches.
 
@@ -203,7 +203,7 @@ TEST_CASE("[LSIS-AFS-810] E2E: TX → RX → parse → ToT round-trip", "[e2e][r
 // zero frame errors to confirm FER < 10^-2 with statistical confidence.
 // At Eb/N0 = 6.0 dB, 200 frames confirms zero-error operation.
 // ---------------------------------------------------------------------------
-TEST_CASE("Gateway 5: frame-level FER sweep", "[channel][fer][e2e][rx]") {
+TEST_CASE("Gateway 5: frame-level FER sweep", "[channel][fer][e2e][rx][slow]") {
   struct SnrPoint {
     float eb_n0_db;
     int frames;
@@ -295,7 +295,7 @@ TEST_CASE("Gateway 5: frame-level FER sweep", "[channel][fer][e2e][rx]") {
   // NOLINTEND(cert-msc51-cpp)
 }
 
-TEST_CASE("E2E round-trip: FID=0 TOI=99 with random offset", "[e2e][rx]") {
+TEST_CASE("E2E round-trip: FID=0 TOI=99 with random offset", "[e2e][rx][slow]") {
   std::mt19937 rng(99);
 
   std::array<uint8_t, kSb2DataBits> sb2_data{};
@@ -347,7 +347,7 @@ TEST_CASE("E2E round-trip: FID=0 TOI=99 with random offset", "[e2e][rx]") {
   CHECK(std::equal(sb4_data.begin(), sb4_data.end(), workspace->sb4_data.begin()));
 }
 
-TEST_CASE("E2E: noiseless round-trip (Eb/N0 = infinity)", "[e2e][rx]") {
+TEST_CASE("E2E: noiseless round-trip (Eb/N0 = infinity)", "[e2e][rx][slow]") {
   // Perfect channel: verify the pipeline works without any noise
   std::mt19937 rng(7);
 
@@ -396,7 +396,7 @@ TEST_CASE("E2E: noiseless round-trip (Eb/N0 = infinity)", "[e2e][rx]") {
 // Build a valid frame, decode it successfully, then corrupt individual
 // subframe payload symbols and verify that CRC rejects the corrupted data.
 // ---------------------------------------------------------------------------
-TEST_CASE("E2E: CRC rejects corrupted subframe payload", "[e2e][rx]") {
+TEST_CASE("E2E: CRC rejects corrupted subframe payload", "[e2e][rx][slow]") {
   std::mt19937 rng(123); // NOLINT(cert-msc51-cpp)
 
   std::array<uint8_t, kSb2DataBits> sb2_data{};
@@ -479,7 +479,7 @@ TEST_CASE("E2E: CRC rejects corrupted subframe payload", "[e2e][rx]") {
 // recovers the correct TOI.  This confirms that neither the workspace nor
 // any global state leaks between calls.
 // ---------------------------------------------------------------------------
-TEST_CASE("E2E: consecutive frames with incrementing TOI", "[e2e][rx]") {
+TEST_CASE("E2E: consecutive frames with incrementing TOI", "[e2e][rx][slow]") {
   NullTelemetryHal hal;
   LdpcEncodeWorkspace enc_ws{};
   FrameBuildWorkspace fbw{};
@@ -523,7 +523,7 @@ TEST_CASE("E2E: consecutive frames with incrementing TOI", "[e2e][rx]") {
 // a subsequent successful decode.  Pass an all-zeros buffer first (no sync
 // pattern → kSyncNotFound), then pass a valid frame and assert kOk.
 // ---------------------------------------------------------------------------
-TEST_CASE("E2E: kSyncNotFound then success — decoder is stateless", "[e2e][rx]") {
+TEST_CASE("E2E: kSyncNotFound then success — decoder is stateless", "[e2e][rx][slow]") {
   NullTelemetryHal hal;
   auto workspace = std::make_unique<FrameDecodeWorkspace>();
 
@@ -560,7 +560,7 @@ TEST_CASE("E2E: kSyncNotFound then success — decoder is stateless", "[e2e][rx]
   CHECK(result.bch.fid == Fid{1});
 }
 
-TEST_CASE("E2E: frame_decode completes in < 1 second", "[e2e][rx]") {
+TEST_CASE("E2E: frame_decode completes in < 1 second", "[e2e][rx][slow]") {
   std::mt19937 rng(55); // NOLINT(cert-msc51-cpp)
 
   std::array<uint8_t, kSb2DataBits> sb2{};
@@ -596,7 +596,7 @@ TEST_CASE("E2E: frame_decode completes in < 1 second", "[e2e][rx]") {
   CHECK(elapsed_ms < 1000);
 }
 
-TEST_CASE("[LSIS-TABLE11][e2e] all 12 interim codes round-trip", "[e2e]") {
+TEST_CASE("[LSIS-TABLE11][e2e] all 12 interim codes round-trip", "[e2e][slow]") {
   // Verify all 12 interim test codes (Table 11, PRN 1-12) through the full
   // frame-level E2E pipeline.  FID cycles 0-3 across PRNs to cover all
   // frame identifier values.  Each PRN uses a different TOI and RNG seed

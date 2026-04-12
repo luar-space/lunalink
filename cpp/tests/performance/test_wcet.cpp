@@ -36,7 +36,7 @@ void prepare_soft_symbols(LdpcSubframe type, std::span<float> soft, float snr_sc
 }
 } // namespace
 
-TEST_CASE("Gateway 2: WCET Analysis", "[wcet]") {
+TEST_CASE("Gateway 2: WCET Analysis", "[wcet][slow]") {
   std::array<uint8_t, 1200> msg_sf2{};
   std::array<uint8_t, 2400> encoded_sf2{};
   std::array<float, 2400> soft_sf2{};
@@ -62,7 +62,7 @@ TEST_CASE("Gateway 2: WCET Analysis", "[wcet]") {
   };
 }
 
-TEST_CASE("Gateway 5: Sync Detector WCET", "[wcet]") {
+TEST_CASE("Gateway 5: Sync Detector WCET", "[wcet][slow]") {
   NullTelemetryHal hal;
   SyncDetector det(hal);
 
@@ -80,7 +80,7 @@ TEST_CASE("Gateway 5: Sync Detector WCET", "[wcet]") {
   };
 }
 
-TEST_CASE("Gateway 2: LDPC Decode Throughput", "[wcet]") {
+TEST_CASE("Gateway 2: LDPC Decode Throughput", "[wcet][slow]") {
   SECTION("SF2 — alpha sweep throughput") {
     std::array<float, 2400> soft{};
     prepare_soft_symbols(LdpcSubframe::kSF2, soft);
@@ -108,7 +108,7 @@ TEST_CASE("Gateway 2: LDPC Decode Throughput", "[wcet]") {
   }
 }
 
-TEST_CASE("Gateway 5: frame_decode WCET", "[wcet]") {
+TEST_CASE("Gateway 5: frame_decode WCET", "[wcet][slow]") {
   // Multi-class WCET benchmark per MA §2: all-zeros, all-ones, pseudo-random.
   // Timing spread across input classes detects data-dependent branches.
 

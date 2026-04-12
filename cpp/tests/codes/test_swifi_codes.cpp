@@ -14,7 +14,7 @@ using namespace lunalink::signal;
 // ---------------------------------------------------------------------------
 // FI-15 — Legendre cache TOCTOU integrity gap closure (FM-005)
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: legendre_golden_crc — runtime checksums match build-time golden constants") {
+TEST_CASE("SWIFI: legendre_golden_crc — runtime checksums match build-time golden constants", "[swifi][codes]") {
   const uint64_t leg10223 = legendre_10223_checksum();
   const uint64_t leg1499 = legendre_1499_checksum();
 

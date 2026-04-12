@@ -35,7 +35,7 @@ void add_awgn(std::span<float> symbols, float eb_n0_db, std::mt19937& rng) {
 
 } // namespace
 
-TEST_CASE("Sync detection Pfa: < 1% at 0 dB noise", "[channel][pd][rx]") {
+TEST_CASE("Sync detection Pfa: < 1% at 0 dB noise", "[channel][pd][rx][slow]") {
   // False alarm rate test: 1000 trials of pure AWGN, no sync pattern injected.
   // Pairs with the Pd test: both at 0 dB Eb/N0 so the threshold can be verified
   // for Pd ≥ 99% AND Pfa < 1% simultaneously at the same noise level.
@@ -65,7 +65,7 @@ TEST_CASE("Sync detection Pfa: < 1% at 0 dB noise", "[channel][pd][rx]") {
   CHECK(pfa < 0.01F); // < 1% false alarm rate — same SNR where Pd ≥ 99%
 }
 
-TEST_CASE("Sync detection Pd vs Eb/N0: > 99% at 0 dB", "[channel][pd][rx]") {
+TEST_CASE("Sync detection Pd vs Eb/N0: > 99% at 0 dB", "[channel][pd][rx][slow]") {
   // Monte Carlo: 10,000 trials per SNR point
   // Place sync pattern at random offsets, add AWGN, measure detection rate.
   constexpr uint32_t kTrials = 10000;

@@ -75,7 +75,7 @@ void quantize_symbols(std::span<float> symbols, int bits) {
 
 // ─── E2E Impairment Tests ───────────────────────────────────────────────────
 
-TEST_CASE("E2E impairment: round-trip at int16", "[e2e][impairment]") {
+TEST_CASE("E2E impairment: round-trip at int16", "[e2e][impairment][slow]") {
   std::mt19937 rng(42); // NOLINT(cert-msc51-cpp)
 
   std::array<uint8_t, kSb2DataBits> sb2_data{};
@@ -115,7 +115,7 @@ TEST_CASE("E2E impairment: round-trip at int16", "[e2e][impairment]") {
   CHECK(std::equal(sb4_data.begin(), sb4_data.end(), workspace->sb4_data.begin()));
 }
 
-TEST_CASE("E2E impairment: round-trip at int8", "[e2e][impairment]") {
+TEST_CASE("E2E impairment: round-trip at int8", "[e2e][impairment][slow]") {
   std::mt19937 rng(43); // NOLINT(cert-msc51-cpp)
 
   std::array<uint8_t, kSb2DataBits> sb2_data{};
@@ -155,7 +155,7 @@ TEST_CASE("E2E impairment: round-trip at int8", "[e2e][impairment]") {
   CHECK(std::equal(sb4_data.begin(), sb4_data.end(), workspace->sb4_data.begin()));
 }
 
-TEST_CASE("E2E impairment: FER sweep at int8", "[e2e][impairment]") {
+TEST_CASE("E2E impairment: FER sweep at int8", "[e2e][impairment][slow]") {
   const auto eb_n0_db = GENERATE(3.0F, 6.0F);
   INFO("Eb/N0 = " << eb_n0_db << " dB (int8 quantized)");
 
@@ -206,7 +206,7 @@ TEST_CASE("E2E impairment: FER sweep at int8", "[e2e][impairment]") {
   CHECK(fer == 0.0);
 }
 
-TEST_CASE("E2E impairment: implementation loss int8 vs float32", "[e2e][impairment]") {
+TEST_CASE("E2E impairment: implementation loss int8 vs float32", "[e2e][impairment][slow]") {
   // At 1.5 dB (waterfall region), compare FER between float32 and int8.
   // Int8 FER should be within 2× of float32 FER.
   constexpr float kEbN0 = 1.5F;
@@ -300,7 +300,7 @@ TEST_CASE("E2E impairment: implementation loss int8 vs float32", "[e2e][impairme
 // For B = 120: ≤2 per position — comfortably within LDPC capability at 3 dB.
 // For B ≥ 1200: ≥20% of payload hard-flipped — overwhelms rate-1/2 LDPC.
 // ---------------------------------------------------------------------------
-TEST_CASE("E2E impairment: burst error resilience through interleaver", "[e2e][impairment]") {
+TEST_CASE("E2E impairment: burst error resilience through interleaver", "[e2e][impairment][slow]") {
   NullTelemetryHal hal;
   auto workspace = std::make_unique<FrameDecodeWorkspace>();
   LdpcEncodeWorkspace enc_ws{};

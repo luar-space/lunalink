@@ -24,7 +24,7 @@ using namespace lunalink::signal;
 // FI-24: Aliasing — overlapping workspace staging and output in frame_build_partial
 // ---------------------------------------------------------------------------
 TEST_CASE(
-    "[LSIS-AFS-601] SWIFI: aliasing_overlap_frame_build_partial — kFaultDetected before write") {
+    "[LSIS-AFS-601] SWIFI: aliasing_overlap_frame_build_partial — kFaultDetected before write", "[swifi][messages]") {
   // Arena large enough for FrameBuildWorkspace + kFrameLength with overlap.
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays)
   alignas(16) std::array<uint8_t, sizeof(FrameBuildWorkspace) + kFrameLength> arena{};
@@ -45,7 +45,7 @@ TEST_CASE(
 // ---------------------------------------------------------------------------
 // FI-25: Aliasing — overlapping workspace staging and output in frame_build
 // ---------------------------------------------------------------------------
-TEST_CASE("[LSIS-AFS-605] SWIFI: aliasing_overlap_frame_build — kFaultDetected before write") {
+TEST_CASE("[LSIS-AFS-605] SWIFI: aliasing_overlap_frame_build — kFaultDetected before write", "[swifi][messages]") {
   alignas(16) std::array<uint8_t, sizeof(FrameBuildWorkspace) + kFrameLength> arena{};
   arena.fill(0xFFU);
   auto* ws = new (arena.data()) FrameBuildWorkspace{};
@@ -72,7 +72,7 @@ TEST_CASE("[LSIS-AFS-605] SWIFI: aliasing_overlap_frame_build — kFaultDetected
 // FI-13 — Frame-assembly CFI: subframe builder milestone skip (FM-025)
 // ---------------------------------------------------------------------------
 TEST_CASE("[LSIS-AFS-610] SWIFI: subframe_builder_cfi_milestone_skip — LDPC LUT fault skips "
-          "milestone 3") {
+          "milestone 3", "[swifi][messages]") {
   // Inject a single bit flip into the LDPC SF2 matrix (same as FI-05).
   kLdpc_sf2_a.inject_bit_flip(0U, 0x01U);
 
@@ -100,7 +100,7 @@ TEST_CASE("[LSIS-AFS-610] SWIFI: subframe_builder_cfi_milestone_skip — LDPC LU
 // FI-14 — Frame-assembly CFI: frame assembler milestone skip (FM-026)
 // ---------------------------------------------------------------------------
 TEST_CASE("[SW-SAF-01] [LSIS-AFS-606] SWIFI: frame_assembler_cfi_milestone_skip — LDPC LUT fault "
-          "skips SB2 milestone") {
+          "skips SB2 milestone", "[swifi][messages]") {
   // Inject a single bit flip into the LDPC SF2 matrix.
   kLdpc_sf2_a.inject_bit_flip(0U, 0x01U);
 
@@ -129,7 +129,7 @@ TEST_CASE("[SW-SAF-01] [LSIS-AFS-606] SWIFI: frame_assembler_cfi_milestone_skip 
 // ---------------------------------------------------------------------------
 // FI-23: frame_decode CFI skip — injected milestone skip triggers kFaultDetected
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: frame_decode_cfi_skip — skipped milestone fires kFaultDetected") {
+TEST_CASE("SWIFI: frame_decode_cfi_skip — skipped milestone fires kFaultDetected", "[swifi][messages]") {
   // Build a valid noiseless frame for decoding
   std::array<uint8_t, kSb2DataBits> sb2_data{};
   std::array<uint8_t, kSb3DataBits> sb3_data{};
@@ -170,7 +170,7 @@ TEST_CASE("SWIFI: frame_decode_cfi_skip — skipped milestone fires kFaultDetect
 // ---------------------------------------------------------------------------
 // FI-28 — Return-value injection: subframe_build_sb2 forced LDPC failure
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: subframe_build_sb2_forced_ldpc_fail — output scrubbed on injected failure") {
+TEST_CASE("SWIFI: subframe_build_sb2_forced_ldpc_fail — output scrubbed on injected failure", "[swifi][messages]") {
     std::array<uint8_t, kSb2DataBits> data{};
     std::array<uint8_t, kSb2Length> out{};
     out.fill(0xFFU);  // poison to verify scrub
@@ -193,7 +193,7 @@ TEST_CASE("SWIFI: subframe_build_sb2_forced_ldpc_fail — output scrubbed on inj
 // ---------------------------------------------------------------------------
 // FI-29 — Return-value injection: frame_build forced LDPC failure
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: frame_build_forced_ldpc_fail — full frame scrubbed on injected failure") {
+TEST_CASE("SWIFI: frame_build_forced_ldpc_fail — full frame scrubbed on injected failure", "[swifi][messages]") {
     std::array<uint8_t, kSb2DataBits> sb2{};
     std::array<uint8_t, kSb3DataBits> sb3{};
     std::array<uint8_t, kSb4DataBits> sb4{};
@@ -224,7 +224,7 @@ TEST_CASE("SWIFI: frame_build_forced_ldpc_fail — full frame scrubbed on inject
 // ---------------------------------------------------------------------------
 // FI-30 — Return-value injection: frame_decode forced sync failure
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: frame_decode_forced_sync_fail — workspace scrubbed on injected sync failure") {
+TEST_CASE("SWIFI: frame_decode_forced_sync_fail — workspace scrubbed on injected sync failure", "[swifi][messages]") {
     // Build a valid noiseless frame
     std::array<uint8_t, kSb2DataBits> sb2_data{};
     std::array<uint8_t, kSb3DataBits> sb3_data{};
@@ -260,7 +260,7 @@ TEST_CASE("SWIFI: frame_decode_forced_sync_fail — workspace scrubbed on inject
 // ---------------------------------------------------------------------------
 // FI-31 — Return-value injection: frame_decode forced LDPC failure
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: frame_decode_forced_ldpc_fail — workspace scrubbed on injected LDPC failure") {
+TEST_CASE("SWIFI: frame_decode_forced_ldpc_fail — workspace scrubbed on injected LDPC failure", "[swifi][messages]") {
     // Build a valid noiseless frame
     std::array<uint8_t, kSb2DataBits> sb2_data{};
     std::array<uint8_t, kSb3DataBits> sb3_data{};

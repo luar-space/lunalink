@@ -28,7 +28,7 @@ using namespace lunalink::signal;
 // ---------------------------------------------------------------------------
 // FI-06 — Aliasing: overlapping input/output spans to modulate_bpsk_generic
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: FI-06 — aliasing_overlap_modulator — kFaultDetected before write") {
+TEST_CASE("SWIFI: FI-06 — aliasing_overlap_modulator — kFaultDetected before write", "[swifi][signal]") {
   // Chip buffer doubles as output buffer (aliasing)
   std::array<uint8_t, 64> buf{};
   buf.fill(0U);
@@ -50,7 +50,7 @@ TEST_CASE("SWIFI: FI-06 — aliasing_overlap_modulator — kFaultDetected before
 // ---------------------------------------------------------------------------
 // FI-07 — Aliasing: overlapping input/output spans to multiplex_iq
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: FI-07 — aliasing_overlap_iq_mux — kFaultDetected before write") {
+TEST_CASE("SWIFI: FI-07 — aliasing_overlap_iq_mux — kFaultDetected before write", "[swifi][signal]") {
   // Create a single backing array large enough for out, reused as i_samples
   constexpr size_t kOutSize = 2U * kIqSamplesPerEpoch;
   std::vector<int16_t> out_buf(kOutSize, 0);
@@ -78,7 +78,7 @@ TEST_CASE("SWIFI: FI-07 — aliasing_overlap_iq_mux — kFaultDetected before wr
 // ---------------------------------------------------------------------------
 // FI-20 — Sync Detector: CFI sentinel skip (FM-056)
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: sync_detector_cfi_skip — injected milestone skip fires kFaultDetected") {
+TEST_CASE("SWIFI: sync_detector_cfi_skip — injected milestone skip fires kFaultDetected", "[swifi][signal]") {
   CaptureTelemetryHal<4> capture;
   SyncDetector det(capture);
   SyncResult result{};
@@ -112,7 +112,7 @@ TEST_CASE("SWIFI: sync_detector_cfi_skip — injected milestone skip fires kFaul
 // ---------------------------------------------------------------------------
 // FI-21 — Sync Detector: TMR peak offset corruption repaired (FM-055)
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: sync_detector_tmr_peak — vote repairs single-copy offset corruption") {
+TEST_CASE("SWIFI: sync_detector_tmr_peak — vote repairs single-copy offset corruption", "[swifi][signal]") {
   NullTelemetryHal null_hal;
   SyncDetector det(null_hal);
   SyncResult result{};
@@ -151,7 +151,7 @@ TEST_CASE("SWIFI: sync_detector_tmr_peak — vote repairs single-copy offset cor
 // ---------------------------------------------------------------------------
 // FI-22 — Sync Detector: CFI recovery after injected fault (FM-056)
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: sync_detector_cfi_recovery — clean detection after injected fault") {
+TEST_CASE("SWIFI: sync_detector_cfi_recovery — clean detection after injected fault", "[swifi][signal]") {
   CaptureTelemetryHal<4> capture;
   SyncDetector det(capture);
   SyncResult result{};

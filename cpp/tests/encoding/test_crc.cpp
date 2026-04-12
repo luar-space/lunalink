@@ -7,7 +7,7 @@
 
 using namespace lunalink::signal;
 
-TEST_CASE("[LSIS-AFS-467] CRC-24: Basic correctness", "[crc][encoding]") {
+TEST_CASE("[LSIS-AFS-467] CRC-24: Basic correctness", "[crc]") {
   // All-zeros with seed=0 produces all-zeros CRC (polynomial never triggered).
   // This verifies the function runs cleanly but does not exercise the polynomial.
   std::array<uint8_t, 100> zero_data{};

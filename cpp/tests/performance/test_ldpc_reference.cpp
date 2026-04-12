@@ -495,7 +495,7 @@ double find_crossing(const std::vector<double>& snrs,
 // ---------------------------------------------------------------------------
 // 3-way comparison: SPB bound vs sum-product vs flight AMS
 // ---------------------------------------------------------------------------
-TEST_CASE("LDPC decoder quality: 3-way gap decomposition (SF2)", "[channel][ber][reference]") {
+TEST_CASE("LDPC decoder quality: 3-way gap decomposition (SF2)", "[channel][ber][reference][slow]") {
     constexpr uint8_t kIter = 50;
     constexpr int kFrames = 2000;
     constexpr uint32_t kSeed = 42;
