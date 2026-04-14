@@ -36,23 +36,34 @@ CHIPS_PER_EPOCH = 2046
 FRAME_DURATION_S = 25.0  # >2 frames ensures we capture at least one complete
 
 
-def _generate_lans_iq(duration: float, outdir: Path) -> Path:
-    """Generate I/Q from LANS-AFS-SIM."""
+def _generate_lans_iq(
+    duration: float, outdir: Path, quant_bits: int | None = None
+) -> Path:
+    """Generate I/Q from LANS-AFS-SIM.
+
+    Passes ``-b <quant_bits>`` only when the caller overrides the default,
+    so existing call sites keep the simulator's native quantisation.
+    """
     outfile = outdir / "lans_interop.bin"
+    cmd = [str(AFS_SIM), "-t", str(duration), "-s", str(LANS_SAMPLE_RATE_HZ)]
+    if quant_bits is not None:
+        cmd += ["-b", str(quant_bits)]
+    cmd.append(str(outfile))
     subprocess.run(
-        [
-            str(AFS_SIM),
-            "-t",
-            str(duration),
-            "-s",
-            str(LANS_SAMPLE_RATE_HZ),
-            str(outfile),
-        ],
+        cmd,
         cwd=AFS_SIM.parent,
         check=True,
         capture_output=True,
     )
     return outfile
+
+
+# NOTE: The G-06.3 plan called for a `_add_awgn` helper that injected
+# complex noise to a target C/N0. It was dropped — see scope note (1)
+# in `test_cpp_correlator_awgn_decode`: the 2-bit LANS-AFS-SIM output
+# already carries a multi-SV cross-correlation noise floor, and Python
+# AWGN on top pushed acquisition onto a ~7 kHz false-peak lock every
+# run. A future single-SV harness can reintroduce the helper.
 
 
 def _load_and_decimate(path: Path) -> np.ndarray:
@@ -207,30 +218,127 @@ class TestInteropDecode:
         if result.time is not None:
             assert result.time.wn == 2277
 
-    # ── C++ correlator tests ─────────────────────────────────────────────
-    # These depend on the proprietary receiver::Correlator. They are excluded
-    # from the OSS export and will be ported to the V2 API in Phase 3
-    # (needs native sample-rate processing, not 1.023 MSPS decimation).
+    # ── C++ correlator tests (G-06.1 — ported to V2 API) ────────────────
+    # V2 Phase 3 landed: `lunalink.receiver._receiver.Correlator` accepts
+    # native sample-rate IQ and exposes assign_channel / acquire / track /
+    # data_symbol. We feed LANS-AFS-SIM output directly at its native
+    # 5.115 MSPS (5 spc relative to the AFS 1.023 Mcps chip rate) without
+    # any Python-side decimation — the correlator sees exactly the same
+    # samples the flight receiver would.
+
+    @pytest.fixture(scope="class")
+    def lans_iq_native(self, tmp_path_factory: pytest.TempPathFactory) -> np.ndarray:
+        """LANS-AFS-SIM IQ at the generator's native rate (5.115 MSPS, complex64)."""
+        tmpdir = tmp_path_factory.mktemp("lans_iq_native")
+        path = _generate_lans_iq(FRAME_DURATION_S, tmpdir)
+        raw = np.fromfile(path, dtype=np.int16)
+        return (
+            raw[0::2].astype(np.float32) + 1j * raw[1::2].astype(np.float32)
+        ).astype(np.complex64)
+
+    def test_cpp_correlator_acquire(self, lans_iq_native: np.ndarray) -> None:
+        """V2 Correlator PCPS acquires LANS-AFS-SIM at 5.115 MSPS native."""
+        from lunalink.receiver._receiver import (
+            SIGNAL_AFS_I,
+            AcquisitionParams,
+            Correlator,
+            CorrelatorStatus,
+            with_sample_rate,
+        )
+
+        cfg = with_sample_rate(SIGNAL_AFS_I, LANS_SAMPLE_RATE_HZ)
+        corr = Correlator()
+        corr.assign_channel(0, cfg, 3)
+
+        params = AcquisitionParams()
+        params.t_coh_epochs = 1
+        params.coarse_dwells = 4
+        params.verify_dwells = 2
+
+        epoch_samples = int(round(cfg.sample_rate_hz * cfg.code_period_ms * 1e-3))
+        window = lans_iq_native[
+            : epoch_samples
+            * (params.coarse_dwells + params.verify_dwells)
+            * params.t_coh_epochs
+        ]
+        status, result = corr.acquire(0, window, params)
+
+        assert status == CorrelatorStatus.OK, f"acquire returned {status}"
+        assert result.locked, "acquisition did not lock on PRN 3"
+        assert 0 <= result.code_delay < epoch_samples
+        assert abs(result.doppler_hz) < 500.0, (
+            f"Doppler too far from zero: {result.doppler_hz}"
+        )
+
+    def test_cpp_correlator_track_decode(self, lans_iq_native: np.ndarray) -> None:
+        """V2 Correlator acquire + per-epoch track → data symbols → frame decode."""
+        from lunalink.receiver._receiver import (
+            SIGNAL_AFS_I,
+            AcquisitionParams,
+            Correlator,
+            CorrelatorStatus,
+            with_sample_rate,
+        )
+
+        cfg = with_sample_rate(SIGNAL_AFS_I, LANS_SAMPLE_RATE_HZ)
+        epoch_samples = int(round(cfg.sample_rate_hz * cfg.code_period_ms * 1e-3))
+
+        corr = Correlator()
+        corr.assign_channel(0, cfg, 3)
+
+        params = AcquisitionParams()
+        params.t_coh_epochs = 1
+        params.coarse_dwells = 4
+        params.verify_dwells = 2
+
+        acq_window_epochs = (
+            params.coarse_dwells + params.verify_dwells
+        ) * params.t_coh_epochs
+        acq_window = lans_iq_native[: epoch_samples * acq_window_epochs]
+        status, result = corr.acquire(0, acq_window, params)
+        assert status == CorrelatorStatus.OK and result.locked, (
+            f"acquire failed: status={status}, locked={result.locked}"
+        )
+
+        n_epochs = len(lans_iq_native) // epoch_samples
+        symbols: list[float] = []
+        for k in range(n_epochs):
+            chunk = lans_iq_native[k * epoch_samples : (k + 1) * epoch_samples]
+            corr.track(0, chunk)
+            symbols.append(float(corr.data_symbol(0)))
+
+        bipolar = np.sign(np.asarray(symbols, dtype=np.float32)).astype(np.float32)
+        assert len(bipolar) >= 6000, f"only {len(bipolar)} symbols, need ≥6000"
+
+        from lunalink.afs import receive_frame
+
+        decoded = receive_frame(bipolar, raise_on_error=True)
+        assert decoded.fid == 0
+        assert decoded.sb2.crc_ok
+        assert decoded.sb3.crc_ok
+        assert decoded.sb4.crc_ok
 
     @pytest.mark.skip(
-        reason="Requires proprietary receiver::Correlator — port to V2 API in Phase 3"
+        reason="G-06.3 post-investigation: see "
+        "docs/shaping/g06-3-awgn-cross-decode.md §Outcome. LANS-AFS-SIM "
+        "-b 2 + 7-SV multi-PRN constellation does not give a "
+        "deterministic symbol stream for AFS-I PRN 3 — sync match is "
+        "bimodal (~68/68 on ~40% of runs, ~48/68 on the rest) because "
+        "afs_sim's 2-bit dither is seeded from wall-clock time and PLL "
+        "lock phase drifts per run. Needs a single-SV harness, not a "
+        "constellation harness. Parked as G-06.3b."
     )
-    def test_cpp_correlator_acquire(self, lans_iq: np.ndarray) -> None:
-        """C++ PCPS correlator acquires a LANS-AFS-SIM signal."""
+    def test_cpp_correlator_awgn_decode(self) -> None:
+        """V2 Correlator decode of 2-bit quantised AFS signal with AWGN.
 
-    @pytest.mark.skip(
-        reason="Requires proprietary receiver::Correlator — port to V2 API in Phase 3"
-    )
-    def test_cpp_correlator_track_decode(self, lans_iq: np.ndarray) -> None:
-        """C++ correlator acquire + track + frame decode."""
-
-    @pytest.mark.xfail(
-        reason="Requires 5.115 MSPS processing to avoid Q-channel aliasing. "
-        "Phase 3 adds native sample-rate support via LuGRE loader.",
-        strict=True,
-    )
-    @pytest.mark.skip(
-        reason="Requires proprietary receiver::Correlator — port in Phase 3"
-    )
-    def test_cpp_correlator_awgn_decode(self, lans_iq: np.ndarray) -> None:
-        """C++ correlator decode of 2-bit quantised 7-SV signal with AWGN."""
+        The G-06.3 work (committed 2026-04-13) discovered that the
+        multi-SV LANS-AFS-SIM output at 2-bit quantisation does not
+        support a stable correlator regression gate for AFS-I PRN 3:
+        the 6 interfering SVs' cross-correlation floor plus afs_sim's
+        non-deterministic 2-bit dither (wall-clock-seeded) make the
+        symbol stream flaky across runs. A reworked harness using a
+        single-PRN quantised signal — either by filtering the
+        LANS-AFS-SIM output in software or by running afs_sim against
+        a custom single-SV constellation — is required before this
+        test can land. See the G-06.3 plan doc §Outcome for detail.
+        """

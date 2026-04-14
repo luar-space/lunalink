@@ -63,9 +63,17 @@ int main(int argc, char** argv)
     generate_BCH_AFS_SF1(sb1, fid, toi);
     memcpy(frame + 68, sb1, 52);
 
-    /* Subframe 2: 1176 data + 24 CRC = 1200 info → 2400 coded */
+    /* Subframe 2: 1176 data + 24 CRC = 1200 info → 2400 coded.
+     * LSIS-300: the 26-bit spare region at offset 1150 must carry the
+     * alternating 0/1 pattern starting with 0 on the MSB. LunaLink's
+     * frame_build() rewrites this region unconditionally (G-18), so
+     * this harness applies the same pattern post-fill to keep the
+     * interop bit-exact comparison honest. */
     uint8_t sb2_info[1200];
     fill_pattern(sb2_info, 1176, pattern);
+    for (int i = 0; i < 26; i++) {
+        sb2_info[1150 + i] = (uint8_t)(i % 2);
+    }
     memcpy(sb2_info + 1176, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 24);
     append_CRC24(sb2_info, 1200);
 

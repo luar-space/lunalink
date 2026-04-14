@@ -154,6 +154,11 @@ def _build_harness(cc: str, flags: list[str], src: Path, name: str) -> None:
 HARNESSES = [
     ("dump_lans_codes.c", "dump_lans_codes"),
     ("dump_lans_frame.c", "dump_lans_frame"),
+    # G-16: standalone LDPC encoder dumper. One-shot tool — run manually
+    # to regenerate cpp/tests/encoding/ldpc_lans_reference.hpp. Not invoked
+    # by any pytest, but bundled with the existing harness build so the
+    # binary is available for hand-run regeneration after every rebuild.
+    ("dump_lans_ldpc.c", "dump_lans_ldpc"),
 ]
 
 

@@ -62,22 +62,9 @@ TEST_CASE("CRC-24: Round-trip and error detection", "[crc]") {
   CHECK(crc24_verify(data_with_crc) == false);
 }
 
-TEST_CASE("CRC-24: Known vector (Qualcomm/3GPP pattern)", "[crc]") {
-  // Polynomial 0x864CFB is used in LTE/5G.
-  // Let's use a simple pattern.
-  // Data: 0x01 (binary 00000001) -> CRC-24Q should match standard implementations.
-  std::array<uint8_t, 8> data = {0, 0, 0, 0, 0, 0, 0, 1};
-  std::array<uint8_t, 24> crc{};
-
-  REQUIRE(crc24_calculate(data, crc) == CrcStatus::kOk);
-
-  // Standard CRC-24Q for 0x01 is 0x864CFB (since it's one shift of the poly)
-  // MSB: 1000 0110 0100 1100 1111 1011
-  std::array<uint8_t, 24> expected = {1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0,
-                                      1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1};
-
-  CHECK(crc == expected);
-}
+// G-12: "CRC-24: Known vector (Qualcomm/3GPP pattern)" tested exactly the
+// same `{0,…,0,1}` → `0x864CFB` vector already asserted inline in the
+// "Basic correctness" test above (the `single_bit` sub-case). Deleted.
 
 TEST_CASE("CRC-24: verify rejects too-short input", "[crc]") {
   std::array<uint8_t, 10> tiny{};

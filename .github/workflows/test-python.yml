@@ -45,6 +45,26 @@ jobs:
         env:
           CMAKE_C_COMPILER_LAUNCHER: ${{ runner.os != 'Windows' && 'ccache' || '' }}
           CMAKE_CXX_COMPILER_LAUNCHER: ${{ runner.os != 'Windows' && 'ccache' || '' }}
+
+      # G-15: build the third-party interop oracles so tests/test_interop_*.py
+      # actually run instead of silently skipping. Linux-only; macOS/Windows
+      # cross-compile of LANS-AFS-SIM / PocketSDR is out of scope.
+      - name: Build LANS-AFS-SIM (AFS interop oracle)
+        if: runner.os == 'Linux'
+        run: uv run python scripts/interop/build_lans_afs_sim.py
+
+      # G-04: minimal PocketSDR extraction for non-AFS code generator interop.
+      # Clones upstream and compiles only sdr_code.c + sdr_code_gal.c against
+      # our stubs in scripts/interop/pocketsdr_stubs/ — no system packages,
+      # no fftw/rtklib/libfec/libldpc/libusb.
+      - name: Build PocketSDR (non-AFS interop oracle)
+        if: runner.os == 'Linux'
+        run: uv run python scripts/interop/build_pocketsdr.py
+
+      - name: Verify interop tests are not silently skipped (G-15 gate)
+        if: runner.os == 'Linux'
+        run: uv run python scripts/check_interop_tests.py
+
       - run: task test-py
 
       - name: Generate coverage JSON

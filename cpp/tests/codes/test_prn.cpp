@@ -38,11 +38,11 @@ PrnCode get_weil1500(uint8_t prn_id) {
 
 // --- Gold-2046 (AFS-I primary code) ---
 
-TEST_CASE("[LSIS-AFS-101] gold_prn PRN 1 has binary chip values", "[prn]") {
-  const auto packed = get_gold(1);
-  for (uint16_t i = 0; i < kGoldChipLength; ++i)
-    REQUIRE(read_chip(packed, i) <= 1u);
-}
+// G-13: "gold_prn PRN 1 has binary chip values" deleted —
+// `read_chip` extracts a single bit so its output is `<= 1` by
+// construction; the loop was tautological. Generator correctness for
+// Gold PRN 1 is anchored by the first-byte = 0x5D oracle below and the
+// interop test against LANS-AFS-SIM in tests/test_interop_codes.py.
 
 TEST_CASE("[LSIS-AFS-101] gold_prn returns distinct sequences for different PRNs", "[prn]") {
   const auto p1 = get_gold(1);
@@ -58,6 +58,12 @@ TEST_CASE("[LSIS-AFS-101] gold_prn returns distinct sequences for different PRNs
 }
 
 TEST_CASE("[LSIS-AFS-101] gold_prn PRN 1 first byte matches reference", "[prn]") {
+  // Provenance: LSIS V1.0 Annex 3, file "LNIS-AD1-Vol-A-Annex3-Gold-2046.hex",
+  // PRN 1 first byte. The Annex 3 README
+  // (docs/references/005_LNIS-AD1-Vol-A-Annex3-PRN-Spreading-Codes-README.pdf
+  // §2.1) prepends two zero MSB pad bits to the published 2048-bit hex lines,
+  // then strips those two MSBs after decoding — after padding normalisation
+  // the first 8 chips of Gold PRN 1 are {0, 1, 0, 1, 1, 1, 0, 1} = 0x5D.
   const auto packed = get_gold(1);
   REQUIRE(packed.data[0] == 0x5Du);
   // Verify individual chips
@@ -66,21 +72,18 @@ TEST_CASE("[LSIS-AFS-101] gold_prn PRN 1 first byte matches reference", "[prn]")
     REQUIRE(read_chip(packed, i) == expected[i]);
 }
 
-TEST_CASE("[LSIS-AFS-101] gold_prn all 210 PRNs have binary chip values", "[prn]") {
-  for (uint8_t prn = 1; prn <= kPrnCount; ++prn) {
-    const auto packed = get_gold(prn);
-    for (uint16_t i = 0; i < kGoldChipLength; ++i)
-      REQUIRE(read_chip(packed, i) <= 1u);
-  }
-}
+// G-13: "gold_prn all 210 PRNs have binary chip values" deleted —
+// same reason as the PRN-1 version above. The 210 × 2046 = 429 660 CHECKs
+// this test ran cannot fail by construction of `read_chip`. Full-length
+// pairwise distinctness is covered by the test above this comment; full
+// bit-exact validation of every PRN is covered by tests/test_interop_codes.py.
 
 // --- Weil-10230 (AFS-Q primary code) ---
 
-TEST_CASE("[LSIS-AFS-102] weil10230_prn PRN 1 has binary chip values", "[prn]") {
-  const auto packed = get_weil10230(1);
-  for (uint16_t i = 0; i < kWeil10230ChipLength; ++i)
-    REQUIRE(read_chip(packed, i) <= 1u);
-}
+// G-13: tautological binary-chip check on Weil-10230 PRN 1 deleted —
+// `read_chip` always returns 0 or 1. Correctness is anchored by the
+// first-chip oracle + interop test against LANS-AFS-SIM (bit-exact
+// across all 210 PRNs).
 
 TEST_CASE("[LSIS-AFS-102] weil10230_prn returns distinct sequences for different PRNs", "[prn]") {
   const auto p1 = get_weil10230(1);
@@ -96,6 +99,9 @@ TEST_CASE("[LSIS-AFS-102] weil10230_prn returns distinct sequences for different
 }
 
 TEST_CASE("[LSIS-AFS-102] weil10230_prn PRN 1 first chips match reference", "[prn]") {
+  // Provenance: LSIS V1.0 Annex 3, file "LNIS-AD1-Vol-A-Annex3-Weil-10230.hex",
+  // PRN 1 first 14 chips after applying the same 2-MSB padding convention
+  // as Gold-2046 (see Annex 3 README §2.1 and the gold_prn PRN 1 test above).
   const auto packed = get_weil10230(1);
   const uint8_t expected[14] = {0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1};
   for (uint16_t i = 0; i < 14; ++i)
@@ -104,11 +110,9 @@ TEST_CASE("[LSIS-AFS-102] weil10230_prn PRN 1 first chips match reference", "[pr
 
 // --- Weil-1500 (AFS-Q tertiary code) ---
 
-TEST_CASE("[LSIS-AFS-102] weil1500_prn PRN 1 has binary chip values", "[prn]") {
-  const auto packed = get_weil1500(1);
-  for (uint16_t i = 0; i < kWeil1500ChipLength; ++i)
-    REQUIRE(read_chip(packed, i) <= 1u);
-}
+// G-13: tautological binary-chip check on Weil-1500 PRN 1 deleted.
+// Correctness anchored by the 0xE4 first-byte oracle + distinctness
+// test below.
 
 TEST_CASE("[LSIS-AFS-102] weil1500_prn returns distinct sequences for different PRNs", "[prn]") {
   const auto p1 = get_weil1500(1);
@@ -124,6 +128,9 @@ TEST_CASE("[LSIS-AFS-102] weil1500_prn returns distinct sequences for different 
 }
 
 TEST_CASE("[LSIS-AFS-102] weil1500_prn PRN 1 first byte matches reference", "[prn]") {
+  // Provenance: LSIS V1.0 Annex 3, file "LNIS-AD1-Vol-A-Annex3-Weil-1500.hex",
+  // PRN 1. After the same 2-MSB padding strip described in the Annex 3 README
+  // §2.1, the first 8 chips of Weil-1500 PRN 1 are {1, 1, 1, 0, 0, 1, 0, 0} = 0xE4.
   const auto packed = get_weil1500(1);
   REQUIRE(packed.data[0] == 0xE4u);
   const uint8_t expected[8] = {1, 1, 1, 0, 0, 1, 0, 0};
@@ -192,6 +199,33 @@ TEST_CASE("PRN: invalid PRN ID forces error", "[prn]") {
         static_cast<uint8_t>(PrnStatus::kInvalidPrn));
 }
 
+TEST_CASE("Legendre: hand-computed oracle for p=7 (true external anchor)", "[prn][legendre]") {
+  // G-02: independent correctness anchor for `generate_legendre_sequence()`.
+  //
+  // The flight Legendre tables (p=10223, 1499, 3607, 10243) are protected at
+  // runtime by a self-signed CRC — valid as CBIT but not as a correctness
+  // oracle. Here we hand-compute the expected sequence for p=7 from the
+  // definition of the Legendre symbol and assert bit-exact output, which
+  // no other test in the suite does.
+  //
+  // For p=7 the non-zero quadratic residues are {x^2 mod 7 : x ∈ [1, 3]} =
+  // {1, 4, 2}. LunaLink's convention (see `cpp/codes/legendre.cpp` line ~128
+  // `out[res] = 1`) sets exactly those positions to 1, leaving 0 for the
+  // identity position and the non-residues {3, 5, 6}.
+  //
+  // Expected output (indexed 0..6):
+  //   index : 0 1 2 3 4 5 6
+  //   chip  : 0 1 1 0 1 0 0
+  std::array<uint8_t, 7> out{};
+  REQUIRE(generate_legendre_sequence(7, out) == LegendreStatus::kOk);
+
+  constexpr std::array<uint8_t, 7> expected = {0, 1, 1, 0, 1, 0, 0};
+  for (size_t i = 0; i < 7; ++i) {
+    CAPTURE(i);
+    CHECK(out[i] == expected[i]);
+  }
+}
+
 TEST_CASE("Legendre: checksum stability", "[prn]") {
   auto cs10223 = legendre_10223_checksum();
   auto cs1499 = legendre_1499_checksum();
@@ -205,9 +239,10 @@ TEST_CASE("Legendre: direct generation and cached access", "[prn]") {
   std::array<uint8_t, 1499> leg_out{};
   CHECK(generate_legendre_sequence(1499, leg_out) == LegendreStatus::kOk);
 
-  for (auto b : leg_out) {
-    CHECK((b == 0 || b == 1));
-  }
+  // G-13: `b == 0 || b == 1` loop deleted — `generate_legendre_sequence`
+  // initialises the output to 0 and only ever writes 1, so the check was
+  // tautological. Algorithm correctness is anchored by the p=7 hand-
+  // computed oracle earlier in this file.
 
   std::array<uint8_t, 10> small{};
   CHECK(generate_legendre_sequence(1499, small) == LegendreStatus::kOutputTooSmall);
@@ -222,19 +257,6 @@ TEST_CASE("Legendre: direct generation and cached access", "[prn]") {
   CHECK(span_bad.empty());
 }
 
-TEST_CASE("PRN: invalid PRN via TMR bypass", "[prn]") {
-  PrnCode p;
-  PrnId bad_prn(1);
-  uint8_t over_prn = 250;
-
-  std::memcpy(&bad_prn.storage.v1, &over_prn, 1);
-  std::memcpy(&bad_prn.storage.v2, &over_prn, 1);
-  std::memcpy(&bad_prn.storage.v3, &over_prn, 1);
-
-  CHECK(static_cast<uint8_t>(gold_prn_packed(bad_prn, p)) ==
-        static_cast<uint8_t>(PrnStatus::kInvalidPrn));
-  CHECK(static_cast<uint8_t>(weil10230_prn_packed(bad_prn, p)) ==
-        static_cast<uint8_t>(PrnStatus::kInvalidPrn));
-  CHECK(static_cast<uint8_t>(weil1500_prn_packed(bad_prn, p)) ==
-        static_cast<uint8_t>(PrnStatus::kInvalidPrn));
-}
+// G-12: "PRN: invalid PRN via TMR bypass" was a verbatim duplicate of
+// "PRN: invalid PRN ID forces error" above — same TMR-bypass pattern,
+// same three checks, same expected kInvalidPrn. Deleted.

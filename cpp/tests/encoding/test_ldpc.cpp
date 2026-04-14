@@ -11,6 +11,53 @@
 
 using namespace lunalink::signal;
 
+#include "ldpc_lans_reference.hpp"
+
+// G-16: bit-exact LDPC encoder regression test against LANS-AFS-SIM.
+//
+// The existing LDPC tests in this file are all self-referential — they
+// encode + decode and compare to the original message, or verify golden
+// CRC constants that are themselves computed at runtime. None of them
+// catch a regression where encoder output changes in a way that still
+// decodes correctly (e.g. a permutation of parity bits).
+//
+// This test pins the full codeword output against values computed by
+// LANS-AFS-SIM (a separately-maintained third-party LDPC implementation).
+// The input vectors are chosen so the all-zero codeword is NOT a valid
+// answer, which is essential for systematic linear codes — all-zeros
+// input encodes to all-zeros under any systematic encoder, and would mask
+// sign and parity bugs that the non-trivial input catches. The reference
+// arrays were captured by `scripts/interop/dump_lans_ldpc.c` and last
+// refreshed on 2026-04-13.
+TEST_CASE("[LSIS-AFS-320] LDPC Encoder: bit-exact vs LANS-AFS-SIM reference", "[ldpc]") {
+  using namespace lunalink::signal::tests;
+
+  std::array<uint8_t, 2400> out_sf2{};
+  LdpcEncodeWorkspace ws{};
+  REQUIRE(ldpc_encode(LdpcSubframe::kSF2, kLansSf2AltInput, out_sf2, ws) ==
+          LdpcStatus::kOk);
+  size_t mismatches_sf2 = 0;
+  for (size_t i = 0; i < out_sf2.size(); ++i) {
+    if (out_sf2[i] != kLansSf2AltCoded[i]) {  // NOLINT(cppcoreguidelines-pro-bounds-constant-array-index)
+      ++mismatches_sf2;
+    }
+  }
+  CAPTURE(mismatches_sf2);
+  CHECK(mismatches_sf2 == 0);
+
+  std::array<uint8_t, 1740> out_sf3{};
+  REQUIRE(ldpc_encode(LdpcSubframe::kSF3, kLansSf3AltInput, out_sf3, ws) ==
+          LdpcStatus::kOk);
+  size_t mismatches_sf3 = 0;
+  for (size_t i = 0; i < out_sf3.size(); ++i) {
+    if (out_sf3[i] != kLansSf3AltCoded[i]) {  // NOLINT(cppcoreguidelines-pro-bounds-constant-array-index)
+      ++mismatches_sf3;
+    }
+  }
+  CAPTURE(mismatches_sf3);
+  CHECK(mismatches_sf3 == 0);
+}
+
 TEST_CASE("[LSIS-AFS-320] LDPC Encoder: basic execution", "[ldpc]") {
   // SF2: 1200 bits
   std::array<uint8_t, kSb2MsgBits> msg_sf2{};
@@ -117,17 +164,10 @@ TEST_CASE("LDPC: Matrix dimension consistency", "[ldpc]") {
   }
 }
 
-TEST_CASE("[LSIS-AFS-320] LDPC: Subframe types coverage", "[ldpc]") {
-  std::array<uint8_t, kSb2MsgBits> msg_sf2{};
-  std::array<uint8_t, kSb3MsgBits> msg_sf3{};
-  std::array<uint8_t, kSb2Length> out_sf2{};
-  std::array<uint8_t, kSb3Length> out_sf3{};
-  LdpcEncodeWorkspace enc_ws{};
-
-  CHECK(ldpc_encode(LdpcSubframe::kSF2, msg_sf2, out_sf2, enc_ws) == LdpcStatus::kOk);
-  CHECK(ldpc_encode(LdpcSubframe::kSF3, msg_sf3, out_sf3, enc_ws) == LdpcStatus::kOk);
-  CHECK(ldpc_encode(LdpcSubframe::kSF4, msg_sf3, out_sf3, enc_ws) == LdpcStatus::kOk);
-}
+// G-12: "LDPC: Subframe types coverage" was a strictly weaker duplicate of
+// "[LSIS-AFS-320] LDPC Encoder: basic execution" above, whose SF2/SF3/SF4
+// Catch2 SECTIONs already cover all three subframe types AND the
+// binary-output check this test omitted. Deleted.
 
 TEST_CASE("[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip", "[ldpc]") {
   LdpcEncodeWorkspace enc_ws{};

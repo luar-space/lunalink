@@ -4,6 +4,7 @@
 #include "lunalink/encoding/ldpc.hpp"
 #include "lunalink/messages/frame.hpp"
 #include "lunalink/messages/frame_decode.hpp"
+#include "lunalink/messages/message_parser.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -152,9 +153,14 @@ TEST_CASE("[LSIS-AFS-602] subframe_build_sb2 round-trip: encode, decode, verify 
   const auto ldpc_status = ldpc_decode(LdpcSubframe::kSF2, soft, 20, decoded, dec_ws);
   REQUIRE((ldpc_status == LdpcStatus::kOk || ldpc_status == LdpcStatus::kNotConverged));
 
-  // Verify data recovery: first kSb2DataBits must match original
-  for (size_t i = 0; i < kSb2DataBits; ++i) {
+  // Verify data recovery: first kSb2DataBits must match original, except
+  // for the 26-bit spare region which the builder overwrites with the
+  // LSIS-300 alternating 0/1 pattern (G-18).
+  for (size_t i = 0; i < kSb2SpareOffset; ++i) {
     REQUIRE(decoded[i] == data[i]);
+  }
+  for (uint8_t i = 0; i < kSb2SpareBits; ++i) {
+    REQUIRE(decoded[kSb2SpareOffset + i] == static_cast<uint8_t>(i % 2U));
   }
 
   // Verify CRC-24: the full decoded message (data + CRC) must pass
@@ -335,8 +341,13 @@ TEST_CASE("[LSIS-AFS-605] frame_build payload round-trip: deinterleave, decode, 
     const auto st = ldpc_decode(LdpcSubframe::kSF2, soft, 20, decoded, dec_ws);
     REQUIRE((st == LdpcStatus::kOk || st == LdpcStatus::kNotConverged));
 
-    for (size_t i = 0; i < kSb2DataBits; ++i) {
+    // First kSb2SpareOffset bits must match the caller; the spare region
+    // is overwritten by the builder to the LSIS-300 pattern (G-18).
+    for (size_t i = 0; i < kSb2SpareOffset; ++i) {
       REQUIRE(decoded[i] == sb2_data[i]);
+    }
+    for (uint8_t i = 0; i < kSb2SpareBits; ++i) {
+      REQUIRE(decoded[kSb2SpareOffset + i] == static_cast<uint8_t>(i % 2U));
     }
     CHECK(crc24_verify(decoded));
   }
@@ -388,13 +399,79 @@ TEST_CASE("[LSIS-AFS-605] frame_build payload round-trip: deinterleave, decode, 
 }
 
 // ===========================================================================
-// LSIS-300: Spare bits — alternating 0/1 starting with 0 on MSB
+// LSIS-300 SB2 spare-bit compliance: the *builder* must emit the
+// alternating 0/1 pattern on the wire regardless of what the caller
+// supplied in the spare region. G-18 resolved 2026-04-13 by
+// `enforce_spare_bit_pattern` in `cpp/messages/frame.cpp`. SB3/SB4
+// spare regions are message-type-specific (TBW in LSIS V1.0) so the
+// builder cannot enforce them without per-message-type knowledge; the
+// SB3 round-trip below remains a CRC/LDPC-transparency check only.
 // ===========================================================================
 
-TEST_CASE("[LSIS-AFS-300] Spare bits pattern: alternating 0/1 starting with 0", "[frame]") {
-  // LSIS-300: "spare bits shall be filled with a sequence of alternating
-  // zeros and ones starting with zero on the MSB."
-  // Verify that CRC correctly covers spare bits with this pattern.
+TEST_CASE("[LSIS-AFS-300] SB2 builder enforces LSIS-300 pattern regardless of caller input",
+          "[frame]") {
+  // Caller supplies all-zero spare bits — the wrong pattern for LSIS-300.
+  // After encode/decode the spare region must still carry 0,1,0,1,... per
+  // spec, proving the builder — not the caller — is the enforcement point.
+  std::array<uint8_t, kSb2DataBits> sb2_data{};
+  for (size_t i = 0; i < kSb2SpareOffset; ++i) {
+    sb2_data[i] = static_cast<uint8_t>(i % 3U == 0U ? 1U : 0U); // realistic payload
+  }
+  // sb2_data[kSb2SpareOffset..] already zero — deliberately non-compliant.
+
+  std::array<uint8_t, kSb2Length> encoded{};
+  LdpcEncodeWorkspace enc_ws{};
+  REQUIRE(subframe_build_sb2(sb2_data, encoded, enc_ws) == FrameStatus::kOk);
+
+  std::array<float, kSb2Length> soft{};
+  for (size_t i = 0; i < kSb2Length; ++i) {
+    soft[i] = (encoded[i] == 0U) ? 10.0F : -10.0F;
+  }
+  std::array<uint8_t, kSb2MsgBits> decoded{};
+  LdpcWorkspace dec_ws{};
+  REQUIRE(ldpc_decode(LdpcSubframe::kSF2, soft, 20, decoded, dec_ws) == LdpcStatus::kOk);
+
+  const auto spare_span =
+      std::span<const uint8_t>(decoded).subspan(kSb2SpareOffset, kSb2SpareBits);
+  CHECK(validate_spare_bits(spare_span));
+  CHECK(crc24_verify(decoded));
+}
+
+TEST_CASE("[LSIS-AFS-300] frame_build emits LSIS-300 pattern in the SB2 spare region",
+          "[frame]") {
+  // End-to-end through the full-frame assembler: spare bits must still
+  // come out right even though the caller's sb2_data is all ones.
+  std::array<uint8_t, kSb2DataBits> sb2{};
+  sb2.fill(1U);
+  std::array<uint8_t, kSb3DataBits> sb3{};
+  std::array<uint8_t, kSb4DataBits> sb4{};
+  std::array<uint8_t, kFrameLength> out{};
+  LdpcEncodeWorkspace ldpc_ws{};
+  FrameBuildWorkspace fbw{};
+  REQUIRE(frame_build(Fid(0), Toi(10), sb2, sb3, sb4, out, ldpc_ws, fbw) == FrameStatus::kOk);
+
+  FrameDecodeResult result{};
+  auto dec_ws = std::make_unique<FrameDecodeWorkspace>();
+  NullTelemetryHal hal;
+  std::array<float, kFrameLength> soft{};
+  for (size_t i = 0; i < kFrameLength; ++i) {
+    soft[i] = (out[i] == 0U) ? 10.0F : -10.0F;
+  }
+  REQUIRE(frame_decode(soft, result, *dec_ws, hal) == FrameDecodeStatus::kOk);
+
+  REQUIRE(result.sb2.crc_ok);
+  const auto spare_span =
+      std::span<const uint8_t>(dec_ws->sb2_data).subspan(kSb2SpareOffset, kSb2SpareBits);
+  CHECK(validate_spare_bits(spare_span));
+}
+
+TEST_CASE("SB3 round-trip preserves arbitrary spare-region bit patterns "
+          "(SB3 spare layout is message-type-specific — builder enforcement not applicable)",
+          "[frame]") {
+  // The data below happens to be the LSIS-300 alternating pattern, but
+  // the test would pass for any bit pattern the caller supplies. If you
+  // are looking for the test that proves LSIS-300 compliance on the
+  // transmitted wire, it does not exist yet — see G-18.
 
   // SB2: 1176 data bits. Fill first 100 as "real" data, rest as spare.
   std::array<uint8_t, kSb2DataBits> sb2_data{};
@@ -591,9 +668,13 @@ TEST_CASE("[LSIS-AFS-720] frame_decode: clean round-trip recovers data", "[frame
   CHECK(result.sb4.ldpc_converged);
   CHECK(result.sb4.crc_ok);
 
-  // Verify recovered data matches original
-  for (size_t i = 0; i < kSb2DataBits; ++i) {
+  // Verify recovered data matches original, except for the SB2 spare
+  // region which the builder rewrites to the LSIS-300 pattern (G-18).
+  for (size_t i = 0; i < kSb2SpareOffset; ++i) {
     REQUIRE(ws->sb2_data[i] == sb2_data[i]);
+  }
+  for (uint8_t i = 0; i < kSb2SpareBits; ++i) {
+    REQUIRE(ws->sb2_data[kSb2SpareOffset + i] == static_cast<uint8_t>(i % 2U));
   }
   for (size_t i = 0; i < kSb3DataBits; ++i) {
     REQUIRE(ws->sb3_data[i] == sb3_data[i]);
@@ -699,11 +780,24 @@ TEST_CASE("frame_decode: NaN in SB1 causes BCH failure", "[frame]") {
   CHECK(status == FrameDecodeStatus::kBchFailed);
 }
 
-TEST_CASE("frame_decode: LDPC failure on noise-only payload", "[frame]") {
-  // Build a valid frame (for sync + BCH), then replace payload with noise
+TEST_CASE("frame_decode: LDPC fails (not kOk) when payload replaced with noise", "[frame]") {
+  // G-08 rewrite: the earlier version used zero-filled SB2/SB3/SB4 data,
+  // so the all-zero codeword was the valid transmitted codeword, and a
+  // decoder given noise could legitimately converge back to it — the
+  // test then accepted `kOk || kLdpcFailed || kCrcFailed` and had zero
+  // discriminating power. Filling the subframes with a non-trivial
+  // deterministic pattern makes the all-zero codeword a WRONG decode,
+  // so converging to it fails CRC. After payload replacement the
+  // decoder must now fail at LDPC or CRC; `kOk` must not occur.
   std::array<uint8_t, kSb2DataBits> sb2_data{};
   std::array<uint8_t, kSb3DataBits> sb3_data{};
   std::array<uint8_t, kSb4DataBits> sb4_data{};
+  // Deterministic alternating-bit fill — no RNG dependency, easy to
+  // reproduce in a debugger.
+  for (size_t i = 0; i < kSb2DataBits; ++i) sb2_data[i] = static_cast<uint8_t>(i & 1U);
+  for (size_t i = 0; i < kSb3DataBits; ++i) sb3_data[i] = static_cast<uint8_t>((i + 1U) & 1U);
+  for (size_t i = 0; i < kSb4DataBits; ++i) sb4_data[i] = static_cast<uint8_t>(i & 1U);
+
   std::array<uint8_t, kFrameLength> frame{};
   LdpcEncodeWorkspace enc_ws{};
   FrameBuildWorkspace fbw{};
@@ -713,7 +807,8 @@ TEST_CASE("frame_decode: LDPC failure on noise-only payload", "[frame]") {
   auto rx = std::make_unique<std::array<float, kFrameLength>>();
   binary_to_bipolar(frame, *rx);
 
-  // Replace payload with near-zero soft values (noise) — LDPC won't converge
+  // Replace payload with near-zero soft values — the decoder cannot
+  // recover the non-zero transmitted codeword from pure noise.
   std::mt19937 rng(123);
   std::normal_distribution<float> noise(0.0F, 0.01F);
   const size_t payload_start = kSyncLength + kSb1Length;
@@ -724,19 +819,26 @@ TEST_CASE("frame_decode: LDPC failure on noise-only payload", "[frame]") {
   FrameDecodeResult result{};
   auto ws = std::make_unique<FrameDecodeWorkspace>();
   NullTelemetryHal hal;
-  const auto status = frame_decode(*rx, result, *ws, hal, 5); // few iterations
+  const auto status = frame_decode(*rx, result, *ws, hal, 5);
 
-  // Should fail at LDPC or CRC stage. kOk is possible if the decoder converges
-  // to the all-zero codeword (valid for zero-data input) despite noise replacement.
-  CHECK((status == FrameDecodeStatus::kOk || status == FrameDecodeStatus::kLdpcFailed ||
+  CHECK(status != FrameDecodeStatus::kOk);
+  CHECK((status == FrameDecodeStatus::kLdpcFailed ||
          status == FrameDecodeStatus::kCrcFailed));
 }
 
 TEST_CASE("frame_decode: classify result distinguishes LDPC and CRC failures", "[frame]") {
-  // Build valid frame, add moderate noise to cause selective failure
+  // G-08 rewrite: same problem as above — zero-filled subframes let the
+  // decoder return kOk with only 1 iteration and made the test
+  // tautological. Build a non-trivial frame, then corrupt just the SB2
+  // LDPC payload with bit flips so LDPC gives up with a detectable
+  // failure (not kOk) while sync + BCH still pass.
   std::array<uint8_t, kSb2DataBits> sb2_data{};
   std::array<uint8_t, kSb3DataBits> sb3_data{};
   std::array<uint8_t, kSb4DataBits> sb4_data{};
+  for (size_t i = 0; i < kSb2DataBits; ++i) sb2_data[i] = static_cast<uint8_t>(i & 1U);
+  for (size_t i = 0; i < kSb3DataBits; ++i) sb3_data[i] = static_cast<uint8_t>((i + 1U) & 1U);
+  for (size_t i = 0; i < kSb4DataBits; ++i) sb4_data[i] = static_cast<uint8_t>(i & 1U);
+
   std::array<uint8_t, kFrameLength> frame{};
   LdpcEncodeWorkspace enc_ws{};
   FrameBuildWorkspace fbw{};
@@ -746,16 +848,21 @@ TEST_CASE("frame_decode: classify result distinguishes LDPC and CRC failures", "
   auto rx = std::make_unique<std::array<float, kFrameLength>>();
   binary_to_bipolar(frame, *rx);
 
-  // Use 1 LDPC iteration — may converge (all-zeros is a valid codeword)
-  // but with structured data it often doesn't
+  // Flip every second bit of the SB2 payload region — enough corruption
+  // that 1 LDPC iteration cannot recover the codeword.
+  const size_t payload_start = kSyncLength + kSb1Length;
+  for (size_t i = payload_start; i < payload_start + kSb2Length; i += 2) {
+    (*rx)[i] = -(*rx)[i];
+  }
+
   FrameDecodeResult result{};
   auto ws = std::make_unique<FrameDecodeWorkspace>();
   NullTelemetryHal hal;
   const auto status = frame_decode(*rx, result, *ws, hal, 1);
 
-  // With only 1 iteration, LDPC may or may not converge.
-  // Either way, the pipeline ran through all stages past sync+BCH.
-  CHECK((status == FrameDecodeStatus::kOk || status == FrameDecodeStatus::kLdpcFailed ||
+  // The decoder must flag the failure — not silently return kOk.
+  CHECK(status != FrameDecodeStatus::kOk);
+  CHECK((status == FrameDecodeStatus::kLdpcFailed ||
          status == FrameDecodeStatus::kCrcFailed));
 }
 

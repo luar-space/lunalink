@@ -48,22 +48,32 @@ TEST_CASE("[LSIS-AFS-501] BCH decoder: single error correction", "[bch]") {
   }
 }
 
-TEST_CASE("[LSIS-AFS-501] BCH decoder: double error correction", "[bch]") {
-  std::array<uint8_t, kBchCodewordLength> codeword{};
+TEST_CASE("[LSIS-AFS-501] BCH decoder: double error correction (all 1326 pairs)", "[bch]") {
+  // G-14: the previous version only tested ONE bit pair (5, 20) out of
+  // 52 choose 2 = 1326 possible positions. A double-error failure that
+  // depended on the specific bit indices (a plausible bug class for any
+  // syndrome-based decoder) could have slipped through. Loop all pairs —
+  // each round-trip is sub-microsecond so the full sweep runs in <1 ms.
   const Fid fid = Fid::kNode2();
   const Toi toi{99};
 
-  REQUIRE(bch_encode(fid, toi, codeword) == BchStatus::kOk);
+  std::array<uint8_t, kBchCodewordLength> clean{};
+  REQUIRE(bch_encode(fid, toi, clean) == BchStatus::kOk);
 
-  // Flip two bits
-  codeword[5] ^= 1U;
-  codeword[20] ^= 1U;
+  for (size_t i = 0; i < kBchCodewordLength; ++i) {
+    for (size_t j = i + 1; j < kBchCodewordLength; ++j) {
+      std::array<uint8_t, kBchCodewordLength> codeword = clean;
+      codeword[i] ^= 1U;  // NOLINT(cppcoreguidelines-pro-bounds-constant-array-index)
+      codeword[j] ^= 1U;  // NOLINT(cppcoreguidelines-pro-bounds-constant-array-index)
 
-  const auto result = bch_decode(codeword);
-  CHECK(result.status == BchStatus::kOk);
-  CHECK(result.fid == fid);
-  CHECK(result.toi.value() == toi.value());
-  CHECK(result.hamming_distance == 2);
+      const auto result = bch_decode(codeword);
+      CAPTURE(i, j);
+      CHECK(result.status == BchStatus::kOk);
+      CHECK(result.fid == fid);
+      CHECK(result.toi.value() == toi.value());
+      CHECK(result.hamming_distance == 2);
+    }
+  }
 }
 
 TEST_CASE("BCH decoder: confidence threshold (NASA safety)", "[bch]") {
@@ -207,20 +217,9 @@ TEST_CASE("[LSIS-AFS-501] BCH spec test vector: Figure 8 (FID=0, TOI=69)", "[bch
   CHECK(result.toi.value() == 69);
 }
 
-TEST_CASE("[LSIS-AFS-501] Gateway 2: BCH Round-trip", "[bch]") {
-  Fid fid{2};
-  Toi toi{42};
-  std::array<uint8_t, 52> encoded{};
-
-  REQUIRE(bch_encode(fid, toi, encoded) == BchStatus::kOk);
-
-  auto result = bch_decode(encoded);
-
-  CHECK(result.status == BchStatus::kOk);
-  CHECK(result.fid.value() == 2);
-  CHECK(result.toi.value() == 42);
-  CHECK(result.hamming_distance == 0);
-}
+// G-12: "Gateway 2: BCH Round-trip" tested a single point (FID=2, TOI=42)
+// already covered by "[LSIS-AFS-501] BCH codebook exhaustive check" above,
+// which sweeps all 4 FIDs × 100 TOIs. Deleted.
 
 TEST_CASE("BCH: Ambiguous Match Detection", "[bch]") {
   std::array<uint8_t, 52> corrupted{};

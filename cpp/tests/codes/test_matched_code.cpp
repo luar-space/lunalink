@@ -34,13 +34,11 @@ TEST_CASE("[LSIS-AFS-401] secondary codes match spec Table 10", "[matched_code]"
   CHECK(kSecondaryCodes[1][3] == 1);
 }
 
-TEST_CASE("[LSIS-AFS-401] matched_code_epoch produces binary chip values", "[matched_code]") {
-  std::array<uint8_t, kWeil10230ChipLength> out{};
-  REQUIRE(matched_code_epoch(PrnId{1}, 0, out) == MatchedCodeStatus::kOk);
-  for (const auto chip : out) {
-    CHECK((chip == 0 || chip == 1));
-  }
-}
+// G-13: "matched_code_epoch produces binary chip values" deleted —
+// `matched_code_epoch` output is the XOR of three already-binary
+// inputs, so the per-chip `0 || 1` CHECK was tautological. Correctness
+// is anchored by the `primary XOR secondary XOR tertiary` test below
+// and the distinctness test elsewhere in this file.
 
 TEST_CASE("[LSIS-AFS-401] matched_code_epoch equals primary XOR secondary XOR tertiary",
           "[matched_code]") {
@@ -82,20 +80,41 @@ TEST_CASE("[LSIS-AFS-401] matched_code_epoch differs across secondary code bound
 
 TEST_CASE("[LSIS-AFS-401] matched_code_epoch changes across tertiary chip boundary",
           "[matched_code]") {
-  std::array<uint8_t, kWeil10230ChipLength> e0{};
-  std::array<uint8_t, kWeil10230ChipLength> e4{};
+  // G-11: the previous version did
+  //     if (t0 != t1) { CHECK(e0[0] != e4[0]); }
+  // using Weil-1500 PRN 1, whose first two chips happen to be equal
+  // (see test_prn.cpp: `weil1500 PRN 1 first 8 chips = {1,1,1,0,0,1,0,0}`),
+  // so the CHECK never ran and the test silently passed. Fix: scan the
+  // tertiary code of PRN 1 for the first chip index `i` where
+  // tertiary[i] != tertiary[i+1], then test the matched code at epochs
+  // `4*i` and `4*(i+1)` — the first tertiary boundary whose chip actually
+  // flips. The assertion now runs unconditionally.
+  std::array<uint8_t, kWeil10230ChipLength> e_before{};
+  std::array<uint8_t, kWeil10230ChipLength> e_after{};
 
   PrnCode tertiary;
   REQUIRE(weil1500_prn_packed(PrnId{1}, tertiary) == PrnStatus::kOk);
-  uint8_t t0 = 0, t1 = 0;
-  REQUIRE(unpack_chip(tertiary, 0, t0) == PrnStatus::kOk);
-  REQUIRE(unpack_chip(tertiary, 1, t1) == PrnStatus::kOk);
 
-  if (t0 != t1) {
-    REQUIRE(matched_code_epoch(PrnId{1}, 0, e0) == MatchedCodeStatus::kOk);
-    REQUIRE(matched_code_epoch(PrnId{1}, 4, e4) == MatchedCodeStatus::kOk);
-    CHECK(e0[0] != e4[0]);
+  uint16_t flip_idx = 0;
+  bool found = false;
+  for (uint16_t i = 0; i < kWeil1500ChipLength - 1U; ++i) {
+    uint8_t a = 0;
+    uint8_t b = 0;
+    REQUIRE(unpack_chip(tertiary, i, a) == PrnStatus::kOk);
+    REQUIRE(unpack_chip(tertiary, static_cast<uint16_t>(i + 1U), b) == PrnStatus::kOk);
+    if (a != b) {
+      flip_idx = i;
+      found = true;
+      break;
+    }
   }
+  REQUIRE(found);
+
+  const uint16_t epoch_before = static_cast<uint16_t>(4U * flip_idx);
+  const uint16_t epoch_after  = static_cast<uint16_t>(4U * (flip_idx + 1U));
+  REQUIRE(matched_code_epoch(PrnId{1}, epoch_before, e_before) == MatchedCodeStatus::kOk);
+  REQUIRE(matched_code_epoch(PrnId{1}, epoch_after,  e_after)  == MatchedCodeStatus::kOk);
+  CHECK(e_before[0] != e_after[0]);
 }
 
 TEST_CASE("[LSIS-AFS-401] matched_code_epoch different PRNs produce different sequences",
@@ -136,26 +155,43 @@ TEST_CASE("[LSIS-AFS-401] matched_code_epoch_checked rejects invalid inputs", "[
 
 TEST_CASE("[LSIS-AFS-401] matched_code_epoch_checked supports tertiary phase offset",
           "[matched_code]") {
+  // G-11: the previous version guarded the `out0 != out1` CHECK on
+  // `tertiary[0] != tertiary[1]` — which is false for PRN 1 (both are 1,
+  // see `weil1500 PRN 1` first chips). The CHECK silently skipped. Fix:
+  // scan for the first chip offset `k` where tertiary chips 0 and `k`
+  // differ, then use phase offset `k`. The assertion now runs
+  // unconditionally.
+  PrnCode t;
+  REQUIRE(weil1500_prn_packed(PrnId{1}, t) == PrnStatus::kOk);
+  uint8_t c0 = 0;
+  REQUIRE(unpack_chip(t, 0, c0) == PrnStatus::kOk);
+
+  uint16_t phase = 0;
+  bool found = false;
+  for (uint16_t k = 1; k < kWeil1500ChipLength; ++k) {
+    uint8_t ck = 0;
+    REQUIRE(unpack_chip(t, k, ck) == PrnStatus::kOk);
+    if (ck != c0) {
+      phase = k;
+      found = true;
+      break;
+    }
+  }
+  REQUIRE(found);
+
   std::array<uint8_t, kWeil10230ChipLength> out0{};
   std::array<uint8_t, kWeil10230ChipLength> out1{};
-  MatchedCodeAssignment a0{}, a1{};
+  MatchedCodeAssignment a0{};
+  MatchedCodeAssignment a1{};
 
   REQUIRE(default_matched_assignment_checked(PrnId{1}, a0) == MatchedCodeStatus::kOk);
   a1 = a0;
-  a1.tertiary_phase_offset = CheckedRange<uint16_t, 0, 1499>{1};
+  a1.tertiary_phase_offset = CheckedRange<uint16_t, 0, 1499>{phase};
 
   REQUIRE(matched_code_epoch_checked(a0, 0, out0) == MatchedCodeStatus::kOk);
   REQUIRE(matched_code_epoch_checked(a1, 0, out1) == MatchedCodeStatus::kOk);
 
-  PrnCode t;
-  REQUIRE(weil1500_prn_packed(PrnId{1}, t) == PrnStatus::kOk);
-  uint8_t c0 = 0, c1 = 0;
-  REQUIRE(unpack_chip(t, 0, c0) == PrnStatus::kOk);
-  REQUIRE(unpack_chip(t, 1, c1) == PrnStatus::kOk);
-
-  if (c0 != c1) {
-    CHECK(out0 != out1);
-  }
+  CHECK(out0 != out1);
 }
 
 TEST_CASE("checked matched helper APIs: saturating logic", "[matched_code]") {
@@ -243,25 +279,37 @@ TEST_CASE("[LSIS-AFS-401] Matched Code Coherency (LSIS-172)", "[matched_code]") 
   // 2. Verify Tertiary Code alignment (Ns = 4)
   // Tertiary chip only changes every 4 primary epochs.
   // Epoch 0-3: same tertiary chip.
-  // Epoch 4: next tertiary chip.
+  // Epoch 4k: next tertiary chip at tertiary index k.
+  //
+  // G-11: the previous version guarded the CHECK on
+  // `tertiary[0] != tertiary[1]`, which for `assignment.tertiary_prn`
+  // derived from PrnId{1} is `{1,1}` — false, so the CHECK silently
+  // skipped. Fix: scan for the first tertiary chip index `k` where
+  // tertiary[0] != tertiary[k], then test epoch 0 vs epoch 4k. Because
+  // S0 is length-4, epoch 0 and epoch 4k always share the same
+  // secondary chip (S0[0] == S0[(4k) mod 4]), so any difference isolates
+  // the tertiary flip.
   REQUIRE(matched_code_epoch_checked(assignment, 0, epoch0) == MatchedCodeStatus::kOk);
-
-  // To isolate tertiary, we'd need to XOR out the primary and secondary.
-  // But we can check that epoch 0 and 4 use different tertiary indices.
-  // Tertiary index = (offset + floor(epoch/4)) % 1500
-  // Epoch 0 -> index 0
-  // Epoch 4 -> index 1
 
   PrnCode t_code;
   REQUIRE(weil1500_prn_packed(assignment.tertiary_prn, t_code) == PrnStatus::kOk);
-  uint8_t t0 = 0, t1 = 0;
+  uint8_t t0 = 0;
   REQUIRE(unpack_chip(t_code, 0, t0) == PrnStatus::kOk);
-  REQUIRE(unpack_chip(t_code, 1, t1) == PrnStatus::kOk);
 
-  if (t0 != t1) {
-    // If tertiary chips differ, and secondary chip is same (S0[0] == S0[4%4]),
-    // then epochs should differ.
-    REQUIRE(matched_code_epoch_checked(assignment, 4, epoch4) == MatchedCodeStatus::kOk);
-    CHECK(epoch0[0] != epoch4[0]);
+  uint16_t flip_k = 0;
+  bool found = false;
+  for (uint16_t k = 1; k < kWeil1500ChipLength; ++k) {
+    uint8_t tk = 0;
+    REQUIRE(unpack_chip(t_code, k, tk) == PrnStatus::kOk);
+    if (tk != t0) {
+      flip_k = k;
+      found = true;
+      break;
+    }
   }
+  REQUIRE(found);
+
+  const uint16_t epoch_flip = static_cast<uint16_t>(4U * flip_k);
+  REQUIRE(matched_code_epoch_checked(assignment, epoch_flip, epoch4) == MatchedCodeStatus::kOk);
+  CHECK(epoch0[0] != epoch4[0]);
 }

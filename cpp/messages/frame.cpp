@@ -2,6 +2,7 @@
 
 #include "lunalink/encoding/bch.hpp"
 #include "lunalink/encoding/interleaver.hpp"
+#include "lunalink/messages/message_parser.hpp"
 
 #include <algorithm>
 #include <array>
@@ -127,6 +128,50 @@ namespace {
 constexpr uint32_t kCfiMagicSb = 0xB4B4B4B4U;
 constexpr uint32_t kCfiMagicFrame = 0x4B4B4B4BU;
 
+/// [LSIS-AFS-300] Overwrite the SB2 spare region with the alternating 0/1
+/// pattern starting with 0 on the MSB.
+///
+/// Single enforcement point for LSIS V1.0 §300 ("spare bits shall be a
+/// sequence of alternating zeros and ones starting with zero on the
+/// MSB"). G-18 moved responsibility from the caller to this helper so
+/// that every SB2 frame LunaLink emits is spec-compliant regardless of
+/// what the caller supplied in the spare region.
+///
+/// Behaviour:
+///   * No-op for ``LdpcSubframe::kSF3`` / ``kSF4`` (their spare regions
+///     are message-type-specific per LSIS V1.0 and cannot be enforced
+///     centrally without per-message-type knowledge).
+///   * Defensive bounds guard: the helper skips the rewrite if the
+///     message span is shorter than ``kSb2SpareOffset + kSb2SpareBits``.
+///     The nominal caller (``subframe_build_ldpc`` with SF2 params)
+///     always passes a 1200-bit span, so the guard is defence-in-depth
+///     against SEU corruption of the constant or of
+///     ``expected_msg_bits`` — see FM-103.
+///
+/// @param type  Subframe type — only ``kSF2`` is rewritten.
+/// @param msg   Writable message buffer (post data-copy, pre-CRC). The
+///              nominal SF2 caller passes ``kSb2MsgBits`` (1200) bytes;
+///              the helper writes indices ``[kSb2SpareOffset,
+///              kSb2SpareOffset + kSb2SpareBits)``. Spans shorter than
+///              ``kSb2SpareOffset + kSb2SpareBits`` (1176) are silently
+///              ignored as a defence-in-depth check (FM-103).
+///
+/// Single-exit per mission assurance §3: branch eligibility into a flag
+/// and gate the rewrite loop, rather than early-returning.
+void enforce_spare_bit_pattern(LdpcSubframe type, std::span<uint8_t> msg) noexcept {
+  // Defence-in-depth: only SF2 is centrally enforced, and the span must
+  // cover the full spare region. Nominal SF2 path passes 1200 bytes.
+  const bool eligible =
+      (type == LdpcSubframe::kSF2) &&
+      // NOCOVER(DEFENCE_IN_DEPTH): SEU guard — not reachable nominally
+      (msg.size() >= static_cast<size_t>(kSb2SpareOffset) + kSb2SpareBits);
+  if (eligible) {
+    for (uint8_t i = 0; i < kSb2SpareBits; ++i) {
+      msg[static_cast<size_t>(kSb2SpareOffset) + i] = static_cast<uint8_t>(i % 2U);
+    }
+  }
+}
+
 // Validate that input data and workspace buffers do not alias the output frame.
 [[nodiscard]] bool validate_frame_inputs(std::span<const uint8_t> sb2_data,
                                          std::span<const uint8_t> sb3_data,
@@ -200,14 +245,19 @@ encode_bch_header(Fid fid, Toi toi, std::span<uint8_t> sb1_out, FrameStatus& sta
     auto msg = std::span(msg_buf).subspan(0, expected_msg_bits);
     std::ranges::copy(data, msg.begin());
     LUNALINK_CRITICAL_ENTER;
-    cfi_count = cfi_count + 1U; // milestone 1: data copied
+    enforce_spare_bit_pattern(type, msg);
+    cfi_count = cfi_count + 1U; // milestone 1: data copy + LSIS-300 spare rewrite (FM-103)
     LUNALINK_CRITICAL_EXIT;
   }
 
   // Step 2: Compute CRC-24Q over data and append.
   // cppcheck-suppress duplicateCondition
   if (ok) {
-    const auto crc_status = crc24_calculate(data, crc);
+    // CRC-24Q must cover the *post-enforcement* data — not the caller's
+    // original span — otherwise receivers will reject the frame after the
+    // SB2 spare region is rewritten by `enforce_spare_bit_pattern` (G-18).
+    const auto msg_data = std::span<const uint8_t>(msg_buf).subspan(0, data.size());
+    const auto crc_status = crc24_calculate(msg_data, crc);
     if (crc_status != CrcStatus::kOk) [[unlikely]] {
       ok = false; // NOCOVER(DEFENCE_IN_DEPTH): CRC failure in subframe_build_ldpc
       status = FrameStatus::kCrcFailed; // FIZ-1

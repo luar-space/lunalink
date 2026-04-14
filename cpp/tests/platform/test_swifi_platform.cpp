@@ -413,24 +413,16 @@ TEST_CASE("checksum-golden: print BCH, Weil, and Legendre codebook checksums",
 }
 
 // ---------------------------------------------------------------------------
-// POST step 2 — BCH/Weil checksums match golden constants; POST passes step 2
+// POST step 2 — nominal POST passes when all on-disk codebooks are intact.
 // ---------------------------------------------------------------------------
-TEST_CASE("[SW-SAF-04] POST step 2: all codebook checksums match golden constants; run_post passes",
-          "[checksum-golden]") {
-  // Verify that the committed golden constants in codebook_checksums.hpp match
-  // the actual runtime checksums of all codebook/sequence tables.
-  // When they match, run_post() must pass step 2 (status == kPass).
-  const uint64_t bch = bch_codebook_checksum();
-  const uint64_t w10 = weil10230_codebook_checksum();
-  const uint64_t w15 = weil1500_codebook_checksum();
-  const uint64_t leg10223 = legendre_10223_checksum();
-  const uint64_t leg1499 = legendre_1499_checksum();
-  CHECK(bch == kBchCodebookChecksum);
-  CHECK(w10 == kWeil10230Checksum);
-  CHECK(w15 == kWeil1500Checksum);
-  CHECK(leg10223 == kLegendre10223Checksum);
-  CHECK(leg1499 == kLegendre1499Checksum);
-  // Nominal POST must pass when all checksums match.
+// G-02: this test used to duplicate the five `runtime_checksum == kXxxChecksum`
+// assertions from the `[checksum-golden]` helper above. Those assertions were
+// self-signed (see `test_swifi_codes.cpp` for the full explanation) and added
+// no coverage on top of the helper. Removed. This test now only verifies the
+// behaviour unique to `run_post()`: on a nominal system it must return
+// `kPass`, exercising the full POST sequence including checksum step 2 as one
+// link in the chain rather than as a standalone goal.
+TEST_CASE("[SW-SAF-04] run_post: nominal system returns kPass", "[post]") {
   const PostResult result = run_post();
   REQUIRE(result.status == PostStatus::kPass);
 }
