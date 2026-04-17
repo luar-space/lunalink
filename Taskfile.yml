@@ -642,7 +642,15 @@ tasks:
       # validate-export is CI-only (.github/workflows/validate-export.yml runs on
       # push to main). It rebuilds a fresh venv inside the exported tree, which
       # adds ~60s locally for a check whose audience is a fresh-clone user.
-      - git checkout docs/assurance docs/notebooks
+      #
+      # Discard the regenerated artefacts only — `swifi-report.py` rewrites
+      # `swifi_results.json`, `verify_traceability.py` rewrites
+      # `traceability.json`, and `jupyter nbconvert --inplace` re-executes
+      # notebooks.  The checkout is path-narrow so it does NOT wipe
+      # human-curated assurance RST (FMEA, fault_coverage, safety_plan, etc.)
+      # — a previous broad `git checkout docs/assurance` silently nuked
+      # FM-109 edits during S1-2b.
+      - git checkout docs/assurance/private/evidence docs/notebooks
     silent: false
 
   recertify:
