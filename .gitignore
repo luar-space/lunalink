@@ -33,8 +33,9 @@ docs/_build/
 # Standards PDFs (large binaries — download locally, see docs/standards/)
 docs/standards/**/*.pdf
 
-# LuGRE mission data (256 MB — download from Zenodo 10.5281/zenodo.16411687)
-docs/references/lugre/
+# LuGRE mission data — tracked via git-lfs (681 MB)
+# Source: Zenodo 10.5281/zenodo.16411687
+# !docs/references/lugre/  (un-ignored, tracked by LFS rules in .gitattributes)
 
 # Third-party clones (interop testing)
 third_party/

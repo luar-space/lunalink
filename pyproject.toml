@@ -51,6 +51,7 @@ dev = [
 # [[private-begin]]
 [project.optional-dependencies]
 private = []
+visibility = ["astropy>=6.0", "spiceypy>=6.0"]
 # [[private-end]]
 
 [tool.setuptools_scm]
@@ -114,9 +115,27 @@ select = [
 "docs/notebooks/*.ipynb" = ["E501", "N806", "D103"]
 # Utility scripts: allow complexity, missing docstrings, long lines, ambiguous vars
 "scripts/sync_docstrings.py" = ["C901", "D103"]
-"scripts/cn0_recompute_at_tlm.py" = ["C901", "D103", "E402", "E501", "F401", "F541"]
-"scripts/cn0_validation.py" = ["C901", "D102", "D103", "E501", "E741", "F541", "I001"]
-"scripts/parse_tlm.py" = ["D102", "D103"]
+# moon-gnss-ssv scripts: uppercase math vars (IAU/GNSS notation), script-level
+# complexity, sys.path bootstrap after imports, loose docstrings —
+# matches notebook/script style, not library style.
+"moon-gnss-ssv/src/*.py" = [
+    "E402", "E501", "N806", "C901",
+    "D100", "D101", "D102", "D103", "D104", "D105", "D107",
+    "D200", "D205", "D400", "D401", "D415",
+]
+"moon-gnss-ssv/scripts/*.py" = ["E501"]
+# Diagnostic / research scripts: uppercase math vars (IAU/GNSS notation),
+# long lines, loose docstrings, f-strings-without-placeholders — typical
+# research-script style, not flight-quality code.
+"scripts/diagnostics/*.py" = [
+    "E501", "F541",
+    "N803", "N806", "N815",
+    "D100", "D101", "D102", "D103", "D104", "D105", "D107",
+    "D200", "D205", "D400", "D401", "D415",
+]
+# H0 dump guard tests: multi-line docstring style (missing blank line)
+"tests/test_h0_dump_hook_guard.py" = ["D205"]
+"tests/test_joint_cn0_convention.py" = ["D205"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
