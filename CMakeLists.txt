@@ -7,6 +7,8 @@ option(BUILD_TESTING "Build unit tests" ON)
 option(ENABLE_COVERAGE "Enable coverage reporting" OFF)
 option(ENABLE_SANITIZERS "Enable sanitizers" OFF)
 option(LUNALINK_FAULT_INJECTION "Enable fault-injection APIs for SWIFI tests" OFF)
+option(LUNALINK_BENCH_COUNT_FFTS "Enable FFT call counter (bench builds only — not for flight)" OFF)
+option(LUNALINK_DEV_RX_FFT_CACHE "Enable rx-FFT memoisation in Correlator (dev/bench builds only — adds heap, not for flight)" OFF)
 option(ENABLE_LLVM_COVERAGE "Enable LLVM source-based coverage (MC/DC, requires Clang)" OFF)
 option(ENABLE_STACK_USAGE "Enable -fstack-usage to produce .su files for stack analysis" OFF)
 
@@ -179,6 +181,13 @@ if(BUILD_PROPRIETARY AND EXISTS "${CMAKE_SOURCE_DIR}/cpp/proprietary")
     set_target_properties(lunalink_proprietary PROPERTIES POSITION_INDEPENDENT_CODE ON)
     target_compile_options(lunalink_proprietary PRIVATE ${LUNALINK_WARNING_FLAGS} ${LUNALINK_CORE_FLAGS})
     target_link_options(lunalink_proprietary PRIVATE ${LUNALINK_LINKER_FLAGS})
+
+    if(LUNALINK_BENCH_COUNT_FFTS)
+        target_compile_definitions(lunalink_proprietary PUBLIC LUNALINK_BENCH_COUNT_FFTS=1)
+    endif()
+    if(LUNALINK_DEV_RX_FFT_CACHE)
+        target_compile_definitions(lunalink_proprietary PUBLIC LUNALINK_DEV_RX_FFT_CACHE=1)
+    endif()
 endif()
 
 # --- Python Bindings ---
@@ -267,6 +276,7 @@ if(BUILD_TESTING)
         # test_correlator_perf.cpp removed — correlator tests moved to proprietary/tests/
         cpp/tests/performance/test_sync_detection_rate.cpp
         cpp/tests/performance/test_wcet.cpp
+        cpp/tests/performance/fft_bench.cpp
     )
     target_link_libraries(test_lunalink PRIVATE lunalink_core Catch2::Catch2WithMain)
     target_include_directories(test_lunalink PRIVATE cpp/tests)
@@ -347,9 +357,13 @@ if(BUILD_TESTING)
             cpp/proprietary/tests/signal/test_signal_config.cpp
             cpp/proprietary/tests/signal/test_fft_sizes.cpp
             cpp/proprietary/tests/signal/test_correlator.cpp
+            $<$<BOOL:${LUNALINK_BENCH_COUNT_FFTS}>:cpp/proprietary/tests/signal/acquisition_bench.cpp>
         )
         target_link_libraries(test_receiver PRIVATE lunalink_proprietary Catch2::Catch2WithMain)
-        target_include_directories(test_receiver PRIVATE cpp/proprietary)
+        # ``cpp/tests`` is added so the proprietary acquisition_bench can
+        # reuse ``performance/bench_util.hpp`` from the open-source tests/
+        # tree (Lcg + CSV header helper) without duplicating it.
+        target_include_directories(test_receiver PRIVATE cpp/proprietary cpp/tests)
         target_compile_options(test_receiver PRIVATE ${LUNALINK_WARNING_FLAGS}
             $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Wno-unknown-warning-option -Wno-c2y-extensions -Wno-pgo-coverage>)
 

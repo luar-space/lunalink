@@ -1,0 +1,13 @@
+size,backend,mode,variant,ns_per_fft,stdev_ns,gflops
+2048,vdsp_dft,single,baseline,1553.06,24.0583,72.5277
+2048,vdsp_dft,thr10,baseline,4627.39,98.7277,24.342
+4096,vdsp_dft,single,baseline,3251.72,21.8516,75.5784
+4096,vdsp_dft,thr10,baseline,9912.87,246.451,24.792
+8192,vdsp_dft,single,baseline,7274.93,33.4021,73.1938
+8192,vdsp_dft,thr10,baseline,21344.9,639.977,24.9465
+16384,vdsp_dft,single,baseline,19454.5,92.5714,58.952
+16384,vdsp_dft,thr10,baseline,53317.7,2719.2,21.5103
+32768,vdsp_dft,single,baseline,108235,168.775,22.7061
+32768,vdsp_dft,thr10,baseline,101458,3143.32,24.2227
+65536,vdsp_dft,single,baseline,164791,655.434,31.8153
+65536,vdsp_dft,thr10,baseline,200903,10763.1,26.0965

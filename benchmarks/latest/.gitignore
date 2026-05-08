@@ -1,0 +1,3 @@
+# Gitignored transient bench outputs
+*
+!.gitignore

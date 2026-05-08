@@ -3,8 +3,10 @@
 check_build_flags.py — SWE-109 compile-flag gate.
 
 Reads compile_commands.json and verifies that every translation unit under
-cpp/{codes,encoding,messages,signal,platform}/ carries required hardening flags
-and is free of forbidden flags.
+the core source directories (open + proprietary) carries required hardening
+flags, is free of forbidden compiler flags, and is free of forbidden
+preprocessor defines (dev/bench-only macros that must never reach a flight
+build — see ``docs/assurance/build_policy.rst``).
 
 Usage:
     python scripts/check_build_flags.py [path/to/compile_commands.json]
@@ -14,6 +16,7 @@ Exits with code 0 if all units pass, 1 if any violation is found.
 
 import json
 import pathlib
+import re
 import sys
 
 REQUIRED_FLAGS = [
@@ -33,6 +36,29 @@ FORBIDDEN_FLAGS = [
     "-fdelete-null-pointer-checks",
 ]
 
+# Preprocessor defines that gate dev/bench-only code paths. They add heap
+# allocation, atomic counters, or other behaviour that must never be present
+# in a flight binary. Catalogue is normative — see
+# ``docs/assurance/build_policy.rst`` (Dev/Bench-Only Compile Flags).
+FORBIDDEN_DEFINES = [
+    "LUNALINK_BENCH_COUNT_FFTS",
+    "LUNALINK_DEV_RX_FFT_CACHE",
+]
+
+
+# Match -DNAME or -DNAME=VALUE as a standalone token.
+_DEFINE_RE = re.compile(r"^-D([A-Za-z_][A-Za-z0-9_]*)(?:=.*)?$")
+
+
+def _extract_defines(flags: list[str]) -> set[str]:
+    """Return the set of preprocessor macro names defined on the command line."""
+    out: set[str] = set()
+    for tok in flags:
+        m = _DEFINE_RE.match(tok)
+        if m:
+            out.add(m.group(1))
+    return out
+
 
 def check_unit(entry: dict) -> list[str]:
     """Return a list of violation strings for one compile_commands entry."""
@@ -49,6 +75,11 @@ def check_unit(entry: dict) -> list[str]:
         if flag in flags:
             violations.append(f"  FOUND forbidden flag: {flag}")
 
+    defines = _extract_defines(flags)
+    for name in FORBIDDEN_DEFINES:
+        if name in defines:
+            violations.append(f"  FOUND forbidden define: -D{name}")
+
     return violations
 
 
@@ -58,6 +89,8 @@ CORE_SOURCE_DIRS = (
     "cpp/messages/",
     "cpp/signal/",
     "cpp/platform/",
+    "cpp/proprietary/codes/",
+    "cpp/proprietary/signal/",
 )
 
 
@@ -105,6 +138,26 @@ def main() -> int:
         return 0
 
     print(f"\nFlag check FAILED ({len(signal_units)} unit(s) checked).")
+
+    # Common operator confusion: this gate is for the *flight* compile
+    # database; it is intentionally hostile to dev/bench-flag-on builds.
+    # If every flight unit reports a forbidden define, the user almost
+    # certainly fed the wrong database (e.g.
+    # ``build/bench-flags/compile_commands.json``).  Spell that out
+    # rather than leaving the operator to compare paths by eye.
+    if any(
+        "forbidden define" in line
+        for entry in signal_units
+        for line in check_unit(entry)
+    ):
+        print(
+            "\nHint: this gate is for the *flight* compile database.\n"
+            "      If you meant to inspect the bench build, the flags\n"
+            "      were enabled deliberately and the gate is doing its\n"
+            "      job — point it at build/cpp-tests-ninja/ or\n"
+            "      build/compile_commands.json instead of\n"
+            "      build/bench-flags/."
+        )
     return 1
 
 

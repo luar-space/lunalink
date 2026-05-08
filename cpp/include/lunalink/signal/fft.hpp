@@ -1,4 +1,6 @@
 #pragma once
+#include <algorithm>
+#include <array>
 #include <complex>
 #include <cstdint>
 #include <span>
@@ -6,7 +8,6 @@
 #ifdef __APPLE__
 #include <Accelerate/Accelerate.h>
 #else
-#include <array>
 #include <cmath>
 #include <numbers>
 #include <utility>
@@ -37,38 +38,98 @@ public:
 
 #ifdef __APPLE__
   // ─── vDSP (Apple Accelerate) backend ────────────────────────────────────────
+  //
+  // Uses the modern ``vDSP_DFT_Execute`` path with split-complex IO.  Our
+  // std::complex<float> is interleaved, so we deinterleave on entry and
+  // re-interleave on exit via ``vDSP_ctoz`` / ``vDSP_ztoc`` — both are
+  // NEON-vectorised memory-bandwidth-limited and effectively free relative
+  // to the FFT itself.
+  //
+  // A2 measurement (M4, fft_bench): DFT_Execute is 2.4–3.0× faster than
+  // the legacy ``vDSP_fft_zip`` across N ∈ {2048..65536}, despite the
+  // deinterleave round-trip.
 
   Fft() noexcept = default;
 
-  /// In-place forward FFT.
+  /// In-place forward FFT.  Returns false (and zeroes the buffer) if the
+  /// vDSP setup could not be created — see ``setup_fwd()``.  This null-
+  /// setup safe-zero is the detection step for FMEA entry FM-082b
+  /// (vDSP backend runtime failure, Tier 2/3 only — Tier 1 uses the
+  /// scalar branch and is structurally immune).
+  ///
+  /// Thread-safety: Fft<N> is **not** safe to share across threads.  The
+  /// ``mutable`` split-complex scratch (``realp_`` / ``imagp_``) is rewritten
+  /// on every call.  Each owning thread must hold its own instance — this
+  /// is the convention used by ``Correlator`` (one Fft<N> per Correlator,
+  /// one Correlator per worker thread) and the bench harness.
   void forward(std::span<Complex, N> buf) const noexcept {
-    // std::complex<float> is layout-compatible with float[2] (C++11 §26.4/4).
-    // reinterpret_cast to access interleaved real/imag pairs —
+    const auto setup = setup_fwd();
+    if (setup == nullptr) [[unlikely]] {
+      // vDSP_DFT_zop_CreateSetup returned null — safe-zero the buffer rather
+      // than execute on a null setup (UB).  Caller observes an all-zero
+      // spectrum, which propagates to a missed acquisition / scrubbed
+      // accumulator downstream.  The non-Apple scalar fallback has no
+      // analogous failure mode.
+      std::fill(buf.begin(), buf.end(), Complex{0.0F, 0.0F});
+      return;
+    }
+    auto* re = realp_.data();
+    auto* im = imagp_.data();
+    DSPSplitComplex split{re, im};
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    auto* ptr = reinterpret_cast<float*>(buf.data());
-    // Stride of 2 walks interleaved [re0, im0, re1, im1, ...] as split.
-    DSPSplitComplex split{ptr, ptr + 1};
-    vDSP_fft_zip(vdsp_setup(), &split, 2, kLog2N, kFFTDirection_Forward);
+    vDSP_ctoz(reinterpret_cast<const DSPComplex*>(buf.data()), 2, &split, 1, N);
+    vDSP_DFT_Execute(setup, re, im, re, im);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    vDSP_ztoc(&split, 1, reinterpret_cast<DSPComplex*>(buf.data()), 2, N);
   }
 
-  /// In-place inverse FFT with 1/N scaling.
+  /// In-place inverse FFT with 1/N scaling.  Same null-setup safe-zero
+  /// (FM-082b) and thread-safety as ``forward``.
   void inverse(std::span<Complex, N> buf) const noexcept {
+    const auto setup = setup_inv();
+    if (setup == nullptr) [[unlikely]] {
+      std::fill(buf.begin(), buf.end(), Complex{0.0F, 0.0F});
+      return;
+    }
+    auto* re = realp_.data();
+    auto* im = imagp_.data();
+    DSPSplitComplex split{re, im};
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    auto* ptr = reinterpret_cast<float*>(buf.data());
-    DSPSplitComplex split{ptr, ptr + 1};
-    vDSP_fft_zip(vdsp_setup(), &split, 2, kLog2N, kFFTDirection_Inverse);
-    // vDSP inverse is unnormalised — scale by 1/N to match standard IDFT.
+    vDSP_ctoz(reinterpret_cast<const DSPComplex*>(buf.data()), 2, &split, 1, N);
+    vDSP_DFT_Execute(setup, re, im, re, im);
+    // vDSP DFT_Execute is unnormalised in *both* directions — scaling is
+    // therefore part of the inverse contract, not a stylistic choice, and
+    // is required to keep the Apple-vDSP backend bit-aligned with the
+    // scalar Cooley-Tukey conjugate-trick fallback below (which divides
+    // by N at the same point).
     const float scale = 1.0F / static_cast<float>(N);
-    // Widening to vDSP_Length for element count (2 floats per complex) —
-    // NOLINTNEXTLINE(bugprone-implicit-widening-of-multiplication-result)
-    vDSP_vsmul(ptr, 1, &scale, ptr, 1, static_cast<vDSP_Length>(N) * 2U);
+    vDSP_vsmul(re, 1, &scale, re, 1, N);
+    vDSP_vsmul(im, 1, &scale, im, 1, N);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    vDSP_ztoc(&split, 1, reinterpret_cast<DSPComplex*>(buf.data()), 2, N);
   }
 
 private:
-  /// Lazily-created, leaked-at-exit FFTSetup (one per template instantiation).
-  /// Thread-safe since C++11 (magic statics).
-  static FFTSetup vdsp_setup() noexcept {
-    static FFTSetup s = vDSP_create_fftsetup(kLog2N, kFFTRadix2);
+  // Per-instance split-complex scratch (mutable for use from const methods —
+  // legitimate scratch-storage exemption).  No heap; sized at compile time.
+  // Total per Fft<N>: 8N bytes (2 × std::array<float, N>).  Owner must
+  // serialise access — see thread-safety note on ``forward()``.
+  alignas(16) mutable std::array<float, N> realp_{};
+  alignas(16) mutable std::array<float, N> imagp_{};
+
+  /// Lazily-created, leaked-at-exit DFT setups (one fwd + one inv per
+  /// template instantiation).  Thread-safe since C++11 (magic statics).
+  /// Returns nullptr if Accelerate cannot honour the request (out of
+  /// memory, unsupported size on this OS revision); callers handle by
+  /// scrubbing the output buffer.
+  static vDSP_DFT_Setup setup_fwd() noexcept {
+    static vDSP_DFT_Setup s = vDSP_DFT_zop_CreateSetup(
+        nullptr, N, vDSP_DFT_FORWARD);
+    return s;
+  }
+  static vDSP_DFT_Setup setup_inv() noexcept {
+    static vDSP_DFT_Setup s = vDSP_DFT_zop_CreateSetup(
+        nullptr, N, vDSP_DFT_INVERSE);
     return s;
   }
 
@@ -76,6 +137,16 @@ private:
   // ─── Scalar radix-2 Cooley-Tukey DIT backend ───────────────────────────────
 
   /// Pre-compute twiddle factors and bit-reverse permutation table.
+  ///
+  /// Thread-safety: the scalar backend's ``forward``/``inverse`` only
+  /// read ``twiddles_`` and ``bitrev_`` — both are populated in the
+  /// constructor and never mutated thereafter.  A single Fft<N>
+  /// instance is therefore safe to share across threads (opposite of
+  /// the Apple/vDSP backend, which holds per-instance ``mutable``
+  /// split-complex scratch).  Despite this asymmetry, callers should
+  /// treat Fft<N> as *not* shareable to keep the cross-platform
+  /// contract uniform — Correlator owns one Fft<N> per worker thread
+  /// regardless of backend.
   Fft() noexcept {
     // Twiddle factors: W_N^k = exp(-j 2π k/N) for k=0..N/2-1.
     for (uint32_t k = 0; k < N / 2U; ++k) {
