@@ -241,7 +241,12 @@ def _build_frame_bin(fid: int, toi: int, prn: int, sb2_pattern: str = "zeros") -
     patterns = {
         "zeros": lambda n: np.zeros(n, dtype=np.uint8),
         "ones": lambda n: np.ones(n, dtype=np.uint8),
-        "alternating": lambda n: np.array([i % 2 for i in range(n)], dtype=np.uint8),
+        # bit_i = (i + 1) mod 2  →  [1, 0, 1, 0, ...], MSB-first first byte = 0xAA.
+        # Matches the interop doc's "Alternating pattern (0xAA…)" annotation literally
+        # and the public lsis-afs-test-vectors v0.2.0 convention.
+        "alternating": lambda n: np.array(
+            [(i + 1) % 2 for i in range(n)], dtype=np.uint8
+        ),
         "random": lambda n: np.random.default_rng(0x12345678).integers(
             0, 2, n, dtype=np.uint8
         ),
@@ -432,7 +437,12 @@ def generate_ldpc_vectors() -> None:
     test_patterns = [
         ("all_zeros", lambda k: np.zeros(k, dtype=np.uint8)),
         ("all_ones", lambda k: np.ones(k, dtype=np.uint8)),
-        ("alternating", lambda k: np.array([i % 2 for i in range(k)], dtype=np.uint8)),
+        # bit_i = (i + 1) mod 2 → first packed byte 0xAA, matches the interop-doc
+        # convention used by frame_3.bin and the public lsis-afs-test-vectors set.
+        (
+            "alternating",
+            lambda k: np.array([(i + 1) % 2 for i in range(k)], dtype=np.uint8),
+        ),
         (
             "rng_seed42",
             lambda k: np.random.default_rng(42).integers(0, 2, k, dtype=np.uint8),
@@ -575,7 +585,11 @@ def generate_decode_vectors() -> None:
     patterns = {
         "zeros": lambda n: np.zeros(n, dtype=np.uint8),
         "ones": lambda n: np.ones(n, dtype=np.uint8),
-        "alternating": lambda n: np.array([i % 2 for i in range(n)], dtype=np.uint8),
+        # bit_i = (i + 1) mod 2 → first packed byte 0xAA — keeps the decode-direction
+        # vectors aligned with frame_3.bin's input bits.
+        "alternating": lambda n: np.array(
+            [(i + 1) % 2 for i in range(n)], dtype=np.uint8
+        ),
         "sparse": lambda n: np.array(
             [1 if i % 17 == 0 else 0 for i in range(n)], dtype=np.uint8
         ),
@@ -592,6 +606,13 @@ def generate_decode_vectors() -> None:
         pat_fn = patterns.get(sb_pat, patterns["zeros"])
         sb3_data = pat_fn(846)
         sb4_data = pat_fn(846)
+
+        # FAQ Q21 / LSIS-300: SB2 spare bits at offsets 1150..1175 carry
+        # the spec-mandated alternating-0/1 pattern starting with 0,
+        # written by frame_build() unconditionally. Mirror that here so
+        # the expected SB2 matches what the decoder will recover.
+        for i in range(26):
+            sb2_data[1150 + i] = i % 2
 
         # Derive WN and ITOW independently from the SB2 input bits, NOT from
         # the DUT's parse_sb2().  Per LSIS V1.0 §2.4.3.1.6 (LSIS-FID0-520):

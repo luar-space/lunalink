@@ -34,7 +34,9 @@ pytestmark = pytest.mark.skipif(
 TEST_CASES = [
     (0, 42, "zeros"),
     (0, 42, "ones"),
-    (0, 42, "alternating"),
+    # alternating1 → first packed byte 0xAA (matches generator's "alternating",
+    # frame_3.bin, and the public lsis-afs-test-vectors v0.2.0 convention).
+    (0, 42, "alternating1"),
     (1, 0, "zeros"),
     (3, 99, "zeros"),
 ]
@@ -46,9 +48,14 @@ def _make_payload(pattern: str, length: int) -> np.ndarray:
         return np.zeros(length, dtype=np.uint8)
     if pattern == "ones":
         return np.ones(length, dtype=np.uint8)
-    if pattern == "alternating":
-        return np.array([i % 2 for i in range(length)], dtype=np.uint8)
+    if pattern == "alternating1":
+        return np.array([(i + 1) % 2 for i in range(length)], dtype=np.uint8)
     raise ValueError(f"Unknown pattern: {pattern}")
+
+
+def _case_name(pattern: str, fid: int, toi: int) -> str:
+    """Output basename for the C harness's ``<name>`` argument."""
+    return f"{pattern}_fid{fid}_toi{toi}"
 
 
 @pytest.fixture(scope="module")
@@ -57,7 +64,14 @@ def lans_frames_dir() -> Path:
     tmpdir = Path(tempfile.mkdtemp(prefix="lans_frames_"))
     for fid, toi, pattern in TEST_CASES:
         subprocess.run(
-            [str(DUMP_BIN), str(tmpdir), str(fid), str(toi), pattern],
+            [
+                str(DUMP_BIN),
+                str(tmpdir),
+                _case_name(pattern, fid, toi),
+                str(fid),
+                str(toi),
+                pattern,
+            ],
             check=True,
         )
     return tmpdir
@@ -75,7 +89,7 @@ class TestInteropFrames:
         lans_frames_dir: Path,
     ) -> None:
         # Load LANS-AFS-SIM frame
-        lans_path = lans_frames_dir / f"lans_frame_{pattern}_fid{fid}_toi{toi}.bin"
+        lans_path = lans_frames_dir / f"lans_frame_{_case_name(pattern, fid, toi)}.bin"
         lans_frame = np.frombuffer(lans_path.read_bytes(), dtype=np.uint8)
         assert lans_frame.shape == (6000,), f"LANS frame size: {lans_frame.shape}"
 
