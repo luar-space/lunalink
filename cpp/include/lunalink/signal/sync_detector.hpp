@@ -52,7 +52,10 @@ public:
 
   /// Set the detection threshold. Default: kDefaultSyncThreshold.
   /// Returns false if threshold is non-finite or non-positive.
-  [[nodiscard]] bool set_threshold(float threshold) noexcept;
+  [[nodiscard("set_threshold returns false on non-finite or non-positive threshold; "
+                "ignoring it lets the detector run with an unchanged threshold while "
+                "the caller assumes the new value is active")]] bool
+  set_threshold(float threshold) noexcept;
 
   /// Detect the sync pattern in a buffer of soft symbols. [LSIS-AFS-710]
   ///
@@ -64,8 +67,10 @@ public:
   /// @param result      Output: detection result with frame offset and metrics.
   /// @return SyncDetectorStatus::kOk if sync detected, kNotDetected if below
   ///         threshold, or kInvalidInput/kFaultDetected on error.
-  [[nodiscard]] SyncDetectorStatus detect(std::span<const float> rx_symbols,
-                                          SyncResult& result) noexcept;
+  [[nodiscard("SyncDetectorStatus distinguishes kOk / kNotDetected (below threshold) "
+                "from kInvalidInput and kFaultDetected (CFI/TMR); ignoring it conflates "
+                "a CFI fault with a not-detected result (LSIS-AFS-710)")]] SyncDetectorStatus
+  detect(std::span<const float> rx_symbols, SyncResult& result) noexcept;
 
   /// Inject an SEU on the CFI counter register after milestones complete.
   /// The terminal check sees a short count equivalent to a branch skip,

@@ -63,21 +63,30 @@ enum class PrnStatus : uint8_t {
 /// @pre prn_id.valid() == true
 /// @post out.chip_length == 2046
 /// @return PrnStatus::kOk or PrnStatus::kInvalidPrn
-[[nodiscard]] PrnStatus gold_prn_packed(PrnId prn_id, PrnCode& out) noexcept;
+[[nodiscard("PrnStatus reports kInvalidPrn or kFaultDetected; ignoring it leaves `out` "
+              "pointing at zero-length data and lets a missing PRN propagate as if valid "
+              "(LSIS-AFS-101)")]] PrnStatus
+gold_prn_packed(PrnId prn_id, PrnCode& out) noexcept;
 
 /// Get a view into the packed Weil-10230 code for a given PRN. [LSIS-AFS-102]
 ///
 /// @pre prn_id.valid() == true
 /// @post out.chip_length == 10230
 /// @return PrnStatus::kOk or PrnStatus::kInvalidPrn
-[[nodiscard]] PrnStatus weil10230_prn_packed(PrnId prn_id, PrnCode& out) noexcept;
+[[nodiscard("PrnStatus reports kInvalidPrn or kFaultDetected; ignoring it leaves `out` "
+              "pointing at zero-length data and lets a missing PRN propagate as if valid "
+              "(LSIS-AFS-102)")]] PrnStatus
+weil10230_prn_packed(PrnId prn_id, PrnCode& out) noexcept;
 
 /// Get a view into the packed Weil-1500 code for a given PRN. [LSIS-AFS-102]
 ///
 /// @pre prn_id.valid() == true
 /// @post out.chip_length == 1500
 /// @return PrnStatus::kOk or PrnStatus::kInvalidPrn
-[[nodiscard]] PrnStatus weil1500_prn_packed(PrnId prn_id, PrnCode& out) noexcept;
+[[nodiscard("PrnStatus reports kInvalidPrn or kFaultDetected; ignoring it leaves `out` "
+              "pointing at zero-length data and lets a missing PRN propagate as if valid "
+              "(LSIS-AFS-102)")]] PrnStatus
+weil1500_prn_packed(PrnId prn_id, PrnCode& out) noexcept;
 
 /**
  * @brief Verify the integrity of the Weil-10230 codebook (Self-Test/CBIT). [CBIT-AFS-PRN]
@@ -100,7 +109,9 @@ enum class PrnStatus : uint8_t {
  * @post out_chip is 0 or 1 if kOk
  * @return PrnStatus::kOk or PrnStatus::kInvalidChipIndex
  */
-[[nodiscard]] inline PrnStatus
+[[nodiscard("PrnStatus reports kInvalidChipIndex; ignoring it leaves out_chip set to 0 "
+              "(fail-safe) but lets the caller proceed as if the chip were valid "
+              "(LSIS-AFS-101)")]] inline PrnStatus
 unpack_chip(const PrnCode& code, uint16_t chip_idx, uint8_t& out_chip) noexcept {
   PrnStatus status = PrnStatus::kOk;
 

@@ -47,7 +47,9 @@ struct MatchedCodeAssignment {
 };
 
 /// Validate if an assignment struct contains valid IDs and indices.
-[[nodiscard]] inline constexpr bool
+[[nodiscard("valid_matched_assignment returns false on invalid PRN/secondary/tertiary "
+              "fields; ignoring it allows out-of-spec assignments through to "
+              "matched_code_epoch_checked (LSIS-AFS-401)")]] inline constexpr bool
 valid_matched_assignment(const MatchedCodeAssignment& assignment) noexcept {
   return assignment.primary_prn.valid() && assignment.secondary_code_idx < 4 &&
          assignment.tertiary_prn.valid() && assignment.tertiary_phase_offset < 1500;
@@ -62,7 +64,9 @@ valid_matched_assignment(const MatchedCodeAssignment& assignment) noexcept {
 /// Compute the secondary code index for an interim PRN. [LSIS-AFS-401]
 /// Maps PRN ID to one of four secondary codes S0-S3 via (PRN-1) % 4.
 /// Returns kInvalidPrn if the PRN is outside the interim range (1-12).
-[[nodiscard]] inline constexpr MatchedCodeStatus
+[[nodiscard("MatchedCodeStatus reports kInvalidPrn (outside interim 1-12 range); "
+              "ignoring it leaves out_idx at 0 (fail-safe) but lets a non-interim PRN "
+              "use the interim-mapping branch as if valid (LSIS-AFS-401)")]] inline constexpr MatchedCodeStatus
 secondary_code_index_checked(PrnId prn_id, uint8_t& out_idx) noexcept {
   MatchedCodeStatus status = MatchedCodeStatus::kOk;
 
@@ -85,7 +89,9 @@ secondary_code_index_checked(PrnId prn_id, uint8_t& out_idx) noexcept {
 ///   The MatchedCodeAssignment struct and matched_code_epoch_checked() API
 ///   already support arbitrary primary/secondary/tertiary/phase combinations
 ///   — only this default-mapping function enforces the interim 1-12 limit.
-[[nodiscard]] inline constexpr MatchedCodeStatus
+[[nodiscard("MatchedCodeStatus reports kInvalidPrn for non-interim ranges; ignoring "
+              "it leaves out_assignment uninitialised and lets the caller proceed with "
+              "garbage (LSIS-AFS-401)")]] inline constexpr MatchedCodeStatus
 default_matched_assignment_checked(PrnId prn_id, MatchedCodeAssignment& out_assignment) noexcept {
   uint8_t secondary_idx = 0;
   const auto status = secondary_code_index_checked(prn_id, secondary_idx);
@@ -102,12 +108,17 @@ default_matched_assignment_checked(PrnId prn_id, MatchedCodeAssignment& out_assi
 }
 
 /// Checked version of matched_code_epoch using a specific assignment. [LSIS-AFS-401]
-[[nodiscard]] MatchedCodeStatus matched_code_epoch_checked(const MatchedCodeAssignment& assignment,
-                                                           uint16_t epoch_idx,
-                                                           std::span<uint8_t> out) noexcept;
+[[nodiscard("MatchedCodeStatus reports kInvalidPrn/kInvalidEpoch/kOutputTooSmall and "
+              "CFI/TMR faults from the primary⊕secondary⊕tertiary build; ignoring it "
+              "lets a partial/zeroed code reach the modulator (LSIS-AFS-401, FIZ-1)")]] MatchedCodeStatus
+matched_code_epoch_checked(const MatchedCodeAssignment& assignment,
+                           uint16_t epoch_idx,
+                           std::span<uint8_t> out) noexcept;
 
 /// Get a single primary epoch of the AFS-Q pilot code using default assignments. [LSIS-AFS-401]
-[[nodiscard]] inline MatchedCodeStatus
+[[nodiscard("MatchedCodeStatus reports assignment-lookup and matched-code-build "
+              "failures (output zero-filled on failure); ignoring it lets a fail-safe "
+              "zero code reach the modulator (LSIS-AFS-401)")]] inline MatchedCodeStatus
 matched_code_epoch(PrnId prn_id, uint16_t epoch_idx, std::span<uint8_t> out) noexcept {
   MatchedCodeAssignment assignment;
   const auto assignment_status = default_matched_assignment_checked(prn_id, assignment);
@@ -130,7 +141,9 @@ matched_code_epoch(PrnId prn_id, uint16_t epoch_idx, std::span<uint8_t> out) noe
  * @brief Ergonomic template overload for any container with data() and size().
  */
 template <typename T>
-[[nodiscard]] inline MatchedCodeStatus
+[[nodiscard("MatchedCodeStatus reports assignment-lookup and matched-code-build "
+              "failures; ignoring it lets a fail-safe zero code reach the "
+              "modulator (LSIS-AFS-401)")]] inline MatchedCodeStatus
 matched_code_epoch(PrnId prn_id, uint16_t epoch_idx, T&& out) noexcept {
   return matched_code_epoch(prn_id, epoch_idx, std::span<uint8_t>(out));
 }
@@ -139,7 +152,9 @@ matched_code_epoch(PrnId prn_id, uint16_t epoch_idx, T&& out) noexcept {
  * @brief Ergonomic template overload for any container with data() and size().
  */
 template <typename T>
-[[nodiscard]] inline MatchedCodeStatus
+[[nodiscard("MatchedCodeStatus reports kInvalidPrn/kInvalidEpoch/kOutputTooSmall and "
+              "CFI/TMR faults; ignoring it lets a partial/zeroed code reach the "
+              "modulator (LSIS-AFS-401, FIZ-1)")]] inline MatchedCodeStatus
 matched_code_epoch_checked(const MatchedCodeAssignment& assignment,
                            uint16_t epoch_idx,
                            T&& out) noexcept {

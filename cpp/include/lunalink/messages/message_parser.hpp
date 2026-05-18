@@ -171,7 +171,9 @@ struct Sb4ParseResult {
 /// @param n_bits     Number of bits to extract (1..32).
 /// @param out        Output value. Set to 0 on error.
 /// @return kOk on success, kInvalidInput if out of bounds.
-[[nodiscard]] MessageParseStatus extract_bits(std::span<const uint8_t> bits,
+[[nodiscard("extract_bits returns kInvalidInput on bit-range overflow; ignoring it leaves "
+              "`out` indeterminate and propagates corrupt navigation data")]] MessageParseStatus
+extract_bits(std::span<const uint8_t> bits,
                                               uint16_t bit_offset,
                                               uint8_t n_bits,
                                               uint32_t& out) noexcept;
@@ -184,8 +186,9 @@ struct Sb4ParseResult {
 /// @param sb2_data  Decoded SB2 navigation data (1176 bits, one bit per byte).
 /// @param result    Output parse result.
 /// @return MessageParseStatus indicating outcome.
-[[nodiscard]] MessageParseStatus parse_sb2(std::span<const uint8_t> sb2_data,
-                                           Sb2ParseResult& result) noexcept;
+[[nodiscard("parse_sb2 status reports LSIS-720/Table-22 field-range violations; "
+              "ignoring it lets malformed WN/ITOW reach the navigation solution")]] MessageParseStatus
+parse_sb2(std::span<const uint8_t> sb2_data, Sb2ParseResult& result) noexcept;
 
 /// Parse Subframe 3: extract type field and compute data offset. [LSIS-AFS-802]
 ///
@@ -194,8 +197,9 @@ struct Sb4ParseResult {
 /// @param sb3_data  Decoded SB3 navigation data (846 bits, one bit per byte).
 /// @param result    Output parse result.
 /// @return MessageParseStatus indicating outcome.
-[[nodiscard]] MessageParseStatus parse_sb3(std::span<const uint8_t> sb3_data,
-                                           Sb3ParseResult& result) noexcept;
+[[nodiscard("parse_sb3 status reports unrecognised type fields or LSIS-Table-19 "
+              "violations; ignoring it leads to mis-routing of subframe payloads")]] MessageParseStatus
+parse_sb3(std::span<const uint8_t> sb3_data, Sb3ParseResult& result) noexcept;
 
 /// Parse Subframe 4: extract type field and compute data offset. [LSIS-AFS-803]
 ///
@@ -204,8 +208,9 @@ struct Sb4ParseResult {
 /// @param sb4_data  Decoded SB4 navigation data (846 bits, one bit per byte).
 /// @param result    Output parse result.
 /// @return MessageParseStatus indicating outcome.
-[[nodiscard]] MessageParseStatus parse_sb4(std::span<const uint8_t> sb4_data,
-                                           Sb4ParseResult& result) noexcept;
+[[nodiscard("parse_sb4 status reports unrecognised type fields or LSIS-Table-20 "
+              "violations; ignoring it leads to mis-routing of subframe payloads")]] MessageParseStatus
+parse_sb4(std::span<const uint8_t> sb4_data, Sb4ParseResult& result) noexcept;
 
 /// Validate spare bits follow the alternating 0/1 pattern (LSIS-300).
 ///
@@ -214,12 +219,16 @@ struct Sb4ParseResult {
 ///
 /// @param bits    Span of bits to validate (one bit per byte).
 /// @return true if the pattern is correct, false otherwise.
-[[nodiscard]] bool validate_spare_bits(std::span<const uint8_t> bits) noexcept;
+[[nodiscard("validate_spare_bits returns false on LSIS-300 spare-bit pattern violation; "
+              "ignoring it masks a spec-compliance failure that may indicate corruption")]] bool
+validate_spare_bits(std::span<const uint8_t> bits) noexcept;
 
 /// Map a raw 6-bit type field value to a MessageType enum.
 ///
 /// @param raw_type  Raw type field value (0..63).
 /// @return Corresponding MessageType, or kUnknown if not recognised.
-[[nodiscard]] MessageType type_field_to_message_type(uint8_t raw_type) noexcept;
+[[nodiscard("type_field_to_message_type returns kUnknown for unrecognised raw types; "
+              "ignoring it dispatches the wrong parser and mis-routes the message")]] MessageType
+type_field_to_message_type(uint8_t raw_type) noexcept;
 
 } // namespace lunalink::signal

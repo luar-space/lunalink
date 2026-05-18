@@ -71,8 +71,11 @@ struct SiseResult {
 /// @param vel_true       True velocity+clock-drift state (m/s).
 /// @param vel_broadcast  Broadcast velocity+clock-drift state (m/s).
 /// @return SiseResult with status and error magnitudes.
-[[nodiscard]] SiseResult compute_sise(SiseVec pos_true, SiseVec pos_broadcast,
-                                      SiseVec vel_true, SiseVec vel_broadcast) noexcept;
+[[nodiscard("SiseResult.status reports kFaultDetected on non-finite or out-of-range "
+              "inputs; ignoring it lets a zero/garbage SISE magnitude be treated as a "
+              "valid accuracy figure (LSIS-SISE)")]] SiseResult
+compute_sise(SiseVec pos_true, SiseVec pos_broadcast,
+             SiseVec vel_true, SiseVec vel_broadcast) noexcept;
 
 // ─── Percentile Result ──────────────────────────────────────────────────────
 
@@ -99,8 +102,10 @@ struct SisePercentileResult {
 /// @param vel_errors_mps Mutable scratch span of N velocity errors in m/s.
 /// @param percentile     Percentile to compute (0.0..1.0, default 0.95).
 /// @return SisePercentileResult with status, values, and pass/fail flags.
-[[nodiscard]] SisePercentileResult compute_sise_percentile(
-    std::span<double> pos_errors_m, std::span<double> vel_errors_mps,
-    double percentile = 0.95) noexcept;
+[[nodiscard("SisePercentileResult.status reports input-size and percentile-range "
+              "failures; ignoring it lets zero/garbage percentile_m/percentile_mps and "
+              "stale pass-flags propagate (LSIS-SISE)")]] SisePercentileResult
+compute_sise_percentile(std::span<double> pos_errors_m, std::span<double> vel_errors_mps,
+                        double percentile = 0.95) noexcept;
 
 } // namespace lunalink::core

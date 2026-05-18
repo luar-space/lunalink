@@ -93,16 +93,21 @@ enum class FrameStatus : uint8_t {
  * @post out is populated with valid partial frame symbols in {0, 1}
  * @return FrameStatus::kOk or an error code.
  */
-[[nodiscard]] FrameStatus frame_build_partial(Fid fid,
-                                              Toi toi,
-                                              std::span<uint8_t, 6000ULL> out,
-                                              FrameBuildWorkspace& workspace) noexcept;
+[[nodiscard("FrameStatus carries BCH/interleaver failures from the partial-frame "
+              "pipeline; ignoring it allows a corrupt frame into the transmit chain "
+              "(LSIS-AFS-606, FIZ-1/2/3)")]] FrameStatus
+frame_build_partial(Fid fid,
+                    Toi toi,
+                    std::span<uint8_t, 6000ULL> out,
+                    FrameBuildWorkspace& workspace) noexcept;
 
 /**
  * @brief Ergonomic overload for frame_build_partial that deduces from arrays/fixed-spans.
  */
 template <typename T>
-[[nodiscard]] inline FrameStatus
+[[nodiscard("FrameStatus carries BCH/interleaver failures from the partial-frame "
+              "pipeline; ignoring it allows a corrupt frame into the transmit chain "
+              "(LSIS-AFS-606, FIZ-1/2/3)")]] inline FrameStatus
 frame_build_partial(Fid fid, Toi toi, T&& out, FrameBuildWorkspace& workspace) noexcept {
   return frame_build_partial(fid, toi, std::span<uint8_t, 6000ULL>(out), workspace);
 }
@@ -124,7 +129,10 @@ frame_build_partial(Fid fid, Toi toi, T&& out, FrameBuildWorkspace& workspace) n
  * @param frame_buf  Assembled frame buffer (must be at least 25 symbols).
  * @return FrameStatus::kOk if the CRC matches; kFaultDetected otherwise. // FIZ-2
  */
-[[nodiscard]] FrameStatus commit_frame(std::span<const uint8_t> frame_buf) noexcept;
+[[nodiscard("commit_frame returns kFaultDetected when the trailing CRC-24Q on the "
+              "assembled frame mismatches; ignoring it permits a corrupt frame to reach "
+              "DMA hand-off (SW-SAF-01, FIZ-2)")]] FrameStatus
+commit_frame(std::span<const uint8_t> frame_buf) noexcept;
 
 /**
  * @brief Build Subframe 2: CRC-24 + LDPC SF2 encode. [LSIS-AFS-602]
@@ -137,9 +145,11 @@ frame_build_partial(Fid fid, Toi toi, T&& out, FrameBuildWorkspace& workspace) n
  * @param workspace LDPC encoder scratchpad (caller-allocated).
  * @return FrameStatus::kOk or an error code.
  */
-[[nodiscard]] FrameStatus subframe_build_sb2(std::span<const uint8_t, kSb2DataBits> data,
-                                             std::span<uint8_t, kSb2Length> out,
-                                             LdpcEncodeWorkspace& workspace) noexcept;
+[[nodiscard("FrameStatus reports CRC-24 and LDPC SF2 encoder failures; ignoring it "
+              "allows malformed SB2 into the transmit chain (LSIS-AFS-602)")]] FrameStatus
+subframe_build_sb2(std::span<const uint8_t, kSb2DataBits> data,
+                   std::span<uint8_t, kSb2Length> out,
+                   LdpcEncodeWorkspace& workspace) noexcept;
 
 /**
  * @brief Build Subframe 3: CRC-24 + LDPC SF3 encode. [LSIS-AFS-603]
@@ -152,9 +162,11 @@ frame_build_partial(Fid fid, Toi toi, T&& out, FrameBuildWorkspace& workspace) n
  * @param workspace LDPC encoder scratchpad (caller-allocated).
  * @return FrameStatus::kOk or an error code.
  */
-[[nodiscard]] FrameStatus subframe_build_sb3(std::span<const uint8_t, kSb3DataBits> data,
-                                             std::span<uint8_t, kSb3Length> out,
-                                             LdpcEncodeWorkspace& workspace) noexcept;
+[[nodiscard("FrameStatus reports CRC-24 and LDPC SF3 encoder failures; ignoring it "
+              "allows malformed SB3 into the transmit chain (LSIS-AFS-603)")]] FrameStatus
+subframe_build_sb3(std::span<const uint8_t, kSb3DataBits> data,
+                   std::span<uint8_t, kSb3Length> out,
+                   LdpcEncodeWorkspace& workspace) noexcept;
 
 /**
  * @brief Build Subframe 4: CRC-24 + LDPC SF4 encode. [LSIS-AFS-604]
@@ -166,9 +178,11 @@ frame_build_partial(Fid fid, Toi toi, T&& out, FrameBuildWorkspace& workspace) n
  * @param workspace LDPC encoder scratchpad (caller-allocated).
  * @return FrameStatus::kOk or an error code.
  */
-[[nodiscard]] FrameStatus subframe_build_sb4(std::span<const uint8_t, kSb4DataBits> data,
-                                             std::span<uint8_t, kSb4Length> out,
-                                             LdpcEncodeWorkspace& workspace) noexcept;
+[[nodiscard("FrameStatus reports CRC-24 and LDPC SF4 encoder failures; ignoring it "
+              "allows malformed SB4 into the transmit chain (LSIS-AFS-604)")]] FrameStatus
+subframe_build_sb4(std::span<const uint8_t, kSb4DataBits> data,
+                   std::span<uint8_t, kSb4Length> out,
+                   LdpcEncodeWorkspace& workspace) noexcept;
 
 /**
  * @brief Build a complete AFS navigation frame (§2.4). [LSIS-AFS-605]
@@ -190,13 +204,16 @@ frame_build_partial(Fid fid, Toi toi, T&& out, FrameBuildWorkspace& workspace) n
  * @param frame_workspace Interleaver staging scratchpad (caller-allocated).
  * @return FrameStatus::kOk or an error code.
  */
-[[nodiscard]] FrameStatus frame_build(Fid fid,
-                                      Toi toi,
-                                      std::span<const uint8_t, kSb2DataBits> sb2_data,
-                                      std::span<const uint8_t, kSb3DataBits> sb3_data,
-                                      std::span<const uint8_t, kSb4DataBits> sb4_data,
-                                      std::span<uint8_t, kFrameLength> out,
-                                      LdpcEncodeWorkspace& ldpc_workspace,
-                                      FrameBuildWorkspace& frame_workspace) noexcept;
+[[nodiscard("FrameStatus aggregates failures from CRC, BCH, LDPC, interleaver and "
+              "commit stages; ignoring it allows a corrupt frame into the transmit "
+              "chain (LSIS-AFS-605, SW-SAF-01)")]] FrameStatus
+frame_build(Fid fid,
+            Toi toi,
+            std::span<const uint8_t, kSb2DataBits> sb2_data,
+            std::span<const uint8_t, kSb3DataBits> sb3_data,
+            std::span<const uint8_t, kSb4DataBits> sb4_data,
+            std::span<uint8_t, kFrameLength> out,
+            LdpcEncodeWorkspace& ldpc_workspace,
+            FrameBuildWorkspace& frame_workspace) noexcept;
 
 } // namespace lunalink::signal

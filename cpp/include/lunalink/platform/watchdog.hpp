@@ -72,7 +72,10 @@ public:
    * @returns false  Count < t_min — lower-bound violated; FaultPacket emitted (fiz_level=2).
    *                 Caller MUST escalate to Zone 3 (transition FSM to kSafeMode). // FIZ-2
    */
-  [[nodiscard]] bool evaluate(ITelemetryHal& hal, uint32_t timestamp_ms) noexcept {
+  [[nodiscard("evaluate returns false when tick_count fell below t_min — FIZ-2 "
+                "FaultPacket has been emitted and the caller MUST escalate to kSafeMode "
+                "(Zone 3); ignoring it leaves the watchdog containment unfulfilled")]] bool
+  evaluate(ITelemetryHal& hal, uint32_t timestamp_ms) noexcept {
     const uint32_t n = count_; // snapshot volatile before any emission
     if (n < t_min_) {
       // fiz_level=2 records detection severity in telemetry; the caller's
@@ -128,7 +131,10 @@ private:
  *
  * @return true if the pointer was accepted; false if configuration is locked.
  */
-[[nodiscard]] bool install_watchdog(WindowedWatchdog* wdog) noexcept;
+[[nodiscard("install_watchdog returns false after lock_watchdog_config() has been "
+              "called; ignoring it leaves the watchdog pointer at its previous value "
+              "while the caller believes the new instance is registered")]] bool
+install_watchdog(WindowedWatchdog* wdog) noexcept;
 
 /**
  * @brief Lock the watchdog configuration. After this call, install_watchdog()

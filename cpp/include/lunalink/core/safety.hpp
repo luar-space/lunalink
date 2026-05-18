@@ -152,7 +152,9 @@ inline void wip_tick() noexcept {
  * Prevents undefined behaviour from overlapping input/output buffers
  * in encoding and signal-processing functions.
  */
-[[nodiscard]] inline bool
+[[nodiscard("spans_overlap returns true when input and output buffers alias; ignoring "
+              "the result permits undefined behaviour from overlapping reads/writes — "
+              "Category-A aliasing guard, do not discard")]] inline bool
 spans_overlap(const void* a, size_t a_bytes, const void* b, size_t b_bytes) noexcept {
   if (a == nullptr || b == nullptr) {
     return false;
@@ -171,7 +173,10 @@ spans_overlap(const void* a, size_t a_bytes, const void* b, size_t b_bytes) noex
 // Convenience template overload for typed spans.
 // Template return type deduced by compiler — NOLINTNEXTLINE(fuchsia-trailing-return)
 template <typename T, typename U>
-[[nodiscard]] inline bool spans_overlap(std::span<T> a, std::span<U> b) noexcept {
+[[nodiscard("spans_overlap returns true when input and output spans alias; ignoring "
+              "the result permits undefined behaviour from overlapping reads/writes — "
+              "Category-A aliasing guard, do not discard")]] inline bool
+spans_overlap(std::span<T> a, std::span<U> b) noexcept {
   return spans_overlap(static_cast<const void*>(a.data()),
                        a.size_bytes(),
                        static_cast<const void*>(b.data()),
@@ -415,7 +420,10 @@ public:
     count_ = count_ + 1U;
     LUNALINK_CRITICAL_EXIT;
   }
-  [[nodiscard]] bool verify() const noexcept {
+  [[nodiscard("CfiGuard.verify() returns false when the count differs from the "
+                "expected magic+N terminal value — a skipped tick is a control-flow "
+                "fault; ignoring the result disables the CFI gate entirely")]] bool
+  verify() const noexcept {
     return count_ == expected_;
   }
 #ifdef LUNALINK_FAULT_INJECTION
@@ -450,7 +458,10 @@ public:
     }
   } // NOCOVER_END
 
-  [[nodiscard]] bool is_legal(State from, State to) const noexcept {
+  [[nodiscard("is_legal returns false for unregistered FSM edges — an illegal "
+                "transition is a CFI fault; ignoring the result disables the legal-edge "
+                "gate (SW-SAF-02, FIZ-3)")]] bool
+  is_legal(State from, State to) const noexcept {
     const auto f = static_cast<uint8_t>(from);
     const auto t = static_cast<uint8_t>(to);
     // Loop bound checked against count_ <= N —

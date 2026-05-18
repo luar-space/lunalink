@@ -250,7 +250,7 @@ alignas(64) LUNALINK_LUT_SECTION static const uint32_t ksf2_a_ptr[] = {
     3112, 3120, 3128, 3136, 3144, 3152, 3160, 3168, 3176, 3184, 3192, 3200, 3208, 3216, 3224, 3232,
     3240};
 
-const LdpcCsrMatrix kLdpc_sf2_a =
+constinit const LdpcCsrMatrix kLdpc_sf2_a =
     {std::span(ksf2_a_cols), std::span(ksf2_a_ptr), 3240, 480, 1200, 0x56960A8BU};
 
 // --- sf2_b ---
@@ -346,7 +346,7 @@ alignas(64) LUNALINK_LUT_SECTION static const uint32_t ksf2_b_ptr[] = {
     1048, 1050, 1052, 1054, 1056, 1058, 1060, 1062, 1064, 1066, 1068, 1070, 1072, 1074, 1076, 1078,
     1080};
 
-const LdpcCsrMatrix kLdpc_sf2_b =
+constinit const LdpcCsrMatrix kLdpc_sf2_b =
     {std::span(ksf2_b_cols), std::span(ksf2_b_ptr), 1080, 480, 480, 0x194DA43EU};
 
 // --- sf2_b_inv ---
@@ -512,7 +512,7 @@ alignas(64) LUNALINK_LUT_SECTION static const uint32_t ksf2_b_inv_ptr[] = {
     2320, 2325, 2330, 2335, 2340, 2345, 2350, 2355, 2360, 2365, 2370, 2375, 2380, 2385, 2390, 2395,
     2400};
 
-const LdpcCsrMatrix kLdpc_sf2_b_inv =
+constinit const LdpcCsrMatrix kLdpc_sf2_b_inv =
     {std::span(ksf2_b_inv_cols), std::span(ksf2_b_inv_ptr), 2400, 480, 480, 0x551B602DU};
 
 // --- sf2_c ---
@@ -1516,7 +1516,7 @@ alignas(64) LUNALINK_LUT_SECTION static const uint32_t ksf2_c_ptr[] = {
     10274, 10276, 10278, 10280, 10282, 10284, 10286, 10288, 10290, 10292, 10294, 10296, 10298,
     10300, 10302, 10304, 10306, 10308, 10310, 10312, 10314, 10316, 10318, 10320};
 
-const LdpcCsrMatrix kLdpc_sf2_c =
+constinit const LdpcCsrMatrix kLdpc_sf2_c =
     {std::span(ksf2_c_cols), std::span(ksf2_c_ptr), 10320, 4560, 1200, 0x53C21B8CU};
 
 // --- sf2_d ---
@@ -2044,7 +2044,7 @@ alignas(64) LUNALINK_LUT_SECTION static const uint32_t ksf2_d_ptr[] = {
     4424, 4425, 4426, 4427, 4428, 4429, 4430, 4431, 4432, 4433, 4434, 4435, 4436, 4437, 4438, 4439,
     4440};
 
-const LdpcCsrMatrix kLdpc_sf2_d =
+constinit const LdpcCsrMatrix kLdpc_sf2_d =
     {std::span(ksf2_d_cols), std::span(ksf2_d_ptr), 4440, 4560, 480, 0x89F9DE29U};
 
 // --- sf3_a ---
@@ -2201,7 +2201,7 @@ alignas(64) LUNALINK_LUT_SECTION static const uint32_t ksf3_a_ptr[] = {
     2248, 2256, 2264, 2272, 2280, 2288, 2296, 2304, 2312, 2320, 2328, 2336, 2344, 2352, 2360, 2368,
     2376};
 
-const LdpcCsrMatrix kLdpc_sf3_a =
+constinit const LdpcCsrMatrix kLdpc_sf3_a =
     {std::span(ksf3_a_cols), std::span(ksf3_a_ptr), 2376, 352, 880, 0xCB1F7943U};
 
 // --- sf3_b ---
@@ -2270,7 +2270,7 @@ alignas(64) LUNALINK_LUT_SECTION static const uint32_t ksf3_b_ptr[] = {
     734, 736, 738, 740, 742, 744, 746, 748, 750, 752, 754, 756, 758, 760, 762, 764, 766, 768, 770,
     772, 774, 776, 778, 780, 782, 784, 786, 788, 790, 792};
 
-const LdpcCsrMatrix kLdpc_sf3_b =
+constinit const LdpcCsrMatrix kLdpc_sf3_b =
     {std::span(ksf3_b_cols), std::span(ksf3_b_ptr), 792, 352, 352, 0xBC4BCBF0U};
 
 // --- sf3_b_inv ---
@@ -2394,7 +2394,7 @@ alignas(64) LUNALINK_LUT_SECTION static const uint32_t ksf3_b_inv_ptr[] = {
     1680, 1685, 1690, 1695, 1700, 1705, 1710, 1715, 1720, 1725, 1730, 1735, 1740, 1745, 1750, 1755,
     1760};
 
-const LdpcCsrMatrix kLdpc_sf3_b_inv =
+constinit const LdpcCsrMatrix kLdpc_sf3_b_inv =
     {std::span(ksf3_b_inv_cols), std::span(ksf3_b_inv_ptr), 1760, 352, 352, 0x1D391660U};
 
 // --- sf3_c ---
@@ -3011,7 +3011,7 @@ alignas(64) LUNALINK_LUT_SECTION static const uint32_t ksf3_c_ptr[] = {
     7536, 7538, 7540, 7542, 7544, 7546, 7548, 7550, 7552, 7554, 7556, 7558, 7560, 7562, 7564, 7566,
     7568};
 
-const LdpcCsrMatrix kLdpc_sf3_c =
+constinit const LdpcCsrMatrix kLdpc_sf3_c =
     {std::span(ksf3_c_cols), std::span(ksf3_c_ptr), 7568, 3344, 880, 0xE0E4EA16U};
 
 // --- sf3_d ---
@@ -3401,7 +3401,7 @@ alignas(64) LUNALINK_LUT_SECTION static const uint32_t ksf3_d_ptr[] = {
     3240, 3241, 3242, 3243, 3244, 3245, 3246, 3247, 3248, 3249, 3250, 3251, 3252, 3253, 3254, 3255,
     3256};
 
-const LdpcCsrMatrix kLdpc_sf3_d =
+constinit const LdpcCsrMatrix kLdpc_sf3_d =
     {std::span(ksf3_d_cols), std::span(ksf3_d_ptr), 3256, 3344, 352, 0x6DEB22E5U};
 
 } // namespace lunalink::signal

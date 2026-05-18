@@ -24,7 +24,10 @@ struct LdpcCsrMatrix {
   /**
    * @brief Perform a JIT integrity check of matrix structure using CRC32. [CBIT-AFS-LDPC]
    */
-  [[nodiscard]] bool verify_integrity() const noexcept;
+  [[nodiscard("verify_integrity returns false when the JIT CRC-32 over col_indices "
+                "fails; discarding it accepts a corrupted LDPC matrix as valid and "
+                "violates CBIT-AFS-LDPC")]] bool
+  verify_integrity() const noexcept;
 
 #ifdef LUNALINK_FAULT_INJECTION
   // Fault injection overlay — mutable so inject_bit_flip works on const matrices.

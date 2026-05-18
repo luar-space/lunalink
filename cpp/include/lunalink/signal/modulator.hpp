@@ -20,9 +20,12 @@ enum class ModulationStatus : uint8_t {
 
 /// @brief Validate modulation inputs: checks data symbol is +/-1, output span
 ///        is large enough for the chip sequence, and input/output do not alias.
-[[nodiscard]] inline ModulationStatus validate_modulation_inputs(std::span<const uint8_t> chips,
-                                                                 int8_t data_symbol,
-                                                                 std::span<int8_t> out) noexcept {
+[[nodiscard("ModulationStatus reports invalid data-symbol, output-buffer or "
+              "input/output aliasing failures; ignoring it lets unsafe modulator "
+              "inputs through (LSIS-AFS-201, FIZ-1)")]] inline ModulationStatus
+validate_modulation_inputs(std::span<const uint8_t> chips,
+                           int8_t data_symbol,
+                           std::span<int8_t> out) noexcept {
   if (data_symbol != 1 && data_symbol != -1) [[unlikely]] {
     return ModulationStatus::kInvalidSymbol;
   }
@@ -42,9 +45,12 @@ enum class ModulationStatus : uint8_t {
  * @brief Internal generic BPSK modulator implementation. [LSIS-AFS-201]
  * Uses a branchless arithmetic mapping: 0 -> +1, 1 -> -1.
  */
-[[nodiscard]] inline ModulationStatus modulate_bpsk_generic(std::span<const uint8_t> chips,
-                                                            int8_t data_symbol,
-                                                            std::span<int8_t> out) noexcept {
+[[nodiscard("ModulationStatus reports validation failures, kInvalidChipValue mid-loop, "
+              "and CFI terminal-count faults; ignoring it accepts a partially-scrubbed "
+              "output as valid (LSIS-AFS-201, FIZ-1)")]] inline ModulationStatus
+modulate_bpsk_generic(std::span<const uint8_t> chips,
+                      int8_t data_symbol,
+                      std::span<int8_t> out) noexcept {
   ModulationStatus status = validate_modulation_inputs(chips, data_symbol, out);
 
   if (status == ModulationStatus::kOk) {
@@ -81,7 +87,8 @@ enum class ModulationStatus : uint8_t {
  * @brief Modulate a chip sequence for the AFS-I channel. [LSIS-AFS-201]
  */
 template <typename T, typename U>
-[[nodiscard]] inline ModulationStatus
+[[nodiscard("ModulationStatus reports modulator validation/CFI failures; ignoring it "
+              "lets a corrupt AFS-I chip stream reach the RF stage (LSIS-AFS-201)")]] inline ModulationStatus
 modulate_bpsk_i(T&& prn_chips, int8_t data_symbol, U&& out) noexcept {
   return modulate_bpsk_generic(
       std::span<const uint8_t>(prn_chips), data_symbol, std::span<int8_t>(out));
@@ -91,7 +98,9 @@ modulate_bpsk_i(T&& prn_chips, int8_t data_symbol, U&& out) noexcept {
  * @brief Modulate a chip sequence for the AFS-Q channel. [LSIS-AFS-201]
  */
 template <typename T, typename U>
-[[nodiscard]] inline ModulationStatus modulate_bpsk_q(T&& chips, U&& out) noexcept {
+[[nodiscard("ModulationStatus reports modulator validation/CFI failures; ignoring it "
+              "lets a corrupt AFS-Q chip stream reach the RF stage (LSIS-AFS-201)")]] inline ModulationStatus
+modulate_bpsk_q(T&& chips, U&& out) noexcept {
   return modulate_bpsk_generic(std::span<const uint8_t>(chips), 1, std::span<int8_t>(out));
 }
 
@@ -99,7 +108,8 @@ template <typename T, typename U>
  * @brief Modulate a chip sequence for any BPSK channel. [LSIS-AFS-201]
  */
 template <typename T, typename U>
-[[nodiscard]] inline ModulationStatus
+[[nodiscard("ModulationStatus reports modulator validation/CFI failures; ignoring it "
+              "lets a corrupt BPSK chip stream reach the RF stage (LSIS-AFS-201)")]] inline ModulationStatus
 modulate_bpsk_any(T&& chips, int8_t data_symbol, U&& out) noexcept {
   return modulate_bpsk_generic(
       std::span<const uint8_t>(chips), data_symbol, std::span<int8_t>(out));

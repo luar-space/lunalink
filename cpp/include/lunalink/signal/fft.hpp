@@ -258,7 +258,10 @@ private:
 
 public:
   /// Forward FFT on dynamic span (must be exactly N elements).
-  [[nodiscard]] bool forward(std::span<Complex> buf) const noexcept {
+  [[nodiscard("Fft::forward returns false on buffer-size mismatch (must be exactly N); "
+                "ignoring it leaves the input buffer untransformed while the caller "
+                "assumes a frequency-domain result")]] bool
+  forward(std::span<Complex> buf) const noexcept {
     if (buf.size() != N) {
       return false;
     }
@@ -267,7 +270,10 @@ public:
   }
 
   /// Inverse FFT on dynamic span (must be exactly N elements).
-  [[nodiscard]] bool inverse(std::span<Complex> buf) const noexcept {
+  [[nodiscard("Fft::inverse returns false on buffer-size mismatch (must be exactly N); "
+                "ignoring it leaves the input buffer untransformed while the caller "
+                "assumes a time-domain result")]] bool
+  inverse(std::span<Complex> buf) const noexcept {
     if (buf.size() != N) {
       return false;
     }

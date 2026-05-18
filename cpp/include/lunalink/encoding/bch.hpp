@@ -86,14 +86,20 @@ struct alignas(8) BchResult {
  *
  * @return BchStatus::kOk or error code.
  */
-[[nodiscard]] BchStatus bch_encode(Fid fid, Toi toi, std::span<uint8_t, 52ULL> out) noexcept;
+[[nodiscard("BchStatus reports FID/TOI range violations and CFI/TMR faults; "
+              "ignoring it allows malformed SB1 headers into the transmit chain "
+              "(LSIS-AFS-501, FIZ-1/2/3)")]] BchStatus
+bch_encode(Fid fid, Toi toi, std::span<uint8_t, 52ULL> out) noexcept;
 
 /**
  * @brief Ergonomic overload for fixed-size arrays.
  */
 template <typename T>
   requires(!std::same_as<std::remove_cvref_t<T>, std::span<uint8_t, 52ULL>>)
-[[nodiscard]] inline BchStatus bch_encode(Fid fid, Toi toi, T&& out) noexcept {
+[[nodiscard("BchStatus reports FID/TOI range violations and CFI/TMR faults; "
+              "ignoring it allows malformed SB1 headers into the transmit chain "
+              "(LSIS-AFS-501, FIZ-1/2/3)")]] inline BchStatus
+bch_encode(Fid fid, Toi toi, T&& out) noexcept {
   return bch_encode(fid, toi, std::span<uint8_t, 52ULL>(out));
 }
 
@@ -105,7 +111,10 @@ template <typename T>
  * @param in Buffer containing 52 binary symbols.
  * @return BchResult including decoded parameters and confidence status.
  */
-[[nodiscard]] BchResult bch_decode(std::span<const uint8_t, 52ULL> in) noexcept;
+[[nodiscard("BchResult.status reports decode confidence (kAmbiguousMatch, "
+              "kOutputTooSmall, kFaultDetected); ignoring it lets ambiguous or "
+              "fault-flagged frame headers be accepted as valid (LSIS-AFS-501)")]] BchResult
+bch_decode(std::span<const uint8_t, 52ULL> in) noexcept;
 
 /**
  * @brief Soft-decision Maximum Likelihood BCH decoder. [LSIS-AFS-501]
@@ -133,7 +142,10 @@ template <typename T>
  *         status == kOk otherwise (including low-confidence / very noisy cases).
  *         status == kFaultDetected if CFI or variable-mirror integrity check fails.
  */
-[[nodiscard]] BchResult bch_decode_soft(std::span<const float, 52ULL> llr) noexcept;
+[[nodiscard("BchResult.status reports kInvalidInput on non-finite LLRs and "
+              "kFaultDetected on CFI/TMR faults; ignoring it lets invalid soft-decode "
+              "results propagate (LSIS-AFS-501)")]] BchResult
+bch_decode_soft(std::span<const float, 52ULL> llr) noexcept;
 
 /**
  * @brief Calculate JIT codebook checksum for CBIT integrity. [NASA-FSW-CBIT]

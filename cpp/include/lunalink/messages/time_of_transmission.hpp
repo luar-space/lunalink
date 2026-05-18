@@ -64,7 +64,10 @@ struct TotResult {
 /// @param toi         Time of Interval (0..99, 7 bits).
 /// @param delta_t_lrt Node Time offset w.r.t. LRT in seconds (default: 0.0).
 /// @return TotResult with status and computed time.
-[[nodiscard]] TotResult compute_tot(uint16_t wn,
+[[nodiscard("TotResult.status indicates arithmetic validity (WN/ITOW/TOI bounds, "
+              "SECWEEK/BI_d/F_d consistency); discarding it lets indeterminate time "
+              "values propagate into the PVT solution")]] TotResult
+compute_tot(uint16_t wn,
                                     uint16_t itow,
                                     uint8_t toi,
                                     double delta_t_lrt = 0.0) noexcept;

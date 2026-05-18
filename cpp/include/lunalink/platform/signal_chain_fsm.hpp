@@ -31,7 +31,10 @@ public:
    * @brief Attempt a state transition. Returns false (FIZ-3) if the transition is
    * illegal; emits a telemetry packet and stays in kSafeMode. Returns true on success.
    */
-  [[nodiscard]] bool transition(SignalChainState next) noexcept;
+  [[nodiscard("transition returns false on illegal FSM edge — FIZ-3 telemetry has been "
+                "emitted and the FSM is locked to kSafeMode; ignoring it lets the caller "
+                "proceed as if the requested state were active (SW-SAF-02, FM-031/032)")]] bool
+  transition(SignalChainState next) noexcept;
 
   /**
    * @brief Record a frame-level fault (Zone 2). Escalates to kSafeMode (Zone 3)
@@ -41,7 +44,10 @@ public:
    * @pre state() == kOperational. If called from any other state, emits FIZ-3
    *      telemetry and locks to kSafeMode to contain radiation-induced CFI diversion.
    */
-  [[nodiscard]] bool on_frame_fault() noexcept;
+  [[nodiscard("on_frame_fault returns false when the second consecutive frame-fault "
+                "escalates the FSM to kSafeMode; ignoring it lets the caller continue "
+                "to drive the FSM as if still operational (FM-032)")]] bool
+  on_frame_fault() noexcept;
 
   /**
    * @brief Record a successful frame commit; resets the consecutive-fault counter.

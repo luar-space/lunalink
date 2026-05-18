@@ -17,12 +17,18 @@ public:
   /**
    * @brief Generate Primary Weil code (10230 chips). [LSIS-AFS-102]
    */
-  [[nodiscard]] PrnStatus generate_primary(PrnId prn_id, std::span<uint8_t> out) noexcept;
+  [[nodiscard("PrnStatus reports PRN-range and buffer-size failures from the "
+                "Weil-10230 primary construction; ignoring it lets a zero/partial code "
+                "reach the modulator (LSIS-AFS-102)")]] PrnStatus
+  generate_primary(PrnId prn_id, std::span<uint8_t> out) noexcept;
 
   /**
    * @brief Generate Tertiary Weil code (1500 chips). [LSIS-AFS-102]
    */
-  [[nodiscard]] PrnStatus generate_tertiary(PrnId prn_id, std::span<uint8_t> out) noexcept;
+  [[nodiscard("PrnStatus reports PRN-range and buffer-size failures from the "
+                "Weil-1500 tertiary construction; ignoring it lets a zero/partial code "
+                "reach the modulator (LSIS-AFS-102)")]] PrnStatus
+  generate_tertiary(PrnId prn_id, std::span<uint8_t> out) noexcept;
 
 private:
   /**
@@ -33,10 +39,13 @@ private:
    * @param insertion_index  Bit insertion position for sequence extension (LSIS §2.3.5.2).
    * @param out         Output buffer for the generated code chips.
    */
-  [[nodiscard]] PrnStatus construct_weil(uint16_t prime,
-                                         uint16_t weil_index,
-                                         uint16_t insertion_index,
-                                         std::span<uint8_t> out) noexcept;
+  [[nodiscard("PrnStatus reports kInvalidPrime, parameter range and buffer-size "
+                "failures from Weil construction; ignoring it lets a partial code "
+                "propagate to the caller (LSIS-AFS-102)")]] PrnStatus
+  construct_weil(uint16_t prime,
+                 uint16_t weil_index,
+                 uint16_t insertion_index,
+                 std::span<uint8_t> out) noexcept;
 };
 
 } // namespace lunalink::signal

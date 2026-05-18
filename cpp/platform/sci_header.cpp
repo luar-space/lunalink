@@ -11,7 +11,7 @@ namespace lunalink::signal {
 
 // NOLINTBEGIN(hicpp-avoid-c-arrays) -- struct with char[] fields requires C-array layout
 LUNALINK_LUT_SECTION
-const SciHeader kSciHeader = {
+constinit const SciHeader kSciHeader = {
     LUNALINK_GIT_SHA,
     LUNALINK_LSIS_VERSION,
     LUNALINK_VERSION,

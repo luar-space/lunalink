@@ -32,6 +32,9 @@ struct PostResult {
  * first failing step. The signal chain FSM must not enter OPERATIONAL until
  * run_post() returns kPass.
  */
-[[nodiscard]] PostResult run_post() noexcept;
+[[nodiscard("PostResult.status reports the first failing POST step (SCI CRC, LUT CRCs, "
+              "TMR self-test, stack sentinel, CfiGuard); the signal-chain FSM must not "
+              "enter OPERATIONAL unless this is kPass (SW-SAF-04)")]] PostResult
+run_post() noexcept;
 
 } // namespace lunalink::signal

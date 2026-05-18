@@ -44,12 +44,14 @@ inline constexpr double kNativeSampleRateHz = 5'115'000.0;
  * @param out          Output buffer for interleaved [I,Q] pairs (≥ 20460 int16_t).
  * @return SignalGenStatus::kOk on success.
  */
-[[nodiscard]] SignalGenStatus generate_iq_epoch(
-    std::span<const uint8_t> gold_chips,
-    PrnId prn_id,
-    uint16_t epoch_idx,
-    int8_t data_symbol,
-    std::span<int16_t> out) noexcept;
+[[nodiscard("SignalGenStatus reports PRN/epoch range and buffer-size failures from "
+              "the matched-code → BPSK → IQ-mux pipeline; ignoring it allows malformed "
+              "I/Q samples to reach the RF stage (LSIS-AFS-301)")]] SignalGenStatus
+generate_iq_epoch(std::span<const uint8_t> gold_chips,
+                  PrnId prn_id,
+                  uint16_t epoch_idx,
+                  int8_t data_symbol,
+                  std::span<int16_t> out) noexcept;
 
 /**
  * @brief Generate a full 12 s frame of interleaved I/Q at native rate (int16). [LSIS-AFS-301]
@@ -61,10 +63,12 @@ inline constexpr double kNativeSampleRateHz = 5'115'000.0;
  * @param out           Output buffer (≥ kIqPairsPerFrame int16_t).
  * @return SignalGenStatus::kOk on success.
  */
-[[nodiscard]] SignalGenStatus generate_iq_frame(
-    PrnId prn_id,
-    std::span<const uint8_t> frame_symbols,
-    std::span<int16_t> out) noexcept;
+[[nodiscard("SignalGenStatus reports PRN/symbol-bounds and buffer-size failures "
+              "from the 6000-epoch frame-generation pipeline; ignoring it allows a "
+              "malformed I/Q frame to reach the RF stage (LSIS-AFS-301)")]] SignalGenStatus
+generate_iq_frame(PrnId prn_id,
+                  std::span<const uint8_t> frame_symbols,
+                  std::span<int16_t> out) noexcept;
 
 /**
  * @brief Generate one 2 ms epoch as float32, with optional resampling. [LSIS-AFS-301]
@@ -77,13 +81,16 @@ inline constexpr double kNativeSampleRateHz = 5'115'000.0;
  * @param samples_written  Set to the number of float values written to out.
  * @return SignalGenStatus::kOk on success.
  */
-[[nodiscard]] SignalGenStatus generate_iq_epoch_float(
-    PrnId prn_id,
-    uint16_t epoch_idx,
-    int8_t data_symbol,
-    double sample_rate,
-    std::span<float> out,
-    size_t& samples_written) noexcept;
+[[nodiscard("SignalGenStatus reports PRN/epoch range, sample-rate validity and "
+              "buffer-size failures from the float-output epoch pipeline; ignoring it "
+              "leaves samples_written stale and floats indeterminate "
+              "(LSIS-AFS-301)")]] SignalGenStatus
+generate_iq_epoch_float(PrnId prn_id,
+                        uint16_t epoch_idx,
+                        int8_t data_symbol,
+                        double sample_rate,
+                        std::span<float> out,
+                        size_t& samples_written) noexcept;
 
 /**
  * @brief Generate a full 12 s frame as float32, with optional resampling. [LSIS-AFS-301]
@@ -99,11 +106,14 @@ inline constexpr double kNativeSampleRateHz = 5'115'000.0;
  * @param samples_written  Set to the number of float values written to out.
  * @return SignalGenStatus::kOk on success.
  */
-[[nodiscard]] SignalGenStatus generate_iq_frame_float(
-    PrnId prn_id,
-    std::span<const uint8_t> frame_symbols,
-    double sample_rate,
-    std::span<float> out,
-    size_t& samples_written) noexcept;
+[[nodiscard("SignalGenStatus reports PRN/symbol-bounds, sample-rate validity and "
+              "buffer-size failures from the float-output frame pipeline; ignoring it "
+              "leaves samples_written stale and floats indeterminate "
+              "(LSIS-AFS-301)")]] SignalGenStatus
+generate_iq_frame_float(PrnId prn_id,
+                        std::span<const uint8_t> frame_symbols,
+                        double sample_rate,
+                        std::span<float> out,
+                        size_t& samples_written) noexcept;
 
 } // namespace lunalink::signal

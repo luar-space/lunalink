@@ -35,6 +35,10 @@ extern const SciHeader kSciHeader;
  * @brief POST Step 1: verify kSciHeader.header_crc32 matches the preceding fields.
  * Returns false (FIZ-3) if the CRC does not match — indicates binary corruption.
  */
-[[nodiscard]] bool sci_header_verify() noexcept;
+[[nodiscard("sci_header_verify returns false when the SCI header CRC-32 mismatches "
+              "the binary image — POST step 1 is the binary-integrity gate; ignoring "
+              "it would let OPERATIONAL be entered on a corrupt image "
+              "(SW-SAF-04, FM-034)")]] bool
+sci_header_verify() noexcept;
 
 } // namespace lunalink::signal

@@ -114,7 +114,9 @@ static_assert(kFrameDecodeWorkspaceBytes < 400'000, "FrameDecodeWorkspace exceed
 /// @param sync_threshold   Sync detection threshold (default: kDefaultSyncThreshold).
 ///
 /// @return FrameDecodeStatus indicating overall decode outcome.
-[[nodiscard]] FrameDecodeStatus frame_decode(std::span<const float> rx_symbols,
+[[nodiscard("frame_decode status carries CRC-24Q, LDPC and BCH failure flags — silently "
+              "discarding it masks frame errors that violate FM-034/CBIT-AFS")]] FrameDecodeStatus
+frame_decode(std::span<const float> rx_symbols,
                                              FrameDecodeResult& result,
                                              FrameDecodeWorkspace& workspace,
                                              ITelemetryHal& hal,

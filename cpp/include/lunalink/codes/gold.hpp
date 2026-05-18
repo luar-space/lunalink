@@ -21,7 +21,10 @@ public:
   /**
    * @brief Generate full 2046-chip sequence for a given PRN. [LSIS-AFS-101]
    */
-  [[nodiscard]] PrnStatus generate(PrnId prn_id, std::span<uint8_t> out) noexcept;
+  [[nodiscard("PrnStatus reports PRN-range and buffer-size failures from the 11-stage "
+                "Gold LFSR; ignoring it lets a zero/partial code reach the modulator "
+                "(LSIS-AFS-101)")]] PrnStatus
+  generate(PrnId prn_id, std::span<uint8_t> out) noexcept;
 
 private:
   uint16_t g1_reg_ = 0x7FFU; // Initial: all ones
