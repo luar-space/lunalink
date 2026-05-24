@@ -1,7 +1,8 @@
 """Regenerate every level of the public ``lsis-afs-test-vectors`` set.
 
 One-shot orchestrator: drives ``export_test_vectors_l1.py`` (codes),
-``export_test_vectors_l2.py`` (frames), ``export_test_vectors_l3.py``
+``export_test_vectors_l2.py`` (frames), ``export_test_vectors_fec.py``
+(BCH/CRC/LDPC/interleaver component vectors), ``export_test_vectors_l3.py``
 (I/Q signals), and ``export_test_vectors_l5.py`` (parsed JSONs) in
 sequence over a target ``lsis-afs-test-vectors`` checkout.
 
@@ -14,7 +15,8 @@ Used for:
   the lunalink repo to refresh the sibling checkout.
 
 Levels are produced in dependency order:
-  L1 codes → L2 frames → L3 signals (reads L2 frames) → L5 parsed JSONs
+  L1 codes → L2 frames → FEC components → L3 signals (reads L2 frames)
+  → L5 parsed JSONs
   (reads L2 frames + runs LunaLink RX path).
 
 L4 (decoded reference data) is consumer-side: produced by
@@ -52,6 +54,7 @@ SCRIPTS = REPO_ROOT / "scripts"
 LEVELS: list[tuple[str, str, str, bool]] = [
     ("L1 codes", "export_test_vectors_l1.py", "codes", False),
     ("L2 frames", "export_test_vectors_l2.py", "frames", False),
+    ("FEC components", "export_test_vectors_fec.py", "fec", False),
     ("L3 signals", "export_test_vectors_l3.py", "signals", True),
     ("L5 parsed", "export_test_vectors_l5.py", "parsed", True),
 ]
@@ -60,7 +63,10 @@ LEVELS: list[tuple[str, str, str, bool]] = [
 def _run_level(
     label: str, script: str, target_dir: Path, frames_dir: Path | None
 ) -> int:
-    print(f"\n── {label} → {target_dir} ─────────────────────────────────", file=sys.stderr)
+    print(
+        f"\n── {label} → {target_dir} ─────────────────────────────────",
+        file=sys.stderr,
+    )
     cmd = [sys.executable, str(SCRIPTS / script), str(target_dir)]
     if frames_dir is not None:
         cmd.extend(["--input-dir", str(frames_dir)])
@@ -85,7 +91,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     ap.add_argument(
         "--only",
-        choices=["L1", "L2", "L3", "L5"],
+        choices=["L1", "L2", "FEC", "L3", "L5"],
         action="append",
         help="Run only the named level(s). Repeatable, e.g. --only L2 --only L5.",
     )
@@ -117,7 +123,7 @@ def main(argv: list[str] | None = None) -> int:
             failures.append(f"{label} (rc={rc})")
 
     print(
-        f"\n── summary ─────────────────────────────────────────────",
+        "\n── summary ─────────────────────────────────────────────",
         file=sys.stderr,
     )
     if failures:
