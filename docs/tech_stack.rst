@@ -11,7 +11,7 @@ Core Philosophy
 1.  **C++20 for Flight**: The signal processing core is written in modern, 
     deterministic C++20, adhering to strict MISRA-aligned safety profiles.
 2.  **Python for Integration**: The primary user interface and validation 
-    suite are built in Python 3.12+, utilizing ``pybind11`` for low-overhead 
+    suite are built in Python 3.12+, utilizing ``nanobind`` for low-overhead 
     communication with the C++ core.
 3.  **Auditability**: Every tool in the stack is chosen to provide empirical 
     evidence of compliance with the LSIS-AFS standard and ESA quality mandates.
@@ -58,8 +58,8 @@ Reference Implementation Stack (Python)
    * - **uv**
      - ≥ 0.9
      - Unified dependency management and deterministic environment (``uv.lock``).
-   * - **pybind11**
-     - ≥ 2.13
+   * - **nanobind**
+     - ≥ 2.0
      - Type-safe C++/Python bridge; exposes core DSP blocks as NumPy-compatible APIs.
    * - **pytest**
      - ≥ 8.0

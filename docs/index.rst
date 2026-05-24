@@ -16,7 +16,7 @@ lunalink
      <a href="https://github.com/fiskio/lunalink/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-green.svg" alt="License: Apache 2.0"></a>
    </p>
 
-LunaLink AFS reference implementation with C++ core and pybind11 bindings.
+LunaLink AFS reference implementation with C++ core and nanobind bindings.
 
 .. toctree::
    :maxdepth: 2

@@ -122,7 +122,7 @@ The system is a dual-layer design:
   use ``std::span`` for memory safety without dynamic allocation.  Critical
   paths use bitwise logic and C++20 features (``constinit``, ``std::popcount``).
 
-- **Wrapper layer (Python 3.12+):** pybind11 bindings for prototyping,
+- **Wrapper layer (Python 3.12+):** nanobind bindings for prototyping,
   test-vector generation, and analysis.
 
 This separation ensures the core can be extracted for embedded or
@@ -331,7 +331,7 @@ A formal Interface Control Document (LUNALINK-ICD-001) defines:
 
 - Public C++ API with full signature documentation per gateway
 - Type-safe wrappers (``PrnId``, ``Fid``, ``Toi``) preventing misuse at compile time
-- Python pybind11 binding conventions
+- Python nanobind binding conventions
 - Wire-level data formats (IQ interleave order, binary frame headers)
 - Thread safety and reentrancy guarantees
 

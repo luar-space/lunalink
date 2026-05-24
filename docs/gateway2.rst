@@ -433,7 +433,7 @@ Python Bindings
 ---------------
 
 All four GD2 components are exposed to Python via the ``lunalink.afs``
-extension module (pybind11).  Stubs are in ``src/lunalink/afs/_afs.pyi``.
+extension module (nanobind).  Stubs are in ``src/lunalink/afs/_afs.pyi``.
 
 .. list-table::
    :header-rows: 1

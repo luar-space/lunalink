@@ -14,7 +14,7 @@ This Interface Control Document (ICD) defines all externally visible interfaces
 of the LunaLink LSIS-AFS library.  It covers:
 
 * The public C++ API exported from ``liblunalink``.
-* The Python bindings exposed through the ``_afs`` pybind11 extension module.
+* The Python bindings exposed through the ``_afs`` nanobind extension module.
 * The Hardware Abstraction Layer (HAL) interfaces for telemetry and watchdog.
 * Wire-level data formats (chip values, IQ interleave, ``FaultPacket``).
 * The complete error code enumeration with FIZ classification.
@@ -124,7 +124,7 @@ All public functions and types are declared in headers under
 Python API Interface
 ---------------------
 
-The ``_afs`` pybind11 extension module is imported as ``lunalink.afs._afs``.
+The ``_afs`` nanobind extension module is imported as ``lunalink.afs._afs``.
 The public Python wrapper layer in ``src/lunalink/afs/signal.py`` re-exports
 all names listed below under the ``lunalink.afs`` namespace.
 

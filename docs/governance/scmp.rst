@@ -35,7 +35,7 @@ change control.  LunaLink SCIs are listed below.
      - Safety-critical C++ DSP functions; primary flight software deliverable
    * - Python bindings
      - ``cpp/bindings/``, ``src/lunalink/``
-     - pybind11 layer and Python API wrapper; Digital Twin deliverable
+     - nanobind layer and Python API wrapper; Digital Twin deliverable
    * - Test suite
      - ``cpp/tests/``, ``tests/``
      - Catch2 and pytest tests; includes SWIFI fault-injection suite

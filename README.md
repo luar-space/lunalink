@@ -19,7 +19,7 @@
 [![Type checked: pyright](https://img.shields.io/badge/type%20checked-pyright-2A6DB2)](https://github.com/microsoft/pyright)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green.svg)](https://github.com/fiskio/lunalink/blob/main/LICENSE)
 
-LunaLink AFS Python package with C++ extensions via pybind11.
+LunaLink AFS Python package with C++ extensions via nanobind.
 
 ## Prerequisites
 

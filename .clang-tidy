@@ -5,7 +5,7 @@
 # Summary (LUNALINK-MISRA-GCS-001).
 #
 # Applied to: cpp/{codes,encoding,messages,signal,platform}/, cpp/include/
-# Excluded:   cpp/bindings/ (pybind11 templates), cpp/tests/ (separate .clang-tidy)
+# Excluded:   cpp/bindings/ (nanobind templates), cpp/tests/ (separate .clang-tidy)
 #
 # Standards traceability:
 #   MISRA C++:2023    — 179 guidelines (4 Directives + 175 Rules)

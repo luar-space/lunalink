@@ -334,7 +334,7 @@ you can enter at whichever level suits your task:
                               │
    Layer 1 (wrappers):     frame_decode(), frame_build(), parse_sb2(), ...
                               │
-   Layer 0 (C++ bindings): lunalink.afs._afs  (pybind11 extension)
+   Layer 0 (C++ bindings): lunalink.afs._afs  (nanobind extension)
 
 - **Layer 2** — structured results, exceptions, one-call pipelines.
   Start here.

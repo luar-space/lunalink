@@ -69,7 +69,7 @@ Python Integration
 ------------------
 
 The Python layer (``lunalink.afs``) provides a NumPy-friendly interface to the
-C++ core using ``pybind11``. It is intended for:
+C++ core using ``nanobind``. It is intended for:
 *   Rapid prototyping of signal chains.
 *   Automated test vector generation.
 *   Visualization and link-budget analysis.

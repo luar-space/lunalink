@@ -600,7 +600,7 @@ WCET profiling (``cpp/tests/test_performance.cpp``):
 Python Bindings
 ---------------
 
-All Gateway 5 C++ components are accessible from Python via pybind11.
+All Gateway 5 C++ components are accessible from Python via nanobind.
 
 Binding source: ``cpp/bindings/afs_module.cpp``
 

@@ -42,7 +42,7 @@ Test Vector Generation
 Low-Level API
 -------------
 
-Thin Python wrappers over the C++ pybind11 bindings.  Each function
+Thin Python wrappers over the C++ nanobind bindings.  Each function
 corresponds to a single C++ call.
 
 lunalink

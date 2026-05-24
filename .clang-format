@@ -5,7 +5,7 @@
 #
 # Based on LLVM style with mission-critical readability adjustments:
 # - 100-column lines (matches MISRA cognitive-complexity analysis width)
-# - Allman braces (NASA GSFC / N7 Space preference for safety-critical)
+# - Attach braces (K&R style, LLVM default; brace stays on the statement line)
 # - No bin-packing (one parameter per line when wrapping)
 ---
 Language: Cpp

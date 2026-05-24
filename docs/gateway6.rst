@@ -575,7 +575,7 @@ through TX, RX decode, message parsing, and time reconstruction.
 Python Bindings & Tests
 -----------------------
 
-All C++ types and functions are exposed via pybind11:
+All C++ types and functions are exposed via nanobind:
 
 .. code-block:: python
 

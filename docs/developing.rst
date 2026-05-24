@@ -138,7 +138,7 @@ Project Structure
     ├── cpp/
     │   ├── include/lunalink/signal/  # C++ public headers
     │   ├── signal/                   # C++ implementation (no Python dependency)
-    │   ├── bindings/afs_module.cpp   # pybind11 bindings
+    │   ├── bindings/afs_module.cpp   # nanobind bindings
     │   └── tests/            # Catch2 unit tests
     ├── src/lunalink/         # Python package (src layout)
     │   ├── __init__.py       # exposes __version__
@@ -158,7 +158,7 @@ Adding a New C++ Function
 2. Implement it in a corresponding source file under the appropriate domain directory (e.g. ``cpp/codes/``, ``cpp/encoding/``, ``cpp/signal/``, or other
    module directory), and ensure it is included in ``lunalink_core`` sources in
    ``CMakeLists.txt``.
-3. Expose it via pybind11 in ``cpp/bindings/afs_module.cpp``.
+3. Expose it via nanobind in ``cpp/bindings/afs_module.cpp``.
 4. Add/update the corresponding type stub in ``src/lunalink/afs/_afs.pyi``.
 5. Re-export from ``src/lunalink/afs/signal.py`` and update ``__all__``.
 6. Write Catch2 tests in ``cpp/tests/`` and pytest tests in ``tests/``.
