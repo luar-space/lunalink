@@ -8,6 +8,13 @@ dist/
 _skbuild/
 Testing/
 
+# Fuzzing (libFuzzer corpora and crash artifacts — see cpp/fuzz/README.md)
+corpus/
+fuzz-artifacts/
+crash-*
+timeout-*
+oom-*
+
 # Python cache
 __pycache__/
 *.py[cod]

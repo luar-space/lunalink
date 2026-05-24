@@ -461,6 +461,71 @@ tasks:
       - build/sanitize/test_receiver "~[slow]" --abort
     silent: false
 
+  fuzz:
+    desc: >-
+      Build and run libFuzzer harnesses against the parser/FEC entry points
+      (requires LLVM Clang with libFuzzer). Override duration: FUZZ_TIME=300 task fuzz.
+    vars:
+      FUZZ_TIME: '{{.FUZZ_TIME | default "60"}}'
+      GENERATOR:
+        sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
+      CLANGXX:
+        sh: |
+          for c in "$(brew --prefix llvm 2>/dev/null)/bin/clang++" \
+                   /opt/homebrew/opt/llvm/bin/clang++ \
+                   /usr/local/opt/llvm/bin/clang++; do
+            [ -x "$c" ] && echo "$c" && break
+          done
+    cmds:
+      - |
+        if [ -z "{{.CLANGXX}}" ]; then
+          echo "libFuzzer needs LLVM Clang (Apple Clang lacks it). Install: brew install llvm"
+          exit 1
+        fi
+      - cmake -B build/fuzz -S . -G "{{.GENERATOR}}"
+          -DCMAKE_C_COMPILER="$(dirname {{.CLANGXX}})/clang"
+          -DCMAKE_CXX_COMPILER="{{.CLANGXX}}"
+          -DENABLE_FUZZING=ON -DBUILD_TESTING=OFF -DBUILD_PYTHON_BINDINGS=OFF
+          -DBUILD_PROPRIETARY=OFF -DCMAKE_BUILD_TYPE=Debug
+      - cmake --build build/fuzz --parallel
+      - mkdir -p corpus/message_parser corpus/frame_decode corpus/fec fuzz-artifacts
+      # The committed seed dir is passed as a second corpus: libFuzzer reads it
+      # but writes new finds only to corpus/ (the seed dir stays read-only).
+      - build/fuzz/fuzz_message_parser -max_total_time={{.FUZZ_TIME}} -max_len=5115 -artifact_prefix=fuzz-artifacts/mp- corpus/message_parser cpp/fuzz/seeds/message_parser
+      - build/fuzz/fuzz_fec -max_total_time={{.FUZZ_TIME}} -max_len=6240 -artifact_prefix=fuzz-artifacts/fec- corpus/fec cpp/fuzz/seeds/fec
+      - build/fuzz/fuzz_frame_decode -max_total_time={{.FUZZ_TIME}} -max_len=24512 -artifact_prefix=fuzz-artifacts/fd- corpus/frame_decode cpp/fuzz/seeds/frame_decode
+    silent: false
+
+  fuzz-seed:
+    desc: Regenerate the committed fuzz seed corpus from the encoder (requires built lunalink).
+    cmds:
+      - python3 scripts/fuzz_seed_corpus.py
+
+  fuzz-replay:
+    desc: >-
+      Fast regression replay — run every committed seed once and exit non-zero on
+      any crash/leak/UB. No mutation/search; used as the PR-time fuzz gate.
+    vars:
+      CLANGXX:
+        sh: |
+          for c in "$(brew --prefix llvm 2>/dev/null)/bin/clang++" \
+                   /opt/homebrew/opt/llvm/bin/clang++ \
+                   /usr/local/opt/llvm/bin/clang++; do
+            [ -x "$c" ] && echo "$c" && break
+          done
+    cmds:
+      - |
+        if [ -z "{{.CLANGXX}}" ]; then
+          echo "libFuzzer needs LLVM Clang (Apple Clang lacks it). Install: brew install llvm"
+          exit 1
+        fi
+      - cmake -B build/fuzz -S . -DCMAKE_C_COMPILER="$(dirname {{.CLANGXX}})/clang" -DCMAKE_CXX_COMPILER="{{.CLANGXX}}" -DENABLE_FUZZING=ON -DBUILD_TESTING=OFF -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_PROPRIETARY=OFF -DCMAKE_BUILD_TYPE=Debug
+      - cmake --build build/fuzz --parallel
+      - build/fuzz/fuzz_message_parser -runs=0 cpp/fuzz/seeds/message_parser
+      - build/fuzz/fuzz_fec -runs=0 cpp/fuzz/seeds/fec
+      - build/fuzz/fuzz_frame_decode -runs=0 cpp/fuzz/seeds/frame_decode
+    silent: false
+
   tidy:
     desc: Run clang-tidy static analysis on C++ core (requires clang-tidy).
     env:

@@ -110,6 +110,19 @@ Tool Records
      - ``cmake -B build -DENABLE_LLVM_COVERAGE=ON ...``
      - Build system; invokes all tools
      - Industry standard; version range pinned in CMakeLists.txt
+   * - libFuzzer (fuzz harnesses)
+     - LLVM 19 (CI, ``clang`` + ``libclang-rt-dev``) / Homebrew ≥ 20 (local)
+     - ``-DENABLE_FUZZING=ON`` (Clang-only); ``task fuzz`` (search),
+       ``task fuzz-replay`` (``-runs=0`` seed replay); harnesses in
+       ``cpp/fuzz/``; built ``-O1`` with ASan + UBSan
+     - Dynamic robustness verification (ECSS-Q-ST-80C §5.5) of the
+       externally-fed parser/FEC entry points: nightly coverage-guided
+       search (``fuzz.yml``) + PR-time regression gate (``fuzz-smoke.yml``)
+     - Coverage-guided search with ASan/UBSan oracles; seed corpus
+       generated from a decode-validated frame
+       (``scripts/fuzz_seed_corpus.py``); non-flight test code, never linked
+       into the flight binary; any finding in ``lunalink_core`` is triaged as
+       a flight defect. Run details: ``cpp/fuzz/README.md``
 
 Known Tool Limitations
 ----------------------

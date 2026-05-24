@@ -11,6 +11,7 @@ option(LUNALINK_BENCH_COUNT_FFTS "Enable FFT call counter (bench builds only —
 option(LUNALINK_DEV_RX_FFT_CACHE "Enable rx-FFT memoisation in Correlator (dev/bench builds only — adds heap, not for flight)" OFF)
 option(ENABLE_LLVM_COVERAGE "Enable LLVM source-based coverage (MC/DC, requires Clang)" OFF)
 option(ENABLE_STACK_USAGE "Enable -fstack-usage to produce .su files for stack analysis" OFF)
+option(ENABLE_FUZZING "Build libFuzzer harnesses for parser/FEC entry points (requires Clang)" OFF)
 
 # --- SCI Header Generation ---
 # Inject git SHA, build timestamp (seconds since J2000), and pre-computed CRC-32
@@ -479,6 +480,42 @@ endif()
 # --- Stack Usage Analysis ---
 if(ENABLE_STACK_USAGE AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(lunalink_core PRIVATE -fstack-usage)
+endif()
+
+# --- Fuzzing (libFuzzer) ---
+# Builds standalone fuzz harnesses for the externally-fed parser/FEC entry
+# points. OFF by default and never linked into the flight library — this only
+# instruments lunalink_core for coverage + ASan/UBSan within the fuzz build dir.
+# Requires Clang with the libFuzzer runtime (Apple Clang lacks it; use the
+# Homebrew LLVM toolchain). See cpp/fuzz/README.md.
+if(ENABLE_FUZZING)
+    if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        message(FATAL_ERROR
+            "ENABLE_FUZZING requires LLVM Clang with libFuzzer. "
+            "Apple Clang and GCC are not supported. Configure with e.g. "
+            "-DCMAKE_C_COMPILER=$(brew --prefix llvm)/bin/clang "
+            "-DCMAKE_CXX_COMPILER=$(brew --prefix llvm)/bin/clang++.")
+    endif()
+    if(ENABLE_SANITIZERS)
+        message(FATAL_ERROR "ENABLE_FUZZING already enables ASan/UBSan; do not combine with ENABLE_SANITIZERS.")
+    endif()
+
+    # -O1 (over the Debug default -O0) makes libFuzzer/ASan markedly more
+    # effective without enabling NDEBUG, so runtime asserts stay live.
+    # Instrument the core library for coverage + ASan/UBSan (no fuzzer entry point).
+    set(FUZZ_LIB_FLAGS -fsanitize=fuzzer-no-link,address,undefined -fno-omit-frame-pointer -O1)
+    # Harness executables get the libFuzzer driver (provides main()).
+    set(FUZZ_BIN_FLAGS -fsanitize=fuzzer,address,undefined -fno-omit-frame-pointer -O1)
+
+    target_compile_options(lunalink_core PRIVATE ${FUZZ_LIB_FLAGS})
+    target_link_options(lunalink_core PRIVATE ${FUZZ_LIB_FLAGS})
+
+    foreach(harness IN ITEMS fuzz_message_parser fuzz_frame_decode fuzz_fec)
+        add_executable(${harness} cpp/fuzz/${harness}.cpp)
+        target_link_libraries(${harness} PRIVATE lunalink_core)
+        target_compile_options(${harness} PRIVATE ${FUZZ_BIN_FLAGS})
+        target_link_options(${harness} PRIVATE ${FUZZ_BIN_FLAGS})
+    endforeach()
 endif()
 
 # [[private-begin]]

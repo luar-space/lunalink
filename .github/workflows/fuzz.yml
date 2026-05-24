@@ -1,0 +1,89 @@
+name: Nightly Fuzzing
+
+# Long-running coverage-guided fuzzing of the externally-fed parser/FEC entry
+# points (see cpp/fuzz/README.md). Runs nightly so the corpus accumulates and
+# deepens coverage over time; a crash/leak/UB finding fails the job and uploads
+# the reproducing input. Manual runs accept a custom per-harness duration.
+
+on:
+  schedule:
+    - cron: '0 3 * * *'  # nightly at 03:00 UTC
+  workflow_dispatch:
+    inputs:
+      duration:
+        description: 'Seconds to fuzz each harness'
+        required: false
+        default: '1800'
+
+concurrency:
+  group: fuzz-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    name: Fuzz ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: message_parser, bin: fuzz_message_parser, maxlen: 5115 }
+          - { name: frame_decode,   bin: fuzz_frame_decode,   maxlen: 24512 }
+          - { name: fec,            bin: fuzz_fec,            maxlen: 6240 }
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Clang (libFuzzer runtime) and Ninja
+        run: sudo apt-get update && sudo apt-get install -y clang llvm libclang-rt-dev ninja-build
+
+      # Persist the corpus across runs: save under a unique key each night,
+      # restore the most recent prior corpus via the prefix fallback.
+      - name: Restore fuzz corpus
+        uses: actions/cache@v4
+        with:
+          path: corpus/${{ matrix.name }}
+          key: fuzz-corpus-${{ matrix.name }}-${{ github.run_id }}
+          restore-keys: |
+            fuzz-corpus-${{ matrix.name }}-
+
+      - name: Configure & build harnesses
+        run: |
+          cmake -B build/fuzz -S . -G Ninja \
+            -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
+            -DENABLE_FUZZING=ON -DBUILD_TESTING=OFF \
+            -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_PROPRIETARY=OFF \
+            -DCMAKE_BUILD_TYPE=Debug
+          cmake --build build/fuzz --parallel
+
+      - name: Fuzz ${{ matrix.name }}
+        run: |
+          DURATION="${{ github.event.inputs.duration || '1800' }}"
+          mkdir -p corpus/${{ matrix.name }} fuzz-artifacts
+          build/fuzz/${{ matrix.bin }} \
+            -max_total_time="$DURATION" \
+            -max_len=${{ matrix.maxlen }} \
+            -print_final_stats=1 \
+            -artifact_prefix=fuzz-artifacts/${{ matrix.name }}- \
+            corpus/${{ matrix.name }} cpp/fuzz/seeds/${{ matrix.name }}
+
+      # Minimise before caching so the corpus stays bounded over many nights
+      # (skipped automatically if the fuzz step failed on a finding).
+      - name: Minimise corpus
+        run: |
+          mkdir -p corpus_min
+          build/fuzz/${{ matrix.bin }} -merge=1 \
+            corpus_min corpus/${{ matrix.name }} cpp/fuzz/seeds/${{ matrix.name }}
+          rm -rf corpus/${{ matrix.name }}
+          mv corpus_min corpus/${{ matrix.name }}
+
+      - name: Upload crash artifacts
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: fuzz-crash-${{ matrix.name }}
+          path: fuzz-artifacts/
+          retention-days: 90

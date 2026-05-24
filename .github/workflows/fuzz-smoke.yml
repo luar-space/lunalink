@@ -1,0 +1,46 @@
+name: Fuzz Smoke
+
+# Fast PR-time regression gate: replay the committed seed corpus through each
+# harness once (no mutation/search) and fail if any seed now triggers a crash,
+# leak, or UB. Catches regressions in minutes, complementing the slow nightly
+# search in fuzz.yml. See cpp/fuzz/README.md.
+
+on:
+  push:
+    branches: [main]
+    paths: ['cpp/**', 'CMakeLists.txt', '.github/workflows/fuzz-smoke.yml']
+  pull_request:
+    paths: ['cpp/**', 'CMakeLists.txt', '.github/workflows/fuzz-smoke.yml']
+
+concurrency:
+  group: fuzz-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  replay:
+    name: Replay seed corpus
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Clang (libFuzzer runtime) and Ninja
+        run: sudo apt-get update && sudo apt-get install -y clang llvm libclang-rt-dev ninja-build
+
+      - name: Configure & build harnesses
+        run: |
+          cmake -B build/fuzz -S . -G Ninja \
+            -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
+            -DENABLE_FUZZING=ON -DBUILD_TESTING=OFF \
+            -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_PROPRIETARY=OFF \
+            -DCMAKE_BUILD_TYPE=Debug
+          cmake --build build/fuzz --parallel
+
+      - name: Replay seeds (-runs=0)
+        run: |
+          build/fuzz/fuzz_message_parser -runs=0 cpp/fuzz/seeds/message_parser
+          build/fuzz/fuzz_fec            -runs=0 cpp/fuzz/seeds/fec
+          build/fuzz/fuzz_frame_decode   -runs=0 cpp/fuzz/seeds/frame_decode
