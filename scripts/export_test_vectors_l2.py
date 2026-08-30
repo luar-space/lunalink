@@ -1,4 +1,4 @@
-"""Generate Level 2 interoperability test vectors (encoded frames).
+r"""Generate Level 2 interoperability test vectors (encoded frames).
 
 Writes one ``frame_{name}.bin`` file per test message into the target
 directory, in the binary format defined by the competition interoperability
@@ -191,6 +191,7 @@ def _sha256(path: Path) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Emit the Level 2 encoded-frame vectors for the public repo."""
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "output_dir",

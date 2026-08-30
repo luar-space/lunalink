@@ -31,6 +31,7 @@ def _sha256(path: Path) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Emit the Level 1 spreading-code vectors for the public repo."""
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "output_dir",
@@ -41,7 +42,8 @@ def main(argv: list[str] | None = None) -> int:
         "--manifest",
         type=Path,
         default=None,
-        help="Also write a manifest.json next to the output dir with SHA256 of every file",
+        help="Also write a manifest.json next to the output dir with "
+        "SHA256 of every file",
     )
     args = ap.parse_args(argv)
 

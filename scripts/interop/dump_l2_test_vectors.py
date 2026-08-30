@@ -37,6 +37,7 @@ TEST_MESSAGES: list[tuple[str, int, int, str, int | None]] = [
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Dump Level 2 frame vectors as human-readable text for interop debugging."""
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "output_dir",

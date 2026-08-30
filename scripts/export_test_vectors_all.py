@@ -75,6 +75,7 @@ def _run_level(
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run every level producer in order and report a combined exit status."""
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "public_repo",
@@ -130,7 +131,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"FAIL: {len(failures)} level(s): {', '.join(failures)}", file=sys.stderr)
         return 1
     print(
-        f"OK: regenerated {len(selected_levels)}/{len(LEVELS)} levels into {public_repo}",
+        f"OK: regenerated {len(selected_levels)}/{len(LEVELS)} levels "
+        f"into {public_repo}",
         file=sys.stderr,
     )
     return 0

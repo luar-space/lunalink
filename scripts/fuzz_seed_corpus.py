@@ -24,10 +24,10 @@ import lunalink.afs as afs
 SEEDS_ROOT = os.path.join(os.path.dirname(__file__), os.pardir, "cpp", "fuzz", "seeds")
 
 # Frame segment layout (symbols): SYNC | SB1 | SB2 | SB3 | SB4.
-SB1_START = afs.SYNC_LENGTH                       # 68
+SB1_START = afs.SYNC_LENGTH  # 68
 PAYLOAD_START = afs.SYNC_LENGTH + afs.SB1_LENGTH  # 120
-SB2_START = PAYLOAD_START                          # 120
-SB2_END = SB2_START + afs.SB2_LENGTH               # 2520
+SB2_START = PAYLOAD_START  # 120
+SB2_END = SB2_START + afs.SB2_LENGTH  # 2520
 
 
 def _write(harness: str, name: str, payload: bytes) -> None:
@@ -49,7 +49,9 @@ def gen_for_pattern(pattern: str) -> None:
     )
     symbols = np.asarray(frame_obj.symbols, dtype=np.uint8)
     if symbols.size != afs.FRAME_LENGTH:
-        raise SystemExit(f"{pattern}: encoder produced {symbols.size} symbols, expected {afs.FRAME_LENGTH}")
+        raise SystemExit(
+            f"{pattern}: encoder produced {symbols.size} symbols, expected {afs.FRAME_LENGTH}"
+        )
 
     bipolar = _bipolar(symbols)
 
@@ -64,19 +66,43 @@ def gen_for_pattern(pattern: str) -> None:
 
     # --- fuzz_message_parser: real decoded subframe bits (one bit per byte),
     # prefixed with the selector byte that routes to the matching parser.
-    _write("message_parser", f"sb2_{pattern}", bytes([0]) + np.asarray(result.sb2.data, np.uint8).tobytes())
-    _write("message_parser", f"sb3_{pattern}", bytes([1]) + np.asarray(result.sb3.data, np.uint8).tobytes())
-    _write("message_parser", f"sb4_{pattern}", bytes([2]) + np.asarray(result.sb4.data, np.uint8).tobytes())
+    _write(
+        "message_parser",
+        f"sb2_{pattern}",
+        bytes([0]) + np.asarray(result.sb2.data, np.uint8).tobytes(),
+    )
+    _write(
+        "message_parser",
+        f"sb3_{pattern}",
+        bytes([1]) + np.asarray(result.sb3.data, np.uint8).tobytes(),
+    )
+    _write(
+        "message_parser",
+        f"sb4_{pattern}",
+        bytes([2]) + np.asarray(result.sb4.data, np.uint8).tobytes(),
+    )
 
     # --- fuzz_fec: selector byte (data[0] % 6) + payload.
     # 5: LDPC SF2 codeword soft symbols (2400) -> exercises convergence path.
-    _write("fec", f"ldpc_sf2_{pattern}", bytes([5]) + bipolar[SB2_START:SB2_END].tobytes())
+    _write(
+        "fec", f"ldpc_sf2_{pattern}", bytes([5]) + bipolar[SB2_START:SB2_END].tobytes()
+    )
     # 4: full payload soft symbols (5880) for the block deinterleaver.
-    _write("fec", f"deinterleave_{pattern}", bytes([4]) + bipolar[PAYLOAD_START:].tobytes())
+    _write(
+        "fec", f"deinterleave_{pattern}", bytes([4]) + bipolar[PAYLOAD_START:].tobytes()
+    )
     # 3: soft BCH over the 52-symbol SB1 region.
-    _write("fec", f"bch_soft_{pattern}", bytes([3]) + bipolar[SB1_START:PAYLOAD_START].tobytes())
+    _write(
+        "fec",
+        f"bch_soft_{pattern}",
+        bytes([3]) + bipolar[SB1_START:PAYLOAD_START].tobytes(),
+    )
     # 2: hard BCH over the same region (0/1 symbols).
-    _write("fec", f"bch_hard_{pattern}", bytes([2]) + symbols[SB1_START:PAYLOAD_START].tobytes())
+    _write(
+        "fec",
+        f"bch_hard_{pattern}",
+        bytes([2]) + symbols[SB1_START:PAYLOAD_START].tobytes(),
+    )
 
 
 def gen_static_seeds() -> None:
@@ -91,7 +117,11 @@ def gen_static_seeds() -> None:
         return rng.integers(0, 2, size=n, dtype=np.uint8)
 
     # selector 3 -> extract_bits: offset(2) + n_bits(1) + bit array.
-    _write("message_parser", "extract_bits", bytes([3, 0x00, 0x10, 24]) + bits(256).tobytes())
+    _write(
+        "message_parser",
+        "extract_bits",
+        bytes([3, 0x00, 0x10, 24]) + bits(256).tobytes(),
+    )
     # selector 4 -> validate_spare_bits over an alternating 0/1 pattern.
     spare = np.tile(np.array([0, 1], dtype=np.uint8), 64).tobytes()
     _write("message_parser", "spare", bytes([4]) + spare)

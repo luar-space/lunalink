@@ -39,19 +39,43 @@ from pathlib import Path
 
 import numpy as np
 
-from lunalink.afs.vectors import export_parsed_json_interop_v1
 from lunalink.afs._receiver import receive_frame
+from lunalink.afs.vectors import export_parsed_json_interop_v1
 
 # Mirrors TEST_MESSAGES in scripts/export_test_vectors_l2.py.
 # (frame_filename, frame_id, description)
 TEST_MESSAGES: list[tuple[str, str, str]] = [
     ("frame_message_1.bin", "frame_message_1", "Test Message 1 — all-zeros baseline"),
-    ("frame_message_2.bin", "frame_message_2", "Test Message 2 — all-ones inverse baseline"),
-    ("frame_message_3.bin", "frame_message_3", "Test Message 3 — alternating pattern (0xAA…, MSB-first)"),
-    ("frame_message_4.bin", "frame_message_4", "Test Message 4 — bytewise marker pattern"),
-    ("frame_message_5.bin", "frame_message_5", "Test Message 5 — xorshift32 PRNG (seed 0xAF52)"),
-    ("frame_boundary.bin", "frame_boundary", "Test Case 4 — FID=3, TOI=99, PRN=210 maxima"),
-    ("frame_boundary_max_fields.bin", "frame_boundary_max_fields", "Test Case 4 — WN=8191, ITOW=503 SB2 maxima"),
+    (
+        "frame_message_2.bin",
+        "frame_message_2",
+        "Test Message 2 — all-ones inverse baseline",
+    ),
+    (
+        "frame_message_3.bin",
+        "frame_message_3",
+        "Test Message 3 — alternating pattern (0xAA…, MSB-first)",
+    ),
+    (
+        "frame_message_4.bin",
+        "frame_message_4",
+        "Test Message 4 — bytewise marker pattern",
+    ),
+    (
+        "frame_message_5.bin",
+        "frame_message_5",
+        "Test Message 5 — xorshift32 PRNG (seed 0xAF52)",
+    ),
+    (
+        "frame_boundary.bin",
+        "frame_boundary",
+        "Test Case 4 — FID=3, TOI=99, PRN=210 maxima",
+    ),
+    (
+        "frame_boundary_max_fields.bin",
+        "frame_boundary_max_fields",
+        "Test Case 4 — WN=8191, ITOW=503 SB2 maxima",
+    ),
 ]
 
 
@@ -84,6 +108,7 @@ def _load_frame_bin(path: Path) -> tuple[np.ndarray, int]:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Emit the Level 5 parsed-JSON vectors for the public repo."""
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "output_dir",
@@ -95,7 +120,8 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=None,
         help="Directory containing the input frame_*.bin files. "
-        "Defaults to ../lsis-afs-test-vectors/frames/ relative to the lunalink repo root.",
+        "Defaults to ../lsis-afs-test-vectors/frames/ relative to the "
+        "lunalink repo root.",
     )
     args = ap.parse_args(argv)
 

@@ -142,8 +142,9 @@ def test_l3_prn_range_within_interim_codes() -> None:
 
 
 def test_export_parsed_json_interop_v1_emits_strict_pdf_shape() -> None:
-    """The L5 emitter produces JSON whose spec-mandated fields match the
-    interoperability.pdf §"Parsed Data Export Format" example exactly.
+    """Emit JSON whose spec-mandated fields match interoperability.pdf.
+
+    The shape must match the §"Parsed Data Export Format" example exactly.
 
     Spec keys (no leading underscore) must be present at the documented
     positions and have the documented value-type (scalar 0 for health,
@@ -205,3 +206,120 @@ def test_export_parsed_json_interop_v1_emits_strict_pdf_shape() -> None:
     assert doc["timestamp"].endswith("Z"), (
         f"timestamp must end with Z, got {doc['timestamp']!r}"
     )
+
+
+def test_bits_to_hex_annex3_rejects_non_nibble_aligned_input() -> None:
+    """``_bits_to_hex_annex3`` refuses bit counts that aren't nibble-aligned.
+
+    The Annex 3 hex encoding packs 4 bits per hex digit, so a bit count
+    that isn't divisible by 4 (after any ``prepend_zeros``) has no
+    well-defined representation.  Silently truncating or zero-filling
+    would emit a vector that byte-compares unequal against the normative
+    attachment, so the producer must fail loudly instead.
+    """
+    import numpy as np
+
+    from lunalink.afs.vectors import _bits_to_hex_annex3
+
+    # 10 bits, no prepend — 10 % 4 == 2, so not representable.
+    bits = np.zeros(10, dtype=np.uint8)
+    with pytest.raises(ValueError, match="not divisible by 4"):
+        _bits_to_hex_annex3(bits)
+
+    # prepend_zeros participates in the alignment check: 10 + 2 == 12 is
+    # divisible by 4 and must be accepted.
+    assert _bits_to_hex_annex3(bits, prepend_zeros=2) == "000"
+
+
+def test_export_frame_vector_defaults_timestamp_to_wall_clock() -> None:
+    """Omitting ``timestamp`` stamps the current time into the L2 header.
+
+    Published vectors pass an explicit epoch for byte-stability, so the
+    default branch is only exercised by ad-hoc/interactive use.  Guard it
+    anyway: a regression here writes a garbage or zero timestamp into
+    every hand-produced frame without any test noticing.
+    """
+    import struct
+    import tempfile
+    import time
+
+    import numpy as np
+
+    from lunalink.afs.vectors import export_frame_vector
+
+    sb2 = np.zeros(1176, dtype=np.uint8)
+    sb3 = np.zeros(846, dtype=np.uint8)
+    sb4 = np.zeros(846, dtype=np.uint8)
+
+    before = int(time.time())
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = Path(tmpdir) / "frame_default_ts.bin"
+        export_frame_vector(1, 0, 0, sb2, sb3, sb4, path)
+        header = path.read_bytes()[:64]
+    after = int(time.time())
+
+    (stamped,) = struct.unpack_from("<q", header, 20)
+    assert before <= stamped <= after, (
+        f"default timestamp {stamped} outside [{before}, {after}]"
+    )
+
+    # The explicit-timestamp path is what published vectors use: the same
+    # inputs must produce byte-identical output across runs, which is the
+    # whole reason the parameter exists.
+    pinned = 1738108800  # 2025-01-29T00:00:00Z — LSIS V1.0 publication date
+    with tempfile.TemporaryDirectory() as tmpdir:
+        first = Path(tmpdir) / "pinned_a.bin"
+        second = Path(tmpdir) / "pinned_b.bin"
+        export_frame_vector(1, 0, 0, sb2, sb3, sb4, first, timestamp=pinned)
+        export_frame_vector(1, 0, 0, sb2, sb3, sb4, second, timestamp=pinned)
+        blob = first.read_bytes()
+        assert blob == second.read_bytes(), "pinned timestamp must be reproducible"
+
+    (pinned_stamp,) = struct.unpack_from("<q", blob[:64], 20)
+    assert pinned_stamp == pinned
+
+
+def test_export_parsed_json_interop_v1_emits_optional_provenance() -> None:
+    """``input_frame_sha256`` and ``description`` land as underscore keys.
+
+    Both are optional provenance the public repo attaches so a consumer
+    can tie a parsed JSON back to the exact ``frame_*.bin`` it came from.
+    They must be omitted entirely when not supplied — an explicit ``null``
+    would break byte-equality against vectors produced without them.
+    """
+    import json
+    import tempfile
+
+    import numpy as np
+
+    from lunalink.afs import frame_build
+    from lunalink.afs._receiver import receive_frame
+    from lunalink.afs.vectors import export_parsed_json_interop_v1
+
+    sb2 = np.zeros(1176, dtype=np.uint8)
+    sb3 = np.zeros(846, dtype=np.uint8)
+    sb4 = np.zeros(846, dtype=np.uint8)
+    syms = frame_build(0, 0, sb2, sb3, sb4)
+    bipolar = np.where(np.asarray(syms) == 0, 1.0, -1.0).astype(np.float32)
+    result = receive_frame(bipolar, raise_on_error=True)
+
+    sha = "a" * 64
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with_prov = Path(tmpdir) / "with_prov.json"
+        export_parsed_json_interop_v1(
+            result,
+            with_prov,
+            frame_id="prov_test",
+            input_frame_sha256=sha,
+            description="All zeros (baseline)",
+        )
+        doc = json.loads(with_prov.read_text())
+
+        without_prov = Path(tmpdir) / "without_prov.json"
+        export_parsed_json_interop_v1(result, without_prov, frame_id="prov_test")
+        bare = json.loads(without_prov.read_text())
+
+    assert doc["_input_frame_sha256"] == sha
+    assert doc["_description"] == "All zeros (baseline)"
+    assert "_input_frame_sha256" not in bare
+    assert "_description" not in bare

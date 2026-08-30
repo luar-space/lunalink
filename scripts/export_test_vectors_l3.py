@@ -1,4 +1,4 @@
-"""Generate Level 3 interoperability test vectors (baseband I/Q signals).
+r"""Generate Level 3 interoperability test vectors (baseband I/Q signals).
 
 Reads ``frame_*.bin`` files from the public ``lsis-afs-test-vectors``
 repository's ``frames/`` directory, modulates each frame to baseband
@@ -141,18 +141,21 @@ def _sha256(path: Path) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Emit the Level 3 I/Q signal vectors for the public repo."""
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "output_dir",
         type=Path,
-        help="Target directory (typically the signals/ subdir of lsis-afs-test-vectors)",
+        help="Target directory (typically the signals/ subdir of "
+        "lsis-afs-test-vectors)",
     )
     ap.add_argument(
         "--input-dir",
         type=Path,
         default=None,
         help="Directory containing the input frame_*.bin files. "
-        "Defaults to ../lsis-afs-test-vectors/frames/ relative to the lunalink repo root.",
+        "Defaults to ../lsis-afs-test-vectors/frames/ relative to the "
+        "lunalink repo root.",
     )
     args = ap.parse_args(argv)
 
@@ -173,7 +176,10 @@ def main(argv: list[str] | None = None) -> int:
     for out_name, frame_filename, prn in TEST_CASES:
         in_path = args.input_dir / frame_filename
         if not in_path.is_file():
-            print(f"  SKIP  {out_name:<48}  input not found: {frame_filename}", file=sys.stderr)
+            print(
+                f"  SKIP  {out_name:<48}  input not found: {frame_filename}",
+                file=sys.stderr,
+            )
             continue
 
         syms = _load_frame_syms(in_path)

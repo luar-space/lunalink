@@ -61,7 +61,10 @@ def _bits_to_hex_annex3(bits: NDArray[np.uint8], prepend_zeros: int = 0) -> str:
     if prepend_zeros:
         bits = np.concatenate([np.zeros(prepend_zeros, dtype=np.uint8), bits])
     if len(bits) % 4 != 0:
-        msg = f"bit count {len(bits)} not divisible by 4 after {prepend_zeros} prepend zeros"
+        msg = (
+            f"bit count {len(bits)} not divisible by 4 "
+            f"after {prepend_zeros} prepend zeros"
+        )
         raise ValueError(msg)
     nibbles = bits.reshape(-1, 4)
     values = (
@@ -263,7 +266,7 @@ def export_parsed_json_interop_v1(
     input_frame_sha256: str | None = None,
     description: str | None = None,
 ) -> str:
-    """Export L5 parsed JSON in the interoperability.pdf §"Parsed Data Export Format" shape.
+    """Export L5 parsed JSON in the interop-PDF Parsed Data Export shape.
 
     Top-level keys (``version``, ``timestamp``, ``frame_id``, ``subframe1``,
     ``subframe2``, ``subframe3``, ``subframe4``, ``time_of_transmission``)
@@ -307,7 +310,8 @@ def export_parsed_json_interop_v1(
     str
         Path to the written JSON file.
     """
-    # Local import — parse_sb*/SUBFRAME_TYPE_BITS are only needed by this Level-5 emitter.
+    # Local import — parse_sb*/SUBFRAME_TYPE_BITS are only needed by this
+    # Level-5 emitter.
     from lunalink.afs.signal import (  # noqa: PLC0415
         SUBFRAME_TYPE_BITS,
         parse_sb2,

@@ -20,7 +20,6 @@ import pytest
 from lunalink.afs import (
     prn_code,
     receive_frame,
-    weil10230_code,
 )
 from lunalink.afs._afs import crc24_calculate
 from lunalink.afs.signal import bch_decode, bch_encode
@@ -37,51 +36,6 @@ def _read_json(path: Path) -> dict:
     if path.suffix == ".gz":
         return json.loads(gzip.open(path, "rb").read())
     return json.loads(path.read_text())
-
-
-def _parse_hex_sections(text: str) -> dict[str, tuple[int, np.ndarray]]:
-    """Parse sectioned .hex code file into named (length, bits) tuples."""
-    sections: dict[str, tuple[int, np.ndarray]] = {}
-    current_section = ""
-    current_length = 0
-    for line in text.splitlines():
-        line = line.strip()
-        if line.startswith("[") and line.endswith("]"):
-            current_section = line[1:-1]
-        elif line.startswith("length:"):
-            current_length = int(line.split(":", 1)[1].strip())
-        elif line.startswith("hex:"):
-            hex_str = line.split(":", 1)[1].strip()
-            # Pad to even length for bytes.fromhex
-            if len(hex_str) % 2:
-                hex_str = "0" + hex_str
-            bits = np.unpackbits(np.frombuffer(bytes.fromhex(hex_str), dtype=np.uint8))
-            sections[current_section] = (current_length, bits)
-    return sections
-
-
-class TestSelfCodes:
-    """Verify published code vectors match live code generation."""
-
-    @pytest.mark.parametrize("prn_id", range(1, 13))
-    def test_gold_code_roundtrip(self, prn_id: int) -> None:
-        hex_file = VECTORS_DIR / "codes" / f"codes_prn{prn_id}.hex"
-        sections = _parse_hex_sections(hex_file.read_text())
-        length, bits = sections["GOLD_CODE"]
-        assert length == 2046
-        published = bits[:length]
-        live = prn_code(prn_id)
-        assert np.array_equal(published, live), f"PRN {prn_id} Gold code mismatch"
-
-    @pytest.mark.parametrize("prn_id", range(1, 13))
-    def test_weil_primary_roundtrip(self, prn_id: int) -> None:
-        hex_file = VECTORS_DIR / "codes" / f"codes_prn{prn_id}.hex"
-        sections = _parse_hex_sections(hex_file.read_text())
-        length, bits = sections["WEIL_PRIMARY"]
-        assert length == 10230
-        published = bits[:length]
-        live = weil10230_code(prn_id)
-        assert np.array_equal(published, live), f"PRN {prn_id} Weil code mismatch"
 
 
 class TestSelfFrames:

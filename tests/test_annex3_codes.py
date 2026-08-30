@@ -32,37 +32,45 @@ def _parse_quoted(path: Path) -> list[str]:
 
 
 def _parse_plain(path: Path) -> list[str]:
-    return [line.strip().upper() for line in path.read_text().splitlines() if line.strip()]
+    return [
+        line.strip().upper() for line in path.read_text().splitlines() if line.strip()
+    ]
 
 
 @pytest.fixture(scope="module")
 def gold_ref() -> list[str]:
+    """Annex 3 reference Gold-2046 hex strings, indexed PRN 1-210."""
     return _parse_quoted(GOLD_REF)
 
 
 @pytest.fixture(scope="module")
 def weil_primary_ref() -> list[str]:
+    """Annex 3 reference Weil-10230 (L1CP) hex strings, indexed PRN 1-210."""
     return _parse_plain(WEIL_P_REF)
 
 
 @pytest.fixture(scope="module")
 def weil_tertiary_ref() -> list[str]:
+    """Annex 3 reference Weil-1500 hex strings, indexed PRN 1-210."""
     return _parse_quoted(WEIL_T_REF)
 
 
 @pytest.mark.parametrize("prn", range(1, PRN_COUNT + 1))
 def test_gold_code_matches_annex3(prn: int, gold_ref: list[str]) -> None:
+    """Live Gold-2046 generation is byte-exact against Annex 3."""
     got = _bits_to_hex_annex3(prn_code(prn), prepend_zeros=2)
     assert got == gold_ref[prn - 1], f"PRN {prn}: Gold mismatch"
 
 
 @pytest.mark.parametrize("prn", range(1, PRN_COUNT + 1))
 def test_weil_primary_matches_annex3(prn: int, weil_primary_ref: list[str]) -> None:
+    """Live Weil-10230 generation is byte-exact against Annex 3."""
     got = _bits_to_hex_annex3(weil10230_code(prn), prepend_zeros=2)
     assert got == weil_primary_ref[prn - 1], f"PRN {prn}: Weil-10230 mismatch"
 
 
 @pytest.mark.parametrize("prn", range(1, PRN_COUNT + 1))
 def test_weil_tertiary_matches_annex3(prn: int, weil_tertiary_ref: list[str]) -> None:
+    """Live Weil-1500 generation is byte-exact against Annex 3."""
     got = _bits_to_hex_annex3(weil1500_code(prn), prepend_zeros=0)
     assert got == weil_tertiary_ref[prn - 1], f"PRN {prn}: Weil-1500 mismatch"
