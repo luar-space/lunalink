@@ -1,5 +1,5 @@
-lunalink
-========
+LunaLink — LSIS-AFS Reference Implementation
+============================================
 
 .. raw:: html
 
@@ -16,7 +16,16 @@ lunalink
      <a href="https://github.com/luar-space/lsis-afs/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-green.svg" alt="License: Apache 2.0"></a>
    </p>
 
-LunaLink AFS reference implementation with C++ core and nanobind bindings.
+Open-source reference implementation of the LunaNet Signal-In-Space
+Augmented Forward Signal (LSIS V1.0, 29 January 2025): the complete
+transmit chain (spreading codes, BCH + LDPC FEC, framing, BPSK/IQ
+modulation), the inverse decode chain, bit-exact interoperability evidence
+against an independent implementation, and flight-software-grade assurance
+(SWIFI fault injection, FMEA, MC/DC coverage).  C++20 core with Python
+bindings.
+
+New here?  Start with the :doc:`quickstart`; judging the competition
+submission?  Start with the :doc:`evaluation_guide`.
 
 .. toctree::
    :maxdepth: 2

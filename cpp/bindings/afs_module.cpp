@@ -26,9 +26,9 @@
 
 #include <cmath>
 #include <cstdint>
-#include <string>
 #include <cstring>
 #include <span>
+#include <string>
 #include <vector>
 
 namespace nb = nanobind;
