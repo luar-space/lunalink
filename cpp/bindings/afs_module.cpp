@@ -562,7 +562,7 @@ Examples
       "symbols"_a,
       "iterations"_a,
       "workspace"_a.none() = nb::none(),
-      R"(Decode a subframe using Layered Normalized Min-Sum BP. [LSIS-AFS-321]
+      R"(Decode a subframe using Layered Sum-Product BP. [LSIS-AFS-321]
 
 Parameters
 ----------
