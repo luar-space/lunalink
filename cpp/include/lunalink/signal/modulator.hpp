@@ -21,8 +21,8 @@ enum class ModulationStatus : uint8_t {
 /// @brief Validate modulation inputs: checks data symbol is +/-1, output span
 ///        is large enough for the chip sequence, and input/output do not alias.
 [[nodiscard("ModulationStatus reports invalid data-symbol, output-buffer or "
-              "input/output aliasing failures; ignoring it lets unsafe modulator "
-              "inputs through (LSIS-AFS-201, FIZ-1)")]] inline ModulationStatus
+            "input/output aliasing failures; ignoring it lets unsafe modulator "
+            "inputs through (LSIS-AFS-201, FIZ-1)")]] inline ModulationStatus
 validate_modulation_inputs(std::span<const uint8_t> chips,
                            int8_t data_symbol,
                            std::span<int8_t> out) noexcept {
@@ -46,8 +46,8 @@ validate_modulation_inputs(std::span<const uint8_t> chips,
  * Uses a branchless arithmetic mapping: 0 -> +1, 1 -> -1.
  */
 [[nodiscard("ModulationStatus reports validation failures, kInvalidChipValue mid-loop, "
-              "and CFI terminal-count faults; ignoring it accepts a partially-scrubbed "
-              "output as valid (LSIS-AFS-201, FIZ-1)")]] inline ModulationStatus
+            "and CFI terminal-count faults; ignoring it accepts a partially-scrubbed "
+            "output as valid (LSIS-AFS-201, FIZ-1)")]] inline ModulationStatus
 modulate_bpsk_generic(std::span<const uint8_t> chips,
                       int8_t data_symbol,
                       std::span<int8_t> out) noexcept {
@@ -72,7 +72,9 @@ modulate_bpsk_generic(std::span<const uint8_t> chips,
 
     // CFI: Terminal count verification.
     if (status == ModulationStatus::kOk && loop_count != chips.size()) [[unlikely]] {
-      status = ModulationStatus::kFaultDetected; // FIZ-1 // NOCOVER(DEFENCE_IN_DEPTH): CFI terminal count — loop count always matches chips.size() under nominal execution
+      status = ModulationStatus::kFaultDetected; // FIZ-1 // NOCOVER(DEFENCE_IN_DEPTH): CFI terminal
+                                                 // count — loop count always matches chips.size()
+                                                 // under nominal execution
     }
 
     if (status != ModulationStatus::kOk) [[unlikely]] {
@@ -87,8 +89,9 @@ modulate_bpsk_generic(std::span<const uint8_t> chips,
  * @brief Modulate a chip sequence for the AFS-I channel. [LSIS-AFS-201]
  */
 template <typename T, typename U>
-[[nodiscard("ModulationStatus reports modulator validation/CFI failures; ignoring it "
-              "lets a corrupt AFS-I chip stream reach the RF stage (LSIS-AFS-201)")]] inline ModulationStatus
+[[nodiscard(
+    "ModulationStatus reports modulator validation/CFI failures; ignoring it "
+    "lets a corrupt AFS-I chip stream reach the RF stage (LSIS-AFS-201)")]] inline ModulationStatus
 modulate_bpsk_i(T&& prn_chips, int8_t data_symbol, U&& out) noexcept {
   return modulate_bpsk_generic(
       std::span<const uint8_t>(prn_chips), data_symbol, std::span<int8_t>(out));
@@ -98,8 +101,9 @@ modulate_bpsk_i(T&& prn_chips, int8_t data_symbol, U&& out) noexcept {
  * @brief Modulate a chip sequence for the AFS-Q channel. [LSIS-AFS-201]
  */
 template <typename T, typename U>
-[[nodiscard("ModulationStatus reports modulator validation/CFI failures; ignoring it "
-              "lets a corrupt AFS-Q chip stream reach the RF stage (LSIS-AFS-201)")]] inline ModulationStatus
+[[nodiscard(
+    "ModulationStatus reports modulator validation/CFI failures; ignoring it "
+    "lets a corrupt AFS-Q chip stream reach the RF stage (LSIS-AFS-201)")]] inline ModulationStatus
 modulate_bpsk_q(T&& chips, U&& out) noexcept {
   return modulate_bpsk_generic(std::span<const uint8_t>(chips), 1, std::span<int8_t>(out));
 }
@@ -108,8 +112,9 @@ modulate_bpsk_q(T&& chips, U&& out) noexcept {
  * @brief Modulate a chip sequence for any BPSK channel. [LSIS-AFS-201]
  */
 template <typename T, typename U>
-[[nodiscard("ModulationStatus reports modulator validation/CFI failures; ignoring it "
-              "lets a corrupt BPSK chip stream reach the RF stage (LSIS-AFS-201)")]] inline ModulationStatus
+[[nodiscard(
+    "ModulationStatus reports modulator validation/CFI failures; ignoring it "
+    "lets a corrupt BPSK chip stream reach the RF stage (LSIS-AFS-201)")]] inline ModulationStatus
 modulate_bpsk_any(T&& chips, int8_t data_symbol, U&& out) noexcept {
   return modulate_bpsk_generic(
       std::span<const uint8_t>(chips), data_symbol, std::span<int8_t>(out));

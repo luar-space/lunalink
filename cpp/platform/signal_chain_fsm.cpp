@@ -71,7 +71,10 @@ bool SignalChainFsm::on_frame_fault() noexcept {
   consecutive_fault_count_ = consecutive_fault_count_ + 1U;
   if (consecutive_fault_count_ >= 2U) {
     // Two consecutive frame faults → Zone 3. // FIZ-3
-    const FaultPacket pkt{ // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): consecutive_fault_count_ >= 2 escalation architecturally unreachable — first fault transitions to kFrameFault, second call caught by precondition guard
+    const FaultPacket pkt{
+        // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): consecutive_fault_count_ >= 2 escalation architecturally
+        // unreachable — first fault transitions to kFrameFault, second call caught by precondition
+        // guard
         0U,
         static_cast<uint8_t>(SignalChainState::kSafeMode),
         3U,
@@ -87,7 +90,12 @@ bool SignalChainFsm::on_frame_fault() noexcept {
   // Defence-in-depth: validate against transition matrix before direct assignment.
   // Cannot use transition() here because it resets consecutive_fault_count_.
   if (!kLegalTransitions.is_legal(state_, SignalChainState::kFrameFault)) {
-    const FaultPacket pkt{0U, static_cast<uint8_t>(SignalChainState::kSafeMode), 3U, 0U, 0U}; // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): transition matrix defence check — kOperational → kFrameFault always legal
+    const FaultPacket pkt{0U,
+                          static_cast<uint8_t>(SignalChainState::kSafeMode),
+                          3U,
+                          0U,
+                          0U}; // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): transition matrix defence check —
+                               // kOperational → kFrameFault always legal
     hal_.emit(pkt);
     state_ = SignalChainState::kSafeMode;
     consecutive_fault_count_ = 0U;

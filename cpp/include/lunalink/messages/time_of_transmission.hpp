@@ -31,20 +31,20 @@ inline constexpr uint16_t kWnMax = 8191U;
 /** @brief Status codes for Time of Transmission calculation.
  * SEU-hardened with high Hamming distance bit patterns. */
 enum class TotStatus : uint8_t {
-    kOk = 0x5AU,            ///< Calculation completed successfully.
-    kInvalidToi = 0xA5U,    ///< TOI value exceeds kTotToiMax (99).
-    kInvalidItow = 0x33U,   ///< ITOW value exceeds kItowMax (503).
-    kInvalidWn = 0xCCU,     ///< WN value exceeds kWnMax (8191).
-    kInvalidDelta = 0x3CU,  ///< delta_t_lrt is NaN or Inf.
-    kFaultDetected = 0x99U, ///< Integrity check failed.
+  kOk = 0x5AU,            ///< Calculation completed successfully.
+  kInvalidToi = 0xA5U,    ///< TOI value exceeds kTotToiMax (99).
+  kInvalidItow = 0x33U,   ///< ITOW value exceeds kItowMax (503).
+  kInvalidWn = 0xCCU,     ///< WN value exceeds kWnMax (8191).
+  kInvalidDelta = 0x3CU,  ///< delta_t_lrt is NaN or Inf.
+  kFaultDetected = 0x99U, ///< Integrity check failed.
 };
 
 // ─── Result ──────────────────────────────────────────────────────────────────
 
 /// Time of Transmission computation result.
 struct TotResult {
-    TotStatus status = TotStatus::kFaultDetected;
-    double t_f = 0.0; ///< Time since LRT epoch in seconds.
+  TotStatus status = TotStatus::kFaultDetected;
+  double t_f = 0.0; ///< Time since LRT epoch in seconds.
 };
 
 // ─── Function ────────────────────────────────────────────────────────────────
@@ -65,11 +65,8 @@ struct TotResult {
 /// @param delta_t_lrt Node Time offset w.r.t. LRT in seconds (default: 0.0).
 /// @return TotResult with status and computed time.
 [[nodiscard("TotResult.status indicates arithmetic validity (WN/ITOW/TOI bounds, "
-              "SECWEEK/BI_d/F_d consistency); discarding it lets indeterminate time "
-              "values propagate into the PVT solution")]] TotResult
-compute_tot(uint16_t wn,
-                                    uint16_t itow,
-                                    uint8_t toi,
-                                    double delta_t_lrt = 0.0) noexcept;
+            "SECWEEK/BI_d/F_d consistency); discarding it lets indeterminate time "
+            "values propagate into the PVT solution")]] TotResult
+compute_tot(uint16_t wn, uint16_t itow, uint8_t toi, double delta_t_lrt = 0.0) noexcept;
 
 } // namespace lunalink::signal

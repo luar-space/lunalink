@@ -1,72 +1,72 @@
-# LunaLink
+# LunaLink — LSIS-AFS Reference Implementation
 
-[![Python Tests](https://github.com/fiskio/lunalink/actions/workflows/test-python.yml/badge.svg?branch=main)](https://github.com/fiskio/lunalink/actions/workflows/test-python.yml)
-[![Python Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/139670230055e3018c1d8fbcac0d4eea/raw/lunalink-python-coverage.json)](https://github.com/fiskio/lunalink/actions/workflows/test-python.yml)
-[![Lint](https://github.com/fiskio/lunalink/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/fiskio/lunalink/actions/workflows/lint.yml)
-[![Docs Check](https://github.com/fiskio/lunalink/actions/workflows/docs-check.yml/badge.svg?branch=main)](https://github.com/fiskio/lunalink/actions/workflows/docs-check.yml)
-[![Docs Deploy](https://github.com/fiskio/lunalink/actions/workflows/docs-pages.yml/badge.svg?branch=main)](https://github.com/fiskio/lunalink/actions/workflows/docs-pages.yml)
-[![Docs Site](https://img.shields.io/badge/docs-github%20pages-blue)](https://fiskio.github.io/lunalink/)
-[![C++ Tests](https://github.com/fiskio/lunalink/actions/workflows/test-cpp.yml/badge.svg?branch=main)](https://github.com/fiskio/lunalink/actions/workflows/test-cpp.yml)
-[![Sanitizers](https://github.com/fiskio/lunalink/actions/workflows/sanitize.yml/badge.svg?branch=main)](https://github.com/fiskio/lunalink/actions/workflows/sanitize.yml)
-[![clang-tidy](https://github.com/fiskio/lunalink/actions/workflows/tidy.yml/badge.svg?branch=main)](https://github.com/fiskio/lunalink/actions/workflows/tidy.yml)
-[![Region Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/139670230055e3018c1d8fbcac0d4eea/raw/lunalink-region-coverage.json)](https://github.com/fiskio/lunalink/actions/workflows/coverage-cpp.yml)
-[![Line Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/139670230055e3018c1d8fbcac0d4eea/raw/lunalink-line-coverage.json)](https://github.com/fiskio/lunalink/actions/workflows/coverage-cpp.yml)
-[![Branch Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/139670230055e3018c1d8fbcac0d4eea/raw/lunalink-branch-coverage.json)](https://github.com/fiskio/lunalink/actions/workflows/coverage-cpp.yml)
-[![MC/DC Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/139670230055e3018c1d8fbcac0d4eea/raw/lunalink-mcdc-coverage.json)](https://github.com/fiskio/lunalink/actions/workflows/coverage-cpp.yml)
-[![Last Commit](https://img.shields.io/github/last-commit/fiskio/lunalink/main)](https://github.com/fiskio/lunalink/commits/main)
-[![Python](https://img.shields.io/badge/python-3.12%20%7C%203.13%20%7C%203.14-blue.svg)](https://github.com/fiskio/lunalink/blob/main/.github/workflows/ci.yml#L24)
-[![Style: ruff](https://img.shields.io/badge/style-ruff-D7FF64?logo=ruff)](https://github.com/astral-sh/ruff)
-[![Type checked: pyright](https://img.shields.io/badge/type%20checked-pyright-2A6DB2)](https://github.com/microsoft/pyright)
-[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green.svg)](https://github.com/fiskio/lunalink/blob/main/LICENSE)
+Open-source reference implementation of the **LunaNet Signal-In-Space
+Augmented Forward Signal (LSIS-AFS)** protocol, as specified in LSIS V1.0
+(29 January 2025).
 
-LunaLink AFS Python package with C++ extensions via nanobind.
+Built as part of the **ESA-CCSDS Protocol Development Outreach Competition**.
 
-## Prerequisites
+## Features
 
-| Tool | Install | Purpose |
-|------|---------|---------|
-| [uv](https://docs.astral.sh/uv/) | `curl -LsSf https://astral.sh/uv/install.sh \| sh` | Python environment and package management |
-| [Task](https://taskfile.dev) | `brew install go-task` | Task runner |
-| [CMake](https://cmake.org) ≥ 3.15 | `brew install cmake` | C++ build system |
-| [Ninja](https://ninja-build.org) | `brew install ninja` | Fast C++ build backend (optional) |
-| C++17 compiler | `xcode-select --install` (macOS) | Required for C++ extension |
+- Complete AFS signal chain: spreading codes, FEC (BCH + LDPC), framing,
+  BPSK modulation, IQ multiplexing
+- Software correlator with PCPS acquisition and DLL/PLL tracking
+- Frame sync detector with bipolar cross-correlation
+- C++20 core with Python bindings (nanobind)
+- Deterministic, branchless signal processing (`-fno-exceptions -fno-rtti
+  -fno-fast-math`)
+- Comprehensive test suite: unit tests, BER simulations, round-trip
+  verification, sanitizer and coverage gates
 
-## Setup
+## Quick Start
 
 ```bash
-git clone <repo-url>
+pip install lunalink
+```
+
+Or build from source:
+
+```bash
+git clone https://github.com/luar-space/lsis-afs.git
 cd lsis-afs
-task install        # create .venv and install all dependencies
-task install-hooks  # register the pre-commit hook
+pip install -e ".[dev]"
 ```
 
-## Common Commands
+## Verifying the implementation
+
+Every claim below is one command. No manual setup.
 
 ```bash
-task           # full quality pipeline: lint → test → docs
-task test      # rebuild C++ extension, run C++ tests, run pytest
-task lint      # type check (pyright) + format + lint (ruff)
-task build     # force-recompile the C++ extension
-task test-cpp  # build and run C++ Catch2 tests only
-task metrics   # cyclomatic complexity and maintainability index (radon)
-task docs-build  # build Sphinx HTML docs → docs/_build/html/
-task docs-serve  # serve docs locally with live reload at http://127.0.0.1:8000
+task test-cpp    # C++ unit + integration tests
+task test-py     # Python tests (100% coverage gate)
+task swifi       # SWIFI fault-injection campaign
+task interop     # cross-check against an independent implementation
 ```
 
-## Versioning
+### Interoperability
 
-Versions are derived automatically from git tags using `setuptools-scm`.
-To cut a release:
+`task interop` clones and builds **LANS-AFS-SIM** — Takuji Ebinuma's
+independent LSIS-AFS implementation in C (BSD-2-Clause,
+<https://github.com/osqzss/LANS-AFS-SIM>) — then compares LunaLink against it
+bit-exactly:
 
-```bash
-git tag v1.2.3
-git push origin v1.2.3
-```
+| Check | Scope |
+|:--|:--|
+| PRN spreading codes | Gold + Weil, every chip of PRN 1–210 |
+| Encoded frames | BCH + CRC-24 + LDPC + interleaver, all 6000 symbols |
+| Self-consistency | against the published test vectors |
 
-See `docs/versioning.rst` for full details.
+Pass criterion is bit-exact equality — not statistical agreement. The run
+takes a few seconds once built.
+
+Reference vectors for other implementations to validate against are published
+separately, with a zero-dependency validator, and can be regenerated here with
+`scripts/export_test_vectors_all.py`.
 
 ## Documentation
 
-```bash
-task docs-serve   # opens at http://127.0.0.1:8000
-```
+Full documentation is available at the project's GitHub Pages site.
+
+## Licence
+
+Apache-2.0. See [LICENSE](LICENSE) for details.

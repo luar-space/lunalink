@@ -71,7 +71,9 @@ SpacesInSquareBrackets: false
 # --- Misc ---
 PointerAlignment: Left
 ReferenceAlignment: Left
-ReflowComments: true
+# false: reflowing merges inline tool directives (cppcheck-suppress must be
+# the first token after //) into surrounding prose, silently disabling them.
+ReflowComments: false
 MaxEmptyLinesToKeep: 2
 KeepEmptyLinesAtTheStartOfBlocks: false
 InsertBraces: false

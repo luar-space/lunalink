@@ -490,8 +490,7 @@ TEST_CASE("WindowedWatchdog: tick, reset, evaluate", "[safety]") {
 TEST_CASE("[SW-SAF-06] frame_decode: aliasing workspace with rx_symbols detected", "[safety]") {
   // Pass rx_symbols pointing INTO the workspace memory — spans_overlap fires.
   auto ws = std::make_unique<FrameDecodeWorkspace>();
-  std::span<const float> aliased_rx(
-      reinterpret_cast<const float*>(ws.get()), kFrameLength);
+  std::span<const float> aliased_rx(reinterpret_cast<const float*>(ws.get()), kFrameLength);
 
   FrameDecodeResult result{};
   NullTelemetryHal hal;
@@ -561,7 +560,8 @@ TEST_CASE("frame_build_partial: aliasing staging with output detected", "[safety
   // Create a FrameBuildWorkspace whose staging array overlaps the output.
   // We achieve this by placement-constructing the workspace at an offset
   // within a large buffer that also serves as the output.
-  alignas(16) auto buf = std::make_unique<std::array<uint8_t, sizeof(FrameBuildWorkspace) + kFrameLength>>();
+  alignas(16) auto buf =
+      std::make_unique<std::array<uint8_t, sizeof(FrameBuildWorkspace) + kFrameLength>>();
   auto* ws = new (buf->data()) FrameBuildWorkspace{};
   // Output span starts inside the workspace staging region
   std::span<uint8_t, kFrameLength> out(buf->data(), kFrameLength);

@@ -154,22 +154,23 @@ BchMultiSeedResult run_bch_multi_seed(double eb_no_db, int frames_per_seed) {
     sf_var += (soft_fers.at(s) - sf_mean) * (soft_fers.at(s) - sf_mean);
   }
 
-  return {hf_mean, sf_mean,
+  return {hf_mean,
+          sf_mean,
           std::sqrt(hf_var / static_cast<double>(kNumSeeds)),
           std::sqrt(sf_var / static_cast<double>(kNumSeeds)),
-          total_f, total_he, total_se};
+          total_f,
+          total_he,
+          total_se};
 }
 
-void print_bch_ci_result(double eb_no_db, const BchMultiSeedResult& r,
-                         int frames_per_seed) {
+void print_bch_ci_result(double eb_no_db, const BchMultiSeedResult& r, int frames_per_seed) {
   double hci = wilson_ci_hw(r.total_hard_errors, r.total_frames);
   double sci = wilson_ci_hw(r.total_soft_errors, r.total_frames);
   std::cout << "[BCH BER] Eb/N0=" << eb_no_db << " dB"
             << "  hard FER=" << r.hard_fer_mean << " +/- " << hci
-            << "  soft FER=" << r.soft_fer_mean << " +/- " << sci
-            << " (95% CI)"
-            << "  [" << r.total_frames << " frames, 3 seeds x "
-            << frames_per_seed << "]" << std::endl;
+            << "  soft FER=" << r.soft_fer_mean << " +/- " << sci << " (95% CI)"
+            << "  [" << r.total_frames << " frames, 3 seeds x " << frames_per_seed << "]"
+            << std::endl;
 }
 
 } // namespace
@@ -188,8 +189,8 @@ TEST_CASE("BCH hard vs soft: noise floor at 2.0 dB", "[channel][ber][reference][
   auto r = run_bch_multi_seed(2.0, kFramesPerSeed);
   print_bch_ci_result(2.0, r, kFramesPerSeed);
 
-  CHECK(r.hard_fer_mean > 0.05);       // hard: substantial failure rate
-  CHECK(r.soft_fer_mean > 0.005);      // soft: also failing — channel is genuinely noisy
+  CHECK(r.hard_fer_mean > 0.05);            // hard: substantial failure rate
+  CHECK(r.soft_fer_mean > 0.005);           // soft: also failing — channel is genuinely noisy
   CHECK(r.hard_fer_mean > r.soft_fer_mean); // soft ML outperforms at noise floor
 }
 
@@ -228,10 +229,10 @@ TEST_CASE("BCH hard vs soft: waterfall sweep 3-6 dB", "[channel][ber][reference]
   // At 6.0 dB: soft should be error-free, hard should have residual errors
   auto r6 = run_bch_multi_seed(6.0, kFramesPerSeed);
   double soft_ci = wilson_ci_hw(r6.total_soft_errors, r6.total_frames);
-  std::cout << "[BCH BER] 6.0 dB soft upper bound: " << soft_ci
-            << " (95% CI, " << r6.total_frames << " frames)" << std::endl;
-  CHECK(r6.hard_fer_mean > 0.0);     // hard still has residual errors
-  CHECK(r6.soft_fer_mean < 1e-3);    // soft near error-free
+  std::cout << "[BCH BER] 6.0 dB soft upper bound: " << soft_ci << " (95% CI, " << r6.total_frames
+            << " frames)" << std::endl;
+  CHECK(r6.hard_fer_mean > 0.0);  // hard still has residual errors
+  CHECK(r6.soft_fer_mean < 1e-3); // soft near error-free
 }
 
 // ---------------------------------------------------------------------------
@@ -249,8 +250,7 @@ TEST_CASE("BCH hard vs soft: operating point 7.6 dB", "[channel][ber][reference]
 
   double hci = wilson_ci_hw(r.total_hard_errors, r.total_frames);
   double sci = wilson_ci_hw(r.total_soft_errors, r.total_frames);
-  std::cout << "[BCH BER] 7.6 dB hard upper bound: " << hci
-            << "  soft upper bound: " << sci
+  std::cout << "[BCH BER] 7.6 dB hard upper bound: " << hci << "  soft upper bound: " << sci
             << " (95% CI, " << r.total_frames << " frames)" << std::endl;
 
   CHECK(r.hard_fer_mean < 5e-4);

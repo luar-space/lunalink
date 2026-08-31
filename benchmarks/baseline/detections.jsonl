@@ -1,0 +1,7 @@
+{"cn0_db": 35.672706604003906, "doppler_hz": 5854.3212890625, "op_id": "OP21_0", "peak_metric": 9893341.0, "prn": 24, "secondary_phase": 0, "signal": "G"}
+{"cn0_db": 29.71137809753418, "doppler_hz": 12207.03125, "op_id": "OP21_0", "peak_metric": 2801445.5, "prn": 11, "secondary_phase": 0, "signal": "E"}
+{"cn0_db": 38.092926025390625, "doppler_hz": 10732.5712890625, "op_id": "OP21_0", "peak_metric": 17067096.0, "prn": 131, "secondary_phase": 0, "signal": "S"}
+{"cn0_db": 33.37487030029297, "doppler_hz": -6599.01611328125, "op_id": "OP17_0", "peak_metric": 5802652.5, "prn": 11, "secondary_phase": 0, "signal": "G"}
+{"cn0_db": 30.224342346191406, "doppler_hz": 4638.671875, "op_id": "OP17_0", "peak_metric": 3095652.0, "prn": 30, "secondary_phase": 0, "signal": "G"}
+{"cn0_db": 33.586708068847656, "doppler_hz": 1874.7069091796875, "op_id": "OP17_0", "peak_metric": 5994509.5, "prn": 144, "secondary_phase": 0, "signal": "S"}
+{"cn0_db": 29.624719619750977, "doppler_hz": 4394.53125, "op_id": "OP17_0", "peak_metric": 2802287.75, "prn": 134, "secondary_phase": 0, "signal": "S"}

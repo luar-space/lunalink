@@ -5,7 +5,7 @@
 #
 # Runs all assurance gates sequentially, collects PASS/FAIL verdicts for each,
 # calls gen_recertification_record.py, and writes
-# docs/assurance/private/recertification_record.rst.
+# docs/assurance/recertification_record.rst.
 #
 # Usage:
 #   bash scripts/recertify_local.sh [--milestone PDR] [--reason "..."] [--authority "..."]
@@ -236,7 +236,7 @@ GENERATOR_ARGS=(
     --reason     "${REASON}"
     --authority  "${AUTHORITY}"
     --timestamp  "${TIMESTAMP}"
-    --out        "${REPO_ROOT}/docs/assurance/private/recertification_record.rst"
+    --out        "${REPO_ROOT}/docs/assurance/recertification_record.rst"
 )
 
 for (( i=0; i<NUM_KEYS; i++ )); do
@@ -285,7 +285,7 @@ esac
 printf "  ${BOLD}%-40s  ${overall_colour}%s${RESET}\\n" "Overall" "${OVERALL}"
 echo "${BOLD}${CYAN}======================================================${RESET}"
 echo ""
-echo "Record: ${REPO_ROOT}/docs/assurance/private/recertification_record.rst"
+echo "Record: ${REPO_ROOT}/docs/assurance/recertification_record.rst"
 echo ""
 
 # ---------------------------------------------------------------------------

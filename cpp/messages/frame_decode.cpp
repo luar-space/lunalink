@@ -57,7 +57,8 @@ decode_validate_input(std::span<const float> rx_symbols,
 
   const auto sync_status = sync_det.detect(rx_symbols, result.sync);
   if (sync_status == SyncDetectorStatus::kFaultDetected) {
-    return FrameDecodeStatus::kFaultDetected; // NOCOVER(DEFENCE_IN_DEPTH): sync detector kFaultDetected
+    return FrameDecodeStatus::kFaultDetected; // NOCOVER(DEFENCE_IN_DEPTH): sync detector
+                                              // kFaultDetected
   }
   if (sync_status != SyncDetectorStatus::kOk || !result.sync.detected) {
     return FrameDecodeStatus::kSyncNotFound;
@@ -165,17 +166,20 @@ decode_stage_crc_and_copy(FrameDecodeResult& result, FrameDecodeWorkspace& works
   // Strip CRC, copy data to output buffers
   if (result.sb2.crc_ok) {
     if (!strip_crc_copy(workspace.sb2_msg, workspace.sb2_data, kSb2DataBits)) {
-      return FrameDecodeStatus::kFaultDetected; // NOCOVER(DEFENCE_IN_DEPTH): strip_crc_copy kFaultDetected (SB2)
+      return FrameDecodeStatus::kFaultDetected; // NOCOVER(DEFENCE_IN_DEPTH): strip_crc_copy
+                                                // kFaultDetected (SB2)
     }
   }
   if (result.sb3.crc_ok) {
     if (!strip_crc_copy(workspace.sb3_msg, workspace.sb3_data, kSb3DataBits)) {
-      return FrameDecodeStatus::kFaultDetected; // NOCOVER(DEFENCE_IN_DEPTH): strip_crc_copy kFaultDetected (SB3)
+      return FrameDecodeStatus::kFaultDetected; // NOCOVER(DEFENCE_IN_DEPTH): strip_crc_copy
+                                                // kFaultDetected (SB3)
     }
   }
   if (result.sb4.crc_ok) {
     if (!strip_crc_copy(workspace.sb4_msg, workspace.sb4_data, kSb4DataBits)) {
-      return FrameDecodeStatus::kFaultDetected; // NOCOVER(DEFENCE_IN_DEPTH): strip_crc_copy kFaultDetected (SB4)
+      return FrameDecodeStatus::kFaultDetected; // NOCOVER(DEFENCE_IN_DEPTH): strip_crc_copy
+                                                // kFaultDetected (SB4)
     }
   }
 
@@ -192,7 +196,8 @@ decode_stage_crc_and_copy(FrameDecodeResult& result, FrameDecodeWorkspace& works
     return FrameDecodeStatus::kLdpcFailed;
   }
   if (!all_crc) {
-    return FrameDecodeStatus::kCrcFailed; // NOCOVER(DEFENCE_IN_DEPTH): CRC failed but all LDPC converged — undetected LDPC error
+    return FrameDecodeStatus::kCrcFailed; // NOCOVER(DEFENCE_IN_DEPTH): CRC failed but all LDPC
+                                          // converged — undetected LDPC error
   }
   return FrameDecodeStatus::kOk;
 }
@@ -240,8 +245,7 @@ FrameDecodeStatus frame_decode(std::span<const float> rx_symbols,
     status = decode_stage_sync(rx_symbols, result, sync_threshold, hal, offset);
 #ifdef LUNALINK_FAULT_INJECTION
     // SWIFI: override sync result with injected failure. [SW-SAF-06]
-    fi_override_stage(workspace.fi_force_sync_fail,
-                      FrameDecodeStatus::kSyncNotFound, status);
+    fi_override_stage(workspace.fi_force_sync_fail, FrameDecodeStatus::kSyncNotFound, status);
 #endif
   }
 
@@ -269,8 +273,7 @@ FrameDecodeStatus frame_decode(std::span<const float> rx_symbols,
     status = decode_stage_ldpc(result, workspace, ldpc_iterations);
 #ifdef LUNALINK_FAULT_INJECTION
     // SWIFI: override LDPC result with injected failure. [SW-SAF-06]
-    fi_override_stage(workspace.fi_force_ldpc_fail,
-                      FrameDecodeStatus::kFaultDetected, status);
+    fi_override_stage(workspace.fi_force_ldpc_fail, FrameDecodeStatus::kFaultDetected, status);
 #endif
   }
 
@@ -300,7 +303,8 @@ FrameDecodeStatus frame_decode(std::span<const float> rx_symbols,
   // cppcheck-suppress duplicateCondition  ; single-exit accumulator pattern
   if (status == FrameDecodeStatus::kOk) {
     if (cfi_count != (0x7E7E7E7EU + 6U)) [[unlikely]] {
-      const FaultPacket pkt{0, 0x80, 2, 6, 0}; // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CFI terminal check failure
+      const FaultPacket pkt{
+          0, 0x80, 2, 6, 0}; // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CFI terminal check failure
       hal.emit(pkt);
       status = FrameDecodeStatus::kFaultDetected;
     } // NOCOVER_END

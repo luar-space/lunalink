@@ -11,7 +11,7 @@ Installation
 
    pip install lunalink          # from PyPI (when published)
    # or from source:
-   git clone https://github.com/fiskio/lunalink && cd lunalink
+   git clone https://github.com/luar-space/lsis-afs && cd lunalink
    pip install -e .
 
 LunaLink has **zero runtime dependencies** beyond the C++ extension that ships

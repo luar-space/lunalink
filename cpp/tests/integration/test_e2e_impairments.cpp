@@ -1,10 +1,12 @@
 #include "lunalink/messages/frame.hpp"
 #include "lunalink/messages/frame_decode.hpp"
+#include "lunalink/messages/message_parser.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <iostream>
@@ -25,8 +27,7 @@ void binary_to_bipolar(std::span<const uint8_t> bits, std::span<float> out) {
 /// Add AWGN noise to bipolar symbols at a given Eb/N0 (dB) and convert to
 /// channel LLRs: L(y) = 2*y/σ². For rate-1/2 BPSK: σ² = 1/(2*R*Eb/N0).
 /// Decoder-agnostic: SP uses LLRs directly; AMS applies Q8.7 (×128) on top.
-void add_awgn(std::span<float> symbols, float eb_n0_db, std::mt19937& rng,
-              float code_rate = 0.5F) {
+void add_awgn(std::span<float> symbols, float eb_n0_db, std::mt19937& rng, float code_rate = 0.5F) {
   const auto eb_n0_lin = std::pow(10.0F, eb_n0_db / 10.0F);
   const auto sigma_sq = 1.0F / (2.0F * code_rate * eb_n0_lin);
   const auto sigma = std::sqrt(sigma_sq);
@@ -35,6 +36,25 @@ void add_awgn(std::span<float> symbols, float eb_n0_db, std::mt19937& rng,
   for (auto& s : symbols) {
     s = (s + dist(rng)) * llr_scale;
   }
+}
+
+/// Verify an SB2 round-trip.
+///
+/// ``enforce_spare_bit_pattern`` (called from ``subframe_build_ldpc`` in
+/// ``frame.cpp``) is the single enforcement point for the LSIS-AFS-300 spare
+/// pattern: it overwrites SB2 bits [kSb2SpareOffset, +kSb2SpareBits) with
+/// alternating 0/1 regardless of what the caller supplied.  That region
+/// therefore cannot round-trip when the caller seeds it with arbitrary data,
+/// so compare the payload bit-exactly and assert the spare region carries the
+/// mandated pattern.
+[[nodiscard]] bool sb2_roundtrip_ok(std::span<const uint8_t> sent, std::span<const uint8_t> recv) {
+  if ((sent.size() != kSb2DataBits) || (recv.size() != kSb2DataBits)) {
+    return false;
+  }
+  if (!std::equal(sent.begin(), sent.begin() + kSb2SpareOffset, recv.begin())) {
+    return false;
+  }
+  return validate_spare_bits(recv.subspan(kSb2SpareOffset, kSb2SpareBits));
 }
 
 /// Fill a span with random bits (0 or 1).
@@ -110,7 +130,7 @@ TEST_CASE("E2E impairment: round-trip at int16", "[e2e][impairment][slow]") {
   CHECK(result.sb4.ldpc_converged);
   CHECK(result.sb4.crc_ok);
 
-  CHECK(std::equal(sb2_data.begin(), sb2_data.end(), workspace->sb2_data.begin()));
+  CHECK(sb2_roundtrip_ok(sb2_data, workspace->sb2_data));
   CHECK(std::equal(sb3_data.begin(), sb3_data.end(), workspace->sb3_data.begin()));
   CHECK(std::equal(sb4_data.begin(), sb4_data.end(), workspace->sb4_data.begin()));
 }
@@ -150,7 +170,7 @@ TEST_CASE("E2E impairment: round-trip at int8", "[e2e][impairment][slow]") {
   CHECK(result.sb4.ldpc_converged);
   CHECK(result.sb4.crc_ok);
 
-  CHECK(std::equal(sb2_data.begin(), sb2_data.end(), workspace->sb2_data.begin()));
+  CHECK(sb2_roundtrip_ok(sb2_data, workspace->sb2_data));
   CHECK(std::equal(sb3_data.begin(), sb3_data.end(), workspace->sb3_data.begin()));
   CHECK(std::equal(sb4_data.begin(), sb4_data.end(), workspace->sb4_data.begin()));
 }
@@ -359,7 +379,7 @@ TEST_CASE("E2E impairment: burst error resilience through interleaver", "[e2e][i
       CHECK(frame_ok);
       if (frame_ok) {
         // Verify bit-exact recovery despite burst.
-        CHECK(std::equal(sb2.begin(), sb2.end(), workspace->sb2_data.begin()));
+        CHECK(sb2_roundtrip_ok(sb2, workspace->sb2_data));
         CHECK(std::equal(sb3.begin(), sb3.end(), workspace->sb3_data.begin()));
         CHECK(std::equal(sb4.begin(), sb4.end(), workspace->sb4_data.begin()));
       }

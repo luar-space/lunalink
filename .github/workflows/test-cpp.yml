@@ -8,12 +8,11 @@ on:
       - 'docs/**'
       - '*.md'
       - '*.rst'
-  # TODO: re-enable pull_request trigger after restructure PR is merged
-  #   pull_request:
-  #     paths-ignore:
-  #       - 'docs/**'
-  #       - '*.md'
-  #       - '*.rst'
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '*.rst'
 
 
 jobs:
@@ -103,4 +102,4 @@ jobs:
           name: swifi-evidence
           path: |
             build/swifi_results.xml
-            docs/assurance/private/evidence/swifi_results.json
+            docs/assurance/evidence/swifi_results.json

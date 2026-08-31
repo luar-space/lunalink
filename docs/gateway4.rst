@@ -379,6 +379,6 @@ Related documents:
 -  :doc:`signal/architecture` --- module-to-gateway mapping
 -  :doc:`signal/signal_chain` --- transmitter block diagram with chip rates and data types
 -  :doc:`signal/icd` --- formal interface control document
--  :doc:`assurance/public/mission_assurance` --- branchless, CFI, scrubbing patterns
--  :doc:`assurance/private/fmea` --- modulator and IQ mux failure modes
--  :doc:`assurance/private/fault_coverage` --- SWIFI scenario catalogue
+-  :doc:`assurance/mission_assurance` --- branchless, CFI, scrubbing patterns
+-  :doc:`assurance/fmea` --- modulator and IQ mux failure modes
+-  :doc:`assurance/fault_coverage` --- SWIFI scenario catalogue

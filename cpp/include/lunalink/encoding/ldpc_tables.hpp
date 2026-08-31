@@ -25,8 +25,8 @@ struct LdpcCsrMatrix {
    * @brief Perform a JIT integrity check of matrix structure using CRC32. [CBIT-AFS-LDPC]
    */
   [[nodiscard("verify_integrity returns false when the JIT CRC-32 over col_indices "
-                "fails; discarding it accepts a corrupted LDPC matrix as valid and "
-                "violates CBIT-AFS-LDPC")]] bool
+              "fails; discarding it accepts a corrupted LDPC matrix as valid and "
+              "violates CBIT-AFS-LDPC")]] bool
   verify_integrity() const noexcept;
 
 #ifdef LUNALINK_FAULT_INJECTION
@@ -57,13 +57,13 @@ struct LdpcCsrMatrix {
 /// 3GPP TS 38.212 Base Graph 2 dimensions.
 inline constexpr uint8_t kLdpcBg2Rows = 42;
 inline constexpr uint8_t kLdpcBg2Cols = 52;
-inline constexpr uint8_t kLdpcBg2Kb = 10;  ///< Information columns.
+inline constexpr uint8_t kLdpcBg2Kb = 10; ///< Information columns.
 
 /// SF2 lifting parameters (LSIS V1.0 §2.4.3).
-inline constexpr uint8_t kLdpcSf2Zc = 120;   ///< Lifting size.
-inline constexpr uint8_t kLdpcSf2Ils = 7;    ///< Lifting set index.
-inline constexpr uint16_t kLdpcSf2K = 1200;  ///< Systematic bits.
-inline constexpr uint16_t kLdpcSf2N = 2400;  ///< Encoded symbols.
+inline constexpr uint8_t kLdpcSf2Zc = 120;  ///< Lifting size.
+inline constexpr uint8_t kLdpcSf2Ils = 7;   ///< Lifting set index.
+inline constexpr uint16_t kLdpcSf2K = 1200; ///< Systematic bits.
+inline constexpr uint16_t kLdpcSf2N = 2400; ///< Encoded symbols.
 
 /// SF3/SF4 lifting parameters (LSIS V1.0 §2.4.3).
 inline constexpr uint8_t kLdpcSf34Zc = 88;   ///< Lifting size.

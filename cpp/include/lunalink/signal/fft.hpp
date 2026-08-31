@@ -123,13 +123,11 @@ private:
   /// memory, unsupported size on this OS revision); callers handle by
   /// scrubbing the output buffer.
   static vDSP_DFT_Setup setup_fwd() noexcept {
-    static vDSP_DFT_Setup s = vDSP_DFT_zop_CreateSetup(
-        nullptr, N, vDSP_DFT_FORWARD);
+    static vDSP_DFT_Setup s = vDSP_DFT_zop_CreateSetup(nullptr, N, vDSP_DFT_FORWARD);
     return s;
   }
   static vDSP_DFT_Setup setup_inv() noexcept {
-    static vDSP_DFT_Setup s = vDSP_DFT_zop_CreateSetup(
-        nullptr, N, vDSP_DFT_INVERSE);
+    static vDSP_DFT_Setup s = vDSP_DFT_zop_CreateSetup(nullptr, N, vDSP_DFT_INVERSE);
     return s;
   }
 
@@ -259,8 +257,8 @@ private:
 public:
   /// Forward FFT on dynamic span (must be exactly N elements).
   [[nodiscard("Fft::forward returns false on buffer-size mismatch (must be exactly N); "
-                "ignoring it leaves the input buffer untransformed while the caller "
-                "assumes a frequency-domain result")]] bool
+              "ignoring it leaves the input buffer untransformed while the caller "
+              "assumes a frequency-domain result")]] bool
   forward(std::span<Complex> buf) const noexcept {
     if (buf.size() != N) {
       return false;
@@ -271,8 +269,8 @@ public:
 
   /// Inverse FFT on dynamic span (must be exactly N elements).
   [[nodiscard("Fft::inverse returns false on buffer-size mismatch (must be exactly N); "
-                "ignoring it leaves the input buffer untransformed while the caller "
-                "assumes a time-domain result")]] bool
+              "ignoring it leaves the input buffer untransformed while the caller "
+              "assumes a time-domain result")]] bool
   inverse(std::span<Complex> buf) const noexcept {
     if (buf.size() != N) {
       return false;

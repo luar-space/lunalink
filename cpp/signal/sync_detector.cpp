@@ -19,8 +19,8 @@ struct SyncSearchResult {
 
 // Search all valid offsets for the best sync pattern cross-correlation.
 [[nodiscard]] SyncSearchResult sync_correlate_search(std::span<const float> rx_symbols,
-                                       std::span<const float> sync_ref,
-                                       uint32_t search_len) noexcept {
+                                                     std::span<const float> sync_ref,
+                                                     uint32_t search_len) noexcept {
   SyncSearchResult res{};
   for (uint32_t offset = 0; offset < search_len; ++offset) {
     float corr = 0.0F;
@@ -133,7 +133,8 @@ bool SyncDetector::set_threshold(float threshold) noexcept {
     status = result.detected ? SyncDetectorStatus::kOk : SyncDetectorStatus::kNotDetected;
   } else {
     // CFI violation: radiation-induced skip detected. FIZ-1
-    status = SyncDetectorStatus::kFaultDetected; // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): loop counter corruption
+    status = SyncDetectorStatus::kFaultDetected; // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): loop counter
+                                                 // corruption
     const FaultPacket pkt{
         .timestamp_ms = 0U, // HAL-provided in flight
         .fault_code = static_cast<uint8_t>(SyncDetectorStatus::kFaultDetected),
@@ -145,7 +146,8 @@ bool SyncDetector::set_threshold(float threshold) noexcept {
   } // NOCOVER_END
 
   // Cleanup: scrub result on fault (§7).
-  if (status == SyncDetectorStatus::kFaultDetected) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): SEU on peak offset
+  if (status ==
+      SyncDetectorStatus::kFaultDetected) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): SEU on peak offset
     result = SyncResult{};
   } // NOCOVER_END
 

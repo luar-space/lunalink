@@ -33,4 +33,4 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: traceability-report
-          path: docs/assurance/private/evidence/traceability.json
+          path: docs/assurance/evidence/traceability.json

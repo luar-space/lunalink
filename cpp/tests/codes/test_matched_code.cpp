@@ -111,9 +111,9 @@ TEST_CASE("[LSIS-AFS-401] matched_code_epoch changes across tertiary chip bounda
   REQUIRE(found);
 
   const uint16_t epoch_before = static_cast<uint16_t>(4U * flip_idx);
-  const uint16_t epoch_after  = static_cast<uint16_t>(4U * (flip_idx + 1U));
+  const uint16_t epoch_after = static_cast<uint16_t>(4U * (flip_idx + 1U));
   REQUIRE(matched_code_epoch(PrnId{1}, epoch_before, e_before) == MatchedCodeStatus::kOk);
-  REQUIRE(matched_code_epoch(PrnId{1}, epoch_after,  e_after)  == MatchedCodeStatus::kOk);
+  REQUIRE(matched_code_epoch(PrnId{1}, epoch_after, e_after) == MatchedCodeStatus::kOk);
   CHECK(e_before[0] != e_after[0]);
 }
 

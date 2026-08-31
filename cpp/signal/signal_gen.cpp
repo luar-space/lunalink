@@ -16,9 +16,8 @@ namespace lunalink::signal {
 namespace {
 
 /// Unpack a packed Gold code into a chip array.  Called once per PRN per frame.
-[[nodiscard]] SignalGenStatus unpack_gold(
-    PrnId prn_id,
-    std::span<uint8_t, kGoldChipLength> out) noexcept {
+[[nodiscard]] SignalGenStatus unpack_gold(PrnId prn_id,
+                                          std::span<uint8_t, kGoldChipLength> out) noexcept {
   PrnCode gold{};
   if (gold_prn_packed(prn_id, gold) != PrnStatus::kOk) {
     return SignalGenStatus::kInvalidPrn;
@@ -39,12 +38,11 @@ namespace {
 /// @param n_native    Native sample count per epoch (kIqSamplesPerEpoch).
 /// @param n_out       Output sample count per epoch (may differ from n_native).
 /// @param resample_lut  Empty span for native rate; otherwise n_out source indices.
-inline void convert_epoch(
-    std::span<const int16_t> src_buf,
-    std::span<float> dst_buf,
-    size_t n_native,
-    size_t n_out,
-    std::span<const uint16_t> resample_lut) noexcept {
+inline void convert_epoch(std::span<const int16_t> src_buf,
+                          std::span<float> dst_buf,
+                          size_t n_native,
+                          size_t n_out,
+                          std::span<const uint16_t> resample_lut) noexcept {
   if (resample_lut.empty()) {
     // Direct copy: int16 → float.
     for (size_t j = 0; j < n_native * 2; ++j) {
@@ -54,7 +52,7 @@ inline void convert_epoch(
     // Nearest-neighbour resample + convert.
     for (size_t j = 0; j < n_out; ++j) {
       const size_t src = resample_lut[j];
-      dst_buf[j * 2]     = static_cast<float>(src_buf[src * 2]);
+      dst_buf[j * 2] = static_cast<float>(src_buf[src * 2]);
       dst_buf[j * 2 + 1] = static_cast<float>(src_buf[src * 2 + 1]);
     }
   }
@@ -83,12 +81,11 @@ ResampleLut g_resample_lut;
 /// Returns true on success; false if the requested rate exceeds kMaxResamplePerEpoch.
 [[nodiscard]] bool build_resample_lut(double sample_rate, ResampleLut& lut) noexcept {
   const auto n_native = static_cast<size_t>(kIqSamplesPerEpoch);
-  const bool is_native =
-      (std::fabs(sample_rate - kNativeSampleRateHz) < 1.0);
+  const bool is_native = (std::fabs(sample_rate - kNativeSampleRateHz) < 1.0);
   const size_t n_out = is_native
-      ? n_native
-      : static_cast<size_t>(std::lround(
-            static_cast<double>(n_native) * sample_rate / kNativeSampleRateHz));
+                           ? n_native
+                           : static_cast<size_t>(std::lround(static_cast<double>(n_native) *
+                                                             sample_rate / kNativeSampleRateHz));
 
   if (n_out > kMaxResamplePerEpoch || n_out == 0) {
     lut.n_out = 0;
@@ -100,13 +97,11 @@ ResampleLut g_resample_lut;
   lut.active = (n_out != n_native);
 
   if (lut.active) {
-    const double ratio = static_cast<double>(n_native - 1) /
-                         static_cast<double>(n_out - 1);
+    const double ratio = static_cast<double>(n_native - 1) / static_cast<double>(n_out - 1);
     for (size_t j = 0; j < n_out; ++j) {
       // Index bounded by n_out <= kMaxResamplePerEpoch checked above —
       // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-      lut.indices[j] = static_cast<uint16_t>(std::lround(
-          static_cast<double>(j) * ratio));
+      lut.indices[j] = static_cast<uint16_t>(std::lround(static_cast<double>(j) * ratio));
     }
   }
   return true;
@@ -114,13 +109,11 @@ ResampleLut g_resample_lut;
 
 } // namespace
 
-[[nodiscard]] SignalGenStatus generate_iq_epoch(
-    std::span<const uint8_t> gold_chips,
-    PrnId prn_id,
-    uint16_t epoch_idx,
-    int8_t data_symbol,
-    std::span<int16_t> out) noexcept {
-
+[[nodiscard]] SignalGenStatus generate_iq_epoch(std::span<const uint8_t> gold_chips,
+                                                PrnId prn_id,
+                                                uint16_t epoch_idx,
+                                                int8_t data_symbol,
+                                                std::span<int16_t> out) noexcept {
   if (gold_chips.size() < kGoldChipLength) {
     return SignalGenStatus::kInvalidInput;
   }
@@ -133,21 +126,21 @@ ResampleLut g_resample_lut;
 
   // 1. Generate matched Q-channel code for this epoch
   std::array<uint8_t, kWeil10230ChipLength> q_chips{};
-  if (matched_code_epoch(prn_id, epoch_idx,
-                         std::span<uint8_t>(q_chips)) != MatchedCodeStatus::kOk) {
+  if (matched_code_epoch(prn_id, epoch_idx, std::span<uint8_t>(q_chips)) !=
+      MatchedCodeStatus::kOk) {
     return SignalGenStatus::kInvalidPrn;
   }
 
   // 2. BPSK modulate I and Q
   std::array<int8_t, kGoldChipLength> i_mod{};
-  if (modulate_bpsk_i(gold_chips.first(kGoldChipLength), data_symbol,
-                      std::span<int8_t>(i_mod)) != ModulationStatus::kOk) {
+  if (modulate_bpsk_i(gold_chips.first(kGoldChipLength), data_symbol, std::span<int8_t>(i_mod)) !=
+      ModulationStatus::kOk) {
     return SignalGenStatus::kModulationFailed;
   }
 
   std::array<int8_t, kWeil10230ChipLength> q_mod{};
-  if (modulate_bpsk_q(std::span<const uint8_t>(q_chips),
-                      std::span<int8_t>(q_mod)) != ModulationStatus::kOk) {
+  if (modulate_bpsk_q(std::span<const uint8_t>(q_chips), std::span<int8_t>(q_mod)) !=
+      ModulationStatus::kOk) {
     return SignalGenStatus::kModulationFailed;
   }
 
@@ -161,11 +154,9 @@ ResampleLut g_resample_lut;
   return SignalGenStatus::kOk;
 }
 
-[[nodiscard]] SignalGenStatus generate_iq_frame(
-    PrnId prn_id,
-    std::span<const uint8_t> frame_symbols,
-    std::span<int16_t> out) noexcept {
-
+[[nodiscard]] SignalGenStatus generate_iq_frame(PrnId prn_id,
+                                                std::span<const uint8_t> frame_symbols,
+                                                std::span<int16_t> out) noexcept {
   if (frame_symbols.size() != kEpochsPerFrame) {
     return SignalGenStatus::kInvalidInput;
   }
@@ -191,7 +182,9 @@ ResampleLut g_resample_lut;
 
     const auto status = generate_iq_epoch(
         std::span<const uint8_t>(gold_chips),
-        prn_id, epoch, data_symbol,
+        prn_id,
+        epoch,
+        data_symbol,
         out.subspan(static_cast<size_t>(epoch) * kIqPairsPerEpoch, kIqPairsPerEpoch));
 
     if (status != SignalGenStatus::kOk) {
@@ -202,14 +195,12 @@ ResampleLut g_resample_lut;
   return SignalGenStatus::kOk;
 }
 
-[[nodiscard]] SignalGenStatus generate_iq_epoch_float(
-    PrnId prn_id,
-    uint16_t epoch_idx,
-    int8_t data_symbol,
-    double sample_rate,
-    std::span<float> out,
-    size_t& samples_written) noexcept {
-
+[[nodiscard]] SignalGenStatus generate_iq_epoch_float(PrnId prn_id,
+                                                      uint16_t epoch_idx,
+                                                      int8_t data_symbol,
+                                                      double sample_rate,
+                                                      std::span<float> out,
+                                                      size_t& samples_written) noexcept {
   samples_written = 0;
 
   if (data_symbol != 1 && data_symbol != -1) {
@@ -247,23 +238,23 @@ ResampleLut g_resample_lut;
     }
   }
 
-  const auto resample_span = lut.active
-      ? std::span<const uint16_t>(lut.indices.data(), lut.n_out)
-      : std::span<const uint16_t>();
-  convert_epoch(native_buf, out.subspan(0, static_cast<size_t>(lut.n_out) * 2U),
-                n_native, lut.n_out, resample_span);
+  const auto resample_span = lut.active ? std::span<const uint16_t>(lut.indices.data(), lut.n_out)
+                                        : std::span<const uint16_t>();
+  convert_epoch(native_buf,
+                out.subspan(0, static_cast<size_t>(lut.n_out) * 2U),
+                n_native,
+                lut.n_out,
+                resample_span);
 
   samples_written = static_cast<size_t>(lut.n_out) * 2U;
   return SignalGenStatus::kOk;
 }
 
-[[nodiscard]] SignalGenStatus generate_iq_frame_float(
-    PrnId prn_id,
-    std::span<const uint8_t> frame_symbols,
-    double sample_rate,
-    std::span<float> out,
-    size_t& samples_written) noexcept {
-
+[[nodiscard]] SignalGenStatus generate_iq_frame_float(PrnId prn_id,
+                                                      std::span<const uint8_t> frame_symbols,
+                                                      double sample_rate,
+                                                      std::span<float> out,
+                                                      size_t& samples_written) noexcept {
   samples_written = 0;
 
   if (frame_symbols.size() != kEpochsPerFrame) {
@@ -293,9 +284,8 @@ ResampleLut g_resample_lut;
     }
   }
 
-  const auto resample_span = lut.active
-      ? std::span<const uint16_t>(lut.indices.data(), lut.n_out)
-      : std::span<const uint16_t>();
+  const auto resample_span = lut.active ? std::span<const uint16_t>(lut.indices.data(), lut.n_out)
+                                        : std::span<const uint16_t>();
 
   // Stack buffer for one epoch at native rate.
   std::array<int16_t, kIqPairsPerEpoch> native_buf{};
@@ -314,8 +304,11 @@ ResampleLut g_resample_lut;
     }
 
     const size_t out_offset = static_cast<size_t>(epoch) * static_cast<size_t>(lut.n_out) * 2U;
-    convert_epoch(native_buf, out.subspan(out_offset, static_cast<size_t>(lut.n_out) * 2U),
-                  n_native, lut.n_out, resample_span);
+    convert_epoch(native_buf,
+                  out.subspan(out_offset, static_cast<size_t>(lut.n_out) * 2U),
+                  n_native,
+                  lut.n_out,
+                  resample_span);
   }
 
   samples_written = total_out_pairs * 2;

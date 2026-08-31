@@ -472,6 +472,6 @@ Related documents:
 -  :doc:`signal/architecture` --- module-to-gateway mapping
 -  :doc:`signal/signal_chain` --- transmitter block diagram
 -  :doc:`signal/validation_plan` --- five-level test hierarchy
--  :doc:`assurance/public/mission_assurance` --- TMR, CFI, CheckedRange patterns
--  :doc:`assurance/private/fmea` --- PRN generator failure modes
--  :doc:`assurance/private/fault_coverage` --- SWIFI scenario catalogue
+-  :doc:`assurance/mission_assurance` --- TMR, CFI, CheckedRange patterns
+-  :doc:`assurance/fmea` --- PRN generator failure modes
+-  :doc:`assurance/fault_coverage` --- SWIFI scenario catalogue

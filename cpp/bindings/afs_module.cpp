@@ -10,12 +10,12 @@
 #include "lunalink/messages/message_parser.hpp"
 #include "lunalink/messages/time_of_transmission.hpp"
 // correlator.hpp removed — correlator is proprietary (receiver module).
+#include "lunalink/core/sise.hpp"
+#include "lunalink/signal/file_format.hpp"
 #include "lunalink/signal/iq_mux.hpp"
 #include "lunalink/signal/modulator.hpp"
-#include "lunalink/signal/file_format.hpp"
 #include "lunalink/signal/signal_gen.hpp"
 #include "lunalink/signal/sync_detector.hpp"
-#include "lunalink/core/sise.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
@@ -61,25 +61,21 @@ std::pair<nb::ndarray<nb::numpy, T, nb::ndim<2>>, T*> make_numpy_2d(size_t r, si
 /// nanobind's typed ndarray silently converts (e.g. float32 → uint8 via
 /// truncation), which is a data-corruption hazard for binary bit arrays.
 /// This helper enforces strict dtype matching at the Python boundary.
-template <typename T>
-void require_dtype(const ndarray_1d& arr, const char* name) {
+template <typename T> void require_dtype(const ndarray_1d& arr, const char* name) {
   constexpr auto expected = nb::dtype<T>();
   if (arr.dtype() != expected) {
-    throw nb::type_error(
-        (std::string(name) + " must have the correct numpy dtype").c_str());
+    throw nb::type_error((std::string(name) + " must have the correct numpy dtype").c_str());
   }
 }
 
 /// Convenience: validate dtype and return a typed data pointer.
-template <typename T>
-const T* checked_data(const ndarray_1d& arr, const char* name) {
+template <typename T> const T* checked_data(const ndarray_1d& arr, const char* name) {
   require_dtype<T>(arr, name);
   return static_cast<const T*>(arr.data());
 }
 
 /// Convenience: validate dtype and return a typed span.
-template <typename T>
-std::span<const T> checked_span(const ndarray_1d& arr, const char* name) {
+template <typename T> std::span<const T> checked_span(const ndarray_1d& arr, const char* name) {
   return {checked_data<T>(arr, name), arr.shape(0)};
 }
 
@@ -105,19 +101,14 @@ NB_MODULE(_afs, m) {
       .def("__eq__",
            [](const Fid& f, nb::object other) {
              if (nb::isinstance<Fid>(other))
-               return static_cast<uint8_t>(f) ==
-                      static_cast<uint8_t>(nb::cast<Fid>(other));
+               return static_cast<uint8_t>(f) == static_cast<uint8_t>(nb::cast<Fid>(other));
              if (nb::isinstance<nb::int_>(other))
-               return static_cast<int>(static_cast<uint8_t>(f)) ==
-                      nb::cast<int>(other);
+               return static_cast<int>(static_cast<uint8_t>(f)) == nb::cast<int>(other);
              return false;
            })
-      .def("__hash__",
-           [](const Fid& f) { return nb::hash(nb::int_(static_cast<uint8_t>(f))); })
+      .def("__hash__", [](const Fid& f) { return nb::hash(nb::int_(static_cast<uint8_t>(f))); })
       .def("__repr__",
-           [](const Fid& f) {
-             return "Fid(" + std::to_string(static_cast<int>(f.value())) + ")";
-           })
+           [](const Fid& f) { return "Fid(" + std::to_string(static_cast<int>(f.value())) + ")"; })
       .def_static("NODE1", &Fid::kNode1)
       .def_static("NODE2", &Fid::kNode2)
       .def_static("NODE3", &Fid::kNode3)
@@ -125,24 +116,19 @@ NB_MODULE(_afs, m) {
 
   nb::class_<Toi>(m, "Toi")
       .def(nb::init<uint8_t>())
-      .def_prop_rw("value", &Toi::value,
-                     [](Toi& self, uint8_t v) { self = Toi(v); })
+      .def_prop_rw("value", &Toi::value, [](Toi& self, uint8_t v) { self = Toi(v); })
       .def("__int__", [](const Toi& t) { return static_cast<uint8_t>(t); })
       .def("__eq__",
            [](const Toi& t, nb::object other) {
              if (nb::isinstance<Toi>(other))
-               return static_cast<uint8_t>(t) ==
-                      static_cast<uint8_t>(nb::cast<Toi>(other));
+               return static_cast<uint8_t>(t) == static_cast<uint8_t>(nb::cast<Toi>(other));
              if (nb::isinstance<nb::int_>(other))
-               return static_cast<int>(static_cast<uint8_t>(t)) ==
-                      nb::cast<int>(other);
+               return static_cast<int>(static_cast<uint8_t>(t)) == nb::cast<int>(other);
              return false;
            })
-      .def("__hash__",
-           [](const Toi& t) { return nb::hash(nb::int_(static_cast<uint8_t>(t))); })
-      .def("__repr__", [](const Toi& t) {
-        return "Toi(" + std::to_string(static_cast<int>(t.value())) + ")";
-      });
+      .def("__hash__", [](const Toi& t) { return nb::hash(nb::int_(static_cast<uint8_t>(t))); })
+      .def("__repr__",
+           [](const Toi& t) { return "Toi(" + std::to_string(static_cast<int>(t.value())) + ")"; });
 
   nb::class_<PrnId>(m, "PrnId")
       .def(nb::init<uint8_t>())
@@ -227,8 +213,7 @@ NB_MODULE(_afs, m) {
       .value("FAULT_DETECTED", InterleaverStatus::kFaultDetected)
       .export_values();
 
-  nb::class_<LdpcWorkspace>(m, "LdpcWorkspace")
-      .def(nb::init<>());
+  nb::class_<LdpcWorkspace>(m, "LdpcWorkspace").def(nb::init<>());
 
   nb::enum_<PrnStatus>(m, "PrnStatus")
       .value("OK", PrnStatus::kOk)
@@ -244,16 +229,18 @@ NB_MODULE(_afs, m) {
       .def_ro("toi", &BchResult::toi)
       .def_ro("hamming_distance", &BchResult::hamming_distance);
 
-  m.def("bch_encode", [](uint8_t fid, uint8_t toi) {
-    auto [out, dst] = make_numpy_1d<uint8_t>(52);
-    if (bch_encode(static_cast<Fid>(fid),
-                   Toi(toi),
-                   std::span<uint8_t, 52>(dst, 52)) != BchStatus::kOk)
-      throw nb::value_error("Invalid BCH params");
-    return out;
-  },
-  "fid"_a, "toi"_a,
-  R"(Encode a navigation sub-block header (SB1) using BCH(51,8). [LSIS-AFS-501]
+  m.def(
+      "bch_encode",
+      [](uint8_t fid, uint8_t toi) {
+        auto [out, dst] = make_numpy_1d<uint8_t>(52);
+        if (bch_encode(static_cast<Fid>(fid), Toi(toi), std::span<uint8_t, 52>(dst, 52)) !=
+            BchStatus::kOk)
+          throw nb::value_error("Invalid BCH params");
+        return out;
+      },
+      "fid"_a,
+      "toi"_a,
+      R"(Encode a navigation sub-block header (SB1) using BCH(51,8). [LSIS-AFS-501]
 
 The 9-bit input (2-bit FID + 7-bit TOI) is encoded into a 52-symbol
 codeword (1 raw MSB + 51 LFSR symbols). TMR-hardened.
@@ -286,13 +273,16 @@ Examples
 42
 )");
 
-  m.def("bch_decode", [](ndarray_1d codeword) {
-    if (codeword.shape(0) != 52)
-      throw nb::value_error("Must be 52 symbols");
-    return bch_decode(std::span<const uint8_t, 52>(checked_data<uint8_t>(codeword, "codeword"), 52));
-  },
-  "codeword"_a,
-  R"(Maximum-likelihood BCH decoder (hard decision). [LSIS-AFS-501]
+  m.def(
+      "bch_decode",
+      [](ndarray_1d codeword) {
+        if (codeword.shape(0) != 52)
+          throw nb::value_error("Must be 52 symbols");
+        return bch_decode(
+            std::span<const uint8_t, 52>(checked_data<uint8_t>(codeword, "codeword"), 52));
+      },
+      "codeword"_a,
+      R"(Maximum-likelihood BCH decoder (hard decision). [LSIS-AFS-501]
 
 Corrects up to 2 bit errors using a pre-computed exhaustive codebook.
 
@@ -319,13 +309,15 @@ True
 1
 )");
 
-  m.def("bch_decode_soft", [](ndarray_1d llr) {
-    if (llr.shape(0) != 52)
-      throw nb::value_error("Must be 52 soft symbols");
-    return bch_decode_soft(std::span<const float, 52>(checked_data<float>(llr, "llr"), 52));
-  },
-  "llr"_a,
-  R"(Soft-decision maximum-likelihood BCH decoder. [LSIS-AFS-501]
+  m.def(
+      "bch_decode_soft",
+      [](ndarray_1d llr) {
+        if (llr.shape(0) != 52)
+          throw nb::value_error("Must be 52 soft symbols");
+        return bch_decode_soft(std::span<const float, 52>(checked_data<float>(llr, "llr"), 52));
+      },
+      "llr"_a,
+      R"(Soft-decision maximum-likelihood BCH decoder. [LSIS-AFS-501]
 
 Selects the codebook entry maximising the inner-product metric
 over 52 channel LLRs, giving ~2 dB gain over hard-decision ML.
@@ -350,8 +342,9 @@ Notes
 - No ambiguity detection: ties broken by lowest codebook index.
 )");
 
-  m.def("bch_codebook_checksum", &bch_codebook_checksum,
-  R"(Compute the JIT codebook checksum for CBIT integrity. [NASA-FSW-CBIT]
+  m.def("bch_codebook_checksum",
+        &bch_codebook_checksum,
+        R"(Compute the JIT codebook checksum for CBIT integrity. [NASA-FSW-CBIT]
 
 Returns a 64-bit CRC-like checksum of the internal BCH codebook memory.
 Used by power-on self-test to verify codebook ROM integrity.
@@ -362,20 +355,21 @@ int
     64-bit checksum value.
 )");
 
-  m.def("crc24_calculate", [](ndarray_1d data) {
-    auto [out, dst] = make_numpy_1d<uint8_t>(24);
-    std::array<uint8_t, 24> crc{};
-    auto status =
-        crc24_calculate(checked_span<uint8_t>(data, "data"),
-                        std::span<uint8_t, 24>(crc.data(), 24));
-    if (status != CrcStatus::kOk)
-      throw nb::value_error("CRC-24 failed");
-    for (uint32_t i = 0; i < 24U; ++i)
-      dst[i] = crc[i];
-    return out;
-  },
-  "data"_a,
-  R"(Calculate CRC-24Q over a bit sequence. [LSIS-FID0-467]
+  m.def(
+      "crc24_calculate",
+      [](ndarray_1d data) {
+        auto [out, dst] = make_numpy_1d<uint8_t>(24);
+        std::array<uint8_t, 24> crc{};
+        auto status = crc24_calculate(checked_span<uint8_t>(data, "data"),
+                                      std::span<uint8_t, 24>(crc.data(), 24));
+        if (status != CrcStatus::kOk)
+          throw nb::value_error("CRC-24 failed");
+        for (uint32_t i = 0; i < 24U; ++i)
+          dst[i] = crc[i];
+        return out;
+      },
+      "data"_a,
+      R"(Calculate CRC-24Q over a bit sequence. [LSIS-FID0-467]
 
 Polynomial: G(X) = 0x864CFB, seed 0, MSB-first.
 
@@ -402,11 +396,13 @@ Examples
 True
 )");
 
-  m.def("crc24_verify", [](ndarray_1d data_with_crc) {
-    return crc24_verify(checked_span<uint8_t>(data_with_crc, "data_with_crc"));
-  },
-  "data_with_crc"_a,
-  R"(Verify CRC-24Q appended to a bit sequence. [LSIS-FID0-467]
+  m.def(
+      "crc24_verify",
+      [](ndarray_1d data_with_crc) {
+        return crc24_verify(checked_span<uint8_t>(data_with_crc, "data_with_crc"));
+      },
+      "data_with_crc"_a,
+      R"(Verify CRC-24Q appended to a bit sequence. [LSIS-FID0-467]
 
 Parameters
 ----------
@@ -419,17 +415,18 @@ bool
     True if CRC matches.
 )");
 
-  m.def("block_interleave", [](ndarray_1d in) {
-    auto [out, dst] = make_numpy_1d<uint8_t>(kInterleaverSize);
-    auto status =
-        block_interleave(checked_span<uint8_t>(in, "in"),
-                         std::span<uint8_t>(dst, kInterleaverSize));
-    if (status != InterleaverStatus::kOk)
-      throw nb::value_error("block_interleave failed: input must be exactly 5880 bits");
-    return out;
-  },
-  "data"_a,
-  R"(60x98 block interleaver (write row-wise, read column-wise). [LSIS-FID0-470]
+  m.def(
+      "block_interleave",
+      [](ndarray_1d in) {
+        auto [out, dst] = make_numpy_1d<uint8_t>(kInterleaverSize);
+        auto status = block_interleave(checked_span<uint8_t>(in, "in"),
+                                       std::span<uint8_t>(dst, kInterleaverSize));
+        if (status != InterleaverStatus::kOk)
+          throw nb::value_error("block_interleave failed: input must be exactly 5880 bits");
+        return out;
+      },
+      "data"_a,
+      R"(60x98 block interleaver (write row-wise, read column-wise). [LSIS-FID0-470]
 
 Parameters
 ----------
@@ -442,17 +439,18 @@ ndarray of uint8
     5880 interleaved symbols.
 )");
 
-  m.def("block_deinterleave", [](ndarray_1d in) {
-    auto [out, dst] = make_numpy_1d<uint8_t>(kInterleaverSize);
-    auto status =
-        block_deinterleave(checked_span<uint8_t>(in, "in"),
-                           std::span<uint8_t>(dst, kInterleaverSize));
-    if (status != InterleaverStatus::kOk)
-      throw nb::value_error("block_deinterleave failed: input must be exactly 5880 bits");
-    return out;
-  },
-  "data"_a,
-  R"(60x98 block de-interleaver (write column-wise, read row-wise). [LSIS-FID0-470]
+  m.def(
+      "block_deinterleave",
+      [](ndarray_1d in) {
+        auto [out, dst] = make_numpy_1d<uint8_t>(kInterleaverSize);
+        auto status = block_deinterleave(checked_span<uint8_t>(in, "in"),
+                                         std::span<uint8_t>(dst, kInterleaverSize));
+        if (status != InterleaverStatus::kOk)
+          throw nb::value_error("block_deinterleave failed: input must be exactly 5880 bits");
+        return out;
+      },
+      "data"_a,
+      R"(60x98 block de-interleaver (write column-wise, read row-wise). [LSIS-FID0-470]
 
 Parameters
 ----------
@@ -465,18 +463,18 @@ ndarray of uint8
     5880 de-interleaved symbols.
 )");
 
-  m.def("block_deinterleave_soft",
-        [](nb::ndarray<const float, nb::ndim<1>, nb::c_contig, nb::device::cpu> in) {
-          auto [out, dst] = make_numpy_1d<float>(kInterleaverSize);
-          auto status = block_deinterleave_soft(
-              std::span<const float>(in.data(), in.shape(0)),
-              std::span<float>(dst, kInterleaverSize));
-          if (status != InterleaverStatus::kOk)
-            throw nb::value_error("block_deinterleave_soft failed");
-          return out;
-        },
-  "data"_a,
-  R"(Soft-decision 60x98 block de-interleaver. [LSIS-AFS-471]
+  m.def(
+      "block_deinterleave_soft",
+      [](nb::ndarray<const float, nb::ndim<1>, nb::c_contig, nb::device::cpu> in) {
+        auto [out, dst] = make_numpy_1d<float>(kInterleaverSize);
+        auto status = block_deinterleave_soft(std::span<const float>(in.data(), in.shape(0)),
+                                              std::span<float>(dst, kInterleaverSize));
+        if (status != InterleaverStatus::kOk)
+          throw nb::value_error("block_deinterleave_soft failed");
+        return out;
+      },
+      "data"_a,
+      R"(Soft-decision 60x98 block de-interleaver. [LSIS-AFS-471]
 
 Same permutation as ``block_deinterleave`` but preserves float
 soft-decision values (LLRs) for FEC decoding.
@@ -492,20 +490,21 @@ ndarray of float32
     5880 de-interleaved soft values.
 )");
 
-  m.def("ldpc_encode", [](LdpcSubframe type, ndarray_1d msg) {
-    const size_t n_out = (type == LdpcSubframe::kSF2) ? 2400U : 1740U;
-    auto [out, dst] = make_numpy_1d<uint8_t>(n_out);
-    LdpcEncodeWorkspace enc_ws{};
-    auto status = ldpc_encode(type,
-                              checked_span<uint8_t>(msg, "msg"),
-                              std::span<uint8_t>(dst, n_out),
-                              enc_ws);
-    if (status != LdpcStatus::kOk)
-      throw nb::value_error("LDPC encode failed");
-    return out;
-  },
-  "type"_a, "msg"_a,
-  R"(Encode a subframe using rate-1/2 5G NR LDPC (Base Graph 2). [LSIS-AFS-320]
+  m.def(
+      "ldpc_encode",
+      [](LdpcSubframe type, ndarray_1d msg) {
+        const size_t n_out = (type == LdpcSubframe::kSF2) ? 2400U : 1740U;
+        auto [out, dst] = make_numpy_1d<uint8_t>(n_out);
+        LdpcEncodeWorkspace enc_ws{};
+        auto status = ldpc_encode(
+            type, checked_span<uint8_t>(msg, "msg"), std::span<uint8_t>(dst, n_out), enc_ws);
+        if (status != LdpcStatus::kOk)
+          throw nb::value_error("LDPC encode failed");
+        return out;
+      },
+      "type"_a,
+      "msg"_a,
+      R"(Encode a subframe using rate-1/2 5G NR LDPC (Base Graph 2). [LSIS-AFS-320]
 
 Parameters
 ----------
@@ -546,12 +545,11 @@ Examples
           ws_ptr = nb::cast<LdpcWorkspace*>(workspace);
         }
 
-        auto status =
-            ldpc_decode(type,
-                        std::span<const float>(symbols.data(), symbols.shape(0)),
-                        iterations,
-                        std::span<uint8_t>(dst, k_nom),
-                        *ws_ptr);
+        auto status = ldpc_decode(type,
+                                  std::span<const float>(symbols.data(), symbols.shape(0)),
+                                  iterations,
+                                  std::span<uint8_t>(dst, k_nom),
+                                  *ws_ptr);
         if (status != LdpcStatus::kOk && status != LdpcStatus::kNotConverged)
           throw nb::value_error("LDPC decode failed");
         return nb::make_tuple(out, status);
@@ -596,18 +594,20 @@ True
 
   nb::class_<LdpcEncodeWorkspace>(m, "LdpcEncodeWorkspace").def(nb::init<>());
 
-  m.def("frame_build_partial", [](uint8_t fid, uint8_t toi) {
-    auto [out, dst] = make_numpy_1d<uint8_t>(6000);
-    FrameBuildWorkspace fbw{};
-    if (frame_build_partial(static_cast<Fid>(fid),
-                            Toi(toi),
-                            std::span<uint8_t, 6000>(dst, 6000),
-                            fbw) != FrameStatus::kOk)
-      throw nb::value_error("Frame build failed");
-    return out;
-  },
-  "fid"_a, "toi"_a,
-  R"(Build a partial AFS frame: sync + BCH header + zero payload. [LSIS-AFS-601]
+  m.def(
+      "frame_build_partial",
+      [](uint8_t fid, uint8_t toi) {
+        auto [out, dst] = make_numpy_1d<uint8_t>(6000);
+        FrameBuildWorkspace fbw{};
+        if (frame_build_partial(
+                static_cast<Fid>(fid), Toi(toi), std::span<uint8_t, 6000>(dst, 6000), fbw) !=
+            FrameStatus::kOk)
+          throw nb::value_error("Frame build failed");
+        return out;
+      },
+      "fid"_a,
+      "toi"_a,
+      R"(Build a partial AFS frame: sync + BCH header + zero payload. [LSIS-AFS-601]
 
 Useful for testing sync detection and BCH decoding in isolation.
 
@@ -624,36 +624,39 @@ ndarray of uint8
     6000 binary symbols (sync + SB1 + zero-padded payload).
 )");
 
-  m.def("frame_build",
-        [](uint8_t fid,
-           uint8_t toi,
-           ndarray_1d sb2_data,
-           ndarray_1d sb3_data,
-           ndarray_1d sb4_data) {
-          if (sb2_data.shape(0) != kSb2DataBits)
-            throw nb::value_error("SB2 data must be 1176 bits");
-          if (sb3_data.shape(0) != kSb3DataBits)
-            throw nb::value_error("SB3 data must be 846 bits");
-          if (sb4_data.shape(0) != kSb4DataBits)
-            throw nb::value_error("SB4 data must be 846 bits");
-          auto [out, dst] = make_numpy_1d<uint8_t>(kFrameLength);
-          LdpcEncodeWorkspace ws{};
-          FrameBuildWorkspace fbw{};
-          auto status =
-              frame_build(static_cast<Fid>(fid),
-                          Toi(toi),
-                          std::span<const uint8_t, kSb2DataBits>(checked_data<uint8_t>(sb2_data, "sb2_data"), kSb2DataBits),
-                          std::span<const uint8_t, kSb3DataBits>(checked_data<uint8_t>(sb3_data, "sb3_data"), kSb3DataBits),
-                          std::span<const uint8_t, kSb4DataBits>(checked_data<uint8_t>(sb4_data, "sb4_data"), kSb4DataBits),
-                          std::span<uint8_t, kFrameLength>(dst, kFrameLength),
-                          ws,
-                          fbw);
-          if (status != FrameStatus::kOk)
-            throw nb::value_error("Frame build failed");
-          return out;
-        },
-  "fid"_a, "toi"_a, "sb2_data"_a, "sb3_data"_a, "sb4_data"_a,
-  R"(Build a complete AFS navigation frame. [LSIS-AFS-605]
+  m.def(
+      "frame_build",
+      [](uint8_t fid, uint8_t toi, ndarray_1d sb2_data, ndarray_1d sb3_data, ndarray_1d sb4_data) {
+        if (sb2_data.shape(0) != kSb2DataBits)
+          throw nb::value_error("SB2 data must be 1176 bits");
+        if (sb3_data.shape(0) != kSb3DataBits)
+          throw nb::value_error("SB3 data must be 846 bits");
+        if (sb4_data.shape(0) != kSb4DataBits)
+          throw nb::value_error("SB4 data must be 846 bits");
+        auto [out, dst] = make_numpy_1d<uint8_t>(kFrameLength);
+        LdpcEncodeWorkspace ws{};
+        FrameBuildWorkspace fbw{};
+        auto status = frame_build(static_cast<Fid>(fid),
+                                  Toi(toi),
+                                  std::span<const uint8_t, kSb2DataBits>(
+                                      checked_data<uint8_t>(sb2_data, "sb2_data"), kSb2DataBits),
+                                  std::span<const uint8_t, kSb3DataBits>(
+                                      checked_data<uint8_t>(sb3_data, "sb3_data"), kSb3DataBits),
+                                  std::span<const uint8_t, kSb4DataBits>(
+                                      checked_data<uint8_t>(sb4_data, "sb4_data"), kSb4DataBits),
+                                  std::span<uint8_t, kFrameLength>(dst, kFrameLength),
+                                  ws,
+                                  fbw);
+        if (status != FrameStatus::kOk)
+          throw nb::value_error("Frame build failed");
+        return out;
+      },
+      "fid"_a,
+      "toi"_a,
+      "sb2_data"_a,
+      "sb3_data"_a,
+      "sb4_data"_a,
+      R"(Build a complete AFS navigation frame. [LSIS-AFS-605]
 
 Pipeline: data -> CRC-24 -> LDPC encode -> concatenate -> block interleave.
 Output is 68 sync + 52 BCH + 5880 interleaved = 6000 symbols.
@@ -688,11 +691,11 @@ Examples
 (6000,)
 )");
 
-  m.def("commit_frame", [](ndarray_1d frame) {
-    return commit_frame(checked_span<uint8_t>(frame, "frame"));
-  },
-  "frame"_a,
-  R"(Frame commit gate: verify assembled frame integrity via CRC-24Q. [LSIS-AFS-606]
+  m.def(
+      "commit_frame",
+      [](ndarray_1d frame) { return commit_frame(checked_span<uint8_t>(frame, "frame")); },
+      "frame"_a,
+      R"(Frame commit gate: verify assembled frame integrity via CRC-24Q. [LSIS-AFS-606]
 
 Defence-in-depth check — no frame shall be transmitted unless this passes.
 
@@ -707,22 +710,23 @@ FrameStatus
     ``OK`` if CRC matches; ``FAULT_DETECTED`` otherwise.
 )");
 
-  m.def("subframe_build_sb2",
-        [](ndarray_1d data) {
-          if (data.shape(0) != kSb2DataBits)
-            throw nb::value_error("SB2 data must be 1176 bits");
-          auto [out, dst] = make_numpy_1d<uint8_t>(kSb2Length);
-          LdpcEncodeWorkspace ws{};
-          auto status =
-              subframe_build_sb2(std::span<const uint8_t, kSb2DataBits>(checked_data<uint8_t>(data, "data"), kSb2DataBits),
-                                 std::span<uint8_t, kSb2Length>(dst, kSb2Length),
-                                 ws);
-          if (status != FrameStatus::kOk)
-            throw nb::value_error("SB2 build failed");
-          return out;
-        },
-  "data"_a,
-  R"(Build Subframe 2: CRC-24 + LDPC SF2 encode. [LSIS-AFS-602]
+  m.def(
+      "subframe_build_sb2",
+      [](ndarray_1d data) {
+        if (data.shape(0) != kSb2DataBits)
+          throw nb::value_error("SB2 data must be 1176 bits");
+        auto [out, dst] = make_numpy_1d<uint8_t>(kSb2Length);
+        LdpcEncodeWorkspace ws{};
+        auto status = subframe_build_sb2(std::span<const uint8_t, kSb2DataBits>(
+                                             checked_data<uint8_t>(data, "data"), kSb2DataBits),
+                                         std::span<uint8_t, kSb2Length>(dst, kSb2Length),
+                                         ws);
+        if (status != FrameStatus::kOk)
+          throw nb::value_error("SB2 build failed");
+        return out;
+      },
+      "data"_a,
+      R"(Build Subframe 2: CRC-24 + LDPC SF2 encode. [LSIS-AFS-602]
 
 Parameters
 ----------
@@ -735,22 +739,23 @@ ndarray of uint8
     2400 encoded symbols.
 )");
 
-  m.def("subframe_build_sb3",
-        [](ndarray_1d data) {
-          if (data.shape(0) != kSb3DataBits)
-            throw nb::value_error("SB3 data must be 846 bits");
-          auto [out, dst] = make_numpy_1d<uint8_t>(kSb3Length);
-          LdpcEncodeWorkspace ws{};
-          auto status =
-              subframe_build_sb3(std::span<const uint8_t, kSb3DataBits>(checked_data<uint8_t>(data, "data"), kSb3DataBits),
-                                 std::span<uint8_t, kSb3Length>(dst, kSb3Length),
-                                 ws);
-          if (status != FrameStatus::kOk)
-            throw nb::value_error("SB3 build failed");
-          return out;
-        },
-  "data"_a,
-  R"(Build Subframe 3: CRC-24 + LDPC SF3 encode. [LSIS-AFS-603]
+  m.def(
+      "subframe_build_sb3",
+      [](ndarray_1d data) {
+        if (data.shape(0) != kSb3DataBits)
+          throw nb::value_error("SB3 data must be 846 bits");
+        auto [out, dst] = make_numpy_1d<uint8_t>(kSb3Length);
+        LdpcEncodeWorkspace ws{};
+        auto status = subframe_build_sb3(std::span<const uint8_t, kSb3DataBits>(
+                                             checked_data<uint8_t>(data, "data"), kSb3DataBits),
+                                         std::span<uint8_t, kSb3Length>(dst, kSb3Length),
+                                         ws);
+        if (status != FrameStatus::kOk)
+          throw nb::value_error("SB3 build failed");
+        return out;
+      },
+      "data"_a,
+      R"(Build Subframe 3: CRC-24 + LDPC SF3 encode. [LSIS-AFS-603]
 
 Parameters
 ----------
@@ -763,22 +768,23 @@ ndarray of uint8
     1740 encoded symbols.
 )");
 
-  m.def("subframe_build_sb4",
-        [](ndarray_1d data) {
-          if (data.shape(0) != kSb4DataBits)
-            throw nb::value_error("SB4 data must be 846 bits");
-          auto [out, dst] = make_numpy_1d<uint8_t>(kSb4Length);
-          LdpcEncodeWorkspace ws{};
-          auto status =
-              subframe_build_sb4(std::span<const uint8_t, kSb4DataBits>(checked_data<uint8_t>(data, "data"), kSb4DataBits),
-                                 std::span<uint8_t, kSb4Length>(dst, kSb4Length),
-                                 ws);
-          if (status != FrameStatus::kOk)
-            throw nb::value_error("SB4 build failed");
-          return out;
-        },
-  "data"_a,
-  R"(Build Subframe 4: CRC-24 + LDPC SF4 encode. [LSIS-AFS-604]
+  m.def(
+      "subframe_build_sb4",
+      [](ndarray_1d data) {
+        if (data.shape(0) != kSb4DataBits)
+          throw nb::value_error("SB4 data must be 846 bits");
+        auto [out, dst] = make_numpy_1d<uint8_t>(kSb4Length);
+        LdpcEncodeWorkspace ws{};
+        auto status = subframe_build_sb4(std::span<const uint8_t, kSb4DataBits>(
+                                             checked_data<uint8_t>(data, "data"), kSb4DataBits),
+                                         std::span<uint8_t, kSb4Length>(dst, kSb4Length),
+                                         ws);
+        if (status != FrameStatus::kOk)
+          throw nb::value_error("SB4 build failed");
+        return out;
+      },
+      "data"_a,
+      R"(Build Subframe 4: CRC-24 + LDPC SF4 encode. [LSIS-AFS-604]
 
 Parameters
 ----------
@@ -791,15 +797,17 @@ ndarray of uint8
     1740 encoded symbols.
 )");
 
-  m.def("prn_code", [](int prn_id) {
-    const PrnId id{static_cast<uint8_t>(prn_id)};
-    PrnCode p;
-    if (gold_prn_packed(id, p) != PrnStatus::kOk)
-      throw nb::value_error("Invalid PRN");
-    return unpack_prn(p);
-  },
-  "prn_id"_a,
-  R"(Get the Gold-2046 spreading code for AFS-I. [LSIS-AFS-101]
+  m.def(
+      "prn_code",
+      [](int prn_id) {
+        const PrnId id{static_cast<uint8_t>(prn_id)};
+        PrnCode p;
+        if (gold_prn_packed(id, p) != PrnStatus::kOk)
+          throw nb::value_error("Invalid PRN");
+        return unpack_prn(p);
+      },
+      "prn_id"_a,
+      R"(Get the Gold-2046 spreading code for AFS-I. [LSIS-AFS-101]
 
 Parameters
 ----------
@@ -819,18 +827,20 @@ Examples
 (2046,)
 )");
 
-  m.def("modulate_i", [](ndarray_1d prn, int data) {
-    const size_t n = prn.shape(0);
-    auto [out, dst] = make_numpy_1d<int8_t>(n);
-    if (modulate_bpsk_i(checked_span<uint8_t>(prn, "prn"),
-                        static_cast<int8_t>(data),
-                        std::span<int8_t>(dst, n)) !=
-        ModulationStatus::kOk)
-      throw nb::value_error("Modulation failed");
-    return out;
-  },
-  "prn"_a, "data"_a,
-  R"(BPSK-modulate a chip sequence for the AFS-I data channel. [LSIS-AFS-201]
+  m.def(
+      "modulate_i",
+      [](ndarray_1d prn, int data) {
+        const size_t n = prn.shape(0);
+        auto [out, dst] = make_numpy_1d<int8_t>(n);
+        if (modulate_bpsk_i(checked_span<uint8_t>(prn, "prn"),
+                            static_cast<int8_t>(data),
+                            std::span<int8_t>(dst, n)) != ModulationStatus::kOk)
+          throw nb::value_error("Modulation failed");
+        return out;
+      },
+      "prn"_a,
+      "data"_a,
+      R"(BPSK-modulate a chip sequence for the AFS-I data channel. [LSIS-AFS-201]
 
 Mapping: chip XOR data -> {+1, -1} (0 -> +1, 1 -> -1).
 
@@ -847,17 +857,18 @@ ndarray of int8
     Modulated bipolar samples.
 )");
 
-  m.def("modulate_q", [](ndarray_1d chips) {
-    const size_t n = chips.shape(0);
-    auto [out, dst] = make_numpy_1d<int8_t>(n);
-    if (modulate_bpsk_q(checked_span<uint8_t>(chips, "chips"),
-                        std::span<int8_t>(dst, n)) !=
-        ModulationStatus::kOk)
-      throw nb::value_error("Modulation failed");
-    return out;
-  },
-  "chips"_a,
-  R"(BPSK-modulate a chip sequence for the AFS-Q pilot channel. [LSIS-AFS-201]
+  m.def(
+      "modulate_q",
+      [](ndarray_1d chips) {
+        const size_t n = chips.shape(0);
+        auto [out, dst] = make_numpy_1d<int8_t>(n);
+        if (modulate_bpsk_q(checked_span<uint8_t>(chips, "chips"), std::span<int8_t>(dst, n)) !=
+            ModulationStatus::kOk)
+          throw nb::value_error("Modulation failed");
+        return out;
+      },
+      "chips"_a,
+      R"(BPSK-modulate a chip sequence for the AFS-Q pilot channel. [LSIS-AFS-201]
 
 Mapping: 0 -> +1, 1 -> -1 (no data symbol — pilot is dataless).
 
@@ -872,20 +883,23 @@ ndarray of int8
     Modulated bipolar samples.
 )");
 
-  m.def("multiplex_iq", [](ndarray_1d i, ndarray_1d q) {
-    if (i.shape(0) != 2046)
-      throw nb::value_error("I channel must be 2046 samples");
-    if (q.shape(0) != 10230)
-      throw nb::value_error("Q channel must be 10230 samples");
-    auto [out, dst] = make_numpy_2d<int16_t>(10230, 2);
-    if (multiplex_iq(std::span<const int8_t>(checked_data<int8_t>(i, "i"), 2046),
-                     std::span<const int8_t>(checked_data<int8_t>(q, "q"), 10230),
-                     std::span<int16_t>(dst, 20460)) != IqMuxStatus::kOk)
-      throw nb::value_error("Mux failed");
-    return out;
-  },
-  "i"_a, "q"_a,
-  R"(Multiplex I and Q channels into interleaved I/Q pairs. [LSIS-AFS-301]
+  m.def(
+      "multiplex_iq",
+      [](ndarray_1d i, ndarray_1d q) {
+        if (i.shape(0) != 2046)
+          throw nb::value_error("I channel must be 2046 samples");
+        if (q.shape(0) != 10230)
+          throw nb::value_error("Q channel must be 10230 samples");
+        auto [out, dst] = make_numpy_2d<int16_t>(10230, 2);
+        if (multiplex_iq(std::span<const int8_t>(checked_data<int8_t>(i, "i"), 2046),
+                         std::span<const int8_t>(checked_data<int8_t>(q, "q"), 10230),
+                         std::span<int16_t>(dst, 20460)) != IqMuxStatus::kOk)
+          throw nb::value_error("Mux failed");
+        return out;
+      },
+      "i"_a,
+      "q"_a,
+      R"(Multiplex I and Q channels into interleaved I/Q pairs. [LSIS-AFS-301]
 
 The I channel (2046 samples) is upsampled 5x to match the Q channel
 rate (10230 samples).  Output: [I0, Q0, I1, Q1, ...].
@@ -903,14 +917,16 @@ ndarray of int16, shape (10230, 2)
     Interleaved I/Q pairs at Q-channel rate.
 )");
 
-  m.def("weil10230_code", [](int id) {
-    PrnCode p;
-    if (weil10230_prn_packed(PrnId{static_cast<uint8_t>(id)}, p) != PrnStatus::kOk)
-      throw nb::value_error("Bad ID");
-    return unpack_prn(p);
-  },
-  "prn_id"_a,
-  R"(Get the Weil-10230 primary spreading code for AFS-Q. [LSIS-AFS-102]
+  m.def(
+      "weil10230_code",
+      [](int id) {
+        PrnCode p;
+        if (weil10230_prn_packed(PrnId{static_cast<uint8_t>(id)}, p) != PrnStatus::kOk)
+          throw nb::value_error("Bad ID");
+        return unpack_prn(p);
+      },
+      "prn_id"_a,
+      R"(Get the Weil-10230 primary spreading code for AFS-Q. [LSIS-AFS-102]
 
 Parameters
 ----------
@@ -923,14 +939,16 @@ ndarray of uint8
     10230 binary chips.
 )");
 
-  m.def("weil1500_code", [](int id) {
-    PrnCode p;
-    if (weil1500_prn_packed(PrnId{static_cast<uint8_t>(id)}, p) != PrnStatus::kOk)
-      throw nb::value_error("Bad ID");
-    return unpack_prn(p);
-  },
-  "prn_id"_a,
-  R"(Get the Weil-1500 tertiary spreading code for AFS-Q. [LSIS-AFS-102]
+  m.def(
+      "weil1500_code",
+      [](int id) {
+        PrnCode p;
+        if (weil1500_prn_packed(PrnId{static_cast<uint8_t>(id)}, p) != PrnStatus::kOk)
+          throw nb::value_error("Bad ID");
+        return unpack_prn(p);
+      },
+      "prn_id"_a,
+      R"(Get the Weil-1500 tertiary spreading code for AFS-Q. [LSIS-AFS-102]
 
 Parameters
 ----------
@@ -943,20 +961,23 @@ ndarray of uint8
     1500 binary chips.
 )");
 
-  m.def("matched_code_epoch", [](int id, int epoch) {
-    auto [out, dst] = make_numpy_1d<uint8_t>(10230);
-    MatchedCodeAssignment a;
-    if (default_matched_assignment_checked(PrnId{static_cast<uint8_t>(id)}, a) !=
-        MatchedCodeStatus::kOk)
-      throw nb::value_error("Bad ID");
-    if (matched_code_epoch_checked(
-            a, static_cast<uint16_t>(epoch), std::span<uint8_t>(dst, 10230)) !=
-        MatchedCodeStatus::kOk)
-      throw nb::value_error("Bad epoch");
-    return out;
-  },
-  "prn_id"_a, "epoch"_a,
-  R"(Generate one epoch of the AFS-Q matched code using default assignments. [LSIS-AFS-401]
+  m.def(
+      "matched_code_epoch",
+      [](int id, int epoch) {
+        auto [out, dst] = make_numpy_1d<uint8_t>(10230);
+        MatchedCodeAssignment a;
+        if (default_matched_assignment_checked(PrnId{static_cast<uint8_t>(id)}, a) !=
+            MatchedCodeStatus::kOk)
+          throw nb::value_error("Bad ID");
+        if (matched_code_epoch_checked(a,
+                                       static_cast<uint16_t>(epoch),
+                                       std::span<uint8_t>(dst, 10230)) != MatchedCodeStatus::kOk)
+          throw nb::value_error("Bad epoch");
+        return out;
+      },
+      "prn_id"_a,
+      "epoch"_a,
+      R"(Generate one epoch of the AFS-Q matched code using default assignments. [LSIS-AFS-401]
 
 Combines primary (Weil-10230), secondary (4-chip Hadamard), and tertiary
 (Weil-1500) codes per LSIS Table 11 interim assignments.
@@ -981,30 +1002,33 @@ Examples
 (10230,)
 )");
 
-  m.def("matched_code_epoch_assigned",
-        [](int primary_prn,
-           int secondary_code_idx,
-           int tertiary_prn,
-           int tertiary_phase_offset,
-           int epoch_idx) {
-          MatchedCodeAssignment a;
-          a.primary_prn = PrnId{static_cast<uint8_t>(primary_prn)};
-          a.secondary_code_idx =
-              CheckedRange<uint8_t, 0, 3>{static_cast<uint8_t>(secondary_code_idx)};
-          a.tertiary_prn = PrnId{static_cast<uint8_t>(tertiary_prn)};
-          a.tertiary_phase_offset =
-              CheckedRange<uint16_t, 0, 1499>{static_cast<uint16_t>(tertiary_phase_offset)};
-          auto [out, dst] = make_numpy_1d<uint8_t>(10230);
-          if (matched_code_epoch_checked(a,
-                                         static_cast<uint16_t>(epoch_idx),
-                                         std::span<uint8_t>(dst, 10230)) !=
-              MatchedCodeStatus::kOk)
-            throw nb::value_error("Bad assignment");
-          return out;
-        },
-  "primary_prn"_a, "secondary_code_idx"_a, "tertiary_prn"_a,
-  "tertiary_phase_offset"_a, "epoch_idx"_a,
-  R"(Generate one epoch of AFS-Q matched code with explicit assignments. [LSIS-AFS-401]
+  m.def(
+      "matched_code_epoch_assigned",
+      [](int primary_prn,
+         int secondary_code_idx,
+         int tertiary_prn,
+         int tertiary_phase_offset,
+         int epoch_idx) {
+        MatchedCodeAssignment a;
+        a.primary_prn = PrnId{static_cast<uint8_t>(primary_prn)};
+        a.secondary_code_idx =
+            CheckedRange<uint8_t, 0, 3>{static_cast<uint8_t>(secondary_code_idx)};
+        a.tertiary_prn = PrnId{static_cast<uint8_t>(tertiary_prn)};
+        a.tertiary_phase_offset =
+            CheckedRange<uint16_t, 0, 1499>{static_cast<uint16_t>(tertiary_phase_offset)};
+        auto [out, dst] = make_numpy_1d<uint8_t>(10230);
+        if (matched_code_epoch_checked(a,
+                                       static_cast<uint16_t>(epoch_idx),
+                                       std::span<uint8_t>(dst, 10230)) != MatchedCodeStatus::kOk)
+          throw nb::value_error("Bad assignment");
+        return out;
+      },
+      "primary_prn"_a,
+      "secondary_code_idx"_a,
+      "tertiary_prn"_a,
+      "tertiary_phase_offset"_a,
+      "epoch_idx"_a,
+      R"(Generate one epoch of AFS-Q matched code with explicit assignments. [LSIS-AFS-401]
 
 Parameters
 ----------
@@ -1025,18 +1049,20 @@ ndarray of uint8
     10230 binary chips.
 )");
 
-  m.def("default_matched_assignment", [](int prn_id) {
-    MatchedCodeAssignment a{};
-    auto status = default_matched_assignment_checked(PrnId{static_cast<uint8_t>(prn_id)}, a);
-    if (status != MatchedCodeStatus::kOk)
-      throw nb::value_error("Invalid PRN for assignment");
-    return nb::make_tuple(static_cast<uint8_t>(a.primary_prn),
-                          static_cast<uint8_t>(a.secondary_code_idx),
-                          static_cast<uint8_t>(a.tertiary_prn),
-                          static_cast<uint16_t>(a.tertiary_phase_offset));
-  },
-  "prn_id"_a,
-  R"(Get the default interim code assignment for a PRN. [LSIS-AFS-401]
+  m.def(
+      "default_matched_assignment",
+      [](int prn_id) {
+        MatchedCodeAssignment a{};
+        auto status = default_matched_assignment_checked(PrnId{static_cast<uint8_t>(prn_id)}, a);
+        if (status != MatchedCodeStatus::kOk)
+          throw nb::value_error("Invalid PRN for assignment");
+        return nb::make_tuple(static_cast<uint8_t>(a.primary_prn),
+                              static_cast<uint8_t>(a.secondary_code_idx),
+                              static_cast<uint8_t>(a.tertiary_prn),
+                              static_cast<uint16_t>(a.tertiary_phase_offset));
+      },
+      "prn_id"_a,
+      R"(Get the default interim code assignment for a PRN. [LSIS-AFS-401]
 
 Per LSIS Table 11.  Only PRN 1--12 have interim assignments.
 
@@ -1062,100 +1088,108 @@ tuple[int, int, int, int]
       .value("FAULT_DETECTED", SignalGenStatus::kFaultDetected)
       .export_values();
 
-  m.def("generate_iq_epoch_native",
-        [](int prn_id, int epoch_idx, int data_symbol) {
-          // Unpack Gold code for this single-epoch call.
-          PrnCode gold{};
-          if (gold_prn_packed(PrnId{static_cast<uint8_t>(prn_id)}, gold) != PrnStatus::kOk)
-            throw nb::value_error("Invalid PRN");
-          std::array<uint8_t, kGoldChipLength> gold_chips{};
-          for (uint32_t i = 0; i < kGoldChipLength; ++i) {
-            if (unpack_chip(gold, static_cast<uint16_t>(i), gold_chips[i]) != PrnStatus::kOk)
-              throw nb::value_error("unpack_chip failed");
-          }
-          auto [out, dst] = make_numpy_2d<int16_t>(kIqSamplesPerEpoch, 2);
-          auto status = generate_iq_epoch(
-              std::span<const uint8_t>(gold_chips),
-              PrnId{static_cast<uint8_t>(prn_id)},
-              static_cast<uint16_t>(epoch_idx),
-              static_cast<int8_t>(data_symbol),
-              std::span<int16_t>(dst, kIqPairsPerEpoch));
-          if (status != SignalGenStatus::kOk)
-            throw nb::value_error("generate_iq_epoch failed");
-          return out;
-        },
-        "prn_id"_a, "epoch_idx"_a, "data_symbol"_a = 1,
-        "Generate one 2 ms epoch of interleaved I/Q at native rate (10230x2 int16).");
+  m.def(
+      "generate_iq_epoch_native",
+      [](int prn_id, int epoch_idx, int data_symbol) {
+        // Unpack Gold code for this single-epoch call.
+        PrnCode gold{};
+        if (gold_prn_packed(PrnId{static_cast<uint8_t>(prn_id)}, gold) != PrnStatus::kOk)
+          throw nb::value_error("Invalid PRN");
+        std::array<uint8_t, kGoldChipLength> gold_chips{};
+        for (uint32_t i = 0; i < kGoldChipLength; ++i) {
+          if (unpack_chip(gold, static_cast<uint16_t>(i), gold_chips[i]) != PrnStatus::kOk)
+            throw nb::value_error("unpack_chip failed");
+        }
+        auto [out, dst] = make_numpy_2d<int16_t>(kIqSamplesPerEpoch, 2);
+        auto status = generate_iq_epoch(std::span<const uint8_t>(gold_chips),
+                                        PrnId{static_cast<uint8_t>(prn_id)},
+                                        static_cast<uint16_t>(epoch_idx),
+                                        static_cast<int8_t>(data_symbol),
+                                        std::span<int16_t>(dst, kIqPairsPerEpoch));
+        if (status != SignalGenStatus::kOk)
+          throw nb::value_error("generate_iq_epoch failed");
+        return out;
+      },
+      "prn_id"_a,
+      "epoch_idx"_a,
+      "data_symbol"_a = 1,
+      "Generate one 2 ms epoch of interleaved I/Q at native rate (10230x2 int16).");
 
-  m.def("generate_iq_epoch_float",
-        [](int prn_id, int epoch_idx, int data_symbol, double sample_rate) {
-          const auto n_native = static_cast<size_t>(kIqSamplesPerEpoch);
-          const bool is_native =
-              (std::fabs(sample_rate - kNativeSampleRateHz) < 1.0) || (sample_rate <= 0.0);
-          const size_t n_out = is_native
-              ? n_native
-              : static_cast<size_t>(std::lround(
-                    static_cast<double>(n_native) * sample_rate / kNativeSampleRateHz));
-          auto [out, dst] = make_numpy_2d<float>(n_out, 2);
-          size_t written = 0;
-          auto status = generate_iq_epoch_float(
-              PrnId{static_cast<uint8_t>(prn_id)},
-              static_cast<uint16_t>(epoch_idx),
-              static_cast<int8_t>(data_symbol),
-              sample_rate,
-              std::span<float>(dst, n_out * 2),
-              written);
-          if (status != SignalGenStatus::kOk)
-            throw nb::value_error("generate_iq_epoch_float failed");
-          return out;
-        },
-        "prn_id"_a, "epoch_idx"_a, "data_symbol"_a = 1, "sample_rate"_a = kNativeSampleRateHz,
-        "Generate one 2 ms epoch as float32 with optional resampling.");
+  m.def(
+      "generate_iq_epoch_float",
+      [](int prn_id, int epoch_idx, int data_symbol, double sample_rate) {
+        const auto n_native = static_cast<size_t>(kIqSamplesPerEpoch);
+        const bool is_native = (std::fabs(sample_rate - kNativeSampleRateHz) < 1.0) ||
+                               (sample_rate <= 0.0);
+        const size_t n_out =
+            is_native ? n_native
+                      : static_cast<size_t>(std::lround(static_cast<double>(n_native) *
+                                                        sample_rate / kNativeSampleRateHz));
+        auto [out, dst] = make_numpy_2d<float>(n_out, 2);
+        size_t written = 0;
+        auto status = generate_iq_epoch_float(PrnId{static_cast<uint8_t>(prn_id)},
+                                              static_cast<uint16_t>(epoch_idx),
+                                              static_cast<int8_t>(data_symbol),
+                                              sample_rate,
+                                              std::span<float>(dst, n_out * 2),
+                                              written);
+        if (status != SignalGenStatus::kOk)
+          throw nb::value_error("generate_iq_epoch_float failed");
+        return out;
+      },
+      "prn_id"_a,
+      "epoch_idx"_a,
+      "data_symbol"_a = 1,
+      "sample_rate"_a = kNativeSampleRateHz,
+      "Generate one 2 ms epoch as float32 with optional resampling.");
 
-  m.def("generate_iq_frame_native",
-        [](int prn_id, ndarray_1d frame_symbols) {
-          if (frame_symbols.shape(0) != kEpochsPerFrame)
-            throw nb::value_error("frame_symbols must be 6000 elements");
-          auto [out, dst] = make_numpy_2d<int16_t>(
-              static_cast<size_t>(kEpochsPerFrame) * kIqSamplesPerEpoch, 2);
-          auto status = generate_iq_frame(
-              PrnId{static_cast<uint8_t>(prn_id)},
-              checked_span<uint8_t>(frame_symbols, "frame_symbols"),
-              std::span<int16_t>(dst, kIqPairsPerFrame));
-          if (status != SignalGenStatus::kOk)
-            throw nb::value_error("generate_iq_frame failed");
-          return out;
-        },
-        "prn_id"_a, "frame_symbols"_a,
-        "Generate a full 12 s frame of interleaved I/Q at native rate (int16).");
+  m.def(
+      "generate_iq_frame_native",
+      [](int prn_id, ndarray_1d frame_symbols) {
+        if (frame_symbols.shape(0) != kEpochsPerFrame)
+          throw nb::value_error("frame_symbols must be 6000 elements");
+        auto [out, dst] =
+            make_numpy_2d<int16_t>(static_cast<size_t>(kEpochsPerFrame) * kIqSamplesPerEpoch, 2);
+        auto status = generate_iq_frame(PrnId{static_cast<uint8_t>(prn_id)},
+                                        checked_span<uint8_t>(frame_symbols, "frame_symbols"),
+                                        std::span<int16_t>(dst, kIqPairsPerFrame));
+        if (status != SignalGenStatus::kOk)
+          throw nb::value_error("generate_iq_frame failed");
+        return out;
+      },
+      "prn_id"_a,
+      "frame_symbols"_a,
+      "Generate a full 12 s frame of interleaved I/Q at native rate (int16).");
 
-  m.def("generate_iq_frame_float",
-        [](int prn_id, ndarray_1d frame_symbols, double sample_rate) {
-          if (frame_symbols.shape(0) != kEpochsPerFrame)
-            throw nb::value_error("frame_symbols must be 6000 elements");
-          const auto n_native = static_cast<size_t>(kIqSamplesPerEpoch);
-          const bool is_native =
-              (std::fabs(sample_rate - kNativeSampleRateHz) < 1.0) || (sample_rate <= 0.0);
-          const size_t n_out_per_epoch = is_native
-              ? n_native
-              : static_cast<size_t>(std::lround(
-                    static_cast<double>(n_native) * sample_rate / kNativeSampleRateHz));
-          const size_t total_rows = n_out_per_epoch * kEpochsPerFrame;
-          const size_t total_floats = total_rows * 2;
-          auto [out, dst] = make_numpy_2d<float>(total_rows, 2);
-          size_t written = 0;
-          auto status = generate_iq_frame_float(
-              PrnId{static_cast<uint8_t>(prn_id)},
-              checked_span<uint8_t>(frame_symbols, "frame_symbols"),
-              sample_rate,
-              std::span<float>(dst, total_floats),
-              written);
-          if (status != SignalGenStatus::kOk)
-            throw nb::value_error("generate_iq_frame_float failed");
-          return out;
-        },
-        "prn_id"_a, "frame_symbols"_a, "sample_rate"_a,
-        "Generate a full 12 s frame as float32 with optional resampling.");
+  m.def(
+      "generate_iq_frame_float",
+      [](int prn_id, ndarray_1d frame_symbols, double sample_rate) {
+        if (frame_symbols.shape(0) != kEpochsPerFrame)
+          throw nb::value_error("frame_symbols must be 6000 elements");
+        const auto n_native = static_cast<size_t>(kIqSamplesPerEpoch);
+        const bool is_native = (std::fabs(sample_rate - kNativeSampleRateHz) < 1.0) ||
+                               (sample_rate <= 0.0);
+        const size_t n_out_per_epoch =
+            is_native ? n_native
+                      : static_cast<size_t>(std::lround(static_cast<double>(n_native) *
+                                                        sample_rate / kNativeSampleRateHz));
+        const size_t total_rows = n_out_per_epoch * kEpochsPerFrame;
+        const size_t total_floats = total_rows * 2;
+        auto [out, dst] = make_numpy_2d<float>(total_rows, 2);
+        size_t written = 0;
+        auto status = generate_iq_frame_float(PrnId{static_cast<uint8_t>(prn_id)},
+                                              checked_span<uint8_t>(frame_symbols, "frame_symbols"),
+                                              sample_rate,
+                                              std::span<float>(dst, total_floats),
+                                              written);
+        if (status != SignalGenStatus::kOk)
+          throw nb::value_error("generate_iq_frame_float failed");
+        return out;
+      },
+      "prn_id"_a,
+      "frame_symbols"_a,
+      "sample_rate"_a,
+      "Generate a full 12 s frame as float32 with optional resampling.");
 
   m.attr("IQ_PAIRS_PER_EPOCH") = kIqPairsPerEpoch;
   m.attr("IQ_PAIRS_PER_FRAME") = kIqPairsPerFrame;
@@ -1213,9 +1247,8 @@ tuple[int, int, int, int]
           }
         }
         SyncResult result{};
-        auto status = det.detect(
-            std::span<const float>(rx_symbols.data(), rx_symbols.shape(0)),
-            result);
+        auto status = det.detect(std::span<const float>(rx_symbols.data(), rx_symbols.shape(0)),
+                                 result);
         return nb::make_tuple(result, status);
       },
       "rx_symbols"_a,
@@ -1268,13 +1301,13 @@ tuple[SyncResult, SyncDetectorStatus]
         FrameDecodeResult result{};
         auto workspace = std::make_unique<FrameDecodeWorkspace>();
 
-        const auto status = frame_decode(
-            std::span<const float>(rx_symbols.data(), rx_symbols.shape(0)),
-            result,
-            *workspace,
-            hal,
-            ldpc_iterations,
-            sync_threshold);
+        const auto status =
+            frame_decode(std::span<const float>(rx_symbols.data(), rx_symbols.shape(0)),
+                         result,
+                         *workspace,
+                         hal,
+                         ldpc_iterations,
+                         sync_threshold);
 
         // Copy decoded data into numpy arrays — only when overall status is kOk
         // AND the individual subframe CRC passed.  On any fault, workspace data
@@ -1318,15 +1351,15 @@ tuple[FrameDecodeResult, ndarray, ndarray, ndarray, FrameDecodeStatus]
 
   // ─── AFS-I signal constants (derived from prn.hpp spec values) ──────────
 
-  m.attr("AFS_I_CODE_LENGTH") = kGoldChipLength;                                  // 2046
-  m.attr("AFS_I_CHIP_RATE_HZ") = kAfsIChipRateHz;                                // 1.023e6
+  m.attr("AFS_I_CODE_LENGTH") = kGoldChipLength;  // 2046
+  m.attr("AFS_I_CHIP_RATE_HZ") = kAfsIChipRateHz; // 1.023e6
 
   // PRN code constants
   m.attr("GOLD_CHIP_LENGTH") = kGoldChipLength;
   m.attr("WEIL_10230_CHIP_LENGTH") = kWeil10230ChipLength;
   m.attr("WEIL_1500_CHIP_LENGTH") = kWeil1500ChipLength;
   m.attr("PRN_COUNT") = kPrnCount;
-  m.attr("CHIP_RATE_HZ") = kAfsIChipRateHz;     // 1.023e6 (from prn.hpp)
+  m.attr("CHIP_RATE_HZ") = kAfsIChipRateHz; // 1.023e6 (from prn.hpp)
   // DOPPLER_BIN_SPACING_HZ removed — was V1 correlator constant.
 
   // Signal parameters (signal_parameters.csv)
@@ -1377,8 +1410,10 @@ tuple[FrameDecodeResult, ndarray, ndarray, ndarray, FrameDecodeStatus]
       .value("FAULT_DETECTED", LegendreStatus::kFaultDetected)
       .export_values();
 
-  m.def("legendre_cache_init", []() { return legendre_cache_init(); },
-  R"(Initialise the Legendre sequence cache (POST step).
+  m.def(
+      "legendre_cache_init",
+      []() { return legendre_cache_init(); },
+      R"(Initialise the Legendre sequence cache (POST step).
 
 Generates both sequences (p=10223, p=1499) and verifies against
 golden CRCs.  Must be called before any Weil code generation.
@@ -1389,8 +1424,9 @@ LegendreStatus
     ``OK`` on success; ``FAULT_DETECTED`` if CRC mismatch.
 )");
 
-  m.def("legendre_10223_checksum", &legendre_10223_checksum,
-  R"(CRC-32 checksum of the cached Legendre-10223 sequence.
+  m.def("legendre_10223_checksum",
+        &legendre_10223_checksum,
+        R"(CRC-32 checksum of the cached Legendre-10223 sequence.
 
 Returns
 -------
@@ -1398,8 +1434,9 @@ int
     CRC-32 (IEEE 802.3) checksum.
 )");
 
-  m.def("legendre_1499_checksum", &legendre_1499_checksum,
-  R"(CRC-32 checksum of the cached Legendre-1499 sequence.
+  m.def("legendre_1499_checksum",
+        &legendre_1499_checksum,
+        R"(CRC-32 checksum of the cached Legendre-1499 sequence.
 
 Returns
 -------
@@ -1479,18 +1516,19 @@ int
   // parse_sb2/sb3/sb4: accept nb::ndarray<> (untyped) and validate dtype manually
   // to prevent silent float-to-int truncation bypassing the C++ bit-value guard.
   // nanobind's typed ndarray does implicit dtype conversion, so we must check.
-  m.def("parse_sb2",
-        [](ndarray_1d sb2_data) {
-          Sb2ParseResult result{};
-          auto status = parse_sb2(checked_span<uint8_t>(sb2_data, "sb2_data"), result);
-          if (status == MessageParseStatus::kFaultDetected)
-            throw nb::value_error("parse_sb2: fault detected");
-          if (status != MessageParseStatus::kOk)
-            throw nb::value_error("parse_sb2 failed");
-          return result;
-        },
-        "sb2_data"_a,
-        R"(Parse Subframe 2: extract WN and ITOW fields. [LSIS-AFS-801]
+  m.def(
+      "parse_sb2",
+      [](ndarray_1d sb2_data) {
+        Sb2ParseResult result{};
+        auto status = parse_sb2(checked_span<uint8_t>(sb2_data, "sb2_data"), result);
+        if (status == MessageParseStatus::kFaultDetected)
+          throw nb::value_error("parse_sb2: fault detected");
+        if (status != MessageParseStatus::kOk)
+          throw nb::value_error("parse_sb2 failed");
+        return result;
+      },
+      "sb2_data"_a,
+      R"(Parse Subframe 2: extract WN and ITOW fields. [LSIS-AFS-801]
 
 Parameters
 ----------
@@ -1504,18 +1542,19 @@ Sb2ParseResult
     Parsed result with wn, itow, and data_offset fields.
 )");
 
-  m.def("parse_sb3",
-        [](ndarray_1d sb3_data) {
-          Sb3ParseResult result{};
-          auto status = parse_sb3(checked_span<uint8_t>(sb3_data, "sb3_data"), result);
-          if (status == MessageParseStatus::kFaultDetected)
-            throw nb::value_error("parse_sb3: fault detected");
-          if (status != MessageParseStatus::kOk)
-            throw nb::value_error("parse_sb3 failed");
-          return result;
-        },
-        "sb3_data"_a,
-        R"(Parse Subframe 3: extract type field. [LSIS-AFS-802]
+  m.def(
+      "parse_sb3",
+      [](ndarray_1d sb3_data) {
+        Sb3ParseResult result{};
+        auto status = parse_sb3(checked_span<uint8_t>(sb3_data, "sb3_data"), result);
+        if (status == MessageParseStatus::kFaultDetected)
+          throw nb::value_error("parse_sb3: fault detected");
+        if (status != MessageParseStatus::kOk)
+          throw nb::value_error("parse_sb3 failed");
+        return result;
+      },
+      "sb3_data"_a,
+      R"(Parse Subframe 3: extract type field. [LSIS-AFS-802]
 
 Parameters
 ----------
@@ -1529,18 +1568,19 @@ Sb3ParseResult
     Parsed result with type_raw, type, and data_offset fields.
 )");
 
-  m.def("parse_sb4",
-        [](ndarray_1d sb4_data) {
-          Sb4ParseResult result{};
-          auto status = parse_sb4(checked_span<uint8_t>(sb4_data, "sb4_data"), result);
-          if (status == MessageParseStatus::kFaultDetected)
-            throw nb::value_error("parse_sb4: fault detected");
-          if (status != MessageParseStatus::kOk)
-            throw nb::value_error("parse_sb4 failed");
-          return result;
-        },
-        "sb4_data"_a,
-        R"(Parse Subframe 4: extract type field. [LSIS-AFS-803]
+  m.def(
+      "parse_sb4",
+      [](ndarray_1d sb4_data) {
+        Sb4ParseResult result{};
+        auto status = parse_sb4(checked_span<uint8_t>(sb4_data, "sb4_data"), result);
+        if (status == MessageParseStatus::kFaultDetected)
+          throw nb::value_error("parse_sb4: fault detected");
+        if (status != MessageParseStatus::kOk)
+          throw nb::value_error("parse_sb4 failed");
+        return result;
+      },
+      "sb4_data"_a,
+      R"(Parse Subframe 4: extract type field. [LSIS-AFS-803]
 
 Parameters
 ----------
@@ -1554,15 +1594,16 @@ Sb4ParseResult
     Parsed result with type_raw, type, and data_offset fields.
 )");
 
-  m.def("compute_tot",
-        [](uint16_t wn, uint16_t itow, uint8_t toi, double delta_t_lrt) {
-          return compute_tot(wn, itow, toi, delta_t_lrt);
-        },
-        "wn"_a,
-        "itow"_a,
-        "toi"_a,
-        "delta_t_lrt"_a = 0.0,
-        R"(Compute Time of Transmission per LSIS-720. [LSIS-AFS-810]
+  m.def(
+      "compute_tot",
+      [](uint16_t wn, uint16_t itow, uint8_t toi, double delta_t_lrt) {
+        return compute_tot(wn, itow, toi, delta_t_lrt);
+      },
+      "wn"_a,
+      "itow"_a,
+      "toi"_a,
+      "delta_t_lrt"_a = 0.0,
+      R"(Compute Time of Transmission per LSIS-720. [LSIS-AFS-810]
 
 Formula: t_F = WN * 604800 + ITOW * 1200 + TOI * 12 + delta_t_lrt
 
@@ -1600,10 +1641,10 @@ TotResult
 
   // ─── SISE (Signal-In-Space Error) bindings (Gateway 7) ──────────────────
 
+  using lunalink::core::SisePercentileResult;
+  using lunalink::core::SiseResult;
   using lunalink::core::SiseStatus;
   using lunalink::core::SiseVec;
-  using lunalink::core::SiseResult;
-  using lunalink::core::SisePercentileResult;
 
   nb::enum_<SiseStatus>(m, "SiseStatus")
       .value("OK", SiseStatus::kOk)
@@ -1614,7 +1655,9 @@ TotResult
 
   nb::class_<SiseVec>(m, "SiseVec")
       .def(nb::init<double, double, double, double>(),
-           "x"_a = 0.0, "y"_a = 0.0, "z"_a = 0.0,
+           "x"_a = 0.0,
+           "y"_a = 0.0,
+           "z"_a = 0.0,
            "ct"_a = 0.0)
       .def_rw("x", &SiseVec::x)
       .def_rw("y", &SiseVec::y)
@@ -1633,16 +1676,16 @@ TotResult
       .def_ro("position_pass", &SisePercentileResult::position_pass)
       .def_ro("velocity_pass", &SisePercentileResult::velocity_pass);
 
-  m.def("compute_sise",
-        [](SiseVec pos_true, SiseVec pos_broadcast, SiseVec vel_true, SiseVec vel_broadcast) {
-          return lunalink::core::compute_sise(pos_true, pos_broadcast,
-                                              vel_true, vel_broadcast);
-        },
-        "pos_true"_a,
-        "pos_broadcast"_a,
-        "vel_true"_a,
-        "vel_broadcast"_a,
-        R"(Compute single-epoch SISE per LSIS V1.0 §2.2.2. [LSIS-SISE]
+  m.def(
+      "compute_sise",
+      [](SiseVec pos_true, SiseVec pos_broadcast, SiseVec vel_true, SiseVec vel_broadcast) {
+        return lunalink::core::compute_sise(pos_true, pos_broadcast, vel_true, vel_broadcast);
+      },
+      "pos_true"_a,
+      "pos_broadcast"_a,
+      "vel_true"_a,
+      "vel_broadcast"_a,
+      R"(Compute single-epoch SISE per LSIS V1.0 §2.2.2. [LSIS-SISE]
 
 4-D RSS of (true - broadcast) position+clock and velocity+clock-drift.
 
@@ -1663,24 +1706,25 @@ SiseResult
     Result with status, position_error_m, and velocity_error_mps.
 )");
 
-  m.def("compute_sise_percentile",
-        [](nb::ndarray<const double, nb::ndim<1>, nb::c_contig, nb::device::cpu> pos_errors,
-           nb::ndarray<const double, nb::ndim<1>, nb::c_contig, nb::device::cpu> vel_errors,
-           double percentile) {
-          const auto n = pos_errors.shape(0);
-          if (vel_errors.shape(0) != n) {
-            throw nb::value_error("pos_errors and vel_errors must have same length");
-          }
-          // Create mutable scratch copies — compute_sise_percentile reorders in-place.
-          std::vector<double> pos_copy(pos_errors.data(), pos_errors.data() + n);
-          std::vector<double> vel_copy(vel_errors.data(), vel_errors.data() + n);
-          return lunalink::core::compute_sise_percentile(
-              std::span<double>(pos_copy), std::span<double>(vel_copy), percentile);
-        },
-        "pos_errors_m"_a,
-        "vel_errors_mps"_a,
-        "percentile"_a = 0.95,
-        R"(Compute percentile SISE over N epochs. [LSIS-SISE]
+  m.def(
+      "compute_sise_percentile",
+      [](nb::ndarray<const double, nb::ndim<1>, nb::c_contig, nb::device::cpu> pos_errors,
+         nb::ndarray<const double, nb::ndim<1>, nb::c_contig, nb::device::cpu> vel_errors,
+         double percentile) {
+        const auto n = pos_errors.shape(0);
+        if (vel_errors.shape(0) != n) {
+          throw nb::value_error("pos_errors and vel_errors must have same length");
+        }
+        // Create mutable scratch copies — compute_sise_percentile reorders in-place.
+        std::vector<double> pos_copy(pos_errors.data(), pos_errors.data() + n);
+        std::vector<double> vel_copy(vel_errors.data(), vel_errors.data() + n);
+        return lunalink::core::compute_sise_percentile(
+            std::span<double>(pos_copy), std::span<double>(vel_copy), percentile);
+      },
+      "pos_errors_m"_a,
+      "vel_errors_mps"_a,
+      "percentile"_a = 0.95,
+      R"(Compute percentile SISE over N epochs. [LSIS-SISE]
 
 Parameters
 ----------

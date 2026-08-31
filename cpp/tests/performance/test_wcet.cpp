@@ -43,16 +43,14 @@ namespace {
 // Release build. If a budget flakes on a specific CI runner, bump the
 // number in the test — do NOT loosen the iteration count below ~10,
 // because averaging is what keeps the measurement stable.
-template <typename F>
-double measure_avg_us(F&& f, size_t iters) {
+template <typename F> double measure_avg_us(F&& f, size_t iters) {
   using clock = std::chrono::steady_clock;
   const auto start = clock::now();
   for (size_t i = 0; i < iters; ++i) {
     (void)f();
   }
   const auto end = clock::now();
-  const auto total_us =
-      std::chrono::duration<double, std::micro>(end - start).count();
+  const auto total_us = std::chrono::duration<double, std::micro>(end - start).count();
   return total_us / static_cast<double>(iters);
 }
 
@@ -104,12 +102,12 @@ TEST_CASE("WCET budget: sync_detect (6000 symbols) < 700 µs", "[wcet][wcet-budg
 
   std::array<float, 6000> symbols{};
   for (uint16_t i = 0; i < kSyncLength; ++i) {
-    symbols[i] = (kSyncPattern[i] == 0U) ? 1.0F : -1.0F;  // NOLINT
+    symbols[i] = (kSyncPattern[i] == 0U) ? 1.0F : -1.0F; // NOLINT
   }
 
   SyncResult result{};
-  const double avg_us = measure_avg_us(
-      [&]() { return det.detect(std::span<const float>(symbols), result); }, 50);
+  const double avg_us =
+      measure_avg_us([&]() { return det.detect(std::span<const float>(symbols), result); }, 50);
   INFO("sync_detect (6000 symbols) avg: " << avg_us << " us");
   CHECK(avg_us < 700.0);
 }
@@ -123,7 +121,7 @@ TEST_CASE("WCET budget: LDPC decode SF2 (50 iter) < 4 ms", "[wcet][wcet-budget][
   LdpcEncodeWorkspace enc_ws{};
   (void)ldpc_encode(LdpcSubframe::kSF2, msg_sf2, encoded_sf2, enc_ws);
   for (size_t i = 0; i < 2400; ++i) {
-    soft_sf2[i] = (encoded_sf2[i] == 1U ? -1.0F : 1.0F);  // NOLINT
+    soft_sf2[i] = (encoded_sf2[i] == 1U ? -1.0F : 1.0F); // NOLINT
   }
 
   LdpcWorkspace ws{};
@@ -142,7 +140,7 @@ TEST_CASE("WCET budget: LDPC decode SF3 (50 iter) < 5 ms", "[wcet][wcet-budget][
   LdpcEncodeWorkspace enc_ws{};
   (void)ldpc_encode(LdpcSubframe::kSF3, msg_sf3, encoded_sf3, enc_ws);
   for (size_t i = 0; i < 1740; ++i) {
-    soft_sf3[i] = (encoded_sf3[i] == 1U ? -1.0F : 1.0F);  // NOLINT
+    soft_sf3[i] = (encoded_sf3[i] == 1U ? -1.0F : 1.0F); // NOLINT
   }
 
   LdpcWorkspace ws{};
@@ -152,11 +150,12 @@ TEST_CASE("WCET budget: LDPC decode SF3 (50 iter) < 5 ms", "[wcet][wcet-budget][
   CHECK(avg_us < 5000.0);
 }
 
-TEST_CASE("WCET budget: frame_decode (pseudo-random payload) < 20 ms", "[wcet][wcet-budget][slow]") {
+TEST_CASE("WCET budget: frame_decode (pseudo-random payload) < 20 ms",
+          "[wcet][wcet-budget][slow]") {
   // Observed: 1.75 ms (M-series Release, pseudo-random payload). Budget 20 ms ≈ 11×.
   // This is the end-to-end wall-clock that matters for the 1 s frame cadence:
   // 20 ms gives 50× real-time headroom on the worst-case class.
-  std::mt19937 rng(42);  // NOLINT(cert-msc51-cpp) — deterministic seed
+  std::mt19937 rng(42); // NOLINT(cert-msc51-cpp) — deterministic seed
   auto dist = std::uniform_int_distribution<uint32_t>(0, 1);
   std::array<uint8_t, kSb2DataBits> sb2{};
   std::array<uint8_t, kSb3DataBits> sb3{};
@@ -178,15 +177,15 @@ TEST_CASE("WCET budget: frame_decode (pseudo-random payload) < 20 ms", "[wcet][w
 
   std::array<float, kFrameLength> rx{};
   for (size_t i = 0; i < kFrameLength; ++i) {
-    rx[i] = (tx[i] == 0U) ? 1.0F : -1.0F;  // NOLINT
+    rx[i] = (tx[i] == 0U) ? 1.0F : -1.0F; // NOLINT
   }
 
   NullTelemetryHal hal;
   auto workspace = std::make_unique<FrameDecodeWorkspace>();
   FrameDecodeResult result{};
 
-  const double avg_us = measure_avg_us(
-      [&]() { return frame_decode(rx, result, *workspace, hal); }, 10);
+  const double avg_us = measure_avg_us([&]() { return frame_decode(rx, result, *workspace, hal); },
+                                       10);
   INFO("frame_decode (pseudo-random) avg: " << (avg_us / 1000.0) << " ms");
   CHECK(avg_us < 20000.0);
 }

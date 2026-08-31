@@ -28,7 +28,9 @@ static_assert(sizeof(FaultPacket) == 8U, "FaultPacket must be exactly 8 bytes");
 class ITelemetryHal {
 public:
   virtual void emit(const FaultPacket& pkt) noexcept = 0;
-  virtual ~ITelemetryHal() = default; // NOCOVER(DEAD_BY_DESIGN): compiler-generated destructor vtable entry; always called through derived class destructors
+  virtual ~ITelemetryHal() =
+      default; // NOCOVER(DEAD_BY_DESIGN): compiler-generated destructor vtable entry; always called
+               // through derived class destructors
 };
 // NOLINTEND(hicpp-special-member-functions)
 

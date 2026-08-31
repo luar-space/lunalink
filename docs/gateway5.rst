@@ -18,222 +18,6 @@ All tests must pass with exit code 0.
 
 ----
 
-GD5.1 --- Software Correlator (Acquisition / Tracking)
-------------------------------------------------------
-
-Spec reference: LSIS-AFS-701 through LSIS-AFS-704
-
-The software correlator implements PCPS (Parallel Code Phase Search)
-acquisition and DLL/PLL tracking for AFS-I Gold-2046 spreading codes.
-
-Implementation files:
-
--  ``cpp/include/lunalink/signal/correlator.hpp`` --- public API, types,
-   loop filters, channel struct
--  ``cpp/signal/correlator.cpp`` --- PCPS search, E/P/L correlator,
-   tracking loops, pseudorange computation
-
-Architecture
-~~~~~~~~~~~~
-
-.. list-table::
-   :header-rows: 1
-   :widths: 25 75
-
-   * - Component
-     - Description
-   * - PCPS Acquisition
-     - 2048-pt FFT-based parallel code phase search; circular
-       cross-correlation of received signal with local code replica;
-       Doppler search over |pm|\ 10 kHz in 500 Hz bins
-   * - DLL
-     - Second-order PI loop filter (1 Hz bandwidth); Early-Minus-Late
-       discriminator with 0.5-chip spacing; integrator saturation
-       (±100 chips/s, FMEA FM-068); tracks SCO up to 50 ppm
-       at Ec/N0 = 10 dB (8 Hz BW)
-   * - PLL
-     - Second-order loop filter (15 Hz bandwidth); Costas discriminator;
-       integrator saturation at |pm|\ 2\ |x|\ Doppler range
-   * - Doppler Prior
-     - Pluggable interface (``DopplerPrior``); ``UniformPrior`` shipped;
-       ML-predicted narrowing is an extension point
-   * - Channels
-     - 6 simultaneous channels; per-channel TMR state; pseudorange ring
-       buffer (10-deep)
-
-.. |pm| unicode:: U+00B1
-.. |x| unicode:: U+00D7
-
-API
-~~~
-
-.. code-block:: cpp
-
-   class Correlator {
-   public:
-       explicit Correlator(const DopplerPrior& prior,
-                           ITelemetryHal& hal) noexcept;
-
-       [[nodiscard]] CorrelatorStatus assign_channel(
-           uint8_t ch_idx, PrnId prn_id) noexcept;
-
-       [[nodiscard]] CorrelatorStatus acquire(
-           uint8_t ch_idx,
-           std::span<const std::complex<float>> rx,
-           AcquisitionResult& result) noexcept;
-
-       [[nodiscard]] CorrelatorStatus track(
-           uint8_t ch_idx,
-           std::span<const std::complex<float>> rx) noexcept;
-
-       [[nodiscard]] CorrelatorStatus pseudorange(
-           uint8_t ch_idx, double& out_meters) const noexcept;
-
-       [[nodiscard]] ChannelState channel_state(
-           uint8_t ch_idx) const noexcept;
-
-       [[nodiscard]] const TrackingState& tracking_state(
-           uint8_t ch_idx) const noexcept;
-
-       [[nodiscard]] float data_symbol(
-           uint8_t ch_idx) const noexcept;
-
-       void reset_channel(uint8_t ch_idx) noexcept;
-   };
-
-``data_symbol()`` returns the real part of the prompt correlator arm ---
-the soft-decision data symbol used by the RX pipeline (GD5.3) for frame
-decoding after tracking lock.
-
-Hardening
-~~~~~~~~~
-
-.. list-table::
-   :header-rows: 1
-   :widths: 30 70
-
-   * - Feature
-     - Implementation
-   * - TMR channel state
-     - ``TmrValue<uint8_t>`` on ``ChannelState``; majority vote on every
-       state read; active repair on mismatch
-   * - Legal transition matrix
-     - ``constexpr TransitionMatrix<ChannelState, 8>``; Idle |rarr|
-       Acquiring |rarr| Tracking |rarr| Lost |rarr| Idle; illegal edges
-       rejected with telemetry
-   * - CFI sentinels
-     - 3 independent sentinels: ``prepare_code_replica`` (0xA5A5A5A5),
-       ``pcps_search`` (0xB4B4B4B4), ``correlate_epl`` (0xC3C3C3C3)
-   * - PLL integrator saturation
-     - ``std::clamp`` at |pm|\ ``kMaxPllIntegratorRadS``; prevents runaway
-   * - C/N0 lock detection
-     - Channel declared lost if C/N0 < 25 dB-Hz; prevents false lock
-   * - NaN/Inf guard
-     - ``std::isfinite()`` on code phase after DLL update; kLost on failure
-   * - Bounded code phase wrapping
-     - ``std::fmod`` replaces unbounded ``while`` loop
-   * - SEU-resistant status codes
-     - ``CorrelatorStatus`` and ``ChannelState`` use high Hamming distance
-
-.. |rarr| unicode:: U+2192
-
-FMEA (``docs/assurance/private/fmea.rst``):
-
--  **FM-050**: SEU corrupts channel state TMR triple
--  **FM-051**: Illegal state transition (e.g. kIdle |rarr| kTracking)
--  **FM-052**: CFI sentinel mismatch in acquisition/tracking
--  **FM-053**: PLL integrator runaway
--  **FM-054**: NaN propagation from DLL update
-
-Unit tests
-~~~~~~~~~~
-
-Run: ``task test-cpp`` (file: ``cpp/tests/signal/test_correlator.cpp``, 18 tests)
-
-.. list-table::
-   :header-rows: 1
-   :widths: 45 55
-
-   * - Test case
-     - What it verifies
-   * - FFT forward/inverse recovery
-     - Round-trip preserves input within float tolerance
-   * - FFT dynamic span rejects wrong size
-     - Wrong-size span returns error
-   * - Channel starts in kIdle
-     - Default state after construction
-   * - assign_channel validates index
-     - Out-of-range returns ``kInvalidInput``
-   * - Track on idle channel
-     - Returns ``kNotLocked``
-   * - Pseudorange on idle channel
-     - Returns ``kNotLocked``
-   * - Invalid input sizes rejected
-     - Zero-length or wrong-size spans
-   * - Acquire locks on clean signal
-     - PCPS peak at correct code delay; Doppler = 0 Hz
-   * - Acquire locks with Doppler offset
-     - +2000 Hz Doppler estimated within 500 Hz
-   * - Acquisition fails on noise-only
-     - Returns ``kAcqFailed``; ``locked == false``
-   * - Narrowed prior fallback
-     - Wrong prior falls back to uniform search
-   * - Narrowed prior succeeds when correct
-     - Correct prior narrows search space
-   * - Track updates pseudorange
-     - 5 tracking epochs produce valid pseudorange
-   * - reset_channel returns to kIdle
-     - Channel state reset verified
-   * - Multiple channels independent
-     - Two PRNs acquired simultaneously
-   * - Out-of-range guards
-     - Safe defaults for all accessors with bad index
-   * - tracking_state reflects loop filter outputs
-     - DLL/PLL discriminators, Doppler, C/N0 populated
-   * - UniformPrior returns full 40-bin range
-     - Covers |pm|\ 10 kHz in 500 Hz bins
-
-SWIFI scenarios (``cpp/tests/signal/test_fault_injection.cpp``):
-
--  **FI-16**: Channel state TMR vote corrects single-copy corruption
--  **FI-17**: Illegal transition (kIdle |rarr| kTracking) returns ``kNotLocked``
--  **FI-18**: CFI nominal --- all sentinels pass under clean signal
--  **FI-19**: TMR adversarial --- track survives single-copy state corruption
-
-Channel Impairment Tests
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-Run: ``./build/cpp-tests/test_lunalink "[impairment]"``
-(file: ``cpp/tests/signal/test_channel_impairments.cpp``)
-
-.. list-table::
-   :header-rows: 1
-   :widths: 35 65
-
-   * - Impairment
-     - Validation
-   * - SCO (0--50 ppm)
-     - Second-order DLL tracks constant-rate clock drift; parametric sweep
-       at 0, 1, 5, 10, 20, 50 ppm × 200 epochs; lock maintained, max DLL
-       discriminator < 0.4 chips
-   * - Phase noise (Wiener)
-     - PLL tracks oscillator jitter (variance sweep 0--1e-3 rad²/sample);
-       lock maintained for variance |le|\ 5e-4; combined with 5 kHz Doppler
-   * - Quantization (int16/int8)
-     - Acquisition metric comparison (int16 > 90% of float32, int8 > 80%);
-       200-epoch int8 tracking stability; implementation loss sweep
-
-.. |le| unicode:: U+2264
-
-E2E impairment tests (``cpp/tests/integration/test_e2e_impairments.cpp``):
-int16 and int8 quantized soft symbols through the full
-TX |rarr| sync |rarr| frame_decode |rarr| LDPC |rarr| CRC pipeline.
-
-FMEA: **FM-068** --- DLL integrator runaway (SEU corrupts
-``LoopFilter1::integrator``); mitigated by ``std::clamp`` saturation.
-
-----
-
 GD5.2 --- Sync Pattern Detector
 --------------------------------
 
@@ -309,7 +93,7 @@ Hardening
    * - Secure scrub
      - ``SyncResult`` zeroed on fault path
 
-FMEA (``docs/assurance/private/fmea.rst``):
+FMEA (``docs/assurance/fmea.rst``):
 
 -  **FM-055**: SEU skips CFI milestone in sync detector
 -  **FM-056**: TMR peak offset corrupted
@@ -494,7 +278,7 @@ Hardening
    * - Telemetry on fault
      - ``FaultPacket`` emitted via HAL on CFI violation
 
-FMEA (``docs/assurance/private/fmea.rst``):
+FMEA (``docs/assurance/fmea.rst``):
 
 -  **FM-060**: SEU skips CFI milestone in ``frame_decode()`` (6-milestone counter)
 -  **FM-061**: SEU corrupts ``rx_symbols`` pointer causing aliasing with workspace
@@ -608,27 +392,6 @@ Python wrapper: ``src/lunalink/afs/signal.py``
 
 Type stubs: ``src/lunalink/afs/_afs.pyi``
 
-GD5.1 --- Correlator bindings
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code-block:: python
-
-   from lunalink.afs.signal import (
-       Correlator, UniformPrior,
-       AcquisitionResult, TrackingState,
-       CorrelatorStatus, ChannelState,
-       AFS_I_CODE_LENGTH, FFT_SIZE,
-       SAMPLE_RATE_HZ, CODE_PERIOD_S, MAX_CHANNELS,
-   )
-
-   prior = UniformPrior()
-   corr = Correlator(prior)
-   corr.assign_channel(0, 1)           # channel 0, PRN 1
-   result, status = corr.acquire(0, rx_samples)
-   status = corr.track(0, rx_samples)
-   pr, status = corr.pseudorange(0)
-   sym = corr.data_symbol(0)           # soft data symbol for frame decode
-
 GD5.2 --- Sync detector bindings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -666,18 +429,6 @@ Compliance Cross-Reference
    * - ID
      - Requirement
      - Evidence
-   * - LSIS-AFS-701
-     - PCPS acquisition for AFS-I Gold-2046
-     - ``correlator.cpp`` + ``test_correlator.cpp``
-   * - LSIS-AFS-702
-     - Acquisition: code delay and Doppler estimation
-     - ``correlator.cpp`` [LSIS-AFS-702] tags (3 sites)
-   * - LSIS-AFS-703
-     - Tracking: E/P/L correlation, pseudorange, data symbol
-     - ``correlator.cpp`` [LSIS-AFS-703] tags (2 sites)
-   * - LSIS-AFS-704
-     - Pseudorange measurement from tracking state
-     - ``correlator.cpp`` [LSIS-AFS-704] tag
    * - LSIS-AFS-710
      - Sync pattern detection via 68-symbol cross-correlation
      - ``sync_detector.cpp`` + ``test_sync_detector.cpp``
@@ -710,10 +461,6 @@ Test Summary
      - Tests
      - Tags
      - How to run
-   * - GD5.1 Correlator unit tests
-     - 18
-     - ``[correlator]``
-     - ``task test-cpp``
    * - GD5.2 Sync detector unit tests
      - 13
      - ``[sync]``
@@ -738,8 +485,8 @@ Test Summary
      - 2
      - ``[performance][benchmark]``
      - ``task test-performance``
-   * - SWIFI (GD5 scenarios: FI-16 to FI-23)
-     - 8
+   * - SWIFI (GD5 scenarios: FI-16, FI-19 to FI-23)
+     - 6
      - ``[swifi]``
      - ``task swifi``
 
@@ -747,10 +494,12 @@ All tests pass with exit code 0.
 
 Related documents:
 
--  :doc:`signal/compliance_matrix` --- LSIS-AFS-701 through 710
+-  :doc:`signal/compliance_matrix` --- LSIS-AFS-710
 -  :doc:`signal/architecture` --- module-to-gateway mapping
 -  :doc:`signal/icd` --- formal interface control document
--  :doc:`assurance/public/mission_assurance` --- CFI, TMR, scrubbing patterns
--  :doc:`assurance/private/fmea` --- FM-050 to FM-066 (correlator, sync, frame decode)
--  :doc:`assurance/private/fault_coverage` --- FI-16 to FI-23 SWIFI catalogue
--  :doc:`assurance/private/safety_plan` --- subsystem safety analysis
+-  :doc:`assurance/mission_assurance` --- CFI, TMR, scrubbing patterns
+-  :doc:`assurance/fmea` --- FM-055 to FM-066 (sync, frame decode)
+-  :doc:`assurance/fault_coverage` --- FI-16, FI-19 to FI-23 SWIFI catalogue
+
+.. |rarr| unicode:: U+2192
+.. |x| unicode:: U+00D7

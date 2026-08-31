@@ -35,7 +35,8 @@ CrcStatus crc24_calculate(std::span<const uint8_t> in, std::span<uint8_t, 24ULL>
   for (size_t i = 0; i < in.size(); ++i) {
     i_mir = ~i;
     if (i != (~i_mir)) [[unlikely]] {
-      status = CrcStatus::kFaultDetected; // FIZ-1 // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CFI counter mismatch in accumulation loop
+      status = CrcStatus::kFaultDetected; // FIZ-1 // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CFI counter
+                                          // mismatch in accumulation loop
       break;
     } // NOCOVER_END
 

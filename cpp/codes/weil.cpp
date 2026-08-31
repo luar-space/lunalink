@@ -75,8 +75,7 @@ PrnStatus WeilGenerator::generate_tertiary(PrnId prn_id, std::span<uint8_t> out)
 
   uint32_t cfi_count = 0xA5A5A5A5U;
   for (uint16_t t = 0; t < kTertiaryPrime; ++t) {
-    const auto shifted_t = static_cast<uint16_t>(
-        (static_cast<uint32_t>(t) + k) % kTertiaryPrime);
+    const auto shifted_t = static_cast<uint16_t>((static_cast<uint32_t>(t) + k) % kTertiaryPrime);
     out[t] = static_cast<uint8_t>(legendre[t] ^ legendre[shifted_t]);
     cfi_count++;
     wip_tick();
@@ -102,7 +101,8 @@ PrnStatus WeilGenerator::construct_weil(uint16_t prime,
 
   const auto legendre = get_cached_legendre(prime);
   if (legendre.empty()) [[unlikely]] {
-    secure_scrub(out);                // P0-4: scrub on error // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CFI terminal check in generate
+    secure_scrub(out); // P0-4: scrub on error // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CFI terminal
+                       // check in generate
     return PrnStatus::kFaultDetected; // FIZ-1
   } // NOCOVER_END
 
@@ -115,7 +115,8 @@ PrnStatus WeilGenerator::construct_weil(uint16_t prime,
   for (uint16_t t = 0; t < prime; ++t) {
     t_mir = static_cast<uint16_t>(~t);
     if (t != static_cast<uint16_t>(~t_mir)) [[unlikely]] {
-      secure_scrub(out);                // P0-4: scrub on error // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CFI terminal check in weil10230
+      secure_scrub(out); // P0-4: scrub on error // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CFI terminal
+                         // check in weil10230
       return PrnStatus::kFaultDetected; // FIZ-1
     } // NOCOVER_END
 
@@ -135,7 +136,8 @@ PrnStatus WeilGenerator::construct_weil(uint16_t prime,
   }
 
   if (cfi_count != (0xA5A5A5A5U + prime)) [[unlikely]] {
-    secure_scrub(out);                // P0-4: scrub on error // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CFI terminal check in weil1500
+    secure_scrub(out); // P0-4: scrub on error // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CFI terminal
+                       // check in weil1500
     return PrnStatus::kFaultDetected; // FIZ-1
   } // NOCOVER_END
 

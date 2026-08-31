@@ -11,6 +11,7 @@
 // first row and appends thereafter.
 
 #include "lunalink/signal/fft.hpp"
+
 #include "performance/bench_util.hpp"
 
 #include <catch2/catch_test_macros.hpp>
@@ -38,8 +39,8 @@ namespace {
 
 constexpr size_t kWarmupIters = 32;
 constexpr size_t kMeasureIters = 256;
-constexpr size_t kSamples = 5;          // independent timing samples for stdev
-constexpr size_t kThreadCount = 10;     // matches campaign ThreadPoolExecutor
+constexpr size_t kSamples = 5;      // independent timing samples for stdev
+constexpr size_t kThreadCount = 10; // matches campaign ThreadPoolExecutor
 
 const char* variant_id() {
   const char* v = std::getenv("LUNALINK_BENCH_VARIANT");
@@ -59,15 +60,18 @@ class CsvWriter {
 public:
   explicit CsvWriter(const std::string& path) : path_(path) {}
 
-  void write_row(uint32_t size, const char* backend, const char* mode,
-                 const char* variant, double ns_per_fft, double stdev_ns,
+  void write_row(uint32_t size,
+                 const char* backend,
+                 const char* mode,
+                 const char* variant,
+                 double ns_per_fft,
+                 double stdev_ns,
                  double gflops) {
     lunalink::bench_util::write_csv_header_once(
-        path_, "size,backend,mode,variant,ns_per_fft,stdev_ns,gflops",
-        header_written_);
+        path_, "size,backend,mode,variant,ns_per_fft,stdev_ns,gflops", header_written_);
     std::ofstream f(path_, std::ios::app);
-    f << size << "," << backend << "," << mode << "," << variant << ","
-      << ns_per_fft << "," << stdev_ns << "," << gflops << "\n";
+    f << size << "," << backend << "," << mode << "," << variant << "," << ns_per_fft << ","
+      << stdev_ns << "," << gflops << "\n";
   }
 
 private:
@@ -88,8 +92,7 @@ void fill_deterministic(std::span<std::complex<float>, N> buf, uint32_t seed) {
   }
 }
 
-template <uint32_t N>
-double measure_single_ns(size_t iters) {
+template <uint32_t N> double measure_single_ns(size_t iters) {
   Fft<N> fft;
   std::vector<std::complex<float>> buf(N);
   std::span<std::complex<float>, N> view(buf.data(), N);
@@ -111,8 +114,7 @@ double measure_single_ns(size_t iters) {
 }
 
 
-template <uint32_t N>
-double measure_threaded_ns(size_t iters, size_t n_threads) {
+template <uint32_t N> double measure_threaded_ns(size_t iters, size_t n_threads) {
   // Each thread owns its own Fft + buffer to mirror the campaign's
   // thread-local correlator state.
   std::atomic<bool> go{false};
@@ -142,9 +144,8 @@ double measure_threaded_ns(size_t iters, size_t n_threads) {
         fft.forward(view);
       }
       const auto dur = clock::now() - start;
-      total_ns.fetch_add(
-          std::chrono::duration_cast<std::chrono::nanoseconds>(dur).count(),
-          std::memory_order_relaxed);
+      total_ns.fetch_add(std::chrono::duration_cast<std::chrono::nanoseconds>(dur).count(),
+                         std::memory_order_relaxed);
     });
   }
 
@@ -154,8 +155,7 @@ double measure_threaded_ns(size_t iters, size_t n_threads) {
   }
 
   // Mean per-thread time — represents per-FFT cost under contention.
-  return static_cast<double>(total_ns.load()) /
-         static_cast<double>(iters * n_threads);
+  return static_cast<double>(total_ns.load()) / static_cast<double>(iters * n_threads);
 }
 
 // ─── Sampler with stdev ─────────────────────────────────────────────────────
@@ -165,18 +165,19 @@ struct Sample {
   double stdev_ns;
 };
 
-template <typename F>
-Sample sample_with_stdev(F&& fn) {
+template <typename F> Sample sample_with_stdev(F&& fn) {
   std::vector<double> samples;
   samples.reserve(kSamples);
   for (size_t i = 0; i < kSamples; ++i) {
     samples.push_back(fn());
   }
   double sum = 0.0;
-  for (double s : samples) sum += s;
+  for (double s : samples)
+    sum += s;
   const double mean = sum / static_cast<double>(kSamples);
   double var_sum = 0.0;
-  for (double s : samples) var_sum += (s - mean) * (s - mean);
+  for (double s : samples)
+    var_sum += (s - mean) * (s - mean);
   const double stdev = std::sqrt(var_sum / static_cast<double>(kSamples));
   return {mean, stdev};
 }
@@ -189,8 +190,7 @@ double gflops_for(uint32_t n, double ns_per_fft) {
   return (flops / seconds) * 1e-9;
 }
 
-template <uint32_t N>
-void bench_size(CsvWriter& csv) {
+template <uint32_t N> void bench_size(CsvWriter& csv) {
   // Apple builds use vDSP_DFT_Execute since A2; non-Apple uses the scalar
   // fallback.  Backend label is informational only.
 #ifdef __APPLE__
@@ -200,20 +200,33 @@ void bench_size(CsvWriter& csv) {
 #endif
 
   const auto single = sample_with_stdev([] { return measure_single_ns<N>(kMeasureIters); });
-  csv.write_row(N, backend, "single", variant_id(),
-                single.mean_ns, single.stdev_ns,
+  csv.write_row(N,
+                backend,
+                "single",
+                variant_id(),
+                single.mean_ns,
+                single.stdev_ns,
                 gflops_for(N, single.mean_ns));
 
   const auto threaded =
       sample_with_stdev([] { return measure_threaded_ns<N>(kMeasureIters, kThreadCount); });
-  csv.write_row(N, backend, "thr10", variant_id(),
-                threaded.mean_ns, threaded.stdev_ns,
+  csv.write_row(N,
+                backend,
+                "thr10",
+                variant_id(),
+                threaded.mean_ns,
+                threaded.stdev_ns,
                 gflops_for(N, threaded.mean_ns));
 
   std::printf("  %5u  single=%9.0f ns/fft (±%5.0f, %4.1f GFLOPS)  "
               "thr10=%9.0f ns/fft (±%5.0f, %4.1f GFLOPS)\n",
-              N, single.mean_ns, single.stdev_ns, gflops_for(N, single.mean_ns),
-              threaded.mean_ns, threaded.stdev_ns, gflops_for(N, threaded.mean_ns));
+              N,
+              single.mean_ns,
+              single.stdev_ns,
+              gflops_for(N, single.mean_ns),
+              threaded.mean_ns,
+              threaded.stdev_ns,
+              gflops_for(N, threaded.mean_ns));
 }
 
 } // namespace
@@ -222,8 +235,7 @@ void bench_size(CsvWriter& csv) {
 // catastrophically broken FFT silently masquerading as "10× faster".
 // Forward FFT of an impulse should be all-ones in magnitude (DFT of
 // δ[n] = 1).  Inverse FFT of all-ones should reconstruct the impulse.
-template <uint32_t N>
-void verify_impulse_response() {
+template <uint32_t N> void verify_impulse_response() {
   Fft<N> fft;
   std::vector<std::complex<float>> buf(N);
   std::span<std::complex<float>, N> view(buf.data(), N);
@@ -259,8 +271,7 @@ TEST_CASE("FFT microbench: size × backend × mode grid", "[fft_bench][slow]") {
   verify_impulse_response<65536>();
 
   CsvWriter csv(output_csv_path());
-  std::printf("FFT microbench (variant=%s, output=%s)\n",
-              variant_id(), output_csv_path());
+  std::printf("FFT microbench (variant=%s, output=%s)\n", variant_id(), output_csv_path());
   std::printf("  size  single                                 thr10 (10 concurrent threads)\n");
 
   bench_size<2048>(csv);

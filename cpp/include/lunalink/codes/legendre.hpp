@@ -22,8 +22,8 @@ enum class LegendreStatus : uint8_t {
  * Uses Class A Hardening: CFI sentinels and mirrored calculation.
  */
 [[nodiscard("LegendreStatus reports kInvalidPrime (not in {1499, 3607, 10223, 10243}), "
-              "kOutputTooSmall, and CFI/TMR faults; ignoring it lets a zero/partial "
-              "Legendre sequence propagate to Weil construction")]] LegendreStatus
+            "kOutputTooSmall, and CFI/TMR faults; ignoring it lets a zero/partial "
+            "Legendre sequence propagate to Weil construction")]] LegendreStatus
 generate_legendre_sequence(uint16_t prime, std::span<uint8_t> out) noexcept;
 
 /**
@@ -38,8 +38,8 @@ generate_legendre_sequence(uint16_t prime, std::span<uint8_t> out) noexcept;
  *         mismatch (corrupted generation).
  */
 [[nodiscard("legendre_cache_init returns kFaultDetected on golden-CRC mismatch — a "
-              "corrupted Legendre table at boot is a POST gate; ignoring it would let "
-              "OPERATIONAL be entered with a corrupt cache (SW-SAF-04)")]] LegendreStatus
+            "corrupted Legendre table at boot is a POST gate; ignoring it would let "
+            "OPERATIONAL be entered with a corrupt cache (SW-SAF-04)")]] LegendreStatus
 legendre_cache_init() noexcept;
 
 /**

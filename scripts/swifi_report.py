@@ -6,9 +6,9 @@ Also reconciles scenario count against fault_coverage.rst.
 Usage:
     python3 scripts/swifi_report.py \
         --xml build/swifi/swifi_results.xml \
-        --fault-coverage docs/assurance/private/fault_coverage.rst
+        --fault-coverage docs/assurance/fault_coverage.rst
 
-Output: docs/assurance/private/evidence/swifi_results.json
+Output: docs/assurance/evidence/swifi_results.json
 """
 
 from __future__ import annotations
@@ -195,12 +195,12 @@ def main() -> None:  # noqa: D103
     )
     parser.add_argument(
         "--fault-coverage",
-        default="docs/assurance/private/fault_coverage.rst",
+        default="docs/assurance/fault_coverage.rst",
         help="Path to fault_coverage.rst for count reconciliation",
     )
     parser.add_argument(
         "--output",
-        default="docs/assurance/private/evidence/swifi_results.json",
+        default="docs/assurance/evidence/swifi_results.json",
         help="Output JSON path",
     )
     parser.add_argument(

@@ -1,0 +1,222 @@
+{
+  "generated": "2026-08-31T13:13:17.486242+00:00",
+  "git_sha": "6b8937bac1fd1e53e83ac661b515c105351fc3e0",
+  "scenarios": [
+    {
+      "name": "lunalink_swifi_tests.global/[LSIS-SISE] SWIFI: compute_sise NaN injection \u2014 kInvalidInput, output scrubbed",
+      "status": "PASS",
+      "time_seconds": 0.0
+    },
+    {
+      "name": "lunalink_swifi_tests.global/[LSIS-SISE] SWIFI: compute_sise Inf injection \u2014 kInvalidInput, output scrubbed",
+      "status": "PASS",
+      "time_seconds": 0.0
+    },
+    {
+      "name": "lunalink_swifi_tests.global/[LSIS-SISE] SWIFI: compute_sise clock term injection \u2014 NaN in ct scrubbed",
+      "status": "PASS",
+      "time_seconds": 0.0
+    },
+    {
+      "name": "lunalink_swifi_tests.global/[LSIS-SISE] SWIFI: compute_sise_percentile mismatched spans \u2014 kInvalidInput, output scrubbed",
+      "status": "PASS",
+      "time_seconds": 0.0
+    },
+    {
+      "name": "lunalink_swifi_tests.global/[LSIS-SISE] SWIFI: compute_sise_percentile NaN in data \u2014 kInvalidInput, output scrubbed",
+      "status": "PASS",
+      "time_seconds": 0.0
+    },
+    {
+      "name": "lunalink_swifi_tests.global/[LSIS-SISE] SWIFI: compute_sise_percentile empty data \u2014 kEmptyData, output scrubbed",
+      "status": "PASS",
+      "time_seconds": 0.0
+    },
+    {
+      "name": "lunalink_swifi_tests.global/[LSIS-SISE] SWIFI: compute_sise_percentile invalid percentile \u2014 kInvalidInput, output scrubbed",
+      "status": "PASS",
+      "time_seconds": 0.0
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: FI-01 \u2014 tmr_single_copy_corrupt \u2014 vote() corrects minority copy",
+      "status": "PASS",
+      "time_seconds": 0.0
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: tmr_two_of_three_different \u2014 no majority, recovery fails",
+      "status": "PASS",
+      "time_seconds": 0.0
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: tmr_two_of_three_same \u2014 wrong majority wins",
+      "status": "PASS",
+      "time_seconds": 0.0
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: FI-02 \u2014 tmr_all_copies_same_corrupt \u2014 documents residual risk",
+      "status": "PASS",
+      "time_seconds": 0.0
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: FI-03 \u2014 checked_range_force_beyond_max \u2014 next write saturates",
+      "status": "PASS",
+      "time_seconds": 0.0
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: FI-04 \u2014 cfi_guard_inject_skip \u2014 detect skipped step",
+      "status": "PASS",
+      "time_seconds": 0.0
+    },
+    {
+      "name": "lunalink_swifi_tests.global/[SW-SAF-03] SWIFI: FI-08 \u2014 fsm_illegal_transition \u2014 Zone 3, telemetry packet emitted",
+      "status": "PASS",
+      "time_seconds": 0.0
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: FI-09 \u2014 fsm_two_consecutive_frame_faults \u2014 escalates to kSafeMode",
+      "status": "PASS",
+      "time_seconds": 0.0
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: FI-11 \u2014 saturating_arithmetic_clamp \u2014 CheckedRange clamps out-of-range correctly",
+      "status": "PASS",
+      "time_seconds": 0.0
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: FI-12 \u2014 watchdog_lower_bound_trip \u2014 FaultPacket emitted on under-run",
+      "status": "PASS",
+      "time_seconds": 0.0
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: watchdog_upper_bound_exceeded \u2014 informational detection via inject",
+      "status": "PASS",
+      "time_seconds": 0.0
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: watchdog_zero_tick_starvation \u2014 lower-bound trip on zero ticks",
+      "status": "PASS",
+      "time_seconds": 0.0
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: watchdog_boundary_ticks \u2014 exact t_min and t_max pass",
+      "status": "PASS",
+      "time_seconds": 0.0
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: FI-10 \u2014 fsm_on_frame_fault_from_kSafeMode \u2014 FIZ-3 telemetry, stays in kSafeMode",
+      "status": "PASS",
+      "time_seconds": 0.0
+    },
+    {
+      "name": "lunalink_swifi_tests.global/[SW-SAF-04] SWIFI: post_step2_lut_corrupt \u2014 run_post returns {kFaultDetected, 2}",
+      "status": "PASS",
+      "time_seconds": 0.0
+    },
+    {
+      "name": "lunalink_swifi_tests.global/checksum-golden: print BCH, Weil, and Legendre codebook checksums",
+      "status": "PASS",
+      "time_seconds": 0.009
+    },
+    {
+      "name": "lunalink_swifi_tests.global/[SW-SAF-04] run_post: nominal system returns kPass",
+      "status": "PASS",
+      "time_seconds": 0.011
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: FI-05 \u2014 lut_bit_flip_ldpc_matrix \u2014 integrity check fails",
+      "status": "PASS",
+      "time_seconds": 0.001
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: ldpc_encode_forced_return \u2014 fi_force_status returns injected status",
+      "status": "PASS",
+      "time_seconds": 0.006
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: ldpc_decode_phi_mirror_corruption \u2014 TMR detects corrupted phi_sum_mir",
+      "status": "PASS",
+      "time_seconds": 0.018
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: FI-06 \u2014 aliasing_overlap_modulator \u2014 kFaultDetected before write",
+      "status": "PASS",
+      "time_seconds": 0.0
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: FI-07 \u2014 aliasing_overlap_iq_mux \u2014 kFaultDetected before write",
+      "status": "PASS",
+      "time_seconds": 0.01
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: sync_detector_cfi_skip \u2014 injected milestone skip fires kFaultDetected",
+      "status": "PASS",
+      "time_seconds": 0.001
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: sync_detector_tmr_peak \u2014 vote repairs single-copy offset corruption",
+      "status": "PASS",
+      "time_seconds": 0.001
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: sync_detector_cfi_recovery \u2014 clean detection after injected fault",
+      "status": "PASS",
+      "time_seconds": 0.002
+    },
+    {
+      "name": "lunalink_swifi_tests.global/[LSIS-AFS-601] SWIFI: aliasing_overlap_frame_build_partial \u2014 kFaultDetected before write",
+      "status": "PASS",
+      "time_seconds": 0.003
+    },
+    {
+      "name": "lunalink_swifi_tests.global/[LSIS-AFS-605] SWIFI: aliasing_overlap_frame_build \u2014 kFaultDetected before write",
+      "status": "PASS",
+      "time_seconds": 0.003
+    },
+    {
+      "name": "lunalink_swifi_tests.global/[LSIS-AFS-610] SWIFI: subframe_builder_cfi_milestone_skip \u2014 LDPC LUT fault skips milestone 3",
+      "status": "PASS",
+      "time_seconds": 0.002
+    },
+    {
+      "name": "lunalink_swifi_tests.global/[SW-SAF-01] [LSIS-AFS-606] SWIFI: frame_assembler_cfi_milestone_skip \u2014 LDPC LUT fault skips SB2 milestone",
+      "status": "PASS",
+      "time_seconds": 0.003
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: frame_decode_cfi_skip \u2014 skipped milestone fires kFaultDetected",
+      "status": "PASS",
+      "time_seconds": 0.022
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: subframe_build_sb2_forced_ldpc_fail \u2014 output scrubbed on injected failure",
+      "status": "PASS",
+      "time_seconds": 0.001
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: frame_build_forced_ldpc_fail \u2014 full frame scrubbed on injected failure",
+      "status": "PASS",
+      "time_seconds": 0.006
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: frame_decode_forced_sync_fail \u2014 workspace scrubbed on injected sync failure",
+      "status": "PASS",
+      "time_seconds": 0.008
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: frame_decode_forced_ldpc_fail \u2014 workspace scrubbed on injected LDPC failure",
+      "status": "PASS",
+      "time_seconds": 0.015
+    },
+    {
+      "name": "lunalink_swifi_tests.global/SWIFI: legendre_cbit_scrub_detect \u2014 runtime CRC matches build-time golden (self-signed, catches SEU on cache only)",
+      "status": "PASS",
+      "time_seconds": 0.001
+    }
+  ],
+  "summary": {
+    "total": 42,
+    "passed": 42,
+    "failed": 0,
+    "pass_rate": 100.0
+  }
+}

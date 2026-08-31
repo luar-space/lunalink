@@ -9,8 +9,8 @@ namespace {
 
 // Validate IQ mux input sizes and aliasing.
 [[nodiscard]] IqMuxStatus validate_iq_inputs(std::span<const int8_t> i_samples,
-                               std::span<const int8_t> q_samples,
-                               std::span<int16_t> out) noexcept {
+                                             std::span<const int8_t> q_samples,
+                                             std::span<int16_t> out) noexcept {
   if (i_samples.size() < kGoldChipLength || q_samples.size() < kWeil10230ChipLength) [[unlikely]] {
     return IqMuxStatus::kInputTooSmall;
   }
@@ -77,7 +77,8 @@ IqMuxStatus multiplex_iq(std::span<const int8_t> i_samples,
     }
 
     // CFI: Terminal count verification.
-    if (status == IqMuxStatus::kOk && loop_count != kIqSamplesPerEpoch) [[unlikely]] { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH)
+    if (status == IqMuxStatus::kOk && loop_count != kIqSamplesPerEpoch)
+        [[unlikely]] {                      // NOCOVER_BEGIN(DEFENCE_IN_DEPTH)
       status = IqMuxStatus::kFaultDetected; // FIZ-1
     } // NOCOVER_END
 

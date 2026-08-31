@@ -10,7 +10,7 @@ on:
 
 # NOTE: This workflow only covers test_lunalink (OSS). Tier 2 receiver tests
 # (test_receiver — full suite) require proprietary code and run locally via
-# `task test-acceptance`. See docs/assurance/private/test_procedures.rst.
+# `task test-acceptance`. See docs/assurance/test_procedures.rst.
 
 jobs:
   acceptance:

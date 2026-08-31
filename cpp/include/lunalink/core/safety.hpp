@@ -77,8 +77,7 @@
  *
  * Replaces `if constexpr (requires { ... })` which MSVC < 17.4 rejects.
  */
-template <typename T, typename U, typename = void>
-struct has_force_set : std::false_type {};
+template <typename T, typename U, typename = void> struct has_force_set : std::false_type {};
 template <typename T, typename U>
 struct has_force_set<T, U, std::void_t<decltype(std::declval<T&>().force_set(std::declval<U>()))>>
     : std::true_type {};
@@ -153,8 +152,8 @@ inline void wip_tick() noexcept {
  * in encoding and signal-processing functions.
  */
 [[nodiscard("spans_overlap returns true when input and output buffers alias; ignoring "
-              "the result permits undefined behaviour from overlapping reads/writes — "
-              "Category-A aliasing guard, do not discard")]] inline bool
+            "the result permits undefined behaviour from overlapping reads/writes — "
+            "Category-A aliasing guard, do not discard")]] inline bool
 spans_overlap(const void* a, size_t a_bytes, const void* b, size_t b_bytes) noexcept {
   if (a == nullptr || b == nullptr) {
     return false;
@@ -174,8 +173,8 @@ spans_overlap(const void* a, size_t a_bytes, const void* b, size_t b_bytes) noex
 // Template return type deduced by compiler — NOLINTNEXTLINE(fuchsia-trailing-return)
 template <typename T, typename U>
 [[nodiscard("spans_overlap returns true when input and output spans alias; ignoring "
-              "the result permits undefined behaviour from overlapping reads/writes — "
-              "Category-A aliasing guard, do not discard")]] inline bool
+            "the result permits undefined behaviour from overlapping reads/writes — "
+            "Category-A aliasing guard, do not discard")]] inline bool
 spans_overlap(std::span<T> a, std::span<U> b) noexcept {
   return spans_overlap(static_cast<const void*>(a.data()),
                        a.size_bytes(),
@@ -421,8 +420,8 @@ public:
     LUNALINK_CRITICAL_EXIT;
   }
   [[nodiscard("CfiGuard.verify() returns false when the count differs from the "
-                "expected magic+N terminal value — a skipped tick is a control-flow "
-                "fault; ignoring the result disables the CFI gate entirely")]] bool
+              "expected magic+N terminal value — a skipped tick is a control-flow "
+              "fault; ignoring the result disables the CFI gate entirely")]] bool
   verify() const noexcept {
     return count_ == expected_;
   }
@@ -450,7 +449,8 @@ template <typename State, size_t N> class TransitionMatrix {
 public:
   constexpr TransitionMatrix() noexcept : edges_{}, count_(0) {}
 
-  constexpr void add(State from, State to) noexcept { // NOCOVER_BEGIN(CONSTEXPR_INIT): called during constinit static initialization
+  constexpr void add(State from, State to) noexcept { // NOCOVER_BEGIN(CONSTEXPR_INIT): called
+                                                      // during constinit static initialization
     if (count_ < N) {
       // Index bounds-checked by guard clause above —
       // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
@@ -459,8 +459,8 @@ public:
   } // NOCOVER_END
 
   [[nodiscard("is_legal returns false for unregistered FSM edges — an illegal "
-                "transition is a CFI fault; ignoring the result disables the legal-edge "
-                "gate (SW-SAF-02, FIZ-3)")]] bool
+              "transition is a CFI fault; ignoring the result disables the legal-edge "
+              "gate (SW-SAF-02, FIZ-3)")]] bool
   is_legal(State from, State to) const noexcept {
     const auto f = static_cast<uint8_t>(from);
     const auto t = static_cast<uint8_t>(to);

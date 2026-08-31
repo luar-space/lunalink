@@ -572,6 +572,6 @@ Related documents:
 -  :doc:`signal/architecture` --- module-to-gateway mapping
 -  :doc:`signal/signal_chain` --- transmitter block diagram
 -  :doc:`signal/icd` --- formal interface control document
--  :doc:`assurance/public/mission_assurance` --- CFI, secure scrub, pessimistic default
--  :doc:`assurance/private/fmea` --- frame builder failure modes (FM-005)
--  :doc:`assurance/private/fault_coverage` --- SWIFI scenario catalogue (FI-13, FI-14)
+-  :doc:`assurance/mission_assurance` --- CFI, secure scrub, pessimistic default
+-  :doc:`assurance/fmea` --- frame builder failure modes (FM-005)
+-  :doc:`assurance/fault_coverage` --- SWIFI scenario catalogue (FI-13, FI-14)

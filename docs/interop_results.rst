@@ -12,6 +12,14 @@ Cross-Implementation Interoperability Results
 
 **Reference:** Sobukawa & Ebinuma, *Aerospace* 12(7), 2025
 
+.. note::
+
+   **To reproduce every result on this page:** ``task interop``
+
+   It clones and builds LANS-AFS-SIM on first run, then executes the
+   cross-checks below.  No manual setup, no credentials, no vendored
+   third-party source in this repository.
+
 Summary
 -------
 

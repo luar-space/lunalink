@@ -3410,10 +3410,12 @@ namespace lunalink::signal {
 
 bool LdpcCsrMatrix::verify_integrity() const noexcept {
   if (col_indices.empty() || row_ptr.empty()) {
-    return false; // NOCOVER(DEFENCE_IN_DEPTH): requires corrupted .rodata — matrix dimensions baked-in as constinit
+    return false; // NOCOVER(DEFENCE_IN_DEPTH): requires corrupted .rodata — matrix dimensions
+                  // baked-in as constinit
   }
   if (row_ptr.size() != static_cast<size_t>(num_rows) + 1U) {
-    return false; // NOCOVER(DEFENCE_IN_DEPTH): requires corrupted .rodata — matrix dimensions baked-in as constinit
+    return false; // NOCOVER(DEFENCE_IN_DEPTH): requires corrupted .rodata — matrix dimensions
+                  // baked-in as constinit
   }
   if (col_indices.size() != num_entries) {
     return false;

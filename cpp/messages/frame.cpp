@@ -80,7 +80,7 @@ FrameStatus frame_build_partial(Fid fid,
         workspace.staging,
         out.subspan<kSyncLength + static_cast<size_t>(kSb1Length), kPayloadLength>());
     if (int_status != InterleaverStatus::kOk) [[unlikely]] {
-      ok = false; // NOCOVER(DEFENCE_IN_DEPTH): interleaver fault path
+      ok = false;                           // NOCOVER(DEFENCE_IN_DEPTH): interleaver fault path
       status = FrameStatus::kFaultDetected; // FIZ-2
     } else {
       LUNALINK_CRITICAL_ENTER;
@@ -97,7 +97,8 @@ FrameStatus frame_build_partial(Fid fid,
     if (cfi_count == kCfiMagicPartial + 3U) {
       status = FrameStatus::kOk;
     } else {
-      status = FrameStatus::kFaultDetected; // FIZ-2 (CFI violation) // NOCOVER(DEFENCE_IN_DEPTH): CFI terminal check
+      status = FrameStatus::kFaultDetected; // FIZ-2 (CFI violation) // NOCOVER(DEFENCE_IN_DEPTH):
+                                            // CFI terminal check
     }
   }
 
@@ -161,10 +162,9 @@ constexpr uint32_t kCfiMagicFrame = 0x4B4B4B4BU;
 void enforce_spare_bit_pattern(LdpcSubframe type, std::span<uint8_t> msg) noexcept {
   // Defence-in-depth: only SF2 is centrally enforced, and the span must
   // cover the full spare region. Nominal SF2 path passes 1200 bytes.
-  const bool eligible =
-      (type == LdpcSubframe::kSF2) &&
-      // NOCOVER(DEFENCE_IN_DEPTH): SEU guard — not reachable nominally
-      (msg.size() >= static_cast<size_t>(kSb2SpareOffset) + kSb2SpareBits);
+  const bool eligible = (type == LdpcSubframe::kSF2) &&
+                        // NOCOVER(DEFENCE_IN_DEPTH): SEU guard — not reachable nominally
+                        (msg.size() >= static_cast<size_t>(kSb2SpareOffset) + kSb2SpareBits);
   if (eligible) {
     for (uint8_t i = 0; i < kSb2SpareBits; ++i) {
       msg[static_cast<size_t>(kSb2SpareOffset) + i] = static_cast<uint8_t>(i % 2U);
@@ -289,7 +289,8 @@ encode_bch_header(Fid fid, Toi toi, std::span<uint8_t> sb1_out, FrameStatus& sta
     if (cfi_count == kCfiMagicSb + 3U) {
       status = FrameStatus::kOk;
     } else {
-      status = FrameStatus::kFaultDetected; // FIZ-1 (CFI violation) // NOCOVER(DEFENCE_IN_DEPTH): CFI terminal check in subframe_build_ldpc
+      status = FrameStatus::kFaultDetected; // FIZ-1 (CFI violation) // NOCOVER(DEFENCE_IN_DEPTH):
+                                            // CFI terminal check in subframe_build_ldpc
     }
   }
 
@@ -438,7 +439,8 @@ FrameStatus frame_build(Fid fid,
     if (cfi_count == kCfiMagicFrame + 6U) {
       status = FrameStatus::kOk;
     } else {
-      status = FrameStatus::kFaultDetected; // FIZ-2 (CFI violation) // NOCOVER(DEFENCE_IN_DEPTH): CFI terminal check in frame_build
+      status = FrameStatus::kFaultDetected; // FIZ-2 (CFI violation) // NOCOVER(DEFENCE_IN_DEPTH):
+                                            // CFI terminal check in frame_build
     }
   }
 

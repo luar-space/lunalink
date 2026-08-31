@@ -1,0 +1,343 @@
+{
+  "generated": "2026-08-31T13:13:10.511020+00:00",
+  "git_sha": "6b8937bac1fd1e53e83ac661b515c105351fc3e0",
+  "requirements": {
+    "LSIS-AFS-101": {
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/codes/gold.hpp",
+        "cpp/include/lunalink/codes/prn.hpp"
+      ],
+      "test_files": [
+        "cpp/tests/codes/test_prn.cpp",
+        "cpp/tests/codes/test_prn_generators.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-AFS-102": {
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/codes/prn.hpp",
+        "cpp/include/lunalink/codes/weil.hpp"
+      ],
+      "test_files": [
+        "cpp/tests/codes/test_prn.cpp",
+        "cpp/tests/codes/test_prn_generators.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-AFS-201": {
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/signal/modulator.hpp"
+      ],
+      "test_files": [
+        "cpp/tests/signal/test_modulator.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-AFS-300": {
+      "code_files": [
+        "cpp/messages/frame.cpp",
+        "cpp/messages/message_parser.cpp"
+      ],
+      "test_files": [
+        "cpp/tests/messages/test_frame.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-AFS-301": {
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/signal/iq_mux.hpp",
+        "cpp/include/lunalink/signal/signal_gen.hpp",
+        "cpp/signal/iq_mux.cpp"
+      ],
+      "test_files": [
+        "cpp/tests/signal/test_iq_mux.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-AFS-320": {
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/encoding/ldpc_tables.cpp",
+        "cpp/include/lunalink/encoding/ldpc.hpp",
+        "cpp/include/lunalink/encoding/ldpc_tables.hpp",
+        "cpp/include/lunalink/messages/message_parser.hpp",
+        "cpp/messages/message_parser.cpp"
+      ],
+      "test_files": [
+        "cpp/tests/encoding/test_ldpc.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-AFS-321": {
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/encoding/ldpc.cpp",
+        "cpp/include/lunalink/encoding/ldpc.hpp"
+      ],
+      "test_files": [
+        "cpp/tests/encoding/test_ldpc.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-AFS-401": {
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/codes/matched_code.cpp",
+        "cpp/include/lunalink/codes/matched_code.hpp"
+      ],
+      "test_files": [
+        "cpp/tests/codes/test_matched_code.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-AFS-467": {
+      "code_files": [
+        "cpp/include/lunalink/encoding/crc.hpp"
+      ],
+      "test_files": [
+        "cpp/tests/encoding/test_crc.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-AFS-470": {
+      "code_files": [
+        "cpp/include/lunalink/encoding/interleaver.hpp"
+      ],
+      "test_files": [
+        "cpp/tests/encoding/test_interleaver.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-AFS-471": {
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/encoding/interleaver.cpp",
+        "cpp/include/lunalink/encoding/interleaver.hpp"
+      ],
+      "test_files": [
+        "cpp/tests/encoding/test_interleaver.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-AFS-501": {
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/encoding/bch.hpp"
+      ],
+      "test_files": [
+        "cpp/tests/encoding/test_bch.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-AFS-601": {
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/messages/frame.hpp",
+        "cpp/messages/frame.cpp"
+      ],
+      "test_files": [
+        "cpp/tests/messages/test_frame.cpp",
+        "cpp/tests/messages/test_swifi_messages.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-AFS-602": {
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/messages/frame.hpp"
+      ],
+      "test_files": [
+        "cpp/tests/messages/test_frame.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-AFS-603": {
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/messages/frame.hpp"
+      ],
+      "test_files": [
+        "cpp/tests/messages/test_frame.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-AFS-604": {
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/messages/frame.hpp"
+      ],
+      "test_files": [
+        "cpp/tests/messages/test_frame.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-AFS-605": {
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/messages/frame.hpp"
+      ],
+      "test_files": [
+        "cpp/tests/messages/test_frame.cpp",
+        "cpp/tests/messages/test_swifi_messages.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-AFS-606": {
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/messages/frame.hpp"
+      ],
+      "test_files": [
+        "cpp/tests/messages/test_swifi_messages.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-AFS-610": {
+      "code_files": [
+        "cpp/messages/frame.cpp"
+      ],
+      "test_files": [
+        "cpp/tests/messages/test_swifi_messages.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-AFS-710": {
+      "code_files": [
+        "cpp/include/lunalink/signal/sync_detector.hpp",
+        "cpp/signal/sync_detector.cpp"
+      ],
+      "test_files": [
+        "cpp/tests/signal/test_sync_detector.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-AFS-720": {
+      "code_files": [
+        "cpp/include/lunalink/messages/frame_decode.hpp",
+        "cpp/messages/frame_decode.cpp"
+      ],
+      "test_files": [
+        "cpp/tests/integration/test_e2e.cpp",
+        "cpp/tests/messages/test_frame.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-AFS-801": {
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/messages/message_parser.hpp",
+        "cpp/messages/message_parser.cpp"
+      ],
+      "test_files": [
+        "cpp/tests/messages/test_message_parser.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-AFS-802": {
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/messages/message_parser.hpp",
+        "cpp/messages/message_parser.cpp"
+      ],
+      "test_files": [
+        "cpp/tests/messages/test_message_parser.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-AFS-803": {
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/messages/message_parser.hpp",
+        "cpp/messages/message_parser.cpp"
+      ],
+      "test_files": [
+        "cpp/tests/messages/test_message_parser.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-AFS-810": {
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/messages/time_of_transmission.hpp",
+        "cpp/messages/time_of_transmission.cpp"
+      ],
+      "test_files": [
+        "cpp/tests/integration/test_e2e.cpp",
+        "cpp/tests/messages/test_time_of_transmission.cpp"
+      ],
+      "covered": true
+    },
+    "LSIS-SISE": {
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/core/sise.cpp",
+        "cpp/include/lunalink/core/sise.hpp"
+      ],
+      "test_files": [
+        "cpp/tests/core/test_sise.cpp",
+        "cpp/tests/core/test_swifi_core.cpp"
+      ],
+      "covered": true
+    },
+    "SW-SAF-01": {
+      "code_files": [
+        "cpp/include/lunalink/messages/frame.hpp"
+      ],
+      "test_files": [
+        "cpp/tests/messages/test_swifi_messages.cpp"
+      ],
+      "covered": true
+    },
+    "SW-SAF-02": {
+      "code_files": [
+        "cpp/include/lunalink/core/safety.hpp"
+      ],
+      "test_files": [
+        "cpp/tests/platform/test_safety.cpp"
+      ],
+      "covered": true
+    },
+    "SW-SAF-03": {
+      "code_files": [
+        "cpp/include/lunalink/core/telemetry.hpp"
+      ],
+      "test_files": [
+        "cpp/tests/platform/test_swifi_platform.cpp"
+      ],
+      "covered": true
+    },
+    "SW-SAF-04": {
+      "code_files": [
+        "cpp/include/lunalink/platform/post.hpp"
+      ],
+      "test_files": [
+        "cpp/tests/platform/test_swifi_platform.cpp"
+      ],
+      "covered": true
+    },
+    "SW-SAF-06": {
+      "code_files": [
+        "cpp/encoding/ldpc.cpp",
+        "cpp/include/lunalink/core/safety.hpp",
+        "cpp/include/lunalink/encoding/ldpc.hpp",
+        "cpp/include/lunalink/messages/frame_decode.hpp",
+        "cpp/messages/frame_decode.cpp"
+      ],
+      "test_files": [
+        "cpp/tests/platform/test_safety.cpp"
+      ],
+      "covered": true
+    }
+  },
+  "orphaned_test_tags": [],
+  "summary": {
+    "total_requirements": 31,
+    "covered": 31,
+    "uncovered": 0,
+    "coverage_pct": 100.0
+  }
+}

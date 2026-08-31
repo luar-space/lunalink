@@ -164,32 +164,7 @@ endif()
 # --- Proprietary Receiver Library ---
 # Multi-signal receiver code (GPS, Galileo, BeiDou). Export-excluded.
 # Same flight flags as lunalink_core (-fno-exceptions, -fno-rtti).
-option(BUILD_PROPRIETARY "Build proprietary receiver library" ON)
 
-if(BUILD_PROPRIETARY AND EXISTS "${CMAKE_SOURCE_DIR}/cpp/proprietary")
-    add_library(lunalink_proprietary
-        cpp/proprietary/codes/gold_gps.cpp
-        cpp/proprietary/codes/gps_l5.cpp
-        cpp/proprietary/codes/bds_b1c.cpp
-        cpp/proprietary/codes/galileo_e1.cpp
-        cpp/proprietary/codes/galileo_e5a.cpp
-        cpp/proprietary/codes/secondary_codes.cpp
-        cpp/proprietary/codes/qzss_sbas.cpp
-        cpp/proprietary/signal/correlator.cpp
-    )
-    target_include_directories(lunalink_proprietary PUBLIC cpp/proprietary)
-    target_link_libraries(lunalink_proprietary PUBLIC lunalink_core)
-    set_target_properties(lunalink_proprietary PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    target_compile_options(lunalink_proprietary PRIVATE ${LUNALINK_WARNING_FLAGS} ${LUNALINK_CORE_FLAGS})
-    target_link_options(lunalink_proprietary PRIVATE ${LUNALINK_LINKER_FLAGS})
-
-    if(LUNALINK_BENCH_COUNT_FFTS)
-        target_compile_definitions(lunalink_proprietary PUBLIC LUNALINK_BENCH_COUNT_FFTS=1)
-    endif()
-    if(LUNALINK_DEV_RX_FFT_CACHE)
-        target_compile_definitions(lunalink_proprietary PUBLIC LUNALINK_DEV_RX_FFT_CACHE=1)
-    endif()
-endif()
 
 # --- Python Bindings ---
 if(BUILD_PYTHON_BINDINGS)
@@ -219,14 +194,6 @@ if(BUILD_PYTHON_BINDINGS)
     # --- Proprietary Receiver Bindings ---
     # Note: binding code requires exceptions (throw nb::value_error etc.),
     #   so LUNALINK_CORE_FLAGS (-fno-exceptions -fno-rtti) is NOT applied here.
-    if(BUILD_PROPRIETARY AND TARGET lunalink_proprietary)
-        nanobind_add_module(_receiver NB_STATIC NB_SUPPRESS_WARNINGS
-            cpp/proprietary/bindings/receiver_module.cpp)
-        target_link_libraries(_receiver PRIVATE lunalink_proprietary)
-        target_include_directories(_receiver PRIVATE cpp/proprietary)
-        target_compile_options(_receiver PRIVATE ${LUNALINK_WARNING_FLAGS})
-        install(TARGETS _receiver DESTINATION lunalink/receiver)
-    endif()
 endif()
 
 # --- Unit Tests ---
@@ -324,58 +291,10 @@ if(BUILD_TESTING)
         )
     endif()
     # --- Proprietary SWIFI tests (requires both FAULT_INJECTION and PROPRIETARY) ---
-    if(BUILD_PROPRIETARY AND TARGET lunalink_proprietary)
-        add_executable(receiver_swifi_tests
-            cpp/proprietary/tests/signal/test_swifi_correlator.cpp
-        )
-        target_link_libraries(receiver_swifi_tests PRIVATE lunalink_proprietary Catch2::Catch2WithMain)
-        target_include_directories(receiver_swifi_tests PRIVATE cpp/proprietary)
-        target_compile_options(receiver_swifi_tests PRIVATE ${LUNALINK_WARNING_FLAGS}
-            $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Wno-c2y-extensions>)
-        target_compile_definitions(receiver_swifi_tests PRIVATE LUNALINK_FAULT_INJECTION=1)
-
-        if(CATCH_MODULE_FOUND)
-            catch_discover_tests(receiver_swifi_tests
-                TEST_SPEC ""
-                TEST_PREFIX "receiver_swifi."
-                PROPERTIES LABELS swifi
-            )
-        endif()
-    endif()
 
     endif() # LUNALINK_FAULT_INJECTION
 
     # --- Proprietary Receiver Tests ---
-    if(BUILD_PROPRIETARY AND TARGET lunalink_proprietary)
-        add_executable(test_receiver
-            cpp/proprietary/tests/codes/test_gold_gps.cpp
-            cpp/proprietary/tests/codes/test_gps_l5.cpp
-            cpp/proprietary/tests/codes/test_bds_b1c.cpp
-            cpp/proprietary/tests/codes/test_galileo_e1.cpp
-            cpp/proprietary/tests/codes/test_galileo_e5a.cpp
-            cpp/proprietary/tests/codes/test_qzss_sbas.cpp
-            cpp/proprietary/tests/codes/test_swifi_codegen.cpp
-            cpp/proprietary/tests/signal/test_signal_config.cpp
-            cpp/proprietary/tests/signal/test_fft_sizes.cpp
-            cpp/proprietary/tests/signal/test_correlator.cpp
-            $<$<BOOL:${LUNALINK_BENCH_COUNT_FFTS}>:cpp/proprietary/tests/signal/acquisition_bench.cpp>
-        )
-        target_link_libraries(test_receiver PRIVATE lunalink_proprietary Catch2::Catch2WithMain)
-        # ``cpp/tests`` is added so the proprietary acquisition_bench can
-        # reuse ``performance/bench_util.hpp`` from the open-source tests/
-        # tree (Lcg + CSV header helper) without duplicating it.
-        target_include_directories(test_receiver PRIVATE cpp/proprietary cpp/tests)
-        target_compile_options(test_receiver PRIVATE ${LUNALINK_WARNING_FLAGS}
-            $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Wno-unknown-warning-option -Wno-c2y-extensions -Wno-pgo-coverage>)
-
-        if(CATCH_MODULE_FOUND)
-            catch_discover_tests(test_receiver
-                TEST_PREFIX "receiver."
-                TEST_SPEC "~[channel]"
-                PROPERTIES LABELS receiver
-            )
-        endif()
-    endif() # BUILD_PROPRIETARY
 
     # AMS parameter sweep tool (proprietary — only builds with AMS decoder)
     # add_executable(ldpc_sweep scripts/ldpc_sweep.cpp)
@@ -518,10 +437,3 @@ if(ENABLE_FUZZING)
     endforeach()
 endif()
 
-# [[private-begin]]
-# --- Proprietary Subsystems (not included in OSS export) ---
-# add_subdirectory(cpp/inference)
-# add_subdirectory(cpp/integrity)
-# add_subdirectory(cpp/hal)
-# add_subdirectory(cpp/fpga)
-# [[private-end]]

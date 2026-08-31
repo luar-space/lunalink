@@ -314,7 +314,7 @@ Hardening
 
 .. |geq| unicode:: U+2265
 
-FMEA (``docs/assurance/private/fmea.rst``):
+FMEA (``docs/assurance/fmea.rst``):
 
 -  **FM-069**: SEU corrupts bit array during ``extract_bits()``
 -  **FM-070**: SEU corrupts SB3/SB4 type field |rarr| wrong message handler
@@ -379,7 +379,7 @@ Run: ``task test-cpp`` (file: ``cpp/tests/messages/test_message_parser.cpp``,
    * - type_field_to_message_type unknown
      - Values 0, 6, 7, 9, 255 all return ``kUnknown``
 
-SWIFI scenarios (planned --- ``docs/assurance/private/fault_coverage.rst``):
+SWIFI scenarios (planned --- ``docs/assurance/fault_coverage.rst``):
 
 -  **FI-37** (planned): CFI skip injection in ``extract_bits()``
 -  **FI-38** (planned): Bit-value injection in ``parse_sb2()``
@@ -757,10 +757,7 @@ Related Documents
 -  :doc:`signal/compliance_matrix` --- LSIS-AFS-801 through 810
 -  :doc:`signal/architecture` --- module-to-gateway mapping
 -  :doc:`signal/icd` --- formal interface control document
--  :doc:`assurance/public/mission_assurance` --- CFI, scrubbing patterns
--  :doc:`assurance/public/c_plus_plus_guidelines` --- coding standard
--  :doc:`assurance/private/fmea` --- FM-069 to FM-072 (Gateway 6)
--  :doc:`assurance/private/fault_coverage` --- FI-37 to FI-40 (planned)
--  :doc:`assurance/private/safety_plan` --- Message Parser + ToT subsystems
--  :doc:`assurance/private/srs` --- LSIS-AFS-801/802/803/810 requirements
--  :doc:`assurance/private/traceability_matrix` --- 26 LSIS-AFS + 5 SW-SAF
+-  :doc:`assurance/mission_assurance` --- CFI, scrubbing patterns
+-  :doc:`assurance/c_plus_plus_guidelines` --- coding standard
+-  :doc:`assurance/fmea` --- FM-069 to FM-072 (Gateway 6)
+-  :doc:`assurance/fault_coverage` --- FI-37 to FI-40 (planned)

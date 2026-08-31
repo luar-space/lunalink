@@ -63,8 +63,8 @@ TEST_CASE("[LSIS-AFS-501] BCH decoder: double error correction (all 1326 pairs)"
   for (size_t i = 0; i < kBchCodewordLength; ++i) {
     for (size_t j = i + 1; j < kBchCodewordLength; ++j) {
       std::array<uint8_t, kBchCodewordLength> codeword = clean;
-      codeword[i] ^= 1U;  // NOLINT(cppcoreguidelines-pro-bounds-constant-array-index)
-      codeword[j] ^= 1U;  // NOLINT(cppcoreguidelines-pro-bounds-constant-array-index)
+      codeword[i] ^= 1U; // NOLINT(cppcoreguidelines-pro-bounds-constant-array-index)
+      codeword[j] ^= 1U; // NOLINT(cppcoreguidelines-pro-bounds-constant-array-index)
 
       const auto result = bch_decode(codeword);
       CAPTURE(i, j);

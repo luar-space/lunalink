@@ -42,7 +42,8 @@ LegendreStatus legendre_cache_init() noexcept {
   // Generate both Legendre sequences.
   const auto s1 = generate_legendre_sequence(kPrime10223, std::span(g_data10223));
   if (s1 != LegendreStatus::kOk) [[unlikely]] {
-    secure_scrub(g_data10223); // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CRC mismatch on Legendre cache init — scrub + return failure
+    secure_scrub(g_data10223); // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CRC mismatch on Legendre cache
+                               // init — scrub + return failure
     secure_scrub(g_data1499);
     secure_scrub(g_data3607);
     secure_scrub(g_data10243);
@@ -52,7 +53,8 @@ LegendreStatus legendre_cache_init() noexcept {
 
   const auto s2 = generate_legendre_sequence(kPrime1499, std::span(g_data1499));
   if (s2 != LegendreStatus::kOk) [[unlikely]] {
-    secure_scrub(g_data10223); // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CRC mismatch on Legendre cache init — scrub + return failure
+    secure_scrub(g_data10223); // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CRC mismatch on Legendre cache
+                               // init — scrub + return failure
     secure_scrub(g_data1499);
     secure_scrub(g_data3607);
     secure_scrub(g_data10243);
@@ -62,7 +64,8 @@ LegendreStatus legendre_cache_init() noexcept {
 
   const auto s2b = generate_legendre_sequence(kPrime3607, std::span(g_data3607));
   if (s2b != LegendreStatus::kOk) [[unlikely]] {
-    secure_scrub(g_data10223); // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CRC mismatch on Legendre cache init — scrub + return failure
+    secure_scrub(g_data10223); // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CRC mismatch on Legendre cache
+                               // init — scrub + return failure
     secure_scrub(g_data1499);
     secure_scrub(g_data3607);
     secure_scrub(g_data10243);
@@ -72,7 +75,8 @@ LegendreStatus legendre_cache_init() noexcept {
 
   const auto s3 = generate_legendre_sequence(kPrime10243, std::span(g_data10243));
   if (s3 != LegendreStatus::kOk) [[unlikely]] {
-    secure_scrub(g_data10223); // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CRC mismatch on Legendre cache init — scrub + return failure
+    secure_scrub(g_data10223); // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CRC mismatch on Legendre cache
+                               // init — scrub + return failure
     secure_scrub(g_data1499);
     secure_scrub(g_data3607);
     secure_scrub(g_data10243);
@@ -85,7 +89,8 @@ LegendreStatus legendre_cache_init() noexcept {
       crc32_ieee_u64(std::span(g_data1499)) != kLegendre1499Checksum ||
       crc32_ieee_u64(std::span(g_data3607)) != kLegendre3607Checksum ||
       crc32_ieee_u64(std::span(g_data10243)) != kLegendre10243Checksum) {
-    secure_scrub(g_data10223); // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CRC mismatch on Legendre cache init — scrub + return failure
+    secure_scrub(g_data10223); // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CRC mismatch on Legendre cache
+                               // init — scrub + return failure
     secure_scrub(g_data1499);
     secure_scrub(g_data3607);
     secure_scrub(g_data10243);
@@ -118,7 +123,8 @@ LegendreStatus generate_legendre_sequence(uint16_t prime, std::span<uint8_t> out
     for (uint16_t x = 1; x < limit; ++x) {
       x_mir = ~static_cast<uint32_t>(x);
       if (static_cast<uint32_t>(x) != (~x_mir)) [[unlikely]] {
-        status = LegendreStatus::kFaultDetected; // FIZ-1 // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CFI counter mismatch in generation loop
+        status = LegendreStatus::kFaultDetected; // FIZ-1 // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CFI
+                                                 // counter mismatch in generation loop
         break;
       } // NOCOVER_END
 
@@ -134,7 +140,8 @@ LegendreStatus generate_legendre_sequence(uint16_t prime, std::span<uint8_t> out
     }
 
     if (cfi_count != (0xA5A5A5A5U + (limit - 1U))) [[unlikely]] {
-      status = LegendreStatus::kFaultDetected; // FIZ-1 // NOCOVER(DEFENCE_IN_DEPTH): CFI terminal check failure
+      status = LegendreStatus::kFaultDetected; // FIZ-1 // NOCOVER(DEFENCE_IN_DEPTH): CFI terminal
+                                               // check failure
     }
   }
 

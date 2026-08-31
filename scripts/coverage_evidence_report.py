@@ -355,7 +355,7 @@ def _generate_rst(  # noqa: C901
     w("")
     w("Coverage Exclusion Justification")
     w("--------------------------------")
-    w("See ``docs/assurance/private/coverage_exclusions.rst`` for per-file")
+    w("See ``docs/assurance/coverage_exclusions.rst`` for per-file")
     w("exclusion rationale. Categories: DEFENCE_IN_DEPTH, HAL_STUB,")
     w("DEAD_BY_DESIGN, PLATFORM_SPECIFIC.")
     w("")

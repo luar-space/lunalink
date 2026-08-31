@@ -42,10 +42,16 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     if (size >= sizeof(float)) {
       std::array<uint8_t, sizeof(float)> raw{};
       for (size_t b = 0; b < raw.size(); ++b) {
+        // Loop index is bounded by the container's own size(), so the access is
+        // provably in range; the check cannot see that through the loop bound.
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
         raw[b] = data[((i * sizeof(float)) + b) % size];
       }
       std::memcpy(&sample, raw.data(), raw.size());
     }
+    // Loop index is bounded by the container's own size(), so the access is
+    // provably in range; the check cannot see that through the loop bound.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
     (*rx)[i] = sample;
   }
 

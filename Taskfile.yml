@@ -94,8 +94,16 @@ tasks:
     cmds:
       - mkdir -p {{.BUILD_DIR}} benchmarks/latest
       - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release -DLUNALINK_BENCH_COUNT_FFTS=ON
-      - cmake --build {{.BUILD_DIR}} --target test_receiver --parallel
-      - LUNALINK_BENCH_OUTPUT_CSV=benchmarks/latest/acquisition_bench.csv {{.BUILD_DIR}}/test_receiver "[acq_bench]" --reporter console
+      - |
+        # [acq_bench] lives in test_receiver, which only exists when
+        # cpp/proprietary/ is present -- absent in the OSS export.
+        if [ ! -d cpp/proprietary ]; then
+          echo "SKIP: bench-acq needs cpp/proprietary/ (not in the OSS export)"
+          exit 0
+        fi
+        cmake --build {{.BUILD_DIR}} --target test_receiver --parallel
+        LUNALINK_BENCH_OUTPUT_CSV=benchmarks/latest/acquisition_bench.csv \
+          "{{.BUILD_DIR}}/test_receiver" "[acq_bench]" --reporter console
 
   bench-fft:
     desc: Run [fft_bench] microbench (size × backend × mode), emit benchmarks/latest/fft_bench.csv.
@@ -117,12 +125,23 @@ tasks:
       BUILD_DIR: build/bench-flags
     cmds:
       - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release -DLUNALINK_BENCH_COUNT_FFTS=ON -DLUNALINK_DEV_RX_FFT_CACHE=ON
-      - cmake --build {{.BUILD_DIR}} --target test_lunalink test_receiver --parallel
+      - |
+        # test_receiver only exists when cpp/proprietary/ is present (see the
+        # BUILD_PROPRIETARY guard in CMakeLists.txt) -- absent in the OSS export.
+        TARGETS="test_lunalink"
+        [ -d cpp/proprietary ] && TARGETS="$TARGETS test_receiver"
+        # shellcheck disable=SC2086
+        cmake --build {{.BUILD_DIR}} --target $TARGETS --parallel
       # Run only the [rx_fft_cache] tests — they're 1–2 acquires each
       # and assert the cache hit-rate contract that the regression
       # gate cannot see (cache is a perf optimisation, not a
       # correctness mechanism).  Excludes [fft_bench] / [acq_bench].
-      - "{{.BUILD_DIR}}/test_receiver \"[rx_fft_cache]\" --reporter compact"
+      - |
+        if [ -x "{{.BUILD_DIR}}/test_receiver" ]; then
+          "{{.BUILD_DIR}}/test_receiver" "[rx_fft_cache]" --reporter compact
+        else
+          echo "SKIP: test_receiver not built (cpp/proprietary/ absent)"
+        fi
 
   bench-baseline-update:
     desc: Promote benchmarks/latest/ → benchmarks/baseline/ (review diff before committing).
@@ -229,6 +248,12 @@ tasks:
           --reporter console \
           --reporter "junit::out={{.BUILD_DIR}}/test-results/lunalink.xml"
       - |
+        # test_receiver is built from cpp/proprietary/tests/, which is absent
+        # from the OSS export.  Skip cleanly there instead of hard-failing.
+        if [ ! -x "{{.BUILD_DIR}}/test_receiver" ]; then
+          echo "SKIP: test_receiver not built (cpp/proprietary/ absent)"
+          exit 0
+        fi
         SHARDS={{.NCPU}}
         PIDS=()
         for i in $(seq 0 $((SHARDS - 1))); do
@@ -245,11 +270,18 @@ tasks:
         done
         exit $RESULT
       - |
+        RECEIVER_ARGS=""
+        if [ -x "{{.BUILD_DIR}}/test_receiver" ]; then
+          RECEIVER_ARGS="--binary {{.BUILD_DIR}}/test_receiver"
+          for f in {{.BUILD_DIR}}/test-results/receiver_shard_*.xml; do
+            [ -f "$f" ] && RECEIVER_ARGS="$RECEIVER_ARGS --xml $f"
+          done
+        fi
+        # shellcheck disable=SC2086
         python3 scripts/check_test_durations.py \
           --xml {{.BUILD_DIR}}/test-results/lunalink.xml \
-          $(for f in {{.BUILD_DIR}}/test-results/receiver_shard_*.xml; do echo "--xml $f"; done) \
+          $RECEIVER_ARGS \
           --binary {{.BUILD_DIR}}/test_lunalink \
-          --binary {{.BUILD_DIR}}/test_receiver \
           --threshold 5.0
     silent: false
 
@@ -271,6 +303,10 @@ tasks:
           --reporter console \
           --reporter "junit::out={{.BUILD_DIR}}/test-results/lunalink_acceptance.xml"
       - |
+        if [ ! -x "{{.BUILD_DIR}}/test_receiver" ]; then
+          echo "SKIP: test_receiver not built (cpp/proprietary/ absent)"
+          exit 0
+        fi
         {{.BUILD_DIR}}/test_receiver \
           --abort --rng-seed {{.RNG_SEED}} \
           --reporter console \
@@ -333,7 +369,8 @@ tasks:
           --suppressions-list=cppcheck.suppressions \
           --template='{file}:{line}: [{severity}] {id}: {message}' \
           --quiet \
-          cpp/include/ cpp/codes/ cpp/encoding/ cpp/messages/ cpp/signal/ cpp/platform/ cpp/proprietary/
+          cpp/include/ cpp/codes/ cpp/encoding/ cpp/messages/ cpp/signal/ cpp/platform/ \
+          $([ -d cpp/proprietary ] && echo cpp/proprietary/)
     silent: false
 
   pyright:
@@ -458,7 +495,12 @@ tasks:
       - cmake -B build/sanitize -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=ON
       - cmake --build build/sanitize --parallel
       - build/sanitize/test_lunalink "~[slow]" --abort
-      - build/sanitize/test_receiver "~[slow]" --abort
+      - |
+        if [ -x build/sanitize/test_receiver ]; then
+          build/sanitize/test_receiver "~[slow]" --abort
+        else
+          echo "SKIP: test_receiver not built (cpp/proprietary/ absent)"
+        fi
     silent: false
 
   fuzz:
@@ -594,8 +636,50 @@ tasks:
       - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DLUNALINK_FAULT_INJECTION=ON
       - cmake --build {{.BUILD_DIR}} --parallel
       - "{{.BUILD_DIR}}/lunalink_swifi_tests --reporter junit::out={{.BUILD_DIR}}/swifi_results.xml --reporter console"
-      - "{{.BUILD_DIR}}/receiver_swifi_tests --reporter junit::out={{.BUILD_DIR}}/receiver_swifi_results.xml --reporter console"
-      - python3 scripts/swifi_report.py --xml {{.BUILD_DIR}}/swifi_results.xml --xml {{.BUILD_DIR}}/receiver_swifi_results.xml
+      - |
+        # receiver_swifi_tests lives in cpp/proprietary/tests/ — absent from the
+        # OSS export, where the published catalogue also omits its FI rows.
+        if [ -x "{{.BUILD_DIR}}/receiver_swifi_tests" ]; then
+          "{{.BUILD_DIR}}/receiver_swifi_tests" \
+            --reporter junit::out={{.BUILD_DIR}}/receiver_swifi_results.xml \
+            --reporter console
+          python3 scripts/swifi_report.py \
+            --xml {{.BUILD_DIR}}/swifi_results.xml \
+            --xml {{.BUILD_DIR}}/receiver_swifi_results.xml
+        else
+          echo "SKIP: receiver_swifi_tests not built (cpp/proprietary/ absent)"
+          python3 scripts/swifi_report.py --xml {{.BUILD_DIR}}/swifi_results.xml
+        fi
+    silent: false
+
+  interop:
+    desc: >-
+      Cross-check against LANS-AFS-SIM, an independent third-party LSIS-AFS
+      implementation. Clones and builds it on first run (BSD-2-Clause).
+    cmds:
+      - |
+        if [ ! -x third_party/LANS-AFS-SIM/dump_lans_codes ] || \
+           [ ! -x third_party/LANS-AFS-SIM/dump_lans_frame ]; then
+          echo "=== Building LANS-AFS-SIM ==="
+          echo "    Source: https://github.com/osqzss/LANS-AFS-SIM (BSD-2-Clause)"
+          echo "    Independent LSIS-AFS implementation by Takuji Ebinuma."
+          echo ""
+          uv run python scripts/interop/build_lans_afs_sim.py
+          echo ""
+        fi
+      - |
+        echo "=== Interoperability cross-check ==="
+        echo "Comparing LunaLink against LANS-AFS-SIM, bit-exact:"
+        echo "  I3  PRN spreading codes  — Gold + Weil, PRN 1..210"
+        echo "  I4  Encoded frames       — BCH + CRC-24 + LDPC + interleaver, 6000 symbols"
+        echo "  I5  Self-consistency     — published test vectors"
+        echo ""
+        uv run pytest --no-cov -q \
+          tests/test_interop_codes.py \
+          tests/test_interop_frames.py \
+          tests/test_interop_self.py
+        echo ""
+        echo "PASS: LunaLink is bit-exact with an independent implementation."
     silent: false
 
   traceability:
@@ -814,13 +898,13 @@ tasks:
       # wipe human-curated assurance RST (FMEA, fault_coverage,
       # safety_plan, etc.) — a previous broad `git checkout
       # docs/assurance` silently nuked FM-109 edits during S1-2b.
-      - git checkout docs/assurance/private/evidence docs/notebooks docs/_static/algo_card
+      - git checkout docs/assurance/evidence docs/notebooks docs/_static/algo_card
     silent: false
 
   recertify:
     desc: >-
       Run all recertification gates locally and write
-      docs/assurance/private/recertification_record.rst.
+      docs/assurance/recertification_record.rst.
       Override defaults with: MILESTONE=PDR REASON="..." AUTHORITY="..."
     vars:
       MILESTONE: '{{default "Periodic" .MILESTONE}}'
@@ -833,125 +917,7 @@ tasks:
       --authority "{{.AUTHORITY}}"
     silent: false
 
-  export-oss:
-    desc: Export an open-source-clean copy of the repository.
-    cmd: uv run python scripts/export_oss.py --output-dir build/oss-export
 
-  validate-export:
-    desc: Export and validate the OSS-clean copy (no private content, Sphinx builds clean).
-    cmds:
-      - task: export-oss
-      - |
-        echo "=== Validating OSS export ==="
-        EXPORT_DIR="build/oss-export"
-
-        # No private/ directories
-        if find "$EXPORT_DIR" -type d -name private 2>/dev/null | grep -q .; then
-          echo "FAIL: private/ directories found in export"
-          find "$EXPORT_DIR" -type d -name private
-          exit 1
-        fi
-        echo "PASS: no private/ directories"
-
-        # No confidential markers (marker split to avoid self-match)
-        MARKER="[[""Confidential - Not for OpenSource""]]"
-        if grep -rF "$MARKER" "$EXPORT_DIR/" --include='*.rst' --include='*.md' --include='*.py' --include='*.yml' --include='*.toml' --include='*.hpp' --include='*.cpp' 2>/dev/null; then
-          echo "FAIL: confidential markers found"
-          exit 1
-        fi
-        echo "PASS: no confidential markers"
-
-        # No private-begin/end blocks
-        if grep -r '\[\[private-begin\]\]' "$EXPORT_DIR/" 2>/dev/null || \
-           grep -r '\[\[private-end\]\]' "$EXPORT_DIR/" 2>/dev/null; then
-          echo "FAIL: private block markers found"
-          exit 1
-        fi
-        echo "PASS: no private block markers"
-
-        # No CLAUDE.md
-        if find "$EXPORT_DIR" -name "CLAUDE.md" | grep -q .; then
-          echo "FAIL: CLAUDE.md found in export"
-          exit 1
-        fi
-        echo "PASS: no CLAUDE.md"
-
-        # No shaping/ docs
-        if find "$EXPORT_DIR" -type d -name shaping | grep -q .; then
-          echo "FAIL: shaping/ directories found"
-          exit 1
-        fi
-        echo "PASS: no shaping/ directories"
-
-        # README.md exists
-        if [ ! -f "$EXPORT_DIR/README.md" ]; then
-          echo "FAIL: README.md not found"
-          exit 1
-        fi
-        echo "PASS: README.md present"
-
-        # No SWIFI test files
-        if find "$EXPORT_DIR" -name "test_swifi*" | grep -q .; then
-          echo "FAIL: SWIFI test files found in export"
-          find "$EXPORT_DIR" -name "test_swifi*"
-          exit 1
-        fi
-        echo "PASS: no SWIFI test files"
-
-        # No fault injection guard in C++ source or headers (split to avoid self-match)
-        FI_GUARD="LUNALINK_FAULT""_INJECTION"
-        if grep -r "$FI_GUARD" "$EXPORT_DIR/" --include='*.hpp' --include='*.cpp' --include='*.h' 2>/dev/null; then
-          echo "FAIL: $FI_GUARD references found in C++ code"
-          exit 1
-        fi
-        echo "PASS: no SWIFI instrumentation in C++ code"
-
-        # No fault injection guard in CMake/build files
-        if grep -r "$FI_GUARD" "$EXPORT_DIR/" --include='CMakeLists.txt' --include='*.cmake' 2>/dev/null; then
-          echo "FAIL: $FI_GUARD references found in CMake files"
-          exit 1
-        fi
-        echo "PASS: no SWIFI references in build system"
-
-        # No proprietary/ directories
-        if find "$EXPORT_DIR" -type d -name proprietary 2>/dev/null | grep -q .; then
-          echo "FAIL: proprietary/ directories found in export"
-          find "$EXPORT_DIR" -type d -name proprietary
-          exit 1
-        fi
-        echo "PASS: no proprietary/ directories"
-
-        # No receiver Python package (src/lunalink/receiver/)
-        if [ -d "$EXPORT_DIR/src/lunalink/receiver" ]; then
-          echo "FAIL: src/lunalink/receiver/ found in export"
-          exit 1
-        fi
-        echo "PASS: no receiver package"
-
-        # No proprietary test file
-        if find "$EXPORT_DIR" -name "test_receiver.py" | grep -q .; then
-          echo "FAIL: test_receiver.py found in export"
-          exit 1
-        fi
-        echo "PASS: no proprietary test files"
-
-        echo "=== All export validation checks passed ==="
-      - |
-        echo "Building Sphinx docs in exported tree..."
-        cd build/oss-export
-        uv sync --group dev
-        uv run python -m sphinx -b html docs/ docs/_build/html -W
-        echo "PASS: Sphinx build succeeded (zero warnings)"
-
-  # [[private-begin]]
-  # --- Private tasks (not included in OSS export) ---
-  # inference-test:
-  #   desc: Run inference engine tests.
-  #   cmd: echo "Not yet implemented"
-  # integrity-test:
-  #   desc: Run integrity monitoring tests.
-  #   cmd: echo "Not yet implemented"
-  # [[private-end]]
 
   format-cpp:
     desc: Format all C++ source files with clang-format.
@@ -971,9 +937,13 @@ tasks:
           echo "clang-format not found. Install LLVM: brew install llvm"
           exit 1
         fi
-        find cpp/ -name '*.cpp' -o -name '*.hpp' | grep -v _deps | \
-          xargs "{{.CLANG_FORMAT}}" -i
-        echo "Formatted $(find cpp/ -name '*.cpp' -o -name '*.hpp' | grep -v _deps | wc -l | tr -d ' ') files"
+        # tool_validation/violations/ files encode deliberate defects
+        # (misleading indentation, missing braces) that clang-format would
+        # "fix", silently breaking scripts/validate_tidy.py.
+        FILES=$(find cpp/ \( -name '*.cpp' -o -name '*.hpp' \) \
+          | grep -v _deps | grep -v 'tool_validation/violations/')
+        echo "$FILES" | xargs "{{.CLANG_FORMAT}}" -i
+        echo "Formatted $(echo "$FILES" | wc -l | tr -d ' ') files"
 
   format-cpp-check:
     desc: Check C++ formatting without modifying files (CI gate).
@@ -993,10 +963,20 @@ tasks:
           echo "clang-format not found. Install LLVM: brew install llvm"
           exit 1
         fi
-        VIOLATIONS=$(find cpp/ -name '*.cpp' -o -name '*.hpp' | grep -v _deps | \
-          xargs "{{.CLANG_FORMAT}}" --dry-run --Werror 2>&1 | grep -c 'warning:' || true)
+        # clang-format --Werror reports "error:", not "warning:" -- the old
+        # grep -c 'warning:' matched nothing, so this gate could never fail.
+        # Count per-file exit status instead.  tool_validation/violations/ is
+        # excluded: those files are deliberately malformed fixtures.
+        VIOLATIONS=0
+        for f in $(find cpp/ \( -name '*.cpp' -o -name '*.hpp' \) \
+          | grep -v _deps | grep -v 'tool_validation/violations/'); do
+          if ! "{{.CLANG_FORMAT}}" --dry-run --Werror "$f" >/dev/null 2>&1; then
+            echo "  needs formatting: $f"
+            VIOLATIONS=$((VIOLATIONS + 1))
+          fi
+        done
         if [ "$VIOLATIONS" -gt 0 ]; then
-          echo "FAIL: $VIOLATIONS formatting violations found. Run: task format-cpp"
+          echo "FAIL: $VIOLATIONS files need formatting. Run: task format-cpp"
           exit 1
         fi
         echo "PASS: all C++ files correctly formatted"

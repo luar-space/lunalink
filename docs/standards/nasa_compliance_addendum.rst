@@ -20,7 +20,7 @@ imposes requirements at least as stringent as the corresponding NPR SWE requirem
 This addendum enables evaluators familiar with the NASA framework to locate compliance
 evidence without navigating the ECSS structure directly.
 
-For the ECSS tailoring decisions themselves, see ``docs/assurance/private/ecss_tailoring.rst``
+For the ECSS tailoring decisions themselves, see ``docs/assurance/ecss_tailoring.rst``
 (LUNALINK-ECSS-TAIL-001).
 
 Compliance Matrix
@@ -189,8 +189,8 @@ Four SWE requirements (SWE-020, SWE-079, SWE-121, SWE-155) require programme off
 infrastructure — independent review teams, a formal Change Control Board, IV&V
 contractors, and physical configuration audits.  These are structurally outside the
 scope of a development team acting alone and are documented in full in
-``docs/assurance/private/certification_delta.rst`` and the ECSS tailoring record
-(``docs/assurance/private/ecss_tailoring.rst``).
+``docs/assurance/certification_delta.rst`` and the ECSS tailoring record
+(``docs/assurance/ecss_tailoring.rst``).
 
 The technical artefacts required by these SWEs are in place and structured for
 immediate consumption by a programme office upon flight adoption.

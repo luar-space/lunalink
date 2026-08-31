@@ -28,7 +28,8 @@ using namespace lunalink::signal;
 // ---------------------------------------------------------------------------
 // FI-01 — TMR single-copy corruption: vote repairs minority copy
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: FI-01 — tmr_single_copy_corrupt — vote() corrects minority copy", "[swifi][platform]") {
+TEST_CASE("SWIFI: FI-01 — tmr_single_copy_corrupt — vote() corrects minority copy",
+          "[swifi][platform]") {
   constexpr uint32_t kGood = 0xA5A5A5A5U;
   constexpr uint32_t kBad = 0xDEADBEEFU;
 
@@ -57,52 +58,53 @@ TEST_CASE("SWIFI: FI-01 — tmr_single_copy_corrupt — vote() corrects minority
 // FI-35 — TMR two-of-three corruption: different bad values, no majority
 // ---------------------------------------------------------------------------
 TEST_CASE("SWIFI: tmr_two_of_three_different — no majority, recovery fails", "[swifi][platform]") {
-    // When two copies hold different bad values, no two copies agree.
-    // vote() falls back to v1 (the first copy). This documents the detection
-    // boundary: TMR detects single-copy corruption but not double-copy
-    // corruption with distinct values.
-    constexpr uint32_t kGood = 0xA5A5A5A5U;
-    constexpr uint32_t kBad1 = 0xDEADBEEFU;
-    constexpr uint32_t kBad2 = 0xCAFEBABEU;
+  // When two copies hold different bad values, no two copies agree.
+  // vote() falls back to v1 (the first copy). This documents the detection
+  // boundary: TMR detects single-copy corruption but not double-copy
+  // corruption with distinct values.
+  constexpr uint32_t kGood = 0xA5A5A5A5U;
+  constexpr uint32_t kBad1 = 0xDEADBEEFU;
+  constexpr uint32_t kBad2 = 0xCAFEBABEU;
 
-    TmrValue<uint32_t> tmr(kGood);
+  TmrValue<uint32_t> tmr(kGood);
 
-    // Corrupt v1 and v2 with different values: [BAD1, BAD2, GOOD]
-    tmr.inject_fault(0U, kBad1);
-    tmr.inject_fault(1U, kBad2);
+  // Corrupt v1 and v2 with different values: [BAD1, BAD2, GOOD]
+  tmr.inject_fault(0U, kBad1);
+  tmr.inject_fault(1U, kBad2);
 
-    // No majority exists — vote() returns v1 (first copy) as fallback.
-    // v3 holds the correct value but is outnumbered by two disagreeing copies.
-    const uint32_t result = tmr.vote();
+  // No majority exists — vote() returns v1 (first copy) as fallback.
+  // v3 holds the correct value but is outnumbered by two disagreeing copies.
+  const uint32_t result = tmr.vote();
 
-    // Document: with two different corruptions, TMR cannot recover.
-    // It returns v1 (which happens to be kBad1). This is a known limitation:
-    // TMR only guarantees correction of single-copy faults.
-    CHECK(result != kGood);  // documents that recovery failed
+  // Document: with two different corruptions, TMR cannot recover.
+  // It returns v1 (which happens to be kBad1). This is a known limitation:
+  // TMR only guarantees correction of single-copy faults.
+  CHECK(result != kGood); // documents that recovery failed
 }
 
 // ---------------------------------------------------------------------------
 // FI-36 — TMR two-of-three corruption: same bad value, wrong majority wins
 // ---------------------------------------------------------------------------
 TEST_CASE("SWIFI: tmr_two_of_three_same — wrong majority wins", "[swifi][platform]") {
-    // When two copies hold the same wrong value, they form a (false) majority.
-    // vote() returns the wrong value and repairs the correct copy to match.
-    // This confirms the FI-02 residual risk from the other direction.
-    constexpr uint32_t kGood = 0xA5A5A5A5U;
-    constexpr uint32_t kBad  = 0xDEADBEEFU;
+  // When two copies hold the same wrong value, they form a (false) majority.
+  // vote() returns the wrong value and repairs the correct copy to match.
+  // This confirms the FI-02 residual risk from the other direction.
+  constexpr uint32_t kGood = 0xA5A5A5A5U;
+  constexpr uint32_t kBad = 0xDEADBEEFU;
 
-    TmrValue<uint32_t> tmr(kGood);
-    tmr.inject_fault(0U, kBad);
-    tmr.inject_fault(1U, kBad);
+  TmrValue<uint32_t> tmr(kGood);
+  tmr.inject_fault(0U, kBad);
+  tmr.inject_fault(1U, kBad);
 
-    // [BAD, BAD, GOOD] — majority is BAD (wrong)
-    CHECK(tmr.vote() == kBad);  // wrong majority wins — residual risk
+  // [BAD, BAD, GOOD] — majority is BAD (wrong)
+  CHECK(tmr.vote() == kBad); // wrong majority wins — residual risk
 }
 
 // ---------------------------------------------------------------------------
 // FI-02 — TMR all-copies corruption: residual risk documentation
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: FI-02 — tmr_all_copies_same_corrupt — documents residual risk", "[swifi][platform]") {
+TEST_CASE("SWIFI: FI-02 — tmr_all_copies_same_corrupt — documents residual risk",
+          "[swifi][platform]") {
   // When all three copies hold the same wrong value, TMR cannot detect the
   // error (no majority disagreement). This is an acknowledged residual risk
   // in the FMEA. The test documents and verifies this is the only undetectable
@@ -118,7 +120,8 @@ TEST_CASE("SWIFI: FI-02 — tmr_all_copies_same_corrupt — documents residual r
 // ---------------------------------------------------------------------------
 // FI-03 — CheckedRange force beyond max: next assignment re-saturates
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: FI-03 — checked_range_force_beyond_max — next write saturates", "[swifi][platform]") {
+TEST_CASE("SWIFI: FI-03 — checked_range_force_beyond_max — next write saturates",
+          "[swifi][platform]") {
   CheckedRange<uint8_t, 0U, 10U> cr(5U);
 
   // force_set bypasses saturation
@@ -151,7 +154,8 @@ TEST_CASE("SWIFI: FI-04 — cfi_guard_inject_skip — detect skipped step", "[sw
 // ---------------------------------------------------------------------------
 // FI-08 — FSM illegal transition: detection and Zone-3 telemetry emission
 // ---------------------------------------------------------------------------
-TEST_CASE("[SW-SAF-03] SWIFI: FI-08 — fsm_illegal_transition — Zone 3, telemetry packet emitted", "[swifi][platform]") {
+TEST_CASE("[SW-SAF-03] SWIFI: FI-08 — fsm_illegal_transition — Zone 3, telemetry packet emitted",
+          "[swifi][platform]") {
   CaptureTelemetryHal<4> capture;
   SignalChainFsm fsm(capture);
 
@@ -173,7 +177,8 @@ TEST_CASE("[SW-SAF-03] SWIFI: FI-08 — fsm_illegal_transition — Zone 3, telem
 // ---------------------------------------------------------------------------
 // FI-09 — FSM two consecutive frame faults: Zone-2 → Zone-3 escalation
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: FI-09 — fsm_two_consecutive_frame_faults — escalates to kSafeMode", "[swifi][platform]") {
+TEST_CASE("SWIFI: FI-09 — fsm_two_consecutive_frame_faults — escalates to kSafeMode",
+          "[swifi][platform]") {
   CaptureTelemetryHal<4> capture;
   SignalChainFsm fsm(capture);
 
@@ -196,7 +201,8 @@ TEST_CASE("SWIFI: FI-09 — fsm_two_consecutive_frame_faults — escalates to kS
 // ---------------------------------------------------------------------------
 // FI-11 — Saturating arithmetic: CheckedRange clamps over/under-range writes
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: FI-11 — saturating_arithmetic_clamp — CheckedRange clamps out-of-range correctly", "[swifi][platform]") {
+TEST_CASE("SWIFI: FI-11 — saturating_arithmetic_clamp — CheckedRange clamps out-of-range correctly",
+          "[swifi][platform]") {
   // Use a narrow range (0..100) so clamping is observable at the type level.
   using Sat = CheckedRange<int32_t, 0, 100>;
 
@@ -225,7 +231,8 @@ TEST_CASE("SWIFI: FI-11 — saturating_arithmetic_clamp — CheckedRange clamps 
 // ---------------------------------------------------------------------------
 // FI-12 — Windowed watchdog lower-bound violation (FM-033 Zone 2 escalation)
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: FI-12 — watchdog_lower_bound_trip — FaultPacket emitted on under-run", "[swifi][platform]") {
+TEST_CASE("SWIFI: FI-12 — watchdog_lower_bound_trip — FaultPacket emitted on under-run",
+          "[swifi][platform]") {
   constexpr uint32_t kTMin = 100U;
   constexpr uint32_t kTMax = 10000U;
   WindowedWatchdog wdog(kTMin, kTMax);
@@ -270,84 +277,89 @@ TEST_CASE("SWIFI: FI-12 — watchdog_lower_bound_trip — FaultPacket emitted on
 // ---------------------------------------------------------------------------
 // FI-32 — Timing injection: watchdog upper-bound exceeded (informational)
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: watchdog_upper_bound_exceeded — informational detection via inject", "[swifi][platform]") {
-    constexpr uint32_t kTMin = 100U;
-    constexpr uint32_t kTMax = 10000U;
-    WindowedWatchdog wdog(kTMin, kTMax);
-    CaptureTelemetryHal<4> capture;
+TEST_CASE("SWIFI: watchdog_upper_bound_exceeded — informational detection via inject",
+          "[swifi][platform]") {
+  constexpr uint32_t kTMin = 100U;
+  constexpr uint32_t kTMax = 10000U;
+  WindowedWatchdog wdog(kTMin, kTMax);
+  CaptureTelemetryHal<4> capture;
 
-    // Normal operation: tick to within bounds
-    wdog.reset();
-    for (uint32_t i = 0U; i < kTMin; ++i) { wdog.tick(); }
-    REQUIRE(wdog.upper_bound_exceeded() == false);
+  // Normal operation: tick to within bounds
+  wdog.reset();
+  for (uint32_t i = 0U; i < kTMin; ++i) {
+    wdog.tick();
+  }
+  REQUIRE(wdog.upper_bound_exceeded() == false);
 
-    // Inject tick count just above upper bound
-    wdog.inject_tick_count(kTMax + 1U);
-    REQUIRE(wdog.upper_bound_exceeded() == true);
+  // Inject tick count just above upper bound
+  wdog.inject_tick_count(kTMax + 1U);
+  REQUIRE(wdog.upper_bound_exceeded() == true);
 
-    // evaluate() still passes (upper bound is informational, hardware watchdog
-    // owns the hang path) — but the counter exceeds t_min so no lower-bound trip
-    const bool eval = wdog.evaluate(capture, 0U);
-    REQUIRE(eval == true);
-    REQUIRE(capture.count() == 0U);  // no FaultPacket on upper-bound path
+  // evaluate() still passes (upper bound is informational, hardware watchdog
+  // owns the hang path) — but the counter exceeds t_min so no lower-bound trip
+  const bool eval = wdog.evaluate(capture, 0U);
+  REQUIRE(eval == true);
+  REQUIRE(capture.count() == 0U); // no FaultPacket on upper-bound path
 }
 
 // ---------------------------------------------------------------------------
 // FI-33 — Timing injection: zero-tick starvation (complete wip_tick absence)
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: watchdog_zero_tick_starvation — lower-bound trip on zero ticks", "[swifi][platform]") {
-    constexpr uint32_t kTMin = 50U;
-    constexpr uint32_t kTMax = 500U;
-    WindowedWatchdog wdog(kTMin, kTMax);
-    CaptureTelemetryHal<4> capture;
+TEST_CASE("SWIFI: watchdog_zero_tick_starvation — lower-bound trip on zero ticks",
+          "[swifi][platform]") {
+  constexpr uint32_t kTMin = 50U;
+  constexpr uint32_t kTMax = 500U;
+  WindowedWatchdog wdog(kTMin, kTMax);
+  CaptureTelemetryHal<4> capture;
 
-    // Reset and immediately evaluate — zero ticks (complete starvation)
-    wdog.reset();
-    REQUIRE(wdog.tick_count() == 0U);
+  // Reset and immediately evaluate — zero ticks (complete starvation)
+  wdog.reset();
+  REQUIRE(wdog.tick_count() == 0U);
 
-    const bool eval = wdog.evaluate(capture, 1000U);
-    REQUIRE(eval == false);  // lower-bound violated (0 < t_min)
+  const bool eval = wdog.evaluate(capture, 1000U);
+  REQUIRE(eval == false); // lower-bound violated (0 < t_min)
 
-    // FaultPacket must have been emitted
-    REQUIRE(capture.count() == 1U);
-    CHECK(capture.packet(0U).fiz_level == 2U);
-    CHECK(capture.packet(0U).fault_code == kWatchdogLowerBoundFaultCode);
+  // FaultPacket must have been emitted
+  REQUIRE(capture.count() == 1U);
+  CHECK(capture.packet(0U).fiz_level == 2U);
+  CHECK(capture.packet(0U).fault_code == kWatchdogLowerBoundFaultCode);
 }
 
 // ---------------------------------------------------------------------------
 // FI-34 — Timing injection: inject_tick_count at exact boundaries
 // ---------------------------------------------------------------------------
 TEST_CASE("SWIFI: watchdog_boundary_ticks — exact t_min and t_max pass", "[swifi][platform]") {
-    constexpr uint32_t kTMin = 100U;
-    constexpr uint32_t kTMax = 10000U;
-    WindowedWatchdog wdog(kTMin, kTMax);
-    CaptureTelemetryHal<4> capture;
+  constexpr uint32_t kTMin = 100U;
+  constexpr uint32_t kTMax = 10000U;
+  WindowedWatchdog wdog(kTMin, kTMax);
+  CaptureTelemetryHal<4> capture;
 
-    // Exact lower bound: t_min ticks — must pass
-    wdog.reset();
-    wdog.inject_tick_count(kTMin);
-    REQUIRE(wdog.evaluate(capture, 0U) == true);
-    REQUIRE(wdog.upper_bound_exceeded() == false);
+  // Exact lower bound: t_min ticks — must pass
+  wdog.reset();
+  wdog.inject_tick_count(kTMin);
+  REQUIRE(wdog.evaluate(capture, 0U) == true);
+  REQUIRE(wdog.upper_bound_exceeded() == false);
 
-    // Exact upper bound: t_max ticks — must pass (upper bound is <=)
-    wdog.reset();
-    wdog.inject_tick_count(kTMax);
-    REQUIRE(wdog.evaluate(capture, 0U) == true);
-    REQUIRE(wdog.upper_bound_exceeded() == false);
+  // Exact upper bound: t_max ticks — must pass (upper bound is <=)
+  wdog.reset();
+  wdog.inject_tick_count(kTMax);
+  REQUIRE(wdog.evaluate(capture, 0U) == true);
+  REQUIRE(wdog.upper_bound_exceeded() == false);
 
-    // One below lower bound — must fail
-    wdog.reset();
-    wdog.inject_tick_count(kTMin - 1U);
-    REQUIRE(wdog.evaluate(capture, 0U) == false);
-    REQUIRE(capture.count() == 1U);
+  // One below lower bound — must fail
+  wdog.reset();
+  wdog.inject_tick_count(kTMin - 1U);
+  REQUIRE(wdog.evaluate(capture, 0U) == false);
+  REQUIRE(capture.count() == 1U);
 
-    // No packets on the passing cases
+  // No packets on the passing cases
 }
 
 // ---------------------------------------------------------------------------
 // FI-10 — FSM on_frame_fault from kSafeMode: precondition guard + FIZ-3 packet
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: FI-10 — fsm_on_frame_fault_from_kSafeMode — FIZ-3 telemetry, stays in kSafeMode", "[swifi][platform]") {
+TEST_CASE("SWIFI: FI-10 — fsm_on_frame_fault_from_kSafeMode — FIZ-3 telemetry, stays in kSafeMode",
+          "[swifi][platform]") {
   CaptureTelemetryHal<4> capture;
   SignalChainFsm fsm(capture);
 
@@ -370,7 +382,8 @@ TEST_CASE("SWIFI: FI-10 — fsm_on_frame_fault_from_kSafeMode — FIZ-3 telemetr
 // ---------------------------------------------------------------------------
 // POST step 2 — LDPC LUT corruption detected
 // ---------------------------------------------------------------------------
-TEST_CASE("[SW-SAF-04] SWIFI: post_step2_lut_corrupt — run_post returns {kFaultDetected, 2}", "[swifi][platform]") {
+TEST_CASE("[SW-SAF-04] SWIFI: post_step2_lut_corrupt — run_post returns {kFaultDetected, 2}",
+          "[swifi][platform]") {
   // Inject a bit flip into one LDPC matrix
   kLdpc_sf2_a.inject_bit_flip(0U, 0x01U);
 

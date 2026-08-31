@@ -75,8 +75,8 @@ struct LdpcEncodeWorkspace {
  * @return LdpcStatus::kOk or error code.
  */
 [[nodiscard("LdpcStatus reports input/output bounds and the post-encode H·c=0 "
-              "self-check; ignoring it allows malformed FEC symbols into the transmit "
-              "chain (LSIS-AFS-320, FIZ-2)")]] LdpcStatus
+            "self-check; ignoring it allows malformed FEC symbols into the transmit "
+            "chain (LSIS-AFS-320, FIZ-2)")]] LdpcStatus
 ldpc_encode(LdpcSubframe type,
             std::span<const uint8_t> msg,
             std::span<uint8_t> out,
@@ -117,8 +117,8 @@ struct LdpcWorkspace {
  * @return LdpcStatus::kOk on convergence, kNotConverged if max iterations reached.
  */
 [[nodiscard("LdpcStatus reports input/output bounds, kNotConverged on max-iteration "
-              "BP termination, and CFI/TMR faults; ignoring it lets undecoded subframes "
-              "propagate as if valid (LSIS-AFS-321, FIZ-1/2)")]] LdpcStatus
+            "BP termination, and CFI/TMR faults; ignoring it lets undecoded subframes "
+            "propagate as if valid (LSIS-AFS-321, FIZ-1/2)")]] LdpcStatus
 ldpc_decode(LdpcSubframe type,
             std::span<const float> symbols,
             uint8_t iterations,

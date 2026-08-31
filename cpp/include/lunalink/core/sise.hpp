@@ -28,10 +28,10 @@ inline constexpr double kSiseVelocityLimitMps = 0.01;
 /// The clock term is pre-scaled by the speed of light so all components
 /// have the same units, matching LSIS V1.0 §2.2.2 Equations 1 and 2.
 struct SiseVec {
-    double x = 0.0;
-    double y = 0.0;
-    double z = 0.0;
-    double ct = 0.0; ///< Clock bias (pos) or drift (vel), scaled by c.
+  double x = 0.0;
+  double y = 0.0;
+  double z = 0.0;
+  double ct = 0.0; ///< Clock bias (pos) or drift (vel), scaled by c.
 };
 
 // ─── Status ─────────────────────────────────────────────────────────────────
@@ -39,19 +39,19 @@ struct SiseVec {
 /** @brief Status codes for SISE calculations.
  * SEU-hardened with high Hamming distance bit patterns. */
 enum class SiseStatus : uint8_t {
-    kOk           = 0x5AU, ///< Calculation completed successfully.
-    kInvalidInput = 0xA5U, ///< Input contains NaN/Inf or null pointer.
-    kEmptyData    = 0x33U, ///< Percentile called with n == 0.
-    kFaultDetected = 0x99U, ///< Integrity check failed.
+  kOk = 0x5AU,            ///< Calculation completed successfully.
+  kInvalidInput = 0xA5U,  ///< Input contains NaN/Inf or null pointer.
+  kEmptyData = 0x33U,     ///< Percentile called with n == 0.
+  kFaultDetected = 0x99U, ///< Integrity check failed.
 };
 
 // ─── Single-Epoch Result ────────────────────────────────────────────────────
 
 /// Result of a single-epoch SISE computation.
 struct SiseResult {
-    SiseStatus status = SiseStatus::kFaultDetected;
-    double position_error_m = 0.0;   ///< 4-D RSS position+clock error (m).
-    double velocity_error_mps = 0.0; ///< 4-D RSS velocity+clock-drift error (m/s).
+  SiseStatus status = SiseStatus::kFaultDetected;
+  double position_error_m = 0.0;   ///< 4-D RSS position+clock error (m).
+  double velocity_error_mps = 0.0; ///< 4-D RSS velocity+clock-drift error (m/s).
 };
 
 /// Compute single-epoch SISE per LSIS V1.0 §2.2.2. [LSIS-SISE]
@@ -72,20 +72,22 @@ struct SiseResult {
 /// @param vel_broadcast  Broadcast velocity+clock-drift state (m/s).
 /// @return SiseResult with status and error magnitudes.
 [[nodiscard("SiseResult.status reports kFaultDetected on non-finite or out-of-range "
-              "inputs; ignoring it lets a zero/garbage SISE magnitude be treated as a "
-              "valid accuracy figure (LSIS-SISE)")]] SiseResult
-compute_sise(SiseVec pos_true, SiseVec pos_broadcast,
-             SiseVec vel_true, SiseVec vel_broadcast) noexcept;
+            "inputs; ignoring it lets a zero/garbage SISE magnitude be treated as a "
+            "valid accuracy figure (LSIS-SISE)")]] SiseResult
+compute_sise(SiseVec pos_true,
+             SiseVec pos_broadcast,
+             SiseVec vel_true,
+             SiseVec vel_broadcast) noexcept;
 
 // ─── Percentile Result ──────────────────────────────────────────────────────
 
 /// Result of a percentile SISE computation over N epochs.
 struct SisePercentileResult {
-    SiseStatus status = SiseStatus::kFaultDetected;
-    double position_percentile_m = 0.0;   ///< Position error at requested percentile.
-    double velocity_percentile_mps = 0.0; ///< Velocity error at requested percentile.
-    bool position_pass = false; ///< True if below kSisePositionLimitM.
-    bool velocity_pass = false; ///< True if below kSiseVelocityLimitMps.
+  SiseStatus status = SiseStatus::kFaultDetected;
+  double position_percentile_m = 0.0;   ///< Position error at requested percentile.
+  double velocity_percentile_mps = 0.0; ///< Velocity error at requested percentile.
+  bool position_pass = false;           ///< True if below kSisePositionLimitM.
+  bool velocity_pass = false;           ///< True if below kSiseVelocityLimitMps.
 };
 
 /// Compute percentile SISE over N epochs. [LSIS-SISE]
@@ -103,9 +105,10 @@ struct SisePercentileResult {
 /// @param percentile     Percentile to compute (0.0..1.0, default 0.95).
 /// @return SisePercentileResult with status, values, and pass/fail flags.
 [[nodiscard("SisePercentileResult.status reports input-size and percentile-range "
-              "failures; ignoring it lets zero/garbage percentile_m/percentile_mps and "
-              "stale pass-flags propagate (LSIS-SISE)")]] SisePercentileResult
-compute_sise_percentile(std::span<double> pos_errors_m, std::span<double> vel_errors_mps,
+            "failures; ignoring it lets zero/garbage percentile_m/percentile_mps and "
+            "stale pass-flags propagate (LSIS-SISE)")]] SisePercentileResult
+compute_sise_percentile(std::span<double> pos_errors_m,
+                        std::span<double> vel_errors_mps,
                         double percentile = 0.95) noexcept;
 
 } // namespace lunalink::core

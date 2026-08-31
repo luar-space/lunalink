@@ -5,7 +5,7 @@ tags, then checks that every tagged requirement has at least one matching test.
 
 Outputs:
   - Human-readable summary to stdout
-  - Machine-readable JSON to docs/assurance/private/evidence/traceability.json
+  - Machine-readable JSON to docs/assurance/evidence/traceability.json
 
 Exit codes:
   - 0: all requirements covered (or --strict not set)
@@ -164,7 +164,7 @@ def main():  # noqa: C901
     }
 
     # Write JSON
-    json_dir = os.path.join(root, "docs", "assurance", "private", "evidence")
+    json_dir = os.path.join(root, "docs", "assurance", "evidence")
     os.makedirs(json_dir, exist_ok=True)
     json_path = os.path.join(json_dir, "traceability.json")
     with open(json_path, "w", encoding="utf-8") as f:

@@ -45,8 +45,8 @@ inline constexpr uint16_t kIqSamplesPerEpoch = 10230;
  * @return IqMuxStatus::kOk or an error code.
  */
 [[nodiscard("IqMuxStatus reports kInvalidISample/kInvalidQSample (out-of-domain {-1,+1}), "
-              "kInputTooSmall/kOutputTooSmall, and CFI/TMR faults; ignoring it allows "
-              "malformed interleaved I/Q to reach the RF stage (LSIS-AFS-301, FIZ-1)")]] IqMuxStatus
+            "kInputTooSmall/kOutputTooSmall, and CFI/TMR faults; ignoring it allows "
+            "malformed interleaved I/Q to reach the RF stage (LSIS-AFS-301, FIZ-1)")]] IqMuxStatus
 multiplex_iq(std::span<const int8_t> i_samples,
              std::span<const int8_t> q_samples,
              std::span<int16_t> out) noexcept;
@@ -56,8 +56,8 @@ multiplex_iq(std::span<const int8_t> i_samples,
  */
 template <typename T, typename U, typename V>
 [[nodiscard("IqMuxStatus reports invalid sample domains, buffer-size violations, and "
-              "CFI/TMR faults; ignoring it allows malformed interleaved I/Q to reach the "
-              "RF stage (LSIS-AFS-301, FIZ-1)")]] inline IqMuxStatus
+            "CFI/TMR faults; ignoring it allows malformed interleaved I/Q to reach the "
+            "RF stage (LSIS-AFS-301, FIZ-1)")]] inline IqMuxStatus
 multiplex_iq(T&& i_samples, U&& q_samples, V&& out) noexcept {
   return multiplex_iq(std::span<const int8_t>(i_samples),
                       std::span<const int8_t>(q_samples),

@@ -15,6 +15,8 @@ from lunalink.afs._array_types import (
 from lunalink.afs._results import TransmitFrame, _readonly
 from lunalink.afs.signal import (
     SB2_DATA_BITS,
+    SB2_SPARE_BITS,
+    SB2_SPARE_OFFSET,
     SB3_DATA_BITS,
     SB4_DATA_BITS,
     frame_build,
@@ -71,6 +73,21 @@ def transmit_frame(
     return meta, iq
 
 
+def _apply_sb2_spare_pattern(sb2: np.ndarray) -> np.ndarray:
+    """Write the LSIS-AFS-300 spare pattern into an SB2 payload.
+
+    SB2 bits ``[SB2_SPARE_OFFSET, +SB2_SPARE_BITS)`` are spare and shall be
+    alternating 0/1 starting with 0.  ``frame_build`` enforces this on the
+    encode side regardless of what the caller supplies, so a payload that
+    does not already carry the pattern cannot round-trip bit-exactly.
+    """
+    out = np.array(sb2, dtype=np.uint8, copy=True)
+    lo = SB2_SPARE_OFFSET
+    hi = lo + SB2_SPARE_BITS
+    out[lo:hi] = np.arange(SB2_SPARE_BITS, dtype=np.uint8) % 2
+    return out
+
+
 def make_test_payload(
     pattern: str = "zeros",
     seed: int = 0x12345678,
@@ -88,27 +105,31 @@ def make_test_payload(
     -------
     tuple[Sb2Payload, Sb3Payload, Sb4Payload]
         ``(sb2_data, sb3_data, sb4_data)`` ready for
+        (the SB2 spare region carries the LSIS-AFS-300 alternating
+        pattern, so payloads round-trip bit-exactly)
         :func:`~lunalink.afs.frame_build` or :func:`transmit_frame`.
     """
     n2, n3, n4 = SB2_DATA_BITS, SB3_DATA_BITS, SB4_DATA_BITS
 
     if pattern == "zeros":
         return (
-            np.zeros(n2, dtype=np.uint8),
+            _apply_sb2_spare_pattern(np.zeros(n2, dtype=np.uint8)),
             np.zeros(n3, dtype=np.uint8),
             np.zeros(n4, dtype=np.uint8),
         )
 
     if pattern == "ones":
         return (
-            np.ones(n2, dtype=np.uint8),
+            _apply_sb2_spare_pattern(np.ones(n2, dtype=np.uint8)),
             np.ones(n3, dtype=np.uint8),
             np.ones(n4, dtype=np.uint8),
         )
 
     if pattern == "alternating":
         return (
-            np.array([i % 2 for i in range(n2)], dtype=np.uint8),
+            _apply_sb2_spare_pattern(
+                np.array([i % 2 for i in range(n2)], dtype=np.uint8)
+            ),
             np.array([i % 2 for i in range(n3)], dtype=np.uint8),
             np.array([i % 2 for i in range(n4)], dtype=np.uint8),
         )
@@ -116,7 +137,7 @@ def make_test_payload(
     if pattern == "random":
         rng = np.random.default_rng(seed)
         return (
-            rng.integers(0, 2, size=n2, dtype=np.uint8),
+            _apply_sb2_spare_pattern(rng.integers(0, 2, size=n2, dtype=np.uint8)),
             rng.integers(0, 2, size=n3, dtype=np.uint8),
             rng.integers(0, 2, size=n4, dtype=np.uint8),
         )

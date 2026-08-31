@@ -1,0 +1,3 @@
+signal,fft_size,variant,us_per_acquire,us_per_fft,stdev_us,fft_count_per_acquire
+GPS_L1_CA,8192,baseline,23876.8,29.5665,49.5683,807
+GAL_E1_B,32768,baseline,301766,187.381,296.562,1610

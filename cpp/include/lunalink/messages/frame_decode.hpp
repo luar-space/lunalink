@@ -115,12 +115,12 @@ static_assert(kFrameDecodeWorkspaceBytes < 400'000, "FrameDecodeWorkspace exceed
 ///
 /// @return FrameDecodeStatus indicating overall decode outcome.
 [[nodiscard("frame_decode status carries CRC-24Q, LDPC and BCH failure flags — silently "
-              "discarding it masks frame errors that violate FM-034/CBIT-AFS")]] FrameDecodeStatus
+            "discarding it masks frame errors that violate FM-034/CBIT-AFS")]] FrameDecodeStatus
 frame_decode(std::span<const float> rx_symbols,
-                                             FrameDecodeResult& result,
-                                             FrameDecodeWorkspace& workspace,
-                                             ITelemetryHal& hal,
-                                             uint8_t ldpc_iterations = kFrameDecodeLdpcIterations,
-                                             float sync_threshold = kDefaultSyncThreshold) noexcept;
+             FrameDecodeResult& result,
+             FrameDecodeWorkspace& workspace,
+             ITelemetryHal& hal,
+             uint8_t ldpc_iterations = kFrameDecodeLdpcIterations,
+             float sync_threshold = kDefaultSyncThreshold) noexcept;
 
 } // namespace lunalink::signal

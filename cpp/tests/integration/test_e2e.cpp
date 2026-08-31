@@ -6,6 +6,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cmath>
@@ -29,7 +30,9 @@ void binary_to_bipolar(std::span<const uint8_t> bits, std::span<float> out) {
 /// Output is proper log-likelihood ratios. Decoder-agnostic: the SP decoder
 /// uses LLRs directly; the AMS decoder's load_channel_llrs() applies Q8.7
 /// scaling (×128) on top, which is correct for both raw and LLR-scaled input.
-void add_awgn_llr(std::span<float> symbols, float eb_n0_db, std::mt19937& rng,
+void add_awgn_llr(std::span<float> symbols,
+                  float eb_n0_db,
+                  std::mt19937& rng,
                   float code_rate = 0.5F) {
   const auto eb_n0_lin = std::pow(10.0F, eb_n0_db / 10.0F);
   const auto sigma_sq = 1.0F / (2.0F * code_rate * eb_n0_lin);
@@ -39,6 +42,25 @@ void add_awgn_llr(std::span<float> symbols, float eb_n0_db, std::mt19937& rng,
   for (auto& s : symbols) {
     s = (s + dist(rng)) * llr_scale;
   }
+}
+
+/// Verify an SB2 round-trip.
+///
+/// ``enforce_spare_bit_pattern`` (called from ``subframe_build_ldpc`` in
+/// ``frame.cpp``) is the single enforcement point for the LSIS-AFS-300 spare
+/// pattern: it overwrites SB2 bits [kSb2SpareOffset, +kSb2SpareBits) with
+/// alternating 0/1 regardless of what the caller supplied.  That region
+/// therefore cannot round-trip when the caller seeds it with arbitrary data,
+/// so compare the payload bit-exactly and assert the spare region carries the
+/// mandated pattern.
+[[nodiscard]] bool sb2_roundtrip_ok(std::span<const uint8_t> sent, std::span<const uint8_t> recv) {
+  if ((sent.size() != kSb2DataBits) || (recv.size() != kSb2DataBits)) {
+    return false;
+  }
+  if (!std::equal(sent.begin(), sent.begin() + kSb2SpareOffset, recv.begin())) {
+    return false;
+  }
+  return validate_spare_bits(recv.subspan(kSb2SpareOffset, kSb2SpareBits));
 }
 
 /// Fill a span with random bits (0 or 1).
@@ -101,7 +123,7 @@ TEST_CASE("[LSIS-AFS-720] E2E round-trip: TX → AWGN → RX → bit-exact recov
   CHECK(result.sb4.crc_ok);
 
   // Bit-exact data recovery
-  CHECK(std::equal(sb2_data.begin(), sb2_data.end(), workspace->sb2_data.begin()));
+  CHECK(sb2_roundtrip_ok(sb2_data, workspace->sb2_data));
   CHECK(std::equal(sb3_data.begin(), sb3_data.end(), workspace->sb3_data.begin()));
   CHECK(std::equal(sb4_data.begin(), sb4_data.end(), workspace->sb4_data.begin()));
 }
@@ -184,8 +206,8 @@ TEST_CASE("[LSIS-AFS-810] E2E: TX → RX → parse → ToT round-trip", "[e2e][r
   REQUIRE(tot.status == TotStatus::kOk);
 
   // Expected: WN=100 × 604800 + ITOW=42 × 1200 + TOI=17 × 12 = 60530604.0
-  const double expected_t_f =
-      static_cast<double>(wn) * 604800.0 + static_cast<double>(itow) * 1200.0 + 17.0 * 12.0;
+  const double expected_t_f = static_cast<double>(wn) * 604800.0 +
+                              static_cast<double>(itow) * 1200.0 + 17.0 * 12.0;
   CHECK(tot.t_f == expected_t_f);
 }
 
@@ -342,7 +364,7 @@ TEST_CASE("E2E round-trip: FID=0 TOI=99 with random offset", "[e2e][rx][slow]") 
   CHECK(result.bch.fid == fid);
   CHECK(result.bch.toi == toi);
 
-  CHECK(std::equal(sb2_data.begin(), sb2_data.end(), workspace->sb2_data.begin()));
+  CHECK(sb2_roundtrip_ok(sb2_data, workspace->sb2_data));
   CHECK(std::equal(sb3_data.begin(), sb3_data.end(), workspace->sb3_data.begin()));
   CHECK(std::equal(sb4_data.begin(), sb4_data.end(), workspace->sb4_data.begin()));
 }
@@ -382,7 +404,7 @@ TEST_CASE("E2E: noiseless round-trip (Eb/N0 = infinity)", "[e2e][rx][slow]") {
   CHECK(result.sb4.ldpc_converged);
   CHECK(result.sb4.crc_ok);
 
-  CHECK(std::equal(sb2_data.begin(), sb2_data.end(), workspace->sb2_data.begin()));
+  CHECK(sb2_roundtrip_ok(sb2_data, workspace->sb2_data));
   CHECK(std::equal(sb3_data.begin(), sb3_data.end(), workspace->sb3_data.begin()));
   CHECK(std::equal(sb4_data.begin(), sb4_data.end(), workspace->sb4_data.begin()));
 }
@@ -640,7 +662,7 @@ TEST_CASE("[LSIS-TABLE11][e2e] all 12 interim codes round-trip", "[e2e][slow]") 
       CHECK(result.sb2.crc_ok);
       CHECK(result.sb3.crc_ok);
       CHECK(result.sb4.crc_ok);
-      CHECK(std::equal(sb2_data.begin(), sb2_data.end(), workspace->sb2_data.begin()));
+      CHECK(sb2_roundtrip_ok(sb2_data, workspace->sb2_data));
       CHECK(std::equal(sb3_data.begin(), sb3_data.end(), workspace->sb3_data.begin()));
       CHECK(std::equal(sb4_data.begin(), sb4_data.end(), workspace->sb4_data.begin()));
     }

@@ -45,7 +45,9 @@ InterleaverStatus block_interleave(std::span<const uint8_t> in, std::span<uint8_
 
       // Cross-check: sequential accumulator must match computed index.
       if (in_idx != in_idx_acc) [[unlikely]] {
-        status = InterleaverStatus::kFaultDetected; // FIZ-1 // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): in_idx != in_idx_acc CFI check in block_interleave
+        status =
+            InterleaverStatus::kFaultDetected; // FIZ-1 // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): in_idx
+                                               // != in_idx_acc CFI check in block_interleave
         break;
       } // NOCOVER_END
 
@@ -59,8 +61,10 @@ InterleaverStatus block_interleave(std::span<const uint8_t> in, std::span<uint8_
   }
 
   if (status == InterleaverStatus::kOk && !verify_interleaver_cfi(cfi_count, in_idx_acc))
-      [[unlikely]] { // NOCOVER(DEFENCE_IN_DEPTH)
-    status = InterleaverStatus::kFaultDetected; // FIZ-1 // NOCOVER(DEFENCE_IN_DEPTH): verify_interleaver_cfi terminal check in block_interleave
+      [[unlikely]] {                            // NOCOVER(DEFENCE_IN_DEPTH)
+    status = InterleaverStatus::kFaultDetected; // FIZ-1 // NOCOVER(DEFENCE_IN_DEPTH):
+                                                // verify_interleaver_cfi terminal check in
+                                                // block_interleave
   }
 
   if (status != InterleaverStatus::kOk) {
@@ -84,7 +88,9 @@ InterleaverStatus block_deinterleave(std::span<const uint8_t> in, std::span<uint
       const size_t out_idx = (static_cast<size_t>(r) * kInterleaverCols) + c;
 
       if (in_idx != in_idx_acc) [[unlikely]] {
-        status = InterleaverStatus::kFaultDetected; // FIZ-1 // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): in_idx != in_idx_acc CFI check in block_deinterleave
+        status =
+            InterleaverStatus::kFaultDetected; // FIZ-1 // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): in_idx
+                                               // != in_idx_acc CFI check in block_deinterleave
         break;
       } // NOCOVER_END
 
@@ -98,8 +104,10 @@ InterleaverStatus block_deinterleave(std::span<const uint8_t> in, std::span<uint
   }
 
   if (status == InterleaverStatus::kOk && !verify_interleaver_cfi(cfi_count, in_idx_acc))
-      [[unlikely]] { // NOCOVER(DEFENCE_IN_DEPTH)
-    status = InterleaverStatus::kFaultDetected; // FIZ-1 // NOCOVER(DEFENCE_IN_DEPTH): verify_interleaver_cfi terminal check in block_deinterleave
+      [[unlikely]] {                            // NOCOVER(DEFENCE_IN_DEPTH)
+    status = InterleaverStatus::kFaultDetected; // FIZ-1 // NOCOVER(DEFENCE_IN_DEPTH):
+                                                // verify_interleaver_cfi terminal check in
+                                                // block_deinterleave
   }
 
   if (status != InterleaverStatus::kOk) {
@@ -125,7 +133,9 @@ InterleaverStatus block_deinterleave_soft(std::span<const float> in,
       const size_t out_idx = (static_cast<size_t>(r) * kInterleaverCols) + c;
 
       if (in_idx != in_idx_acc) [[unlikely]] {
-        status = InterleaverStatus::kFaultDetected; // FIZ-1 // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): in_idx != in_idx_acc CFI check in block_deinterleave_soft
+        status =
+            InterleaverStatus::kFaultDetected; // FIZ-1 // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): in_idx
+                                               // != in_idx_acc CFI check in block_deinterleave_soft
         break;
       } // NOCOVER_END
 
@@ -139,8 +149,10 @@ InterleaverStatus block_deinterleave_soft(std::span<const float> in,
   }
 
   if (status == InterleaverStatus::kOk && !verify_interleaver_cfi(cfi_count, in_idx_acc))
-      [[unlikely]] { // NOCOVER(DEFENCE_IN_DEPTH)
-    status = InterleaverStatus::kFaultDetected; // FIZ-1 // NOCOVER(DEFENCE_IN_DEPTH): verify_interleaver_cfi terminal check in block_deinterleave_soft
+      [[unlikely]] {                            // NOCOVER(DEFENCE_IN_DEPTH)
+    status = InterleaverStatus::kFaultDetected; // FIZ-1 // NOCOVER(DEFENCE_IN_DEPTH):
+                                                // verify_interleaver_cfi terminal check in
+                                                // block_deinterleave_soft
   }
 
   if (status != InterleaverStatus::kOk) {

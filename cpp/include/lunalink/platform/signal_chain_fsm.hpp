@@ -32,8 +32,8 @@ public:
    * illegal; emits a telemetry packet and stays in kSafeMode. Returns true on success.
    */
   [[nodiscard("transition returns false on illegal FSM edge — FIZ-3 telemetry has been "
-                "emitted and the FSM is locked to kSafeMode; ignoring it lets the caller "
-                "proceed as if the requested state were active (SW-SAF-02, FM-031/032)")]] bool
+              "emitted and the FSM is locked to kSafeMode; ignoring it lets the caller "
+              "proceed as if the requested state were active (SW-SAF-02, FM-031/032)")]] bool
   transition(SignalChainState next) noexcept;
 
   /**
@@ -45,8 +45,8 @@ public:
    *      telemetry and locks to kSafeMode to contain radiation-induced CFI diversion.
    */
   [[nodiscard("on_frame_fault returns false when the second consecutive frame-fault "
-                "escalates the FSM to kSafeMode; ignoring it lets the caller continue "
-                "to drive the FSM as if still operational (FM-032)")]] bool
+              "escalates the FSM to kSafeMode; ignoring it lets the caller continue "
+              "to drive the FSM as if still operational (FM-032)")]] bool
   on_frame_fault() noexcept;
 
   /**

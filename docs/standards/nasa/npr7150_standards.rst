@@ -280,7 +280,7 @@ Key topics:
    * - Fault injection / fault tolerance
      - ``assurance/fault_coverage.rst``, SWIFI suite
    * - Assurance planning
-     - ``assurance/public/mission_assurance.rst``
+     - ``assurance/mission_assurance.rst``
    * - Problem reporting (PRACA)
      - ``assurance/praca.rst``, ``.github/ISSUE_TEMPLATE/bug_report.yml``
    * - Metrics

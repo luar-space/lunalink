@@ -27,7 +27,7 @@ inline constexpr uint8_t kTotHeaderBits = kWnBits + kItowBits;
 // Total: 1176 data bits.
 
 /// Health and Safety status field: 8 bits at offset 22.
-inline constexpr uint8_t kSb2HealthOffset = kTotHeaderBits;  // 22
+inline constexpr uint8_t kSb2HealthOffset = kTotHeaderBits; // 22
 inline constexpr uint8_t kSb2HealthBits = 8;
 
 /// Clock and Ephemeris Data (CED): 896 bits at offset 30.
@@ -47,38 +47,38 @@ inline constexpr uint8_t kSb2SpareBits = 26;
 /** @brief LSIS message types from Table 21 (LNIS V1.0).
  * Values match the spec-defined MSG IDs; not SEU-hardened (spec-constrained). */
 enum class MessageType : uint8_t {
-    kG1  = 0x01U,  ///< LunaNet Network Access Information
-    kG2  = 0x02U,  ///< Health and Safety
-    kG3  = 0x03U,  ///< Antenna Properties (Multiple)
-    kG4  = 0x04U,  ///< Clock and Ephemeris Data (CED)
-    kG5  = 0x05U,  ///< Orbit Almanac (Multiple)
-    kG8  = 0x08U,  ///< Time of Transmission (ToT)
-    kG10 = 0x0AU,  ///< Maneuver
-    kG11 = 0x0BU,  ///< Attitude State/Ephemeris (Single)
-    kG14 = 0x0EU,  ///< Conjunction (not LunaNet 1.0)
-    kG15 = 0x0FU,  ///< Maplet (not LunaNet 1.0)
-    kG17 = 0x11U,  ///< Ancillary Info
-    kS19 = 0x13U,  ///< LunaSAR Automatic Acknowledge (not LunaNet 1.0)
-    kS20 = 0x14U,  ///< LunaSAR Return Message
-    kG22 = 0x16U,  ///< Acknowledge of non-SAR MSG (not LunaNet 1.0)
-    kG23 = 0x17U,  ///< GNSS Augmentation (not LunaNet 1.0)
-    kG24 = 0x18U,  ///< Detection Alert (not LunaNet 1.0)
-    kG25 = 0x19U,  ///< Science (not LunaNet 1.0)
-    kG27 = 0x1BU,  ///< UIS Response (not LunaNet 1.0)
-    kG28 = 0x1CU,  ///< User Schedule Notice
-    kG29 = 0x1DU,  ///< FF Commands (not LunaNet 1.0)
-    kG30 = 0x1EU,  ///< Time Conversions
-    kG31 = 0x1FU,  ///< Augmentation Differential Corrections
-    kG32 = 0x20U,  ///< Coordinate Frame Conversions
-    kUnknown = 0xFFU, ///< Unknown or unrecognised type field
+  kG1 = 0x01U,      ///< LunaNet Network Access Information
+  kG2 = 0x02U,      ///< Health and Safety
+  kG3 = 0x03U,      ///< Antenna Properties (Multiple)
+  kG4 = 0x04U,      ///< Clock and Ephemeris Data (CED)
+  kG5 = 0x05U,      ///< Orbit Almanac (Multiple)
+  kG8 = 0x08U,      ///< Time of Transmission (ToT)
+  kG10 = 0x0AU,     ///< Maneuver
+  kG11 = 0x0BU,     ///< Attitude State/Ephemeris (Single)
+  kG14 = 0x0EU,     ///< Conjunction (not LunaNet 1.0)
+  kG15 = 0x0FU,     ///< Maplet (not LunaNet 1.0)
+  kG17 = 0x11U,     ///< Ancillary Info
+  kS19 = 0x13U,     ///< LunaSAR Automatic Acknowledge (not LunaNet 1.0)
+  kS20 = 0x14U,     ///< LunaSAR Return Message
+  kG22 = 0x16U,     ///< Acknowledge of non-SAR MSG (not LunaNet 1.0)
+  kG23 = 0x17U,     ///< GNSS Augmentation (not LunaNet 1.0)
+  kG24 = 0x18U,     ///< Detection Alert (not LunaNet 1.0)
+  kG25 = 0x19U,     ///< Science (not LunaNet 1.0)
+  kG27 = 0x1BU,     ///< UIS Response (not LunaNet 1.0)
+  kG28 = 0x1CU,     ///< User Schedule Notice
+  kG29 = 0x1DU,     ///< FF Commands (not LunaNet 1.0)
+  kG30 = 0x1EU,     ///< Time Conversions
+  kG31 = 0x1FU,     ///< Augmentation Differential Corrections
+  kG32 = 0x20U,     ///< Coordinate Frame Conversions
+  kUnknown = 0xFFU, ///< Unknown or unrecognised type field
 };
 
 /** @brief Status codes for message parsing operations.
  * SEU-hardened with high Hamming distance bit patterns. */
 enum class MessageParseStatus : uint8_t {
-    kOk = 0x5AU,            ///< Parsing completed successfully.
-    kInvalidInput = 0xA5U,  ///< Input span has wrong size or is null.
-    kFaultDetected = 0x99U, ///< CFI or integrity check failed.
+  kOk = 0x5AU,            ///< Parsing completed successfully.
+  kInvalidInput = 0xA5U,  ///< Input span has wrong size or is null.
+  kFaultDetected = 0x99U, ///< CFI or integrity check failed.
 };
 
 // ─── Result Structs ──────────────────────────────────────────────────────────
@@ -110,11 +110,11 @@ inline constexpr uint16_t kSb4PayloadBits = kSb4DataBits - kSubframeTypeBits;
 /// Field boundaries within the payload are TBW in LSIS V1.0.
 /// Callers access the raw payload via sb2_data[data_offset .. data_offset + payload_size).
 struct Sb2ParseResult {
-    MessageParseStatus status = MessageParseStatus::kFaultDetected;
-    uint16_t wn = 0;              ///< Week Number (13 bits, 0..8191)
-    uint16_t itow = 0;            ///< Interval Time of Week (9 bits, 0..503)
-    uint16_t data_offset = kTotHeaderBits;  ///< Bit offset to payload start
-    uint16_t payload_size = kSb2PayloadBits; ///< Payload size in bits (1154)
+  MessageParseStatus status = MessageParseStatus::kFaultDetected;
+  uint16_t wn = 0;                         ///< Week Number (13 bits, 0..8191)
+  uint16_t itow = 0;                       ///< Interval Time of Week (9 bits, 0..503)
+  uint16_t data_offset = kTotHeaderBits;   ///< Bit offset to payload start
+  uint16_t payload_size = kSb2PayloadBits; ///< Payload size in bits (1154)
 };
 
 /// Parsed Subframe 3 result. [LSIS-AFS-802]
@@ -130,11 +130,11 @@ struct Sb2ParseResult {
 /// Callers access the raw payload via sb3_data[data_offset .. data_offset + payload_size).
 /// Internal field layouts are TBW / SISICD-defined per message type.
 struct Sb3ParseResult {
-    MessageParseStatus status = MessageParseStatus::kFaultDetected;
-    uint8_t type_raw = 0;         ///< Raw type field value (6 bits)
-    MessageType type = MessageType::kUnknown; ///< Mapped message type
-    uint16_t data_offset = kSubframeTypeBits; ///< Bit offset to payload start
-    uint16_t payload_size = kSb3PayloadBits;  ///< Payload size in bits (840)
+  MessageParseStatus status = MessageParseStatus::kFaultDetected;
+  uint8_t type_raw = 0;                     ///< Raw type field value (6 bits)
+  MessageType type = MessageType::kUnknown; ///< Mapped message type
+  uint16_t data_offset = kSubframeTypeBits; ///< Bit offset to payload start
+  uint16_t payload_size = kSb3PayloadBits;  ///< Payload size in bits (840)
 };
 
 /// Parsed Subframe 4 result. [LSIS-AFS-803]
@@ -152,11 +152,11 @@ struct Sb3ParseResult {
 /// Callers access the raw payload via sb4_data[data_offset .. data_offset + payload_size).
 /// Internal field layouts are TBW / SISICD-defined per message type.
 struct Sb4ParseResult {
-    MessageParseStatus status = MessageParseStatus::kFaultDetected;
-    uint8_t type_raw = 0;         ///< Raw type field value (6 bits)
-    MessageType type = MessageType::kUnknown; ///< Mapped message type
-    uint16_t data_offset = kSubframeTypeBits; ///< Bit offset to payload start
-    uint16_t payload_size = kSb4PayloadBits;  ///< Payload size in bits (840)
+  MessageParseStatus status = MessageParseStatus::kFaultDetected;
+  uint8_t type_raw = 0;                     ///< Raw type field value (6 bits)
+  MessageType type = MessageType::kUnknown; ///< Mapped message type
+  uint16_t data_offset = kSubframeTypeBits; ///< Bit offset to payload start
+  uint16_t payload_size = kSb4PayloadBits;  ///< Payload size in bits (840)
 };
 
 // ─── Functions ───────────────────────────────────────────────────────────────
@@ -172,11 +172,11 @@ struct Sb4ParseResult {
 /// @param out        Output value. Set to 0 on error.
 /// @return kOk on success, kInvalidInput if out of bounds.
 [[nodiscard("extract_bits returns kInvalidInput on bit-range overflow; ignoring it leaves "
-              "`out` indeterminate and propagates corrupt navigation data")]] MessageParseStatus
+            "`out` indeterminate and propagates corrupt navigation data")]] MessageParseStatus
 extract_bits(std::span<const uint8_t> bits,
-                                              uint16_t bit_offset,
-                                              uint8_t n_bits,
-                                              uint32_t& out) noexcept;
+             uint16_t bit_offset,
+             uint8_t n_bits,
+             uint32_t& out) noexcept;
 
 /// Parse Subframe 2: extract WN and ITOW from decoded SB2 data. [LSIS-AFS-801]
 ///
@@ -187,7 +187,7 @@ extract_bits(std::span<const uint8_t> bits,
 /// @param result    Output parse result.
 /// @return MessageParseStatus indicating outcome.
 [[nodiscard("parse_sb2 status reports LSIS-720/Table-22 field-range violations; "
-              "ignoring it lets malformed WN/ITOW reach the navigation solution")]] MessageParseStatus
+            "ignoring it lets malformed WN/ITOW reach the navigation solution")]] MessageParseStatus
 parse_sb2(std::span<const uint8_t> sb2_data, Sb2ParseResult& result) noexcept;
 
 /// Parse Subframe 3: extract type field and compute data offset. [LSIS-AFS-802]
@@ -197,8 +197,9 @@ parse_sb2(std::span<const uint8_t> sb2_data, Sb2ParseResult& result) noexcept;
 /// @param sb3_data  Decoded SB3 navigation data (846 bits, one bit per byte).
 /// @param result    Output parse result.
 /// @return MessageParseStatus indicating outcome.
-[[nodiscard("parse_sb3 status reports unrecognised type fields or LSIS-Table-19 "
-              "violations; ignoring it leads to mis-routing of subframe payloads")]] MessageParseStatus
+[[nodiscard(
+    "parse_sb3 status reports unrecognised type fields or LSIS-Table-19 "
+    "violations; ignoring it leads to mis-routing of subframe payloads")]] MessageParseStatus
 parse_sb3(std::span<const uint8_t> sb3_data, Sb3ParseResult& result) noexcept;
 
 /// Parse Subframe 4: extract type field and compute data offset. [LSIS-AFS-803]
@@ -208,8 +209,9 @@ parse_sb3(std::span<const uint8_t> sb3_data, Sb3ParseResult& result) noexcept;
 /// @param sb4_data  Decoded SB4 navigation data (846 bits, one bit per byte).
 /// @param result    Output parse result.
 /// @return MessageParseStatus indicating outcome.
-[[nodiscard("parse_sb4 status reports unrecognised type fields or LSIS-Table-20 "
-              "violations; ignoring it leads to mis-routing of subframe payloads")]] MessageParseStatus
+[[nodiscard(
+    "parse_sb4 status reports unrecognised type fields or LSIS-Table-20 "
+    "violations; ignoring it leads to mis-routing of subframe payloads")]] MessageParseStatus
 parse_sb4(std::span<const uint8_t> sb4_data, Sb4ParseResult& result) noexcept;
 
 /// Validate spare bits follow the alternating 0/1 pattern (LSIS-300).
@@ -220,7 +222,7 @@ parse_sb4(std::span<const uint8_t> sb4_data, Sb4ParseResult& result) noexcept;
 /// @param bits    Span of bits to validate (one bit per byte).
 /// @return true if the pattern is correct, false otherwise.
 [[nodiscard("validate_spare_bits returns false on LSIS-300 spare-bit pattern violation; "
-              "ignoring it masks a spec-compliance failure that may indicate corruption")]] bool
+            "ignoring it masks a spec-compliance failure that may indicate corruption")]] bool
 validate_spare_bits(std::span<const uint8_t> bits) noexcept;
 
 /// Map a raw 6-bit type field value to a MessageType enum.
@@ -228,7 +230,7 @@ validate_spare_bits(std::span<const uint8_t> bits) noexcept;
 /// @param raw_type  Raw type field value (0..63).
 /// @return Corresponding MessageType, or kUnknown if not recognised.
 [[nodiscard("type_field_to_message_type returns kUnknown for unrecognised raw types; "
-              "ignoring it dispatches the wrong parser and mis-routes the message")]] MessageType
+            "ignoring it dispatches the wrong parser and mis-routes the message")]] MessageType
 type_field_to_message_type(uint8_t raw_type) noexcept;
 
 } // namespace lunalink::signal

@@ -431,14 +431,12 @@ TEST_CASE("[LSIS-AFS-300] SB2 builder enforces LSIS-300 pattern regardless of ca
   LdpcWorkspace dec_ws{};
   REQUIRE(ldpc_decode(LdpcSubframe::kSF2, soft, 20, decoded, dec_ws) == LdpcStatus::kOk);
 
-  const auto spare_span =
-      std::span<const uint8_t>(decoded).subspan(kSb2SpareOffset, kSb2SpareBits);
+  const auto spare_span = std::span<const uint8_t>(decoded).subspan(kSb2SpareOffset, kSb2SpareBits);
   CHECK(validate_spare_bits(spare_span));
   CHECK(crc24_verify(decoded));
 }
 
-TEST_CASE("[LSIS-AFS-300] frame_build emits LSIS-300 pattern in the SB2 spare region",
-          "[frame]") {
+TEST_CASE("[LSIS-AFS-300] frame_build emits LSIS-300 pattern in the SB2 spare region", "[frame]") {
   // End-to-end through the full-frame assembler: spare bits must still
   // come out right even though the caller's sb2_data is all ones.
   std::array<uint8_t, kSb2DataBits> sb2{};
@@ -794,9 +792,12 @@ TEST_CASE("frame_decode: LDPC fails (not kOk) when payload replaced with noise",
   std::array<uint8_t, kSb4DataBits> sb4_data{};
   // Deterministic alternating-bit fill — no RNG dependency, easy to
   // reproduce in a debugger.
-  for (size_t i = 0; i < kSb2DataBits; ++i) sb2_data[i] = static_cast<uint8_t>(i & 1U);
-  for (size_t i = 0; i < kSb3DataBits; ++i) sb3_data[i] = static_cast<uint8_t>((i + 1U) & 1U);
-  for (size_t i = 0; i < kSb4DataBits; ++i) sb4_data[i] = static_cast<uint8_t>(i & 1U);
+  for (size_t i = 0; i < kSb2DataBits; ++i)
+    sb2_data[i] = static_cast<uint8_t>(i & 1U);
+  for (size_t i = 0; i < kSb3DataBits; ++i)
+    sb3_data[i] = static_cast<uint8_t>((i + 1U) & 1U);
+  for (size_t i = 0; i < kSb4DataBits; ++i)
+    sb4_data[i] = static_cast<uint8_t>(i & 1U);
 
   std::array<uint8_t, kFrameLength> frame{};
   LdpcEncodeWorkspace enc_ws{};
@@ -822,8 +823,7 @@ TEST_CASE("frame_decode: LDPC fails (not kOk) when payload replaced with noise",
   const auto status = frame_decode(*rx, result, *ws, hal, 5);
 
   CHECK(status != FrameDecodeStatus::kOk);
-  CHECK((status == FrameDecodeStatus::kLdpcFailed ||
-         status == FrameDecodeStatus::kCrcFailed));
+  CHECK((status == FrameDecodeStatus::kLdpcFailed || status == FrameDecodeStatus::kCrcFailed));
 }
 
 TEST_CASE("frame_decode: classify result distinguishes LDPC and CRC failures", "[frame]") {
@@ -835,9 +835,12 @@ TEST_CASE("frame_decode: classify result distinguishes LDPC and CRC failures", "
   std::array<uint8_t, kSb2DataBits> sb2_data{};
   std::array<uint8_t, kSb3DataBits> sb3_data{};
   std::array<uint8_t, kSb4DataBits> sb4_data{};
-  for (size_t i = 0; i < kSb2DataBits; ++i) sb2_data[i] = static_cast<uint8_t>(i & 1U);
-  for (size_t i = 0; i < kSb3DataBits; ++i) sb3_data[i] = static_cast<uint8_t>((i + 1U) & 1U);
-  for (size_t i = 0; i < kSb4DataBits; ++i) sb4_data[i] = static_cast<uint8_t>(i & 1U);
+  for (size_t i = 0; i < kSb2DataBits; ++i)
+    sb2_data[i] = static_cast<uint8_t>(i & 1U);
+  for (size_t i = 0; i < kSb3DataBits; ++i)
+    sb3_data[i] = static_cast<uint8_t>((i + 1U) & 1U);
+  for (size_t i = 0; i < kSb4DataBits; ++i)
+    sb4_data[i] = static_cast<uint8_t>(i & 1U);
 
   std::array<uint8_t, kFrameLength> frame{};
   LdpcEncodeWorkspace enc_ws{};
@@ -862,8 +865,7 @@ TEST_CASE("frame_decode: classify result distinguishes LDPC and CRC failures", "
 
   // The decoder must flag the failure — not silently return kOk.
   CHECK(status != FrameDecodeStatus::kOk);
-  CHECK((status == FrameDecodeStatus::kLdpcFailed ||
-         status == FrameDecodeStatus::kCrcFailed));
+  CHECK((status == FrameDecodeStatus::kLdpcFailed || status == FrameDecodeStatus::kCrcFailed));
 }
 
 // ===========================================================================
@@ -901,9 +903,12 @@ TEST_CASE("frame_decode: non-finite sync threshold rejected", "[frame]") {
   FrameDecodeResult result{};
   auto ws = std::make_unique<FrameDecodeWorkspace>();
   NullTelemetryHal hal;
-  CHECK(frame_decode(*rx, result, *ws, hal, kFrameDecodeLdpcIterations,
-                     std::numeric_limits<float>::infinity()) ==
-        FrameDecodeStatus::kFaultDetected);
+  CHECK(frame_decode(*rx,
+                     result,
+                     *ws,
+                     hal,
+                     kFrameDecodeLdpcIterations,
+                     std::numeric_limits<float>::infinity()) == FrameDecodeStatus::kFaultDetected);
 }
 
 // ===========================================================================

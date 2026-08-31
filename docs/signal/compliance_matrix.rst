@@ -148,18 +148,6 @@ Gateway 5: Frame Sync & Decoding
      - Requirement
      - Status
      - Notes
-   * - LSIS-701
-     - Software Correlator — PCPS Acquisition (2048-pt FFT)
-     - ✅
-     - Implemented [Hardened] in ``correlator.cpp``; DLL+PLL tracking
-   * - LSIS-702
-     - Channel Assignment — PRN to tracking channel mapping
-     - ✅
-     - 6 channels; TMR state; transition matrix
-   * - LSIS-703
-     - Pseudorange Output — code-phase to meters conversion
-     - ✅
-     - Ring buffer history; kNotLocked guard
    * - LSIS-710
      - Sync Pattern Detection — 68-symbol cross-correlation
      - ✅

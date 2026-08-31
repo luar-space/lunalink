@@ -27,7 +27,8 @@ inline constexpr uint32_t kMagicFram = 0x4652414DU; // "FRAM"
 
 /// IQSG/IQS2 header: magic(4) + version(4) + sample_rate(4) + prn(4) + reserved(16) = 32 bytes.
 inline constexpr uint8_t kIqHeaderBytes = 32;
-/// LSIS spreading code header: magic(4) + prn(2) + code_type(2) + length(4) + reserved(4) = 16 bytes.
+/// LSIS spreading code header: magic(4) + prn(2) + code_type(2) + length(4) + reserved(4) = 16
+/// bytes.
 inline constexpr uint8_t kLsisHeaderBytes = 16;
 /// FRAM frame header: magic(4) + version(4) + frame_length(4) + prn(4) = 16 bytes.
 inline constexpr uint8_t kFramHeaderBytes = 16;

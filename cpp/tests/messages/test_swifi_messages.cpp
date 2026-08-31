@@ -24,7 +24,8 @@ using namespace lunalink::signal;
 // FI-24: Aliasing — overlapping workspace staging and output in frame_build_partial
 // ---------------------------------------------------------------------------
 TEST_CASE(
-    "[LSIS-AFS-601] SWIFI: aliasing_overlap_frame_build_partial — kFaultDetected before write", "[swifi][messages]") {
+    "[LSIS-AFS-601] SWIFI: aliasing_overlap_frame_build_partial — kFaultDetected before write",
+    "[swifi][messages]") {
   // Arena large enough for FrameBuildWorkspace + kFrameLength with overlap.
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays)
   alignas(16) std::array<uint8_t, sizeof(FrameBuildWorkspace) + kFrameLength> arena{};
@@ -45,7 +46,8 @@ TEST_CASE(
 // ---------------------------------------------------------------------------
 // FI-25: Aliasing — overlapping workspace staging and output in frame_build
 // ---------------------------------------------------------------------------
-TEST_CASE("[LSIS-AFS-605] SWIFI: aliasing_overlap_frame_build — kFaultDetected before write", "[swifi][messages]") {
+TEST_CASE("[LSIS-AFS-605] SWIFI: aliasing_overlap_frame_build — kFaultDetected before write",
+          "[swifi][messages]") {
   alignas(16) std::array<uint8_t, sizeof(FrameBuildWorkspace) + kFrameLength> arena{};
   arena.fill(0xFFU);
   auto* ws = new (arena.data()) FrameBuildWorkspace{};
@@ -72,7 +74,8 @@ TEST_CASE("[LSIS-AFS-605] SWIFI: aliasing_overlap_frame_build — kFaultDetected
 // FI-13 — Frame-assembly CFI: subframe builder milestone skip (FM-025)
 // ---------------------------------------------------------------------------
 TEST_CASE("[LSIS-AFS-610] SWIFI: subframe_builder_cfi_milestone_skip — LDPC LUT fault skips "
-          "milestone 3", "[swifi][messages]") {
+          "milestone 3",
+          "[swifi][messages]") {
   // Inject a single bit flip into the LDPC SF2 matrix (same as FI-05).
   kLdpc_sf2_a.inject_bit_flip(0U, 0x01U);
 
@@ -100,7 +103,8 @@ TEST_CASE("[LSIS-AFS-610] SWIFI: subframe_builder_cfi_milestone_skip — LDPC LU
 // FI-14 — Frame-assembly CFI: frame assembler milestone skip (FM-026)
 // ---------------------------------------------------------------------------
 TEST_CASE("[SW-SAF-01] [LSIS-AFS-606] SWIFI: frame_assembler_cfi_milestone_skip — LDPC LUT fault "
-          "skips SB2 milestone", "[swifi][messages]") {
+          "skips SB2 milestone",
+          "[swifi][messages]") {
   // Inject a single bit flip into the LDPC SF2 matrix.
   kLdpc_sf2_a.inject_bit_flip(0U, 0x01U);
 
@@ -129,7 +133,8 @@ TEST_CASE("[SW-SAF-01] [LSIS-AFS-606] SWIFI: frame_assembler_cfi_milestone_skip 
 // ---------------------------------------------------------------------------
 // FI-23: frame_decode CFI skip — injected milestone skip triggers kFaultDetected
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: frame_decode_cfi_skip — skipped milestone fires kFaultDetected", "[swifi][messages]") {
+TEST_CASE("SWIFI: frame_decode_cfi_skip — skipped milestone fires kFaultDetected",
+          "[swifi][messages]") {
   // Build a valid noiseless frame for decoding
   std::array<uint8_t, kSb2DataBits> sb2_data{};
   std::array<uint8_t, kSb3DataBits> sb3_data{};
@@ -170,125 +175,141 @@ TEST_CASE("SWIFI: frame_decode_cfi_skip — skipped milestone fires kFaultDetect
 // ---------------------------------------------------------------------------
 // FI-28 — Return-value injection: subframe_build_sb2 forced LDPC failure
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: subframe_build_sb2_forced_ldpc_fail — output scrubbed on injected failure", "[swifi][messages]") {
-    std::array<uint8_t, kSb2DataBits> data{};
-    std::array<uint8_t, kSb2Length> out{};
-    out.fill(0xFFU);  // poison to verify scrub
-    LdpcEncodeWorkspace ws{};
+TEST_CASE("SWIFI: subframe_build_sb2_forced_ldpc_fail — output scrubbed on injected failure",
+          "[swifi][messages]") {
+  std::array<uint8_t, kSb2DataBits> data{};
+  std::array<uint8_t, kSb2Length> out{};
+  out.fill(0xFFU); // poison to verify scrub
+  LdpcEncodeWorkspace ws{};
 
-    // Inject: force ldpc_encode to return kFaultDetected
-    ws.fi_force_status = static_cast<uint8_t>(LdpcStatus::kFaultDetected);
+  // Inject: force ldpc_encode to return kFaultDetected
+  ws.fi_force_status = static_cast<uint8_t>(LdpcStatus::kFaultDetected);
 
-    const auto status = subframe_build_sb2(data, out, ws);
+  const auto status = subframe_build_sb2(data, out, ws);
 
-    // Subframe builder must propagate the failure
-    REQUIRE(status != FrameStatus::kOk);
+  // Subframe builder must propagate the failure
+  REQUIRE(status != FrameStatus::kOk);
 
-    // Output must be scrubbed (all zero)
-    for (const auto byte : out) {
-        CHECK(byte == 0U);
-    }
+  // Output must be scrubbed (all zero)
+  for (const auto byte : out) {
+    CHECK(byte == 0U);
+  }
 }
 
 // ---------------------------------------------------------------------------
 // FI-29 — Return-value injection: frame_build forced LDPC failure
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: frame_build_forced_ldpc_fail — full frame scrubbed on injected failure", "[swifi][messages]") {
-    std::array<uint8_t, kSb2DataBits> sb2{};
-    std::array<uint8_t, kSb3DataBits> sb3{};
-    std::array<uint8_t, kSb4DataBits> sb4{};
-    std::array<uint8_t, kFrameLength> out{};
-    out.fill(0xFFU);  // poison to verify scrub
-    LdpcEncodeWorkspace ldpc_ws{};
-    FrameBuildWorkspace fbw{};
+TEST_CASE("SWIFI: frame_build_forced_ldpc_fail — full frame scrubbed on injected failure",
+          "[swifi][messages]") {
+  std::array<uint8_t, kSb2DataBits> sb2{};
+  std::array<uint8_t, kSb3DataBits> sb3{};
+  std::array<uint8_t, kSb4DataBits> sb4{};
+  std::array<uint8_t, kFrameLength> out{};
+  out.fill(0xFFU); // poison to verify scrub
+  LdpcEncodeWorkspace ldpc_ws{};
+  FrameBuildWorkspace fbw{};
 
-    // Inject: force ldpc_encode to return kFaultDetected on the first LDPC call (SB2)
-    ldpc_ws.fi_force_status = static_cast<uint8_t>(LdpcStatus::kFaultDetected);
+  // Inject: force ldpc_encode to return kFaultDetected on the first LDPC call (SB2)
+  ldpc_ws.fi_force_status = static_cast<uint8_t>(LdpcStatus::kFaultDetected);
 
-    const auto status = frame_build(Fid{0U}, Toi{0U}, sb2, sb3, sb4, out, ldpc_ws, fbw);
+  const auto status = frame_build(Fid{0U}, Toi{0U}, sb2, sb3, sb4, out, ldpc_ws, fbw);
 
-    // Frame build must fail
-    REQUIRE(status != FrameStatus::kOk);
+  // Frame build must fail
+  REQUIRE(status != FrameStatus::kOk);
 
-    // Full frame output must be scrubbed
-    for (const auto byte : out) {
-        CHECK(byte == 0U);
-    }
+  // Full frame output must be scrubbed
+  for (const auto byte : out) {
+    CHECK(byte == 0U);
+  }
 
-    // Staging must be scrubbed
-    for (const auto byte : fbw.staging) {
-        CHECK(byte == 0U);
-    }
+  // Staging must be scrubbed
+  for (const auto byte : fbw.staging) {
+    CHECK(byte == 0U);
+  }
 }
 
 // ---------------------------------------------------------------------------
 // FI-30 — Return-value injection: frame_decode forced sync failure
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: frame_decode_forced_sync_fail — workspace scrubbed on injected sync failure", "[swifi][messages]") {
-    // Build a valid noiseless frame
-    std::array<uint8_t, kSb2DataBits> sb2_data{};
-    std::array<uint8_t, kSb3DataBits> sb3_data{};
-    std::array<uint8_t, kSb4DataBits> sb4_data{};
-    std::array<uint8_t, kFrameLength> tx_frame{};
-    LdpcEncodeWorkspace enc_ws{};
-    FrameBuildWorkspace fbw{};
-    REQUIRE(frame_build(Fid{0}, Toi{42}, sb2_data, sb3_data, sb4_data,
-                        tx_frame, enc_ws, fbw) == FrameStatus::kOk);
+TEST_CASE("SWIFI: frame_decode_forced_sync_fail — workspace scrubbed on injected sync failure",
+          "[swifi][messages]") {
+  // Build a valid noiseless frame
+  std::array<uint8_t, kSb2DataBits> sb2_data{};
+  std::array<uint8_t, kSb3DataBits> sb3_data{};
+  std::array<uint8_t, kSb4DataBits> sb4_data{};
+  std::array<uint8_t, kFrameLength> tx_frame{};
+  LdpcEncodeWorkspace enc_ws{};
+  FrameBuildWorkspace fbw{};
+  REQUIRE(frame_build(Fid{0}, Toi{42}, sb2_data, sb3_data, sb4_data, tx_frame, enc_ws, fbw) ==
+          FrameStatus::kOk);
 
-    std::array<float, kFrameLength> rx_symbols{};
-    for (size_t i = 0; i < kFrameLength; ++i) {
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-        rx_symbols[i] = (tx_frame[i] == 0U) ? 1.0F : -1.0F;
-    }
+  std::array<float, kFrameLength> rx_symbols{};
+  for (size_t i = 0; i < kFrameLength; ++i) {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+    rx_symbols[i] = (tx_frame[i] == 0U) ? 1.0F : -1.0F;
+  }
 
-    CaptureTelemetryHal<4> hal;
-    FrameDecodeResult result{};
-    auto ws = std::make_unique<FrameDecodeWorkspace>();
+  CaptureTelemetryHal<4> hal;
+  FrameDecodeResult result{};
+  auto ws = std::make_unique<FrameDecodeWorkspace>();
 
-    // Inject: force sync stage to return kSyncNotFound
-    ws->fi_force_sync_fail = 1;
+  // Inject: force sync stage to return kSyncNotFound
+  ws->fi_force_sync_fail = 1;
 
-    const auto status = frame_decode(rx_symbols, result, *ws, hal);
-    REQUIRE(status == FrameDecodeStatus::kSyncNotFound);
+  const auto status = frame_decode(rx_symbols, result, *ws, hal);
+  REQUIRE(status == FrameDecodeStatus::kSyncNotFound);
 
-    // Data buffers must be scrubbed on non-kOk status
-    for (const auto byte : ws->sb2_data) { CHECK(byte == 0U); }
-    for (const auto byte : ws->sb3_data) { CHECK(byte == 0U); }
-    for (const auto byte : ws->sb4_data) { CHECK(byte == 0U); }
+  // Data buffers must be scrubbed on non-kOk status
+  for (const auto byte : ws->sb2_data) {
+    CHECK(byte == 0U);
+  }
+  for (const auto byte : ws->sb3_data) {
+    CHECK(byte == 0U);
+  }
+  for (const auto byte : ws->sb4_data) {
+    CHECK(byte == 0U);
+  }
 }
 
 // ---------------------------------------------------------------------------
 // FI-31 — Return-value injection: frame_decode forced LDPC failure
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: frame_decode_forced_ldpc_fail — workspace scrubbed on injected LDPC failure", "[swifi][messages]") {
-    // Build a valid noiseless frame
-    std::array<uint8_t, kSb2DataBits> sb2_data{};
-    std::array<uint8_t, kSb3DataBits> sb3_data{};
-    std::array<uint8_t, kSb4DataBits> sb4_data{};
-    std::array<uint8_t, kFrameLength> tx_frame{};
-    LdpcEncodeWorkspace enc_ws{};
-    FrameBuildWorkspace fbw{};
-    REQUIRE(frame_build(Fid{0}, Toi{42}, sb2_data, sb3_data, sb4_data,
-                        tx_frame, enc_ws, fbw) == FrameStatus::kOk);
+TEST_CASE("SWIFI: frame_decode_forced_ldpc_fail — workspace scrubbed on injected LDPC failure",
+          "[swifi][messages]") {
+  // Build a valid noiseless frame
+  std::array<uint8_t, kSb2DataBits> sb2_data{};
+  std::array<uint8_t, kSb3DataBits> sb3_data{};
+  std::array<uint8_t, kSb4DataBits> sb4_data{};
+  std::array<uint8_t, kFrameLength> tx_frame{};
+  LdpcEncodeWorkspace enc_ws{};
+  FrameBuildWorkspace fbw{};
+  REQUIRE(frame_build(Fid{0}, Toi{42}, sb2_data, sb3_data, sb4_data, tx_frame, enc_ws, fbw) ==
+          FrameStatus::kOk);
 
-    std::array<float, kFrameLength> rx_symbols{};
-    for (size_t i = 0; i < kFrameLength; ++i) {
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-        rx_symbols[i] = (tx_frame[i] == 0U) ? 1.0F : -1.0F;
-    }
+  std::array<float, kFrameLength> rx_symbols{};
+  for (size_t i = 0; i < kFrameLength; ++i) {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+    rx_symbols[i] = (tx_frame[i] == 0U) ? 1.0F : -1.0F;
+  }
 
-    CaptureTelemetryHal<4> hal;
-    FrameDecodeResult result{};
-    auto ws = std::make_unique<FrameDecodeWorkspace>();
+  CaptureTelemetryHal<4> hal;
+  FrameDecodeResult result{};
+  auto ws = std::make_unique<FrameDecodeWorkspace>();
 
-    // Inject: force LDPC decode stage to return kFaultDetected
-    ws->fi_force_ldpc_fail = 1;
+  // Inject: force LDPC decode stage to return kFaultDetected
+  ws->fi_force_ldpc_fail = 1;
 
-    const auto status = frame_decode(rx_symbols, result, *ws, hal);
-    REQUIRE(status == FrameDecodeStatus::kFaultDetected);
+  const auto status = frame_decode(rx_symbols, result, *ws, hal);
+  REQUIRE(status == FrameDecodeStatus::kFaultDetected);
 
-    // Data buffers must be scrubbed on kFaultDetected status
-    for (const auto byte : ws->sb2_data) { CHECK(byte == 0U); }
-    for (const auto byte : ws->sb3_data) { CHECK(byte == 0U); }
-    for (const auto byte : ws->sb4_data) { CHECK(byte == 0U); }
+  // Data buffers must be scrubbed on kFaultDetected status
+  for (const auto byte : ws->sb2_data) {
+    CHECK(byte == 0U);
+  }
+  for (const auto byte : ws->sb3_data) {
+    CHECK(byte == 0U);
+  }
+  for (const auto byte : ws->sb4_data) {
+    CHECK(byte == 0U);
+  }
 }

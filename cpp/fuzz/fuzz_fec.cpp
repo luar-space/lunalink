@@ -33,6 +33,9 @@ void fill_floats(std::span<float> out, std::span<const uint8_t> data) {
     if (data.size() >= sizeof(float)) {
       std::array<uint8_t, sizeof(float)> raw{};
       for (size_t b = 0; b < raw.size(); ++b) {
+        // Loop index is bounded by the container's own size(), so the access is
+        // provably in range; the check cannot see that through the loop bound.
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
         raw[b] = data[((i * sizeof(float)) + b) % data.size()];
       }
       std::memcpy(&v, raw.data(), raw.size());
@@ -66,6 +69,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     // Hard-decision BCH over exactly 52 symbols (cycled, forced to {0,1}).
     std::array<uint8_t, 52> in{};
     for (size_t i = 0; i < in.size(); ++i) {
+      // Loop index is bounded by the container's own size(), so the access is
+      // provably in range; the check cannot see that through the loop bound.
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
       in[i] = rest.empty() ? 0U : static_cast<uint8_t>(rest[i % rest.size()] & 1U);
     }
     (void)bch_decode(in);

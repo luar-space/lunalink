@@ -21,7 +21,7 @@ struct MatchedCodeGenResult {
 
 // Generate primary code and compute sec^tert modifier for a given epoch.
 [[nodiscard]] MatchedCodeGenResult generate_matched_codes(const MatchedCodeAssignment& assignment,
-                                            uint16_t epoch_idx) noexcept {
+                                                          uint16_t epoch_idx) noexcept {
   MatchedCodeGenResult res{};
 
   if (weil10230_prn_packed(assignment.primary_prn, res.primary) != PrnStatus::kOk) {
@@ -54,8 +54,8 @@ struct MatchedCodeGenResult {
 // Apply sec^tert modifier to primary code and write unpacked chips to output.
 // Returns kOk on success, kFaultDetected on CFI failure.
 [[nodiscard]] MatchedCodeStatus apply_modifier_to_output(const PrnCode& primary_code,
-                                           uint8_t modifier,
-                                           std::span<uint8_t> out) noexcept {
+                                                         uint8_t modifier,
+                                                         std::span<uint8_t> out) noexcept {
   const uint8_t byte_modifier = (modifier == 0) ? 0x00U : 0xFFU;
 
   volatile uint32_t byte_count = 0;
@@ -81,7 +81,8 @@ struct MatchedCodeGenResult {
   }
 
   if (byte_count != kWeil10230FullBytes) {
-    return MatchedCodeStatus::kFaultDetected; // FIZ-1 // NOCOVER(DEFENCE_IN_DEPTH): CFI terminal check
+    return MatchedCodeStatus::kFaultDetected; // FIZ-1 // NOCOVER(DEFENCE_IN_DEPTH): CFI terminal
+                                              // check
   }
 
   const auto last_byte =
@@ -117,7 +118,8 @@ MatchedCodeStatus matched_code_epoch_checked(const MatchedCodeAssignment& assign
   if (status == MatchedCodeStatus::kOk) {
     const auto gen = generate_matched_codes(assignment, epoch_idx);
     if (!gen.ok) {
-      status = MatchedCodeStatus::kInvalidAssignment; // NOCOVER(DEFENCE_IN_DEPTH): modifier application fault
+      status = MatchedCodeStatus::kInvalidAssignment; // NOCOVER(DEFENCE_IN_DEPTH): modifier
+                                                      // application fault
     } else {
       status = apply_modifier_to_output(gen.primary, gen.modifier, out);
     }

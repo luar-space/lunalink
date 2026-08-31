@@ -8,10 +8,11 @@
 #include "lunalink/encoding/ldpc.hpp"
 #include "lunalink/encoding/ldpc_tables.hpp"
 
+#include <catch2/catch_test_macros.hpp>
+
 #include <array>
 #include <cmath>
 #include <random>
-#include <catch2/catch_test_macros.hpp>
 
 using namespace lunalink::signal;
 
@@ -37,7 +38,8 @@ TEST_CASE("SWIFI: FI-05 — lut_bit_flip_ldpc_matrix — integrity check fails",
 // ---------------------------------------------------------------------------
 // FI-27 — Return-value injection: ldpc_encode forced kFaultDetected
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: ldpc_encode_forced_return — fi_force_status returns injected status", "[swifi][encoding]") {
+TEST_CASE("SWIFI: ldpc_encode_forced_return — fi_force_status returns injected status",
+          "[swifi][encoding]") {
   // Valid SF2 message (1200 zero bits)
   std::array<uint8_t, 1200> msg{};
   std::array<uint8_t, 2400> out{};
@@ -70,7 +72,8 @@ TEST_CASE("SWIFI: ldpc_encode_forced_return — fi_force_status returns injected
 // ---------------------------------------------------------------------------
 // FI-41 — TMR phi_sum mirror corruption: verify_mirrors() detects bit flip
 // ---------------------------------------------------------------------------
-TEST_CASE("SWIFI: ldpc_decode_phi_mirror_corruption — TMR detects corrupted phi_sum_mir", "[swifi][encoding]") {
+TEST_CASE("SWIFI: ldpc_decode_phi_mirror_corruption — TMR detects corrupted phi_sum_mir",
+          "[swifi][encoding]") {
   // Encode a valid SF2 frame
   std::array<uint8_t, 1200> msg{};
   std::array<uint8_t, 2400> encoded{};

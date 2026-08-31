@@ -8,7 +8,7 @@ Usage:
     python3 scripts/performance_report.py \
         --xml /tmp/wcet_results.xml \
         --console /tmp/wcet_console.txt \
-        --output docs/assurance/private/wcet_profile.rst
+        --output docs/assurance/wcet_profile.rst
 """
 
 from __future__ import annotations

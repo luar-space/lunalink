@@ -94,8 +94,8 @@ enum class FrameStatus : uint8_t {
  * @return FrameStatus::kOk or an error code.
  */
 [[nodiscard("FrameStatus carries BCH/interleaver failures from the partial-frame "
-              "pipeline; ignoring it allows a corrupt frame into the transmit chain "
-              "(LSIS-AFS-606, FIZ-1/2/3)")]] FrameStatus
+            "pipeline; ignoring it allows a corrupt frame into the transmit chain "
+            "(LSIS-AFS-606, FIZ-1/2/3)")]] FrameStatus
 frame_build_partial(Fid fid,
                     Toi toi,
                     std::span<uint8_t, 6000ULL> out,
@@ -106,8 +106,8 @@ frame_build_partial(Fid fid,
  */
 template <typename T>
 [[nodiscard("FrameStatus carries BCH/interleaver failures from the partial-frame "
-              "pipeline; ignoring it allows a corrupt frame into the transmit chain "
-              "(LSIS-AFS-606, FIZ-1/2/3)")]] inline FrameStatus
+            "pipeline; ignoring it allows a corrupt frame into the transmit chain "
+            "(LSIS-AFS-606, FIZ-1/2/3)")]] inline FrameStatus
 frame_build_partial(Fid fid, Toi toi, T&& out, FrameBuildWorkspace& workspace) noexcept {
   return frame_build_partial(fid, toi, std::span<uint8_t, 6000ULL>(out), workspace);
 }
@@ -130,8 +130,8 @@ frame_build_partial(Fid fid, Toi toi, T&& out, FrameBuildWorkspace& workspace) n
  * @return FrameStatus::kOk if the CRC matches; kFaultDetected otherwise. // FIZ-2
  */
 [[nodiscard("commit_frame returns kFaultDetected when the trailing CRC-24Q on the "
-              "assembled frame mismatches; ignoring it permits a corrupt frame to reach "
-              "DMA hand-off (SW-SAF-01, FIZ-2)")]] FrameStatus
+            "assembled frame mismatches; ignoring it permits a corrupt frame to reach "
+            "DMA hand-off (SW-SAF-01, FIZ-2)")]] FrameStatus
 commit_frame(std::span<const uint8_t> frame_buf) noexcept;
 
 /**
@@ -146,7 +146,7 @@ commit_frame(std::span<const uint8_t> frame_buf) noexcept;
  * @return FrameStatus::kOk or an error code.
  */
 [[nodiscard("FrameStatus reports CRC-24 and LDPC SF2 encoder failures; ignoring it "
-              "allows malformed SB2 into the transmit chain (LSIS-AFS-602)")]] FrameStatus
+            "allows malformed SB2 into the transmit chain (LSIS-AFS-602)")]] FrameStatus
 subframe_build_sb2(std::span<const uint8_t, kSb2DataBits> data,
                    std::span<uint8_t, kSb2Length> out,
                    LdpcEncodeWorkspace& workspace) noexcept;
@@ -163,7 +163,7 @@ subframe_build_sb2(std::span<const uint8_t, kSb2DataBits> data,
  * @return FrameStatus::kOk or an error code.
  */
 [[nodiscard("FrameStatus reports CRC-24 and LDPC SF3 encoder failures; ignoring it "
-              "allows malformed SB3 into the transmit chain (LSIS-AFS-603)")]] FrameStatus
+            "allows malformed SB3 into the transmit chain (LSIS-AFS-603)")]] FrameStatus
 subframe_build_sb3(std::span<const uint8_t, kSb3DataBits> data,
                    std::span<uint8_t, kSb3Length> out,
                    LdpcEncodeWorkspace& workspace) noexcept;
@@ -179,7 +179,7 @@ subframe_build_sb3(std::span<const uint8_t, kSb3DataBits> data,
  * @return FrameStatus::kOk or an error code.
  */
 [[nodiscard("FrameStatus reports CRC-24 and LDPC SF4 encoder failures; ignoring it "
-              "allows malformed SB4 into the transmit chain (LSIS-AFS-604)")]] FrameStatus
+            "allows malformed SB4 into the transmit chain (LSIS-AFS-604)")]] FrameStatus
 subframe_build_sb4(std::span<const uint8_t, kSb4DataBits> data,
                    std::span<uint8_t, kSb4Length> out,
                    LdpcEncodeWorkspace& workspace) noexcept;
@@ -205,8 +205,8 @@ subframe_build_sb4(std::span<const uint8_t, kSb4DataBits> data,
  * @return FrameStatus::kOk or an error code.
  */
 [[nodiscard("FrameStatus aggregates failures from CRC, BCH, LDPC, interleaver and "
-              "commit stages; ignoring it allows a corrupt frame into the transmit "
-              "chain (LSIS-AFS-605, SW-SAF-01)")]] FrameStatus
+            "commit stages; ignoring it allows a corrupt frame into the transmit "
+            "chain (LSIS-AFS-605, SW-SAF-01)")]] FrameStatus
 frame_build(Fid fid,
             Toi toi,
             std::span<const uint8_t, kSb2DataBits> sb2_data,

@@ -327,7 +327,7 @@ GD7.5 --- Compliance Validation
   implemented, 12 RF/out-of-scope, 15 TBW, 3 TBC, 2 FLEX).
 - **Compliance matrix:** ``docs/signal/compliance_matrix.rst`` --- all G1-G7
   requirements tracked; zero TODOs remaining for G1-G7.
-- **Traceability matrix:** ``docs/assurance/public/traceability_matrix.rst`` ---
+- **Traceability matrix:** ``docs/assurance/traceability_matrix.rst`` ---
   22 LSIS-AFS + 5 SW-SAF requirements mapped to tests; 100% coverage.
 - **Test coverage:** 189+ tests pass (150 unit + 39 SWIFI).
 

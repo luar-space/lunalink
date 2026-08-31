@@ -1,0 +1,4 @@
+recording,band,duration_ms,variant,wall_clock_s,fft_forward_count,fft_inverse_count,detection_count
+OP21_0,L1,600.0640000000001,baseline,42.51265366701409,47286,988245,3
+OP17_0,L1,400.384,baseline,34.82062766700983,47298,999045,4
+OP9_0,L5,200.02133333333333,baseline,0.12202333309687674,0,0,0

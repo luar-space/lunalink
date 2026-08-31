@@ -49,11 +49,8 @@ exclude_patterns = [
     "_build",
     "Thumbs.db",
     ".DS_Store",
-    "assurance/public/README.rst",
     "assurance/README.rst",
-    # [[private-begin]]
-    # Private assurance docs are excluded from OSS Sphinx builds.
-    # [[private-end]]
+    "assurance/README.rst",
 ]
 
 html_theme = "sphinx_rtd_theme"

@@ -34,11 +34,11 @@ TEST_CASE("[LSIS-AFS-320] LDPC Encoder: bit-exact vs LANS-AFS-SIM reference", "[
 
   std::array<uint8_t, 2400> out_sf2{};
   LdpcEncodeWorkspace ws{};
-  REQUIRE(ldpc_encode(LdpcSubframe::kSF2, kLansSf2AltInput, out_sf2, ws) ==
-          LdpcStatus::kOk);
+  REQUIRE(ldpc_encode(LdpcSubframe::kSF2, kLansSf2AltInput, out_sf2, ws) == LdpcStatus::kOk);
   size_t mismatches_sf2 = 0;
   for (size_t i = 0; i < out_sf2.size(); ++i) {
-    if (out_sf2[i] != kLansSf2AltCoded[i]) {  // NOLINT(cppcoreguidelines-pro-bounds-constant-array-index)
+    if (out_sf2[i] !=
+        kLansSf2AltCoded[i]) { // NOLINT(cppcoreguidelines-pro-bounds-constant-array-index)
       ++mismatches_sf2;
     }
   }
@@ -46,11 +46,11 @@ TEST_CASE("[LSIS-AFS-320] LDPC Encoder: bit-exact vs LANS-AFS-SIM reference", "[
   CHECK(mismatches_sf2 == 0);
 
   std::array<uint8_t, 1740> out_sf3{};
-  REQUIRE(ldpc_encode(LdpcSubframe::kSF3, kLansSf3AltInput, out_sf3, ws) ==
-          LdpcStatus::kOk);
+  REQUIRE(ldpc_encode(LdpcSubframe::kSF3, kLansSf3AltInput, out_sf3, ws) == LdpcStatus::kOk);
   size_t mismatches_sf3 = 0;
   for (size_t i = 0; i < out_sf3.size(); ++i) {
-    if (out_sf3[i] != kLansSf3AltCoded[i]) {  // NOLINT(cppcoreguidelines-pro-bounds-constant-array-index)
+    if (out_sf3[i] !=
+        kLansSf3AltCoded[i]) { // NOLINT(cppcoreguidelines-pro-bounds-constant-array-index)
       ++mismatches_sf3;
     }
   }

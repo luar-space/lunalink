@@ -24,7 +24,7 @@ Mission Assurance Integration
 -----------------------------
 
 To satisfy **Class B Flight Software** standards, the architecture incorporates 
-safety-critical patterns defined in :doc:`../assurance/public/mission_assurance`:
+safety-critical patterns defined in :doc:`../assurance/mission_assurance`:
 
 *   **TMR Protection**: Critical identifiers like ``PrnId`` and ``Fid`` utilize 
     Triple Modular Redundancy with active repair.

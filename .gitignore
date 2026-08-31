@@ -60,3 +60,6 @@ LuPNT_data.zip
 .obsidian
 .claude
 .ipynb_checkpoints/
+
+# Generated I/Q output from examples/demo scripts
+*.iq

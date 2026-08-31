@@ -1,0 +1,617 @@
+%% LunaLink — Master Bibliography
+%% Single source of truth for all papers.
+%% Symlink or \bibliography{../../references/bibliography} from paper dirs.
+%%
+%% Sections:
+%%   1. LuGRE mission papers
+%%   2. LuGRE dataset
+%%   3. Third-party LuGRE analyses
+%%   4. Cislunar navigation
+%%   5. GNSS receiver techniques
+%%   6. Navigation & estimation
+%%   7. Signal processing & modulation
+%%   8. Antenna patterns & link budget
+%%   9. Interface control documents & specifications
+%%  10. Geometry, time, and planetary constants
+%%  11. Textbooks
+
+%% ============================================================
+%% 1. LuGRE mission papers
+%% ============================================================
+
+@inproceedings{parker2022lugre,
+  author    = {Parker, Joel J. K. and Dovis, Fabio and Anderson, Kyle and Ansalone, Luigi and Ashman, Benjamin and Bauer, Frank and D'Amore, Gabriele and Facchinetti, Claudio and Fantinato, Stefano and Impresario, Giordana and McKim, Ryan and Miotti, Enrico and Miller, James and Musmeci, Marco and Pozzobon, Oscar and Schlenker, Lisa and Tuozzi, Andrea and Valencia, Jeff},
+  title     = {The Lunar GNSS Receiver Experiment ({LuGRE})},
+  booktitle = {Proc. ION ITM},
+  year      = {2022},
+  pages     = {420--437},
+  address   = {Long Beach, CA},
+  doi       = {10.33012/2022.18199},
+  note      = {NTRS: 20220002074}
+}
+
+@inproceedings{fantinato2022sdr,
+  author    = {Fantinato, Stefano and Miotti, Enrico and Boschiero, Luca and Bartolucci, Marco and Bergamin, Luca and Marcantonio, Luca and Pulliero, Diego and Rozzi, Gianmarco and Pozzobon, Oscar and Facchinetti, Claudio and Musumeci, Luigi and Ansalone, Luigi and Impresario, Giordana and D'Amore, Gabriele and Parker, Joel J. K. and Konitzer, Evan and McKim, Ryan and Anderson, Kyle and Miller, James and Bauer, Frank and Valencia, Jeff and Dovis, Fabio},
+  title     = {Development Challenges of a GNSS SDR Receiver for Moon Landing},
+  booktitle = {Proc. ION GNSS+},
+  year      = {2022},
+  pages     = {602--627},
+  address   = {Denver, CO}
+}
+
+@inproceedings{nardin2022snapshot,
+  author    = {Nardin, Andrea and Minetto, Alex and Vouch, Gianluca and Mariani, Stefano and Dovis, Fabio},
+  title     = {Snapshot Acquisition of GNSS Signals in Space: A Case Study at Lunar Distances},
+  booktitle = {Proc. ION GNSS+},
+  year      = {2022},
+  pages     = {3603--3617},
+  address   = {Denver, CO}
+}
+
+@inproceedings{nardin2023tracking,
+  author    = {Nardin, Andrea and Minetto, Alex and Guzzi, Marco and Dovis, Fabio and Konitzer, Evan and Parker, Joel J. K.},
+  title     = {Snapshot Tracking of GNSS Signals in Space: A Case Study at Lunar Distances},
+  booktitle = {Proc. ION GNSS+},
+  year      = {2023},
+  pages     = {3267--3281},
+  address   = {Denver, CO}
+}
+
+@inproceedings{konitzer2024science,
+  author    = {Konitzer, Evan and Parker, Joel J. K. and Ashman, Benjamin and Esantsi, Kwaku and Facchinetti, Claudio and Dovis, Fabio and Minetto, Alex and Nardin, Andrea and Bauer, Frank and Ansalone, Luigi and Impresario, Giordana},
+  title     = {Science Objectives and Investigations for the Lunar GNSS Receiver Experiment ({LuGRE})},
+  booktitle = {Proc. ION GNSS+},
+  year      = {2024},
+  pages     = {1061--1081},
+  address   = {Baltimore, MD},
+  note      = {NTRS: 20240012279}
+}
+
+@inproceedings{vouch2024bayesian,
+  author    = {Vouch, Gianluca and Nardin, Andrea and Minetto, Alex and Zocca, Simone and Valvano, Giacomo and Dovis, Fabio},
+  title     = {Bayesian Integration for Deep-Space Navigation with GNSS Signals},
+  booktitle = {Proc. ION GNSS+},
+  year      = {2024},
+  address   = {Baltimore, MD},
+  doi       = {10.1109/IONGNSS+2024.10706438}
+}
+
+@inproceedings{parker2025initial,
+  author    = {Parker, Joel J. K. and Konitzer, Evan and Anderson, Kyle and Ashman, Benjamin and Bauer, Frank and Esantsi, Kwaku and Heiges, Dean and McKim, Ryan and Miller, James and Sanathanamurthy, Bala and Valencia, Jeff and Dovis, Fabio and Minetto, Alex and Nardin, Andrea and Vouch, Gianluca and Zocca, Simone and Bernardi, Dario and Boschiero, Luca and Fantinato, Stefano and Miotti, Enrico and Pozzobon, Oscar and Pulliero, Diego and Tedesco, Mattia and Facchinetti, Claudio and Musmeci, Marco and Varacalli, Gianluca},
+  title     = {Initial Results of the Lunar GNSS Receiver Experiment ({LuGRE})},
+  booktitle = {Proc. ION GNSS+},
+  year      = {2025},
+  address   = {Baltimore, MD},
+  note      = {Best Presentation Award}
+}
+
+@inproceedings{minetto2025lunartq,
+  author    = {Minetto, Alex and Zocca, Simone and Vouch, Gianluca and Nardin, Andrea and Dovis, Fabio and Musmeci, Marco and Facchinetti, Claudio},
+  title     = {{LuNART-q}: The {LuGRE} Quick Navigation Analysis and Reporting Tool},
+  booktitle = {Proc. ION GNSS+},
+  year      = {2025},
+  pages     = {1377--1390},
+  address   = {Baltimore, MD}
+}
+
+@inproceedings{sciacca2025plans,
+  author    = {Sciacca, Lorenzo and Minetto, Alex and Nardin, Andrea and Tedesco, Simone and Boschiero, Matilde and Fantinato, Samuele and Canzian, Luca and Dovis, Fabio},
+  title     = {Acquiring GNSS Signals in Cislunar Space: A Hardware-in-the-Loop Investigation for {LuGRE} Mission Data},
+  booktitle = {Proc. IEEE/ION PLANS},
+  year      = {2025},
+  pages     = {1036--1045},
+  address   = {Salt Lake City, UT},
+  doi       = {10.1109/plans61210.2025.11028293}
+}
+
+@inproceedings{cossu2026reduced,
+  author    = {Cossu, Marco and Vouch, Gianluca and Minetto, Alex and Dovis, Fabio and Musmeci, Marco and Facchinetti, Claudio},
+  title     = {Reduced-Dynamic Filtering for GNSS-Only Orbit Determination in Cislunar Space: An Experimental Assessment with {LuGRE} Data},
+  booktitle = {Proc. ION PTTI / ION ITM},
+  year      = {2026},
+  address   = {Monterey, CA}
+}
+
+@article{sciacca2026multiconstellation,
+  author    = {Sciacca, Lorenzo and Minetto, Alex and Nardin, Andrea and Dovis, Fabio and Canzian, Luca and Musmeci, Mario and Facchinetti, Claudia and Varacalli, Giancarlo},
+  title     = {First Multi-Constellation Observations of Navigation Satellite Signals in the Lunar Domain by Post-Processing {L1/L5} {IQ} Snapshots},
+  journal   = {IEEE Trans. Aerosp. Electron. Syst.},
+  year      = {2026},
+  note      = {Accepted, in press},
+  eprint    = {2601.06081},
+  archiveprefix = {arXiv}
+}
+
+@inproceedings{tedesco2023mto,
+  author    = {Tedesco, Mattia and Bernardi, Dario and Guzzi, Marco and Boschiero, Luca and Pulliero, Diego and Marcantonio, Luca and Ghedin, Andrea and Miotti, Enrico and Fantinato, Stefano and Pozzobon, Oscar and Facchinetti, Claudio and Musmeci, Marco and D'Amore, Gabriele and Varacalli, Gianluca and Minetto, Alex and Dovis, Fabio and Parker, Joel J. K. and McKim, Ryan and Konitzer, Evan and Ashman, Benjamin and Sanathanamurthy, Bala and Miller, James and Valencia, Jeff and Bauer, Frank},
+  title     = {Deep Space GNSS in Moon Transfer Orbit: the {LuGRE} Receiver},
+  booktitle = {Proc. IEEE WiSEE},
+  year      = {2023},
+  pages     = {1--6},
+  address   = {Aveiro, Portugal},
+  doi       = {10.1109/WiSEE58383.2023.10289183}
+}
+
+@inproceedings{konitzer2022nav,
+  author    = {Konitzer, Evan and Esantsi, Kwaku and Parker, Joel J. K.},
+  title     = {Navigation Performance Analysis and Trades for the Lunar GNSS Receiver Experiment ({LuGRE})},
+  booktitle = {Proc. AAS/AIAA Astrodynamics Specialist},
+  year      = {2022},
+  address   = {Charlotte, NC},
+  note      = {NTRS: 20220010106}
+}
+
+@inproceedings{minetto2022analysis,
+  author    = {Minetto, Alex and Dovis, Fabio and Nardin, Andrea and Vouch, Gianluca and Impresario, Giordana and Musmeci, Marco},
+  title     = {Analysis of GNSS data at the Moon for the {LuGRE} project},
+  booktitle = {Proc. IEEE MetroAeroSpace},
+  year      = {2022},
+  pages     = {134--139},
+  doi       = {10.1109/MetroAeroSpace54187.2022.9855945}
+}
+
+@inproceedings{dovis2025iac,
+  author    = {Dovis, Fabio and others},
+  title     = {Enabling Exploration with GNSS: Results of the Lunar GNSS Receiver Experiment ({LuGRE})},
+  booktitle = {Proc. IAC},
+  year      = {2025},
+  address   = {Milan, Italy},
+  note      = {Proceedings: 083076-0007}
+}
+
+%% ============================================================
+%% 2. LuGRE dataset
+%% ============================================================
+
+@misc{parker2025dataset,
+  author    = {Parker, Joel J. K. and Dovis, Fabio and Pozzobon, Oscar and Facchinetti, Claudio and others},
+  title     = {Lunar GNSS Receiver Experiment ({LuGRE}) Mission Data},
+  year      = {2025},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.16411687},
+  note      = {CC-BY 4.0. 22 L1 + 4 L5 IQ snapshots, raw observables, PVT solutions, ephemeris}
+}
+
+%% ============================================================
+%% 3. Third-party LuGRE analyses
+%% ============================================================
+
+@misc{estevez2025lugre,
+  author    = {Estevez, Daniel},
+  title     = {First analysis of the Lunar GNSS Receiver Experiment data},
+  year      = {2025},
+  howpublished = {Blog post},
+  url       = {https://destevez.net/2025/12/first-analysis-of-the-lunar-gnss-receiver-experiment-data/}
+}
+
+%% ============================================================
+%% 4. Cislunar navigation
+%% ============================================================
+
+@inproceedings{ashman2024autonomous,
+  author    = {Ashman, Benjamin and Winternitz, Luke and Stacey, Pat and Long, Anne and Schmidt, Todd and Ryden, Anders and Liounis, Andrew and Price, Kevin and Bamford, William and Hur-Diaz, Sun and Hassouneh, Munther and Greenlee, Graham},
+  title     = {Autonomous Navigation of a Lunar Relay Using GNSS and Other Measurements},
+  booktitle = {Proc. ION GNSS+},
+  year      = {2024},
+  note      = {NTRS: 20240002691}
+}
+
+@inproceedings{hassouneh2023navcube,
+  author    = {Hassouneh, Munther and Midkiff, John and Winternitz, Luke and Price, Kevin and Thomas, Daniel and Hatke, Greg and Lee, Thomas and Bamford, William and Mitchell, Jason},
+  title     = {{NavCube3-mini} Lunar GNSS Receiver},
+  booktitle = {Proc. ION GNSS+},
+  year      = {2023},
+  note      = {NTRS: 20230012191}
+}
+
+@article{iiyama2025iono,
+  author    = {Iiyama, Keidai and Gao, Grace},
+  title     = {Ionospheric and Plasmaspheric Delay Characterization for Lunar Terrestrial GNSS Receivers},
+  journal   = {arXiv preprint},
+  year      = {2025},
+  eprint    = {2510.10059},
+  archiveprefix = {arXiv},
+  note      = {Best Presentation Award, ION GNSS+ 2025}
+}
+
+@inproceedings{lans2025interop,
+  title     = {Lunar Augmented Navigation Service Interoperability Demonstration},
+  booktitle = {Proc. ION GNSS+},
+  year      = {2025},
+  note      = {NTRS: 20250009447. Joint ESA-JAXA-NASA LANS interop demo}
+}
+
+@inproceedings{vouch2025aided,
+  author    = {Vouch, Gianluca and others},
+  title     = {Aided {Kalman} Filtering for Space Navigation},
+  booktitle = {Proc. IEEE/ION PLANS},
+  year      = {2025},
+  address   = {Salt Lake City, UT}
+}
+
+%% ============================================================
+%% 5. GNSS receiver techniques
+%% ============================================================
+
+@article{bochkati2026cll,
+  author    = {Bochkati, Mahdi and others},
+  title     = {Clock-Locked Loop for Ultra-Low-Bandwidth GNSS Tracking},
+  journal   = {NAVIGATION},
+  year      = {2026},
+  doi       = {10.33012/navi.744}
+}
+
+@article{gpdit2024sensors,
+  title     = {GNSS Pilot-Data Integration Technique for Extended Coherent Integration on {FPGA}},
+  journal   = {Sensors},
+  year      = {2024},
+  note      = {PMC10935107}
+}
+
+@article{adaptivebw2022sensors,
+  title     = {Table-Based Adaptive {PLL} Bandwidth for Weak-Signal Tracking},
+  journal   = {Sensors},
+  year      = {2022},
+  note      = {PMC9785736. Validated on lunar trajectory dynamics}
+}
+
+@article{dopplercoast2025asr,
+  title     = {Doppler Extrapolation Coasting for Channel-Level Dropout Resilience},
+  journal   = {Advances in Space Research},
+  year      = {2025},
+  month     = oct
+}
+
+@inproceedings{julien2005boc,
+  author    = {Julien, Olivier},
+  title     = {Design of {Galileo} {L1F} Receiver Tracking Loops},
+  booktitle = {Proc. ION GNSS},
+  year      = {2005},
+  note      = {BPSK-like acquisition for BOC ambiguity resolution}
+}
+
+@inproceedings{psiaki2001chirp,
+  author    = {Psiaki, Mark L.},
+  title     = {Block Acquisition of Weak {GPS} Signals in a Software Receiver},
+  booktitle = {Proc. ION GPS},
+  year      = {2001},
+  note      = {Chirp removal for Doppler rate search}
+}
+
+@inproceedings{sciacca2025necklace,
+  author    = {Sciacca, Matteo and others},
+  title     = {Necklace-Reduced Exhaustive Bit Search for Weak-Signal Acquisition},
+  year      = {2025},
+  note      = {Necklace reduction: T\_coh=80~ms $\to$ 3 necklaces}
+}
+
+@techreport{jrc2023combining,
+  title     = {Data/Pilot Joint Combining via Orthogonal Projection},
+  institution = {European Commission Joint Research Centre},
+  year      = {2023},
+  note      = {+3~dB SNR, 34\% computation reduction vs separate tracking}
+}
+
+%% ============================================================
+%% 6. Navigation & estimation
+%% ============================================================
+
+@article{zumberge1997ppp,
+  author    = {Zumberge, James F. and Heflin, Michael B. and Jefferson, D. C. and Watkins, Michael M. and Webb, Frank H.},
+  title     = {Precise point positioning for the efficient and robust analysis of {GPS} data from large networks},
+  journal   = {J. Geophys. Res.},
+  volume    = {102},
+  number    = {B3},
+  pages     = {5005--5017},
+  year      = {1997},
+  doi       = {10.1029/96JB03860}
+}
+
+@article{hartinger1999weighting,
+  author    = {Hartinger, Herbert and Brunner, Fritz K.},
+  title     = {Variances of {GPS} phase observations: The {SIGMA-$\varepsilon$} model},
+  journal   = {GPS Solutions},
+  volume    = {2},
+  number    = {4},
+  pages     = {35--43},
+  year      = {1999},
+  doi       = {10.1007/PL00012765},
+  note      = {C/N0-based weighting for WLS}
+}
+
+%% ============================================================
+%% 7. Signal processing & modulation
+%% ============================================================
+
+@book{beckmann1963scattering,
+  author    = {Beckmann, Petr and Spizzichino, Andr{\'e}},
+  title     = {The Scattering of Electromagnetic Waves from Rough Surfaces},
+  publisher = {Pergamon Press},
+  year      = {1963},
+  note      = {Roughness reduction factor for multipath}
+}
+
+@article{braasch1996multipath,
+  author    = {Braasch, Michael S.},
+  title     = {Multipath Effects},
+  journal   = {Global Positioning System: Theory and Applications},
+  volume    = {1},
+  pages     = {547--568},
+  year      = {1996},
+  note      = {Error envelope model for pseudorange multipath bias}
+}
+
+@article{betz2009kolodziejski,
+  author    = {Betz, John W. and Kolodziejski, Kenneth R.},
+  title     = {Generalized Theory of Code Tracking with an Early-Late Discriminator},
+  journal   = {IEEE Trans. Aerosp. Electron. Syst.},
+  volume    = {45},
+  number    = {4},
+  year      = {2009},
+  note      = {DLL/PLL tracking loop noise models}
+}
+
+%% ============================================================
+%% 8. Antenna patterns & link budget
+%% ============================================================
+
+@article{donaldson2020antenna,
+  author    = {Donaldson, John E. and Parker, Joel J. K. and Moreau, Michael C. and Highsmith, Dolan E. and Martzen, Philip D.},
+  title     = {Characterization of On-Orbit {GPS} Transmit Antenna Patterns for Space Users},
+  journal   = {NAVIGATION},
+  volume    = {67},
+  number    = {2},
+  pages     = {411--431},
+  year      = {2020},
+  doi       = {10.1002/navi.381},
+  note      = {GPS ACE experiment from GEO. L1 EIRP patterns for IIA, IIR, IIR-M, IIF, III.
+               Key data for cislunar link budgets: sidelobe measurements 14--40$^\circ$ off-nadir.
+               PDF: docs/references/antenna\_patterns/donaldson2020\_gps\_ace.pdf}
+}
+
+@article{marquis2015antenna,
+  author    = {Marquis, Willard A. and Reigh, Daniel L.},
+  title     = {The {GPS} Block {IIR} and {IIR-M} Broadcast {L}-band Antenna Panel: Its Pattern and Performance},
+  journal   = {NAVIGATION},
+  volume    = {62},
+  number    = {4},
+  pages     = {329--347},
+  year      = {2015},
+  doi       = {10.1002/navi.123},
+  note      = {Pre-flight measured L1/L2 antenna patterns for IIR and IIR-M.
+               Released by Lockheed Martin for worldwide use.
+               PDF: docs/references/antenna\_patterns/marquis2015\_iir\_antenna.pdf}
+}
+
+@techreport{steigenberger2019txpower,
+  author    = {Steigenberger, Peter and Th{\"o}lert, Steffen and Montenbruck, Oliver},
+  title     = {{GPS} and {GLONASS} Satellite Transmit Power: Update for {IGS} repro3},
+  institution = {German Aerospace Center (DLR)},
+  year      = {2019},
+  url       = {https://elib.dlr.de/129734/},
+  note      = {Measured transmit power per SVN from DLR 30m dish.
+               IIF: 12.9--14.5 dBW, IIR-M: 13.3--14.8 dBW, III: 14.2 dBW.
+               PDF: docs/references/antenna\_patterns/steigenberger2019\_tx\_power.pdf}
+}
+
+@inproceedings{ashman2018cislunar,
+  author    = {Ashman, Benjamin and Parker, Joel J. K. and Bauer, Frank H. and Esswein, Michael},
+  title     = {Exploring the Limits of High Altitude {GPS} for Future Lunar Missions},
+  booktitle = {AAS/AIAA Space Flight Mechanics Meeting},
+  year      = {2018},
+  note      = {AAS 18-082. Cislunar GPS link budget analysis, SSV extension to lunar distance.
+               PDF: docs/references/antenna\_patterns/ashman2018\_cislunar\_gps.pdf}
+}
+
+@article{wang2018eirp,
+  author    = {Wang, Tianlin and Ruf, Christopher S. and Block, Bruce and McKague, Darren S. and Gleason, Scott},
+  title     = {Characterization of {GPS} {L1} {EIRP}: Transmit Power and Antenna Gain Pattern},
+  journal   = {IEEE Geosci. Remote Sens. Lett.},
+  year      = {2019},
+  note      = {Independent EIRP measurements from CYGNSS. Confirms Donaldson/DLR values.
+               PDF: docs/references/antenna\_patterns/wang2019\_gps\_eirp.pdf}
+}
+
+@inproceedings{steigenberger2023gpsiii,
+  author    = {Steigenberger, Peter and Th{\"o}lert, Steffen and Montenbruck, Oliver and Dach, Rolf},
+  title     = {Validation of {GPS III} Antenna Patterns},
+  booktitle = {EGU General Assembly 2023},
+  year      = {2023},
+  address   = {Vienna, Austria},
+  doi       = {10.5194/egusphere-egu23-6769},
+  note      = {DLR 30m dish EIRP measurements of all GPS III SVs (G074--G078).
+               L-Ant gain pattern validated against LM manufacturer calibrations.
+               Key result: L1 EIRP 0.1 dBW agreement with calibrated directivity.
+               PDF: docs/references/antenna\_patterns/steigenberger2023\_gps\_iii\_validation.pdf}
+}
+
+@article{dilssner2023gpsiii,
+  author    = {Dilssner, Florian and Springer, Tim and Sch{\"o}nemann, Erik and Steigenberger, Peter and Th{\"o}lert, Steffen and Montenbruck, Oliver},
+  title     = {Validation of {GPS III} Transmit Antenna Calibrations},
+  journal   = {Advances in Space Research},
+  volume    = {72},
+  number    = {12},
+  pages     = {5290--5306},
+  year      = {2023},
+  doi       = {10.1016/j.asr.2023.10.032},
+  note      = {LM calibrations validated to 0.7 mm RMS (phase) and 0.1 dBW (EIRP).
+               Directivity patterns on 2$^\circ$ nadir $\times$ 10$^\circ$ azimuth grid, $\pm$90$^\circ$ nadir.
+               GPS III L1 P\_sv = 125 W (21 dBW total); C/A from L-Ant only.}
+}
+
+@techreport{grap2024jrc,
+  title     = {{GRAP} v1.0: {Galileo} Reference Antenna Pattern},
+  institution = {European Commission Joint Research Centre},
+  year      = {2024},
+  note      = {Available from GSC Europa Electronic Library. 2D EIRP, 35--90$^\circ$ off-boresight, 1$^\circ$ grid}
+}
+
+@article{montenbruck2024galileo,
+  author    = {Montenbruck, Oliver and others},
+  title     = {{3D} {Galileo} Reference Antenna Pattern for {SSV} Applications},
+  journal   = {Sensors},
+  volume    = {24},
+  number    = {7},
+  year      = {2024},
+  note      = {Validation of GRAP against on-orbit DLR 30m dish measurements}
+}
+
+@article{menzione2024grap,
+  author    = {Menzione, Francesco and Sgammini, Matteo and Paonni, Matteo and others},
+  title     = {Reconstruction of {Galileo} Constellation Antenna Pattern for Space Volume Applications},
+  journal   = {Sensors},
+  volume    = {24},
+  number    = {7},
+  pages     = {2220},
+  year      = {2024},
+  publisher = {JRC / Publications Office of the European Union},
+  note      = {GRAP v1.0 reconstruction methodology. Source for the E1/E5a
+               `GRAP\_File\_*.xlsx` data consumed by antenna\_patterns.py.}
+}
+
+@article{lin2020bds3,
+  author    = {Lin, Shih-Heng and Zhan, Xingqun and Yang, Ruoya and Shao, Fugui and Huang, Jianfeng},
+  title     = {{BDS} Space Service Volume characterizations considering side-lobe signals and {3D} antenna pattern},
+  journal   = {Aerospace Science and Technology},
+  volume    = {106},
+  pages     = {106071},
+  year      = {2020},
+  doi       = {10.1016/j.ast.2020.106071},
+  note      = {BDS-3 minimum model main-lobe + sidelobe reconstruction; used
+               for BeiDou L1C / B2a pattern below the ICD EOE specification.}
+}
+
+@article{yang2019bds3,
+  author    = {Yang, Yuanxi and Gao, Weiguang and Guo, Shuren and Mao, Yue and Yang, Yufei},
+  title     = {Introduction to {BeiDou-3} navigation satellite system},
+  journal   = {NAVIGATION},
+  volume    = {66},
+  number    = {1},
+  pages     = {7--18},
+  year      = {2019},
+  doi       = {10.1002/navi.291},
+  note      = {BDS-3 MEO/IGSO/GEO P\_sv $\approx 14.5$ dBW; used as BeiDou
+               transmit-power anchor.}
+}
+
+@misc{navcengps,
+  author    = {{U.S.~Coast Guard Navigation Center}},
+  title     = {{GPS} Technical References},
+  url       = {https://www.navcen.uscg.gov/gps-technical-references},
+  note      = {Lockheed Martin factory-measured per-SVN directivity for
+               {GPS~III} ({SVN}~74--78), released via USCG NAVCEN. Primary
+               source for the Block~III antenna-pattern tables in
+               `antenna\_patterns.py`.}
+}
+
+@techreport{qzsspnt006,
+  author    = {{Cabinet Office of Japan}},
+  title     = {{IS-QZSS-PNT-006} --- {Quasi-Zenith} Satellite System Interface Specification: Satellite Positioning, Navigation and Timing Service},
+  institution = {Cabinet Office of Japan / JAXA},
+  year      = {2023},
+  url       = {https://qzss.go.jp/en/technical/antenna-patterns.html},
+  note      = {Per-SV L1/L5 antenna-pattern release (QZS-1R, QZS-2, QZS-3,
+               QZS-4); XLSX tables consumed by antenna\_patterns.py.}
+}
+
+%% ============================================================
+%% 9. Interface control documents & specifications
+%% ============================================================
+
+@techreport{isgps200,
+  title     = {{IS-GPS-200}: {GPS} Interface Specification},
+  institution = {U.S. Space Force},
+  note      = {L1 C/A signal structure, NAV message, Gold code tap assignments (Table 3-I)}
+}
+
+@techreport{isgps705,
+  title     = {{IS-GPS-705}: {GPS} Interface Specification ({L5})},
+  institution = {U.S. Space Force},
+  note      = {L5 signal structure, 13-stage LFSR (Table 3-I), Neuman-Hofman codes (Table 3-II)}
+}
+
+@techreport{bdsicdb1c,
+  title     = {{BDS-SIS-ICD-B1C-1.0}: {BeiDou} Navigation Satellite System Signal In Space Interface Control Document --- Open Service Signal {B1C}},
+  institution = {China Satellite Navigation Office},
+  year      = {2017},
+  note      = {Weil codes (p=10243), pilot secondary code (truncated Gold, 1800 chips)}
+}
+
+@techreport{irnssicd,
+  author    = {{Indian Space Research Organisation}},
+  title     = {{Indian Regional Navigation Satellite System} ({IRNSS} / {NavIC}) Signal in Space {ICD} for Standard Positioning Service},
+  institution = {ISRO Satellite Centre},
+  note      = {L5 SPS / S-band ranging signal definition. Referenced by
+               antenna\_patterns.py for the NavIC fallback pattern.}
+}
+
+@inproceedings{jyoti2005irnss,
+  author    = {Jyoti, R. and Bagad, V. S.},
+  title     = {Wideband Printed Helix Array Antenna at {L1} and {L5} for Navigation Satellite},
+  booktitle = {Proc. International Conference on Antenna Technologies (ICAT)},
+  year     = {2005},
+  note     = {IRNSS helix-array submodule pattern; proxy for NavIC main-lobe
+              used via {BDS-3} GEO/IGSO extension in antenna\_patterns.py.}
+}
+
+@techreport{galileoossisicd,
+  title     = {{Galileo} Open Service Signal-In-Space Interface Control Document},
+  institution = {European GNSS Agency},
+  note      = {E1 memory codes (4092 chips), CBOC(6,1,1/11), E1-C 25-chip secondary code (Table 16)}
+}
+
+@techreport{lsisv1,
+  title     = {{LSIS} V1.0: {LunaNet} Signal-In-Space Specification},
+  institution = {ESA/CCSDS},
+  year      = {2025},
+  month     = jan,
+  note      = {AFS signal definition: Weil/Gold codes, BPSK(5)/BPSK(1), navigation message}
+}
+
+@techreport{lugre_icd,
+  title     = {{NIL-TN-QAS-024} 2.0: {LuGRE} Receiver Interface Control Document},
+  institution = {Qascom},
+  note      = {SDRX data format: block headers (62 bytes + 3 byte CRC), 4-bit I/Q sample packing, XML metadata}
+}
+
+%% ============================================================
+%% 10. Geometry, time, and planetary constants
+%% ============================================================
+
+@article{archinal2018iau,
+  author    = {Archinal, Brent A. and Acton, Charles H. and A'Hearn, Michael F. and Conrad, Albert and Consolmagno, Guy J. and Duxbury, Thomas and Hestroffer, Daniel and Hilton, James L. and Kirk, Randolph L. and Klioner, Sergei A. and McCarthy, Dennis and Meech, Karen and Oberst, J{\"u}rgen and Ping, Jinsong and Seidelmann, P. Kenneth and Tholen, David J. and Thomas, Peter C. and Williams, Iwan P.},
+  title     = {Report of the {IAU} Working Group on Cartographic Coordinates and Rotational Elements: 2015},
+  journal   = {Celestial Mech. Dyn. Astron.},
+  volume    = {130},
+  number    = {22},
+  year      = {2018},
+  doi       = {10.1007/s10569-017-9805-5},
+  note      = {IAU 2015 lunar pole and prime-meridian model used for
+               selenographic-to-ECEF surface-phase rotation in geometry.py.}
+}
+
+@article{acton1996spice,
+  author    = {Acton, Charles H.},
+  title     = {Ancillary data services of {NASA}'s Navigation and Ancillary Information Facility},
+  journal   = {Planetary and Space Science},
+  volume    = {44},
+  number    = {1},
+  pages     = {65--70},
+  year      = {1996},
+  doi       = {10.1016/0032-0633(95)00107-7},
+  note      = {Foundational SPICE paper. spiceypy wraps this infrastructure
+               for BGM1 cruise-phase trajectory evaluation.}
+}
+
+%% ============================================================
+%% 11. Textbooks
+%% ============================================================
+
+@book{kaplan2017gps,
+  author    = {Kaplan, Elliott D. and Hegarty, Christopher J.},
+  title     = {Understanding {GPS/GNSS}: Principles and Applications},
+  edition   = {3rd},
+  publisher = {Artech House},
+  year      = {2017},
+  note      = {Third-order PLL filter: \S5.5.3}
+}

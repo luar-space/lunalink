@@ -119,21 +119,24 @@ constexpr LdpcParams ldpc_params(LdpcSubframe type) noexcept {
   uint8_t parity = 0;
   for (uint32_t i = mSys.row_ptr[r]; i < mSys.row_ptr[r + 1]; ++i) {
     const size_t c = sys_offset + mSys.col_indices[i];
-    if (c >= L_v.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted row_ptr/col_indices in .rodata
+    if (c >= L_v.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted
+                           // row_ptr/col_indices in .rodata
       return false;
     } // NOCOVER_END
     parity ^= get_sign_d(L_v[c]);
   }
   for (uint32_t i = mPar.row_ptr[r]; i < mPar.row_ptr[r + 1]; ++i) {
     const size_t c = par_offset + mPar.col_indices[i];
-    if (c >= L_v.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted row_ptr/col_indices in .rodata
+    if (c >= L_v.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted
+                           // row_ptr/col_indices in .rodata
       return false;
     } // NOCOVER_END
     parity ^= get_sign_d(L_v[c]);
   }
   if (identity_offset != kNoIdentity) {
     const size_t c = identity_offset + r;
-    if (c >= L_v.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted row_ptr/col_indices in .rodata
+    if (c >= L_v.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted
+                           // row_ptr/col_indices in .rodata
       return false;
     } // NOCOVER_END
     parity ^= get_sign_d(L_v[c]);
@@ -184,12 +187,15 @@ sparse_row_dot_product(const LdpcCsrMatrix& m, uint16_t r, std::span<const uint8
   SparseRowResult res{};
   const uint32_t start = m.row_ptr[r];
   const uint32_t end = m.row_ptr[r + 1];
-  if (start > end || end > m.num_entries) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted row_ptr in .rodata
+  if (start > end ||
+      end >
+          m.num_entries) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted row_ptr in .rodata
     res.ok = false;
     return res;
   } // NOCOVER_END
   for (uint32_t i = start; i < end; ++i) {
-    if (m.col_indices[i] >= vec.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted col_indices in .rodata
+    if (m.col_indices[i] >=
+        vec.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted col_indices in .rodata
       res.ok = false;
       return res;
     } // NOCOVER_END
@@ -204,7 +210,8 @@ sparse_row_dot_product(const LdpcCsrMatrix& m, uint16_t r, std::span<const uint8
 [[nodiscard]] bool multiply_sparse_hardened(const LdpcCsrMatrix& m,
                                             std::span<const uint8_t> vec,
                                             std::span<uint8_t> out) noexcept {
-  if (m.num_rows > out.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted num_rows in .rodata
+  if (m.num_rows >
+      out.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted num_rows in .rodata
     return false;
   } // NOCOVER_END
   uint32_t ops_count = 0;
@@ -251,17 +258,16 @@ struct RowGatherResult {
   std::array<double, kMaxRowDegree> L_vc{};
   std::array<double, kMaxRowDegree> phi_vals{}; // φ(|L_vc[d]|) per entry
   std::array<size_t, kMaxRowDegree> cols{};
-  double phi_sum = 0.0;                          // Σ φ(|L_vc[d]|) — for SP exclusion trick
-  uint64_t phi_sum_mir = double_mirror(0.0);     // ~(bit-pattern of phi_sum)
+  double phi_sum = 0.0;                      // Σ φ(|L_vc[d]|) — for SP exclusion trick
+  uint64_t phi_sum_mir = double_mirror(0.0); // ~(bit-pattern of phi_sum)
   uint8_t sign = 0;
-  uint8_t sign_mir = 0xFFU;                      // ~sign
+  uint8_t sign_mir = 0xFFU; // ~sign
   uint8_t degree = 0;
   bool valid = true;
 
   // Verify mirrored invariants. Returns false if any corruption detected.
   [[nodiscard]] bool verify_mirrors() const noexcept {
-    return double_mirror_ok(phi_sum, phi_sum_mir) &&
-           (sign == static_cast<uint8_t>(~sign_mir));
+    return double_mirror_ok(phi_sum, phi_sum_mir) && (sign == static_cast<uint8_t>(~sign_mir));
   }
 };
 
@@ -288,13 +294,15 @@ void gather_matrix_entries(RowGatherResult& res,
                            std::span<const double> L_cv,
                            size_t cv_ptr) noexcept {
   for (uint32_t i = m.row_ptr[r]; i < m.row_ptr[r + 1] && res.valid; ++i) {
-    if (res.degree >= kMaxRowDegree) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted sparse matrix with row degree exceeding static max
+    if (res.degree >= kMaxRowDegree) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted sparse
+                                       // matrix with row degree exceeding static max
       res.valid = false;
       return;
     } // NOCOVER_END
     const size_t c = c_off + m.col_indices[i];
     const size_t cv_idx = cv_ptr + res.degree;
-    if (c >= L_v.size() || cv_idx >= L_cv.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted col_indices in .rodata
+    if (c >= L_v.size() || cv_idx >= L_cv.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires
+                                                    // corrupted col_indices in .rodata
       res.valid = false;
       return;
     } // NOCOVER_END
@@ -311,12 +319,15 @@ void gather_identity_entry(RowGatherResult& res,
   if (identity_col_offset == kNoIdentity || !res.valid) {
     return;
   }
-  if (res.degree >= kMaxRowDegree) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted sparse matrix with row degree exceeding static max
+  if (res.degree >= kMaxRowDegree) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted sparse
+                                     // matrix with row degree exceeding static max
     res.valid = false;
     return;
   } // NOCOVER_END
   const size_t ic = identity_col_offset + r;
-  if (ic >= L_v.size() || r >= L_cv_identity.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted identity offset or row_ptr in .rodata
+  if (ic >= L_v.size() ||
+      r >= L_cv_identity.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted identity
+                                   // offset or row_ptr in .rodata
     res.valid = false;
     return;
   } // NOCOVER_END
@@ -365,17 +376,20 @@ void compute_cv_messages(const RowGatherResult& gr,
                                      std::span<double> L_cv,
                                      std::span<double> L_cv_identity,
                                      size_t cv_idx) noexcept {
-  if (c >= L_v.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted col_indices in .rodata
+  if (c >=
+      L_v.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted col_indices in .rodata
     return false;
   } // NOCOVER_END
   if (is_identity_col) {
-    if (r >= L_cv_identity.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted identity offset in .rodata
+    if (r >= L_cv_identity.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted identity
+                                     // offset in .rodata
       return false;
     } // NOCOVER_END
     L_v[c] = lvc + cv_new_val;
     L_cv_identity[r] = cv_new_val;
   } else {
-    if (cv_idx >= L_cv.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted row_ptr in .rodata
+    if (cv_idx >=
+        L_cv.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted row_ptr in .rodata
       return false;
     } // NOCOVER_END
     L_cv[cv_idx] = cv_new_val;
@@ -400,8 +414,16 @@ void compute_cv_messages(const RowGatherResult& gr,
 
   for (uint8_t d = 0; d < gr.degree; ++d) {
     const bool is_id = has_identity && gr.cols[d] == identity_c;
-    if (!scatter_one_entry(
-            gr.cols[d], gr.L_vc[d], cv_new[d], is_id, r, L_v, L_cv, L_cv_identity, cv_ptr + d)) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): scatter bounds checks require corrupted .rodata
+    if (!scatter_one_entry(gr.cols[d],
+                           gr.L_vc[d],
+                           cv_new[d],
+                           is_id,
+                           r,
+                           L_v,
+                           L_cv,
+                           L_cv_identity,
+                           cv_ptr + d)) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): scatter bounds checks
+                                          // require corrupted .rodata
       return false;
     } // NOCOVER_END
   }
@@ -412,12 +434,14 @@ void compute_cv_messages(const RowGatherResult& gr,
 [[nodiscard]] bool validate_layer_row_counts(const LdpcCsrMatrix* const* matrices,
                                              size_t num_matrices,
                                              uint16_t& num_rows) noexcept {
-  if (num_matrices == 0) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): always called with num_matrices=2 from update_check_layer
+  if (num_matrices == 0) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): always called with num_matrices=2
+                           // from update_check_layer
     return false;
   } // NOCOVER_END
   num_rows = matrices[0]->num_rows;
   for (size_t m = 1; m < num_matrices; ++m) {
-    if (matrices[m]->num_rows != num_rows) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted num_rows in .rodata
+    if (matrices[m]->num_rows !=
+        num_rows) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted num_rows in .rodata
       return false;
     } // NOCOVER_END
   }
@@ -434,11 +458,14 @@ void compute_cv_messages(const RowGatherResult& gr,
                                       std::span<double> L_cv,
                                       std::span<double> L_cv_identity
 #ifdef LUNALINK_FAULT_INJECTION
-                                      , uint64_t fi_corrupt_phi_mirror = 0
+                                      ,
+                                      uint64_t fi_corrupt_phi_mirror = 0
 #endif
                                       ) noexcept {
   uint16_t num_rows = 0;
-  if (!validate_layer_row_counts(matrices, num_matrices, num_rows)) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted .rodata matrix row counts
+  if (!validate_layer_row_counts(
+          matrices, num_matrices, num_rows)) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires
+                                               // corrupted .rodata matrix row counts
     return false;
   } // NOCOVER_END
 
@@ -462,18 +489,29 @@ void compute_cv_messages(const RowGatherResult& gr,
       gr.phi_sum_mir ^= fi_corrupt_phi_mirror;
     }
 #endif
-    if (!gr.valid || !gr.verify_mirrors()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): gather bounds/mirror checks require corrupted .rodata or SEU
+    if (!gr.valid ||
+        !gr.verify_mirrors()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): gather bounds/mirror checks
+                                // require corrupted .rodata or SEU
       return false;
     } // NOCOVER_END
 
     std::array<double, kMaxRowDegree> cv_new{};
     compute_cv_messages(gr, cv_new);
-    if (!scatter_row(gr, cv_new, identity_col_offset, r, L_v, L_cv, L_cv_identity, cv_ptr)) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): scatter bounds checks require corrupted .rodata
+    if (!scatter_row(gr,
+                     cv_new,
+                     identity_col_offset,
+                     r,
+                     L_v,
+                     L_cv,
+                     L_cv_identity,
+                     cv_ptr)) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): scatter bounds checks require
+                                // corrupted .rodata
       return false;
     } // NOCOVER_END
     cv_ptr += (gr.degree - (has_identity ? 1U : 0U));
     // H6: Validate cv_ptr hasn't exceeded the L_cv span.
-    if (cv_ptr > L_cv.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted row degree accumulation
+    if (cv_ptr > L_cv.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted row degree
+                                // accumulation
       return false;
     } // NOCOVER_END
     LUNALINK_CRITICAL_ENTER;
@@ -494,19 +532,23 @@ void compute_cv_messages(const RowGatherResult& gr,
                                       std::span<const uint8_t> identity_span) noexcept {
   uint8_t parity = 0;
   for (uint32_t i = mSys.row_ptr[r]; i < mSys.row_ptr[r + 1]; ++i) {
-    if (mSys.col_indices[i] >= s.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted col_indices in .rodata
+    if (mSys.col_indices[i] >=
+        s.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted col_indices in .rodata
       return false;
     } // NOCOVER_END
     parity ^= s[mSys.col_indices[i]];
   }
   for (uint32_t i = mPar.row_ptr[r]; i < mPar.row_ptr[r + 1]; ++i) {
-    if (mPar.col_indices[i] >= p.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted col_indices in .rodata
+    if (mPar.col_indices[i] >=
+        p.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted col_indices in .rodata
       return false;
     } // NOCOVER_END
     parity ^= p[mPar.col_indices[i]];
   }
   if (!identity_span.empty()) {
-    if (r >= identity_span.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted num_rows in .rodata
+    if (r >=
+        identity_span
+            .size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted num_rows in .rodata
       return false;
     } // NOCOVER_END
     parity ^= identity_span[r];
@@ -521,7 +563,9 @@ void compute_cv_messages(const RowGatherResult& gr,
                                        std::span<const uint8_t> p,
                                        std::span<const uint8_t> identity_span) noexcept {
   for (uint16_t r = 0; r < mSys.num_rows; ++r) {
-    if (!compute_row_parity(mSys, mPar, r, s, p, identity_span)) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): encoder self-check requires corrupted .rodata
+    if (!compute_row_parity(
+            mSys, mPar, r, s, p, identity_span)) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): encoder
+                                                   // self-check requires corrupted .rodata
       return false;
     } // NOCOVER_END
   }
@@ -626,15 +670,16 @@ void scrub_workspace(LdpcWorkspace& ws) noexcept {
 // (skipping z filler), p1_count parity-1 bits, then p2 parity-2 bits.
 // Total = N_output.
 // C4: All output writes bounds-checked against out.size(). [MA §11]
-[[nodiscard]] bool pack_output_bits(const LdpcEncodeWorkspace& ws,
-                                    std::span<uint8_t> out,
-                                    bool is_sf2) noexcept {
+[[nodiscard]] bool
+pack_output_bits(const LdpcEncodeWorkspace& ws, std::span<uint8_t> out, bool is_sf2) noexcept {
   const uint16_t K_nominal = is_sf2 ? 1200U : 870U;
   const uint16_t z = is_sf2 ? 240U : 176U;
   const uint16_t N_output = is_sf2 ? 2400U : 1740U;
   const uint16_t p1_count = is_sf2 ? 480U : 352U;
 
-  if (out.size() < static_cast<size_t>(N_output)) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted N_output or out.size()
+  if (out.size() <
+      static_cast<size_t>(
+          N_output)) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted N_output or out.size()
     return false;
   } // NOCOVER_END
 
@@ -666,7 +711,9 @@ void scrub_workspace(LdpcWorkspace& ws) noexcept {
                                      size_t p2_start) noexcept {
   size_t sym_idx = 0;
   for (size_t i = z; i < static_cast<size_t>(K_nominal); ++i) {
-    if (i >= L_v.size() || sym_idx >= symbols.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted parameters
+    if (i >= L_v.size() ||
+        sym_idx >=
+            symbols.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted parameters
       return false;
     } // NOCOVER_END
     L_v[i] = static_cast<double>(symbols[sym_idx++]);
@@ -678,7 +725,8 @@ void scrub_workspace(LdpcWorkspace& ws) noexcept {
     L_v[i] = kFillerLlr;
   }
   for (size_t i = p1_start; i < (p1_start + p1_count); ++i) {
-    if (i >= L_v.size() || sym_idx >= symbols.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires corrupted p1_start/p1_count
+    if (i >= L_v.size() || sym_idx >= symbols.size()) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires
+                                                        // corrupted p1_start/p1_count
       return false;
     } // NOCOVER_END
     L_v[i] = static_cast<double>(symbols[sym_idx++]);
@@ -709,7 +757,8 @@ BpResult run_bp_iterations(LdpcSubframe type,
                            std::span<double> L_cv,
                            std::span<double> L_cv_identity
 #ifdef LUNALINK_FAULT_INJECTION
-                           , uint64_t fi_corrupt_phi_mirror = 0
+                           ,
+                           uint64_t fi_corrupt_phi_mirror = 0
 #endif
                            ) noexcept {
   const std::array<const LdpcCsrMatrix*, 2> l1_mats = {&mA, &mB};
@@ -720,17 +769,19 @@ BpResult run_bp_iterations(LdpcSubframe type,
   BpResult result{check_syndrome(type, L_v), false}; // noiseless short-circuit
 
   for (uint8_t iter = 0; iter < iterations && !result.converged; ++iter) {
-    if (!update_check_layer(l1_mats.data(),
-                            l1_offs.data(),
-                            2,
-                            kNoIdentity,
-                            L_v,
-                            L_cv,
-                            L_cv_identity
+    if (!update_check_layer(
+            l1_mats.data(),
+            l1_offs.data(),
+            2,
+            kNoIdentity,
+            L_v,
+            L_cv,
+            L_cv_identity
 #ifdef LUNALINK_FAULT_INJECTION
-                            , (iter == 0) ? fi_corrupt_phi_mirror : 0
+            ,
+            (iter == 0) ? fi_corrupt_phi_mirror : 0
 #endif
-                            )) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): layer update fault requires corrupted .rodata
+            )) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): layer update fault requires corrupted .rodata
       result.layer_fault = true;
       break;
     } // NOCOVER_END
@@ -741,7 +792,8 @@ BpResult run_bp_iterations(LdpcSubframe type,
                             p2_start,
                             L_v,
                             L_cv.subspan(l1_cv_count),
-                            L_cv_identity)) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): layer update fault requires corrupted .rodata
+                            L_cv_identity)) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): layer update fault
+                                              // requires corrupted .rodata
       result.layer_fault = true;
       break;
     } // NOCOVER_END
@@ -759,7 +811,8 @@ BpResult run_bp_iterations(LdpcSubframe type,
 // Determine final decode status from BP result and CFI counter.
 LdpcStatus decode_final_status(const BpResult& bp, uint32_t final_cfi) noexcept {
   constexpr uint32_t kExpectedCfi = kCfiMagicDecode + 4U;
-  if (bp.layer_fault || final_cfi != kExpectedCfi) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires layer fault or CFI counter corruption
+  if (bp.layer_fault || final_cfi != kExpectedCfi) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): requires
+                                                     // layer fault or CFI counter corruption
     return LdpcStatus::kFaultDetected;
   } // NOCOVER_END
   if (bp.converged) {
@@ -780,12 +833,11 @@ void extract_hard_bits(std::span<const double> L_v,
 
 // Validate ldpc_encode preconditions. Returns kOk when all checks pass;
 // otherwise returns the appropriate error status.
-[[nodiscard]] LdpcStatus validate_encode_inputs(
-    LdpcSubframe type,
-    std::span<const uint8_t> msg,
-    std::span<uint8_t> out,
-    uint16_t K_nominal,
-    uint16_t N_output) noexcept {
+[[nodiscard]] LdpcStatus validate_encode_inputs(LdpcSubframe type,
+                                                std::span<const uint8_t> msg,
+                                                std::span<uint8_t> out,
+                                                uint16_t K_nominal,
+                                                uint16_t N_output) noexcept {
   if (msg.size() != static_cast<size_t>(K_nominal) || !validate_bits(msg)) {
     return LdpcStatus::kInvalidInput;
   }
@@ -793,7 +845,8 @@ void extract_hard_bits(std::span<const double> L_v,
     return LdpcStatus::kOutputTooSmall;
   }
   if (spans_overlap(msg.data(), msg.size_bytes(), out.data(), out.size_bytes()) ||
-      !verify_tables(type)) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): aliasing/LUT integrity requires corrupted pointers or .rodata
+      !verify_tables(type)) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): aliasing/LUT integrity requires
+                              // corrupted pointers or .rodata
     return LdpcStatus::kFaultDetected;
   } // NOCOVER_END
   return LdpcStatus::kOk;
@@ -801,12 +854,11 @@ void extract_hard_bits(std::span<const double> L_v,
 
 // Execute the DSP core: compute parity, pack output, verify CFI.
 // Returns kOk on success; kFaultDetected on CFI check failure.
-[[nodiscard]] LdpcStatus encode_dsp_and_verify(
-    LdpcSubframe type,
-    std::span<const uint8_t> msg,
-    std::span<uint8_t> out,
-    LdpcEncodeWorkspace& workspace,
-    bool is_sf2) noexcept {
+[[nodiscard]] LdpcStatus encode_dsp_and_verify(LdpcSubframe type,
+                                               std::span<const uint8_t> msg,
+                                               std::span<uint8_t> out,
+                                               LdpcEncodeWorkspace& workspace,
+                                               bool is_sf2) noexcept {
   volatile uint32_t cfi_count = kCfiMagicEncode;
   bool dsp_ok = encode_compute_parity(type, msg, workspace, cfi_count);
 
@@ -820,9 +872,7 @@ void extract_hard_bits(std::span<const double> L_v,
   }
 
   constexpr uint32_t kExpectedCfi = kCfiMagicEncode + 5U;
-  return (dsp_ok && cfi_count == kExpectedCfi)
-             ? LdpcStatus::kOk
-             : LdpcStatus::kFaultDetected;
+  return (dsp_ok && cfi_count == kExpectedCfi) ? LdpcStatus::kOk : LdpcStatus::kFaultDetected;
 }
 
 // --- Encoder (A4: single exit, A5: CFI sentinel) ---
@@ -831,7 +881,9 @@ LdpcStatus ldpc_encode(LdpcSubframe type,
                        std::span<const uint8_t> msg,
                        std::span<uint8_t> out,
                        LdpcEncodeWorkspace& workspace) noexcept {
-  if (type != LdpcSubframe::kSF2 && type != LdpcSubframe::kSF3 && type != LdpcSubframe::kSF4) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): enum validation guards against invalid cast
+  if (type != LdpcSubframe::kSF2 && type != LdpcSubframe::kSF3 &&
+      type != LdpcSubframe::kSF4) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): enum validation guards
+                                    // against invalid cast
     return LdpcStatus::kInvalidInput;
   } // NOCOVER_END
   const bool is_sf2 = (type == LdpcSubframe::kSF2);
@@ -886,8 +938,7 @@ LdpcStatus ldpc_encode(LdpcSubframe type,
   const size_t p1_start = p.K_full;
   const size_t p2_start = p1_start + p.mA->num_rows;
 
-  bool ok = (l1_cv_count + l2_cv_count <= L_cv.size()) &&
-            (p.mC->num_rows <= L_cv_identity.size());
+  bool ok = (l1_cv_count + l2_cv_count <= L_cv.size()) && (p.mC->num_rows <= L_cv_identity.size());
   LUNALINK_CRITICAL_ENTER;
   cfi_count = cfi_count + 1U; // milestone 1: bounds validated
   LUNALINK_CRITICAL_EXIT;
@@ -920,9 +971,10 @@ LdpcStatus ldpc_encode(LdpcSubframe type,
                                 L_cv,
                                 L_cv_identity
 #ifdef LUNALINK_FAULT_INJECTION
-                                , workspace.fi_corrupt_phi_mirror
+                                ,
+                                workspace.fi_corrupt_phi_mirror
 #endif
-                                );
+    );
     LUNALINK_CRITICAL_ENTER;
     cfi_count = cfi_count + 1U; // milestone 3: iteration loop complete
     LUNALINK_CRITICAL_EXIT;
@@ -948,7 +1000,9 @@ LdpcStatus ldpc_decode(LdpcSubframe type,
                        uint8_t iterations,
                        std::span<uint8_t> out,
                        LdpcWorkspace& workspace) noexcept {
-  if (type != LdpcSubframe::kSF2 && type != LdpcSubframe::kSF3 && type != LdpcSubframe::kSF4) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): enum validation guards against invalid cast
+  if (type != LdpcSubframe::kSF2 && type != LdpcSubframe::kSF3 &&
+      type != LdpcSubframe::kSF4) { // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): enum validation guards
+                                    // against invalid cast
     return LdpcStatus::kInvalidInput;
   } // NOCOVER_END
   const auto p = ldpc_params(type);
@@ -966,7 +1020,8 @@ LdpcStatus ldpc_decode(LdpcSubframe type,
     status = LdpcStatus::kOutputTooSmall;
   } else if (spans_overlap(symbols.data(), symbols.size_bytes(), out.data(), out.size_bytes()) ||
              !verify_tables(type)) {
-    status = LdpcStatus::kFaultDetected; // NOCOVER(DEFENCE_IN_DEPTH): aliasing/LUT integrity requires corrupted pointers or .rodata
+    status = LdpcStatus::kFaultDetected; // NOCOVER(DEFENCE_IN_DEPTH): aliasing/LUT integrity
+                                         // requires corrupted pointers or .rodata
   } else {
     status = decode_dsp_core(type, p, symbols, iterations, out, workspace, cfi_count);
   }

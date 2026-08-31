@@ -39,8 +39,7 @@ public:
   /// Uniform on [0, 1) with 24-bit precision.
   float uniform() noexcept {
     state_ = state_ * 1664525U + 1013904223U;
-    return static_cast<float>(state_ & 0xFFFFFFU) /
-           static_cast<float>(0x1000000U);
+    return static_cast<float>(state_ & 0xFFFFFFU) / static_cast<float>(0x1000000U);
   }
 
   /// One AWGN sample (real, imag) ~ N(0, 1) via Box-Muller.
@@ -64,8 +63,8 @@ private:
 /// Truncate-then-write the header line on the first call per process,
 /// then close.  Subsequent calls in the same process are no-ops.
 /// Callers append data rows themselves with ``std::ofstream(... ios::app)``.
-inline void write_csv_header_once(const std::string& path, const char* header,
-                                  bool& header_written) {
+inline void
+write_csv_header_once(const std::string& path, const char* header, bool& header_written) {
   if (header_written) {
     return;
   }

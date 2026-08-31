@@ -48,7 +48,8 @@ alignas(16) constinit const std::array<uint32_t, 4> kRodataIntegritySentinel = {
 PostResult run_post() noexcept {
   // Step 1: SCI header CRC-32 (binary integrity).
   if (!sci_header_verify()) {
-    return {PostStatus::kFaultDetected, 1}; // FIZ-3 // NOCOVER(DEFENCE_IN_DEPTH): SCI header CRC corruption requires SEU on .text/.rodata
+    return {PostStatus::kFaultDetected, 1}; // FIZ-3 // NOCOVER(DEFENCE_IN_DEPTH): SCI header CRC
+                                            // corruption requires SEU on .text/.rodata
   }
 
   // Step 2: LUT integrity checks.
@@ -59,7 +60,8 @@ PostResult run_post() noexcept {
                        kLdpc_sf3_b.verify_integrity() && kLdpc_sf3_b_inv.verify_integrity() &&
                        kLdpc_sf3_c.verify_integrity() && kLdpc_sf3_d.verify_integrity();
   if (!ldpc_ok) {
-    return {PostStatus::kFaultDetected, 2}; // FIZ-3 // NOCOVER(DEFENCE_IN_DEPTH): LDPC table corruption requires SEU on .rodata
+    return {PostStatus::kFaultDetected,
+            2}; // FIZ-3 // NOCOVER(DEFENCE_IN_DEPTH): LDPC table corruption requires SEU on .rodata
   }
   // BCH and Weil codebook checksums: compare against ground-truth golden constants.
   // Non-zero guard alone only detects total table destruction; equality comparison
@@ -69,30 +71,37 @@ PostResult run_post() noexcept {
   const uint64_t w15_crc = weil1500_codebook_checksum();
   if (bch_crc != kBchCodebookChecksum || w10_crc != kWeil10230Checksum ||
       w15_crc != kWeil1500Checksum) {
-    return {PostStatus::kFaultDetected, 2}; // FIZ-3 // NOCOVER(DEFENCE_IN_DEPTH): codebook checksum mismatch requires SEU on .rodata
+    return {PostStatus::kFaultDetected, 2}; // FIZ-3 // NOCOVER(DEFENCE_IN_DEPTH): codebook checksum
+                                            // mismatch requires SEU on .rodata
   }
   // Legendre cache: explicit deterministic initialisation.
   // Generates all three sequences (p=10223, p=1499, p=10243) and verifies against golden CRCs.
   // Eliminates hidden __cxa_guard dynamic init (TOCTOU integrity gap closure).
   if (legendre_cache_init() != LegendreStatus::kOk) {
-    return {PostStatus::kFaultDetected, 2}; // FIZ-3 // NOCOVER(DEFENCE_IN_DEPTH): Legendre CRC mismatch requires SEU during generation
+    return {PostStatus::kFaultDetected, 2}; // FIZ-3 // NOCOVER(DEFENCE_IN_DEPTH): Legendre CRC
+                                            // mismatch requires SEU during generation
   }
 
   // Step 3: TMR mechanism self-test.
   if (!post_verify_tmr()) {
-    return {PostStatus::kFaultDetected, 3}; // FIZ-3 // NOCOVER(DEFENCE_IN_DEPTH): TMR vote failure requires SEU on stack/registers
+    return {
+        PostStatus::kFaultDetected,
+        3}; // FIZ-3 // NOCOVER(DEFENCE_IN_DEPTH): TMR vote failure requires SEU on stack/registers
   }
 
   // Step 4: .rodata integrity (compile-time constant corruption detection).
   if (!post_verify_rodata_constants()) {
-    return {PostStatus::kFaultDetected, 4}; // FIZ-3 // NOCOVER(DEFENCE_IN_DEPTH): .rodata sentinel corruption requires SEU
+    return {PostStatus::kFaultDetected,
+            4}; // FIZ-3 // NOCOVER(DEFENCE_IN_DEPTH): .rodata sentinel corruption requires SEU
   }
 
   // Step 5: CfiGuard baseline self-test.
   CfiGuard guard(0xC0FFEE0DU, 1U);
   guard.tick();
   if (!guard.verify()) {
-    return {PostStatus::kFaultDetected, 5}; // FIZ-3 // NOCOVER(DEFENCE_IN_DEPTH): CfiGuard self-test failure requires SEU on stack
+    return {
+        PostStatus::kFaultDetected,
+        5}; // FIZ-3 // NOCOVER(DEFENCE_IN_DEPTH): CfiGuard self-test failure requires SEU on stack
   }
 
   // Lock init-phase configuration to prevent post-boot mutation.

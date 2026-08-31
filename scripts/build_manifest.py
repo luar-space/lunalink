@@ -4,7 +4,7 @@
 Usage:
     python3 scripts/build_manifest.py --build-dir build/cpp-tests-ninja
 
-Output: docs/assurance/private/evidence/build_manifest.json
+Output: docs/assurance/evidence/build_manifest.json
 """
 
 from __future__ import annotations
@@ -232,7 +232,7 @@ def main() -> None:  # noqa: D103
     )
     parser.add_argument(
         "--output",
-        default="docs/assurance/private/evidence/build_manifest.json",
+        default="docs/assurance/evidence/build_manifest.json",
         help="Output JSON path",
     )
     args = parser.parse_args()

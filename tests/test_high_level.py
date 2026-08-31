@@ -13,6 +13,8 @@ import pytest
 
 from lunalink.afs import (
     SB2_DATA_BITS,
+    SB2_SPARE_BITS,
+    SB2_SPARE_OFFSET,
     SB3_DATA_BITS,
     SB4_DATA_BITS,
     DecodeError,
@@ -61,16 +63,37 @@ class TestTransmitFrame:
 
 
 class TestMakeTestPayload:
+    @staticmethod
+    def _sb2_payload_region(sb2):
+        """Return SB2 without its spare region.
+
+        The spare region always carries the LSIS-AFS-300 alternating pattern,
+        regardless of the requested fill.
+        """
+        return np.delete(
+            sb2, np.arange(SB2_SPARE_OFFSET, SB2_SPARE_OFFSET + SB2_SPARE_BITS)
+        )
+
+    @staticmethod
+    def _assert_spare_pattern(sb2):
+        spare = sb2[SB2_SPARE_OFFSET : SB2_SPARE_OFFSET + SB2_SPARE_BITS]
+        expected = np.arange(SB2_SPARE_BITS, dtype=np.uint8) % 2
+        np.testing.assert_array_equal(spare, expected)
+
     def test_zeros(self):
         sb2, sb3, sb4 = make_test_payload("zeros")
         assert sb2.shape == (SB2_DATA_BITS,)
         assert sb3.shape == (SB3_DATA_BITS,)
         assert sb4.shape == (SB4_DATA_BITS,)
-        assert np.all(sb2 == 0) and np.all(sb3 == 0) and np.all(sb4 == 0)
+        assert np.all(self._sb2_payload_region(sb2) == 0)
+        assert np.all(sb3 == 0) and np.all(sb4 == 0)
+        self._assert_spare_pattern(sb2)
 
     def test_ones(self):
         sb2, sb3, sb4 = make_test_payload("ones")
-        assert np.all(sb2 == 1) and np.all(sb3 == 1) and np.all(sb4 == 1)
+        assert np.all(self._sb2_payload_region(sb2) == 1)
+        assert np.all(sb3 == 1) and np.all(sb4 == 1)
+        self._assert_spare_pattern(sb2)
 
     def test_alternating(self):
         sb2, _, _ = make_test_payload("alternating")

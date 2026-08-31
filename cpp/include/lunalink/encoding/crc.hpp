@@ -33,8 +33,8 @@ inline constexpr uint8_t kCrc24Bits = 24;
  * @return CrcStatus
  */
 [[nodiscard("CrcStatus reports null inputs or output-buffer sizing failures; "
-              "ignoring it leaves out_crc indeterminate and propagates an invalid "
-              "checksum into the frame (LSIS-FID0-467)")]] CrcStatus
+            "ignoring it leaves out_crc indeterminate and propagates an invalid "
+            "checksum into the frame (LSIS-FID0-467)")]] CrcStatus
 crc24_calculate(std::span<const uint8_t> in, std::span<uint8_t, 24ULL> out_crc) noexcept;
 
 /**
@@ -42,8 +42,8 @@ crc24_calculate(std::span<const uint8_t> in, std::span<uint8_t, 24ULL> out_crc) 
  * @return true if CRC matches.
  */
 [[nodiscard("crc24_verify returns true only when the trailing CRC-24Q matches the "
-              "preceding data; discarding the result accepts unverified frames as valid "
-              "— safety-critical CRC gate, do not discard")]] bool
+            "preceding data; discarding the result accepts unverified frames as valid "
+            "— safety-critical CRC gate, do not discard")]] bool
 crc24_verify(std::span<const uint8_t> data_with_crc) noexcept;
 
 } // namespace lunalink::signal

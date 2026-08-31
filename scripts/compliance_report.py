@@ -29,9 +29,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 BUILD_DIR = REPO_ROOT / "build"
-TRACEABILITY_JSON = (
-    REPO_ROOT / "docs" / "assurance" / "private" / "evidence" / "traceability.json"
-)
+TRACEABILITY_JSON = REPO_ROOT / "docs" / "assurance" / "evidence" / "traceability.json"
 
 # JUnit XML files that must exist for a valid report.
 JUNIT_FILES = ["test_results.xml", "test_e2e.xml"]

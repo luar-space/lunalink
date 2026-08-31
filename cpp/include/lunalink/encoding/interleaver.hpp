@@ -33,8 +33,8 @@ inline constexpr uint16_t kInterleaverSize = kInterleaverRows * kInterleaverCols
  * Hardened with CFI sentinels and mirrored index calculation.
  */
 [[nodiscard("InterleaverStatus reports buffer-size mismatches and CFI/TMR faults; "
-              "ignoring it allows malformed interleaved symbols into the transmit chain "
-              "(LSIS-FID0-470, FIZ-1/2/3)")]] InterleaverStatus
+            "ignoring it allows malformed interleaved symbols into the transmit chain "
+            "(LSIS-FID0-470, FIZ-1/2/3)")]] InterleaverStatus
 block_interleave(std::span<const uint8_t> in, std::span<uint8_t> out) noexcept;
 
 /**
@@ -44,8 +44,8 @@ block_interleave(std::span<const uint8_t> in, std::span<uint8_t> out) noexcept;
  * Hardened with CFI sentinels and mirrored index calculation.
  */
 [[nodiscard("InterleaverStatus reports buffer-size mismatches and CFI/TMR faults; "
-              "ignoring it lets corrupted symbol order propagate to the FEC decoder "
-              "(LSIS-FID0-470, FIZ-1/2/3)")]] InterleaverStatus
+            "ignoring it lets corrupted symbol order propagate to the FEC decoder "
+            "(LSIS-FID0-470, FIZ-1/2/3)")]] InterleaverStatus
 block_deinterleave(std::span<const uint8_t> in, std::span<uint8_t> out) noexcept;
 
 /**
@@ -56,8 +56,8 @@ block_deinterleave(std::span<const uint8_t> in, std::span<uint8_t> out) noexcept
  * Hardened with CFI sentinels and mirrored index calculation.
  */
 [[nodiscard("InterleaverStatus reports buffer-size mismatches and CFI/TMR faults; "
-              "ignoring it lets corrupted LLR order propagate to the soft FEC decoder "
-              "(LSIS-AFS-471, FIZ-1/2/3)")]] InterleaverStatus
+            "ignoring it lets corrupted LLR order propagate to the soft FEC decoder "
+            "(LSIS-AFS-471, FIZ-1/2/3)")]] InterleaverStatus
 block_deinterleave_soft(std::span<const float> in, std::span<float> out) noexcept;
 
 } // namespace lunalink::signal

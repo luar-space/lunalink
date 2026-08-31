@@ -51,11 +51,6 @@ dev = [
     "gcovr>=7.0",
 ]
 
-# [[private-begin]]
-[project.optional-dependencies]
-private = []
-visibility = ["astropy>=6.0", "spiceypy>=6.0"]
-# [[private-end]]
 
 [tool.setuptools_scm]
 fallback_version = "0.0.0.dev0"

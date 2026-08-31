@@ -6,7 +6,7 @@ Usage:
     python3 scripts/stack_usage_report.py --build-dir build/stack-usage \
         --max-single 2048
 
-Output: docs/assurance/private/evidence/stack_usage_report.json
+Output: docs/assurance/evidence/stack_usage_report.json
 """
 
 from __future__ import annotations
@@ -145,7 +145,7 @@ def main() -> None:  # noqa: D103
     )
     parser.add_argument(
         "--output",
-        default="docs/assurance/private/evidence/stack_usage_report.json",
+        default="docs/assurance/evidence/stack_usage_report.json",
         help="Output JSON path",
     )
     parser.add_argument(
