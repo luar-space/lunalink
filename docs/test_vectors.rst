@@ -49,7 +49,8 @@ Milestone 2 validation requires processing the five official baseline messages:
      - Inverse baseline; verifies scrambler/mapping logic.
    * - MSG-3
      - Alternating
-     - Pattern ``0xAA...``; verifies interleaver/deinterleaver matrix.
+     - Pattern ``0101...`` (``0x55`` bytes, MSB-first); verifies
+       interleaver/deinterleaver matrix.
    * - MSG-4
      - Ephemeris
      - Known CED parameters; verifies field bit-packing.
@@ -128,9 +129,23 @@ PocketSDR-AFS), and a zero-dependency validator — is published at
 `luar-space/lsis-afs-test-vectors
 <https://github.com/luar-space/lsis-afs-test-vectors>`__.
 
-A 12-second signal for **any** PRN regenerates in under a second:
+A 12-second ``LSISIQ`` signal for **any** PRN regenerates from the Python
+API (:func:`~lunalink.afs.write_iq_file` writes exactly the header defined
+under "Mandatory File Formats" above):
 
-::
+.. code-block:: python
+
+    from lunalink.afs import make_test_payload, transmit_frame, write_iq_file
+
+    sb2, sb3, sb4 = make_test_payload("random", seed=0x12345678)
+    frame, iq = transmit_frame(prn_id=7, fid=0, toi=1,
+                               sb2_data=sb2, sb3_data=sb3, sb4_data=sb4,
+                               sample_rate=10.23e6)
+    write_iq_file("signal_prn007_12s.iq", iq, sample_rate=10.23e6, prn_id=7)
+
+The CLI offers a one-line alternative — note that it writes the
+*headerless* float32 shape used at live interop workshops, not the
+``LSISIQ``-headed format::
 
     uv run lunalink encode --format iq32 --prn 7 --rate 10230000 --out signal_prn007_12s.iq
 

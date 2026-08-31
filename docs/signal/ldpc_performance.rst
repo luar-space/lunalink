@@ -28,7 +28,7 @@ Codes Under Test
      - 1/2 (output n=2400)
      - 240
    * - SF3/SF4
-     - 4560
+     - 4576
      - 870
      - 1/2 (output n=1740)
      - 176
@@ -140,7 +140,7 @@ Error Floor Search
 
 60,000 frames per point at 2.5 and 3.0 dB for each code — **zero frame
 errors** in all four runs (72 M bits per SF2 point, 52.2 M bits per SF3
-point).  The 95% Wilson upper bound on FER is 3.2 × 10\ :sup:`-5` per
+point).  The 95% Wilson upper bound on FER is 6.4 × 10\ :sup:`-5` per
 point: no error floor is observable down to that level.
 
 .. include:: /_static/algo_card/error_floor_table.rst.inc
@@ -199,12 +199,22 @@ frames per configuration):
 Decoder Symmetry Check
 ----------------------
 
-The AWGN + BPSK + BP system is symmetric: all-zero-codeword and
-random-codeword simulations must agree.  Measured at the mid-waterfall
-point: random-codeword FER 0.88% vs all-zero FER 0% at 15,000 frames each
-— consistent with the symmetry expectation within the Wilson intervals,
-and evidence that no data-dependent artefact contaminates the waterfalls
-(random payloads are used for all headline results above).
+For a linear code over a symmetric channel (BPSK AWGN) with a symmetric
+decoder, error performance is codeword-independent in theory.  Measured at
+the mid-waterfall point: random-codeword FER 0.88% vs all-zero FER 0% at
+15,000 frames each.  The all-zero case is genuinely easier, and the
+mechanism is the interaction of **puncturing** with the hard-decision
+tie-break, not the BP update itself: the first 2·Zc systematic bits
+(240 for SF2) are never transmitted, the decoder initialises their LLRs
+to 0 ("no channel information"), and the hard-decision rule maps a
+non-negative LLR to bit 0 — always correct for the all-zero message,
+wrong for roughly half the punctured positions of a random message
+whenever BP fails to pin them down.  (Shortening is a separate mechanism:
+the SF3/SF4 filler bits are *known* zeros and are initialised to a
+high-confidence positive LLR; SF2, the code used in this test, has no
+filler bits.  See :doc:`ldpc_algo_card` for the same analysis.)
+All headline results above therefore use random payloads — the
+conservative, harder case.
 
 Channel LLR Scaling
 -------------------
@@ -230,5 +240,5 @@ Test Methodology
   ``[channel]``-tagged Catch2 tests (BCH FER sweeps, LDPC reference-decoder
   gap decomposition, sync detection rate) with Wilson-interval-aware
   assertions; ``task performance`` adds the ``[wcet]`` timing gates.
-- The spec-compliance verdict feeds :doc:`compliance_matrix` (LSIS-321)
+- The spec-compliance verdict feeds :doc:`compliance_matrix` (CM-321)
   and NFR-2.2 in ``scripts/compliance_report.py``.

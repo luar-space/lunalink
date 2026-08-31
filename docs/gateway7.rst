@@ -125,7 +125,9 @@ single-exit pattern, cppcheck-suppressed duplicate conditions.
 
 .. code-block:: bash
 
-   ./build/debug/test_lunalink "[core]"
+   task test-cpp       # includes the [core] SISE suite
+   # or directly, once built:
+   build/cpp-tests-ninja/test_lunalink "[core]"
    # All tests passed (20 test cases)
 
 ----
@@ -197,7 +199,7 @@ all five interoperability levels:
      - Format
      - Location
    * - 1
-     - Spreading codes (PRN 1-12)
+     - Spreading codes (PRN 1-210)
      - ``.hex`` (Gold, Weil primary/tertiary, secondary)
      - ``test-vectors/codes/``
    * - 2
@@ -206,7 +208,7 @@ all five interoperability levels:
      - ``test-vectors/fec/``
    * - 3
      - Complete frames (5 standardised messages)
-     - Binary with 128-byte LSISIQ header
+     - Binary with 64-byte metadata header
      - ``test-vectors/frames/``
    * - 4
      - I/Q signal files (PRN 1-12, 2 sample rates)
@@ -309,6 +311,7 @@ GD7.4 --- Performance Benchmark Validation
 - ``test_bch_ber.cpp`` --- BCH FER sweep (7 Eb/N0 points)
 - ``test_ldpc_reference.cpp`` --- LDPC decoder quality vs reference decoders
 - ``test_sync_detection_rate.cpp`` --- Frame sync Pd vs SNR
+- ``fft_bench.cpp`` --- FFT microbenchmark (CSV output; run via ``task bench-fft``)
 
 .. code-block:: bash
 
@@ -328,9 +331,10 @@ GD7.5 --- Compliance Validation
   requirements tracked; zero TODOs remaining for G1-G7.
 - **Traceability matrix:** ``docs/assurance/traceability_matrix.rst`` ---
   22 LSIS-AFS + 5 SW-SAF requirements mapped to tests; 100% coverage.
-- **Test coverage:** 189+ tests pass (150 unit + 39 SWIFI).
+- **Test coverage:** over 300 C++ test cases pass (including 42 SWIFI
+  fault-injection scenarios).
 
 .. code-block:: bash
 
-   task test-cpp       # 189+ tests pass
+   task test-cpp       # fast unit + integration suites pass
    task traceability   # 27 requirements, 0 orphans

@@ -5,9 +5,12 @@ Coverage Exclusion Justification
 :Status: Active
 :Last Review: 2026-03-21
 
-This document justifies all source files with line coverage below the 80%
-per-file threshold. Each exclusion is categorised and must be reviewed at
-every milestone.
+This document justifies all source files with line coverage below 80%.
+The 80% per-file figure is an internal review trigger, not a CI gate: the
+CI-enforced thresholds are whole-library floors defined in
+``.github/workflows/coverage-cpp.yml`` and stated in ``metrics_plan.rst``
+(≥ 90% line coverage, ≥ 30% MC/DC). Each exclusion is categorised and must
+be reviewed at every milestone.
 
 Categories
 ----------

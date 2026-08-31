@@ -45,7 +45,7 @@ Coverage Summary
    * - Receiver / Sync (GW5)
      - LSIS-AFS-710 (Sync detect), LSIS-AFS-720 (Frame decode)
      - Pass
-     - Coverage ≥ 90%, SWIFI TMR/CFI (FI-19–22), E2E FER sweep (Ec/N0 ≥ 3 dB)
+     - Coverage ≥ 90%, SWIFI TMR/CFI (FI-20–FI-22), E2E FER sweep (Ec/N0 ≥ 3 dB)
 
 Safety Requirements
 -------------------

@@ -50,11 +50,11 @@ Signal Impairment & Robustness (G4, G5)
 
 The baseband signal generator (G4) includes a "Reference Channel Model" to test the receiver's (G5) robustness against realistic lunar orbit impairments.
 
-1. **Doppler Modeling (CFO):**
+1. **Doppler Modeling (CFO — carrier frequency offset):**
    * Sweep carrier frequency offsets from -10 kHz to +10 kHz.
    * Requirement: Acquisition and tracking must remain stable (G5 success metric).
 
-2. **Clock Drift (SCO):** — *Implemented*
+2. **Clock Drift (SCO — sample clock offset):** — *Implemented*
    * Simulate sample clock offsets up to 50 ppm.
    * Requirement: Code phase tracking (DLL) must compensate for timing drift.
    * Test: ``test_channel_impairments.cpp`` — parametric sweep 0–50 ppm, 200 epochs each.
@@ -73,13 +73,21 @@ The baseband signal generator (G4) includes a "Reference Channel Model" to test 
 Standardized Test Scenarios (G7)
 --------------------------------
 
-As defined in the Interoperability Plan, all round-trip tests are executed against five standardized payloads:
+As defined in the Interoperability Plan, the exported round-trip test
+vectors (``tests/generate_test_vectors.py``) are built from five
+standardized payloads:
 
 *   **MSG-1 (All Zeros):** Baseline validation.
 *   **MSG-2 (All Ones):** Scrambler/logic validation.
 *   **MSG-3 (Alternating):** Interleaver pattern validation.
-*   **MSG-4 (Ephemeris):** Real-world field serialization.
+*   **MSG-4 (Ephemeris):** Real-world field serialization (Keplerian CED from
+    a lunar NRHO orbit).
 *   **MSG-5 (Random):** LDPC convergence and stress testing.
+
+The cross-implementation frame comparison against LANS-AFS-SIM
+(``tests/test_interop_frames.py``, :doc:`../interop_results`) uses a related
+but distinct set: five frame cases spanning three fill patterns (all-zeros,
+all-ones, alternating) plus boundary FID/TOI values.
 
 Performance Benchmarking (GD7.3, GD8.2)
 ---------------------------------------

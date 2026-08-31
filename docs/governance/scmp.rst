@@ -40,7 +40,7 @@ change control.  LunaLink SCIs are listed below.
      - ``cpp/tests/``, ``tests/``
      - Catch2 and pytest tests; includes SWIFI fault-injection suite
    * - Golden test vectors
-     - ``tests/vectors/``
+     - ``test-vectors/`` (also published as ``luar-space/lsis-afs-test-vectors``)
      - Immutable, versioned JSON test vectors; normative reference for LSIS ecosystem
    * - Build system
      - ``CMakeLists.txt``, ``pyproject.toml``, ``Taskfile.yml``
@@ -188,7 +188,10 @@ functional requirements.  Performed by:
 
 *   Passing the Golden Test Vector Suite (all nominal + corner case vectors pass)
 *   Passing the SWIFI fault-injection suite (100% single-bit fault detection)
-*   Passing the MC/DC coverage check (100% on ``[LSIS-AFS-*]``-tagged functions)
+*   Passing the CI coverage gate (design target 100% MC/DC on safety-tagged
+    decision points; the gate currently enforces a 30% whole-library floor —
+    see ``assurance/metrics_plan.rst``; the measured value is recorded in the
+    coverage evidence and badge)
 
 **Physical Configuration Audit (PCA)**: Verifies that the flight binary matches the
 baselined source.  Performed by:

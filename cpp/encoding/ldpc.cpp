@@ -239,9 +239,9 @@ sparse_row_dot_product(const LdpcCsrMatrix& m, uint16_t r, std::span<const uint8
 
 // --- Layer update: decomposed into gather, compute, scatter (A6) ---
 
-// Bitwise complement mirror for double — same pattern as int16_t ~value
-// used in the AMS decoder. Stores ~(bit-pattern) of the double as uint64_t.
-// Detects any single-bit corruption in either the value or its mirror.
+// Bitwise complement mirror for double. Stores ~(bit-pattern) of the
+// double as uint64_t; detects any single-bit corruption in either the
+// value or its mirror.
 [[nodiscard]] inline uint64_t double_mirror(double val) noexcept {
   uint64_t bits = 0;
   std::memcpy(&bits, &val, sizeof(bits));
@@ -669,7 +669,8 @@ void scrub_workspace(LdpcWorkspace& ws) noexcept {
 }
 
 // Pack encoded output bits per LSIS §2.4.4: (K_nominal - z) systematic bits
-// (skipping z filler), p1_count parity-1 bits, then p2 parity-2 bits.
+// (skipping the z = 2*Zc punctured systematic bits), p1_count parity-1 bits,
+// then p2 parity-2 bits.
 // Total = N_output.
 // C4: All output writes bounds-checked against out.size(). [MA §11]
 [[nodiscard]] bool

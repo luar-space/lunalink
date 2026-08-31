@@ -379,11 +379,16 @@ Run: ``task test-cpp`` (file: ``cpp/tests/messages/test_message_parser.cpp``,
    * - type_field_to_message_type unknown
      - Values 0, 6, 7, 9, 255 all return ``kUnknown``
 
-SWIFI scenarios (planned --- ``docs/assurance/fault_coverage.rst``):
+SWIFI parser scenarios (documented and descoped for this release --- see
+:doc:`assurance/fault_coverage`):
 
--  **FI-37** (planned): CFI skip injection in ``extract_bits()``
--  **FI-38** (planned): Bit-value injection in ``parse_sb2()``
--  **FI-39** (planned): CFI skip injection in ``parse_sb3()`` / ``parse_sb4()``
+-  CFI skip injection in ``extract_bits()``, bit-value injection in
+   ``parse_sb2()``, and CFI skip injection in ``parse_sb3()`` /
+   ``parse_sb4()`` are recorded as descoped parser scenarios.  The
+   CFI-skip detection mechanism they target is exercised by the
+   frame-decode SWIFI scenarios in
+   ``cpp/tests/messages/test_swifi_messages.cpp``, and parser input
+   validation is covered by the unit tests above.
 
 ----
 
@@ -543,8 +548,9 @@ Run: ``task test-cpp`` (file: ``cpp/tests/messages/test_time_of_transmission.cpp
 E2E Round-Trip Test
 -------------------
 
-Run: ``./build/test/test_lunalink "[e2e]" "~[channel]"``
-(file: ``cpp/tests/integration/test_e2e.cpp``)
+Run: ``task integration``  (file: ``cpp/tests/integration/test_e2e.cpp``;
+equivalent direct invocation:
+``build/cpp-tests-ninja/test_lunalink "[e2e]" "~[channel]"``)
 
 .. code-block:: text
 
@@ -605,7 +611,7 @@ Python tests: ``tests/test_afs.py`` --- classes ``TestParseSb2`` (5 tests),
 ``TestParseSb3`` (3 tests), ``TestParseSb4`` (2 tests), ``TestComputeTot``
 (9 tests including full E2E round-trip)
 
-Run: ``task test-py`` (92 tests, 100% Python coverage)
+Run: ``task test-py`` (the full Python suite, 100% Python coverage)
 
 ----
 
@@ -658,7 +664,7 @@ Spec Finding SF-005
 
 **Description:** Of the 23 message types in Table 21, only **1** (MSG-G8)
 has fully defined field layouts.  13 messages are part of LunaNet 1.0
-but have content marked ``{LSIS-TBW-*}``.  8 messages are future
+but have content marked ``{LSIS-TBW-*}``.  9 messages are future
 placeholders not included in LunaNet 1.0.  This means the message
 parsing gateway can only fully parse Time of Transmission data; all
 other message payloads are opaque until the spec defines them.
@@ -740,8 +746,8 @@ Test Summary
      - 19
      - ---
      - ``task test-py``
-   * - SWIFI (Gateway 6: FI-37 to FI-40)
-     - 0 (planned)
+   * - SWIFI (Gateway 6: descoped parser scenarios)
+     - 0 (descoped)
      - ``[swifi]``
      - ``task swifi``
 
@@ -760,4 +766,4 @@ Related Documents
 -  :doc:`assurance/mission_assurance` --- CFI, scrubbing patterns
 -  :doc:`assurance/c_plus_plus_guidelines` --- coding standard
 -  :doc:`assurance/fmea` --- FM-069 to FM-072 (Gateway 6)
--  :doc:`assurance/fault_coverage` --- FI-37 to FI-40 (planned)
+-  :doc:`assurance/fault_coverage` --- descoped parser scenarios

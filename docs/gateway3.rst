@@ -91,7 +91,7 @@ BCH encoding
 
 Implementation files:
 
--  ``cpp/include/lunalink/signal/bch.hpp`` --- ``Fid``, ``Toi`` (TMR-hardened),
+-  ``cpp/include/lunalink/encoding/bch.hpp`` --- ``Fid``, ``Toi`` (TMR-hardened),
    ``bch_encode()``, ``bch_decode()``
 -  ``cpp/encoding/bch.cpp`` --- encoder/decoder, codebook LUT
 
@@ -141,10 +141,10 @@ Pipeline: ``subframe_build_sb2()`` |rarr| CRC-24Q append |rarr| LDPC SF2 encode 
 
 Implementation files:
 
--  ``cpp/include/lunalink/signal/frame.hpp`` --- API, constants
+-  ``cpp/include/lunalink/messages/frame.hpp`` --- API, constants
 -  ``cpp/messages/frame.cpp`` --- ``subframe_build_sb2()`` via ``subframe_build_ldpc()``
--  ``cpp/include/lunalink/signal/crc.hpp`` --- ``crc24_calculate()``
--  ``cpp/include/lunalink/signal/ldpc.hpp`` --- ``ldpc_encode()``
+-  ``cpp/include/lunalink/encoding/crc.hpp`` --- ``crc24_calculate()``
+-  ``cpp/include/lunalink/encoding/ldpc.hpp`` --- ``ldpc_encode()``
 
 ----
 
@@ -392,7 +392,7 @@ Hardening
 Unit Tests
 ----------
 
-Run: ``task test-cpp`` (file: ``cpp/tests/signal/test_frame.cpp``)
+Run: ``task test-cpp`` (file: ``cpp/tests/messages/test_frame.cpp``)
 
 .. list-table::
    :header-rows: 1
@@ -430,7 +430,7 @@ Run: ``task test-cpp`` (file: ``cpp/tests/signal/test_frame.cpp``)
 
 .. |isin| unicode:: U+2208
 
-SWIFI fault injection (``cpp/tests/signal/test_fault_injection.cpp``)
+SWIFI fault injection (``cpp/tests/messages/test_swifi_messages.cpp``)
 
 .. list-table::
    :header-rows: 1
@@ -562,13 +562,13 @@ Test Summary
      - < 5 s
      - ``task test-py``
 
-All C++ unit tests pass in under 2 seconds with exit code 0.
+All C++ unit tests pass in a few seconds with exit code 0.
 SWIFI scenarios verify LDPC matrix corruption detection and output
 scrubbing for both standalone subframe and full frame pipelines.
 
 Related documents:
 
--  :doc:`signal/compliance_matrix` --- LSIS-310, LSIS-330, LSIS-340, LSIS-410--470
+-  :doc:`signal/compliance_matrix` --- CM-310, CM-330, CM-340, CM-410--470
 -  :doc:`signal/architecture` --- module-to-gateway mapping
 -  :doc:`signal/signal_chain` --- transmitter block diagram
 -  :doc:`signal/icd` --- formal interface control document

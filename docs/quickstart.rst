@@ -15,9 +15,9 @@ Installation
    # library-only alternative (no dev tooling):
    pip install .
 
-LunaLink has **zero runtime dependencies** beyond the C++ extension that ships
-with the package.  NumPy is used internally but does not need to be installed
-separately.
+LunaLink's runtime dependencies are NumPy plus two lightweight typing
+libraries (``jaxtyping``, ``beartype``); all are installed automatically
+with the package.
 
 Transmitting a Signal
 ---------------------
@@ -62,15 +62,19 @@ AFS-Q chip rate of 5.115 MHz.
 Test Payloads
 ~~~~~~~~~~~~~
 
-:func:`~lunalink.afs.make_test_payload` generates standard subframe data for the
-four competition test scenarios:
+:func:`~lunalink.afs.make_test_payload` generates standard subframe data for
+the competition test scenarios (see :doc:`test_vectors` for the full
+MSG-1…MSG-5 definitions):
 
 .. code-block:: python
 
    sb2, sb3, sb4 = make_test_payload("zeros")        # MSG-1: all zeros
    sb2, sb3, sb4 = make_test_payload("ones")         # MSG-2: all ones
    sb2, sb3, sb4 = make_test_payload("alternating")  # MSG-3: 0101...
-   sb2, sb3, sb4 = make_test_payload("random", seed=42)  # MSG-4: PRNG
+   sb2, sb3, sb4 = make_test_payload("random", seed=42)  # MSG-5: Random (PRNG)
+
+(MSG-4, the ephemeris scenario, carries structured CED data and is produced
+by the vector export scripts rather than by ``make_test_payload``.)
 
 Each returns a tuple of three NumPy ``uint8`` arrays with the correct lengths
 for SB2 (1176 bits), SB3 (846 bits), and SB4 (846 bits).

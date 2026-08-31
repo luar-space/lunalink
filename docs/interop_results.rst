@@ -40,11 +40,11 @@ Summary
      - **PASS**
      - 0/10230 chip mismatches per PRN
    * - **L2**
-     - Frame encoding (5 payloads × 3 patterns)
+     - Frame encoding (5 frame cases: 3 fill patterns + boundary FID/TOI)
      - **PASS**
      - 0/6000 symbol mismatches per frame (BCH, CRC-24, LDPC, interleaver)
    * - **L3**
-     - PCPS acquisition of LANS-AFS-SIM signal
+     - PCPS (parallel code-phase search) acquisition of LANS-AFS-SIM signal
      - **PASS**
      - Acquisition locks (PRN 3, Doppler ≈ 0 Hz)
    * - **L3**
@@ -131,7 +131,7 @@ Methodology
 
 LANS-AFS-SIM's ``icodegen()`` and ``qcodegen()`` functions were called via
 a C harness (``dump_lans_codes.c``) to extract Gold-2046 and Weil-10230 codes
-for PRN 1–12.  Each code was compared chip-by-chip against LunaLink's packed
+for PRN 1–210.  Each code was compared chip-by-chip against LunaLink's packed
 PRN tables.  Both implementations use independent code generation:
 LANS-AFS-SIM uses an 11-bit LFSR with a delay table; LunaLink uses
 pre-computed tables generated from the LSIS V1.0 Appendix C/D parameters.
@@ -140,8 +140,10 @@ pre-computed tables generated from the LSIS V1.0 Appendix C/D parameters.
 
 A C harness (``dump_lans_frame.c``) invokes LANS-AFS-SIM's encoding pipeline
 (``generate_BCH_AFS_SF1``, ``append_CRC24``, ``encode_LDPC_AFS_SF2/SF3``,
-``interleave_AFS_SF234``) with controlled payloads (all-zeros, all-ones,
-alternating, boundary FID/TOI values).  The resulting 6000-symbol frames
+``interleave_AFS_SF234``) for five frame cases spanning three fill patterns
+(all-zeros, all-ones, alternating) plus boundary FID/TOI values
+(FID=1/TOI=0 and FID=3/TOI=99; ``tests/test_interop_frames.py``).  The
+resulting 6000-symbol frames
 are compared against LunaLink's ``frame_build()`` output.
 
 **L3 — Cross-implementation signal decode**

@@ -35,22 +35,29 @@ Metrics Catalogue
      - Threshold
      - Escalation Action
    * - **MC/DC Coverage** — percentage of Modified Condition/Decision Coverage
-       achieved on all ``[LSIS-AFS-*]``-tagged functions
+       achieved on safety-tagged (``[LSIS-AFS-*]``) decision points
      - LLVM ``llvm-cov`` (source-based instrumentation)
      - Every pull request; every push to ``main``
-     - **100%** — no exceptions without a documented safety-case waiver
-     - CI gate blocks merge; author notified by GitHub check failure;
-       48 hours to resolve or raise waiver in PRACA
+     - Design target: **100%** on safety-tagged decision points.  The CI gate
+       currently enforces a **30%** whole-library floor
+       (``MCDC_COVERAGE_MIN`` in ``.github/workflows/coverage-cpp.yml``); the
+       measured value at submission is recorded in the coverage evidence and
+       badge.
+     - CI gate blocks merge below the enforced floor; author notified by
+       GitHub check failure; 48 hours to resolve
    * - **Line Coverage (C++)** — percentage of C++ source lines executed by
        the Catch2 test suite
-     - ``gcov`` / ``gcovr``
+     - LLVM ``llvm-cov`` (source-based instrumentation)
      - Every pull request; every push to ``main``
-     - **≥ 95%** overall; per-file floor of 90%
+     - **≥ 90%** whole-library (``LINE_COVERAGE_MIN`` in
+       ``.github/workflows/coverage-cpp.yml``).  No per-file floor is
+       CI-enforced; files below 80% line coverage are individually justified
+       in ``coverage_exclusions.rst``.
      - CI gate blocks merge; author notified; 48 hours to add tests or
-       justify exclusion via ``// LCOV_EXCL`` annotation in code review
+       justify exclusion in ``coverage_exclusions.rst``
    * - **SWIFI Detection Rate** — fraction of single-bit fault injections
        that are detected and returned as ``kFaultDetected``
-     - LunaLink SWIFI test suite (``tests/swifi/``)
+     - LunaLink SWIFI test suite (``cpp/tests/<domain>/test_swifi_*.cpp``)
      - Every pull request; every push to ``main``
      - **100%** — any undetected fault is a safety regression
      - CI gate blocks merge immediately; author must investigate within
@@ -68,13 +75,6 @@ Metrics Catalogue
      - Every pull request; every push to ``main``
      - **0** errors; **0** warnings
      - CI gate blocks merge; same escalation path as clang-tidy
-   * - **Build size (flash)** — size of ``liblunalink.a`` text+rodata
-       sections as reported by ``nm``
-     - ``nm --print-size`` + ``scripts/check_build_size.py``
-     - Every pull request; every push to ``main``
-     - **≤ 64 KB** (text + rodata combined)
-     - CI gate blocks merge; author must profile and reduce size or
-       request threshold increase via Lead Developer review
    * - **WCET input-class spread** — intra-run spread ``(max − min) / min``
        across adversarial input classes (all-zeros, all-ones, pseudo-random)
        for ``[LSIS-AFS-*]``-tagged functions; detects data-dependent branches
@@ -106,18 +106,20 @@ threshold:
 3. **48-hour resolution window** — the author must either:
 
    a. Fix the metric violation and push new commits to the PR, or
-   b. Open a PRACA issue (``assurance/praca.rst`` §Problem Report Lifecycle)
-      classifying the violation and proposing a compensating control or
-      threshold waiver.
+   b. Open a PRACA issue classifying the violation and proposing a
+      compensating control or threshold waiver.  (The PRACA process record,
+      ``praca.rst``, is maintained in the development tree and is not shipped
+      in this release; GitHub Issues serve as the visible problem-report
+      channel.)
 
 4. **Branch blocked** — if neither (a) nor (b) is completed within 48 hours,
    the branch is marked ``blocked`` in the GitHub issue tracker and no
    further merges from that branch are permitted until resolution.
 
 5. **S1 escalation** — SWIFI detection rate failures and any MC/DC
-   regression below 100% are immediately classified as **S1 (Critical)**
-   in the PRACA system, bypassing the 48-hour window and requiring
-   immediate Lead Developer involvement.
+   regression below the enforced CI floor are immediately classified as
+   **S1 (Critical)**, bypassing the 48-hour window and requiring immediate
+   Lead Developer involvement.
 
 Metrics History
 ----------------
@@ -133,7 +135,7 @@ Metrics History
 
 .. list-table::
    :header-rows: 1
-   :widths: 16 14 14 14 14 14 14
+   :widths: 20 16 16 16 16 16
 
    * - Build Date
      - MC/DC %
@@ -141,9 +143,7 @@ Metrics History
      - SWIFI %
      - clang-tidy
      - cppcheck
-     - Flash (KB)
    * - *(populated by CI)*
-     - *(CI)*
      - *(CI)*
      - *(CI)*
      - *(CI)*

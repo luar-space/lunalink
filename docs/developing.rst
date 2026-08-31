@@ -43,8 +43,8 @@ Getting Started
 
 Clone the repository and run the one-time setup::
 
-    git clone <repo-url>
-    cd lunalink
+    git clone https://github.com/luar-space/lsis-afs.git
+    cd lsis-afs
     task install        # create .venv and install all dependencies
     task install-hooks  # register the pre-commit hook
 
@@ -86,7 +86,7 @@ Run ``task --list`` to see all tasks. The most common ones are:
      - Build and run C++ tests with AddressSanitizer + UBSan.
    * - ``task tidy``
      - Run clang-tidy HICPP static analysis on all C++ signal sources.
-   * - ``task wcet-profile``
+   * - ``task wcet``
      - Build in Release mode and run ``[performance]`` benchmarks to check WCET tolerance.
    * - ``task ci-checks``
      - Full local CI suite: build, lint, flags, test-cpp, coverage, tidy, test-py, sanitize, docs.

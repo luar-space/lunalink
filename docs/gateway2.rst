@@ -10,10 +10,10 @@ Quick Build & Run
 
 .. code-block:: bash
 
-   task test-cpp              # builds and runs all 97 unit tests (< 2 s)
-   task test-performance      # runs BER simulations; slow, run once to verify
+   task test-cpp              # builds and runs the full unit-test suite
+   task ber                   # runs BER simulations; slow, run once to verify
 
-All 97 unit tests must pass with exit code 0.  The performance suite is
+All unit tests must pass with exit code 0.  The performance suite is
 excluded from the default run because it takes several minutes; the key
 numerical results are recorded in this document for reference.
 
@@ -59,7 +59,7 @@ Code parameters
 
 Implementation files:
 
-- ``cpp/include/lunalink/signal/bch.hpp`` — public API
+- ``cpp/include/lunalink/encoding/bch.hpp`` — public API
 - ``cpp/encoding/bch.cpp`` — encoder, hard-ML decoder, soft-ML decoder
 - ``cpp/encoding/bch_table.cpp`` — 400-entry codebook (packed 64-bit words)
 
@@ -74,8 +74,8 @@ Hard-decision ML decoder (``bch_decode``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Exhaustive ML over the 400-entry codebook using Hamming distance.  Always
-returns the nearest codeword regardless of error count.  Better than an
-algebraic t=2 decoder: it never declares failure due to excess errors; it
+returns the nearest codeword regardless of error count.  Unlike an
+algebraic t=2 decoder, it never declares failure due to excess errors; it
 simply returns the best available estimate.
 
 Soft-decision ML decoder (``bch_decode_soft``)
@@ -110,7 +110,7 @@ Hardening
 Unit tests
 ~~~~~~~~~~
 
-Run: ``task test-cpp``  (file: ``cpp/tests/signal/test_bch.cpp``)
+Run: ``task test-cpp``  (file: ``cpp/tests/encoding/test_bch.cpp``)
 
 .. list-table::
    :header-rows: 1
@@ -139,10 +139,10 @@ Run: ``task test-cpp``  (file: ``cpp/tests/signal/test_bch.cpp``)
    * - BCH soft decoder: exhaustive codebook
      - All 400 entries verified under soft-decision decoding
 
-Performance tests (``task test-performance``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Performance tests (``task ber``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-File: ``cpp/tests/signal/test_bch_ber.cpp``.  BPSK AWGN simulation comparing
+File: ``cpp/tests/performance/test_bch_ber.cpp``.  BPSK AWGN simulation comparing
 hard ML vs soft ML over 1,000–10,000 frames per Eb/N0 point.
 
 .. list-table::
@@ -277,13 +277,11 @@ Hardening
      - H·c=0 checked on every encoded codeword; ``kFaultDetected`` returned on fail
    * - Workspace separation
      - All large temporaries (~85 KB decoder, ~14 KB encoder) in caller-supplied structs — no stack allocation, no dynamic memory
-   * - Saturating arithmetic
-     - Fixed-point accumulation uses saturating add/subtract throughout; no wrap-around possible
 
 Unit tests
 ~~~~~~~~~~
 
-Run: ``task test-cpp``  (file: ``cpp/tests/signal/test_ldpc.cpp``)
+Run: ``task test-cpp``  (file: ``cpp/tests/encoding/test_ldpc.cpp``)
 
 .. list-table::
    :header-rows: 1
@@ -340,7 +338,7 @@ Write row-wise, read column-wise (standard block interleaver permutation).
 
 Implementation files:
 
-- ``cpp/include/lunalink/signal/interleaver.hpp``
+- ``cpp/include/lunalink/encoding/interleaver.hpp``
 - ``cpp/encoding/interleaver.cpp``
 
 Hardening
@@ -350,7 +348,7 @@ CFI sentinels and mirrored address calculation (Category B hardening):
 the output index is computed twice via independent paths; a mismatch
 triggers ``kFaultDetected`` before any write.
 
-Unit tests (file: ``cpp/tests/signal/test_interleaver.cpp``)
+Unit tests (file: ``cpp/tests/encoding/test_interleaver.cpp``)
 
 .. list-table::
    :header-rows: 1
@@ -376,7 +374,7 @@ Polynomial: G(X) = 0x864CFB (CRC-24Q), seed = 0, MSB-first bit ordering.
 
 Implementation files:
 
-- ``cpp/include/lunalink/signal/crc.hpp``
+- ``cpp/include/lunalink/encoding/crc.hpp``
 - ``cpp/encoding/crc.cpp``
 
 Hardening
@@ -385,7 +383,7 @@ Hardening
 CFI counter verifies the full 24-bit output loop ran without skip;
 ``kFaultDetected`` returned on mismatch.
 
-Unit tests (file: ``cpp/tests/signal/test_crc.cpp``)
+Unit tests (file: ``cpp/tests/encoding/test_crc.cpp``)
 
 .. list-table::
    :header-rows: 1
@@ -408,8 +406,8 @@ Cross-Cutting: Integration and Assurance Tests
 Beyond the per-component unit tests, the following integration tests
 cover GD2 end-to-end paths.
 
-Round-trip tests (``cpp/tests/signal/test_roundtrip.cpp``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Round-trip tests (``cpp/tests/encoding/``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. list-table::
    :header-rows: 1
@@ -417,18 +415,19 @@ Round-trip tests (``cpp/tests/signal/test_roundtrip.cpp``)
 
    * - Test case
      - What it verifies
-   * - Gateway 2: BCH Round-trip
+   * - BCH codebook exhaustive check (``test_bch.cpp``)
      - encode → decode recovers correct FID/TOI for all 400 valid messages
-   * - Gateway 2: LDPC Round-trip
+   * - Gateway 2: LDPC Round-trip (``test_ldpc.cpp``)
      - encode → decode with no channel noise recovers all message bits for SF2, SF3, SF4
 
-Safety & fault-tolerance test (``cpp/tests/signal/test_safety_extended.cpp``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Safety & fault-tolerance tests (``cpp/tests/encoding/test_swifi_encoding.cpp``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-*Gateway 2: Safety & Fault Tolerance* covers: TMR majority voting under
-simulated single-bit corruption; CFI detection via ``bch_decode``; and
-range-hardened rejection of ``Fid``/``Toi`` values fabricated via
-``force_fault()`` injection.
+SWIFI fault injection for the FEC domain covers: LDPC parity-table bit-flip
+detection (integrity check fails closed), forced error-status injection on
+``ldpc_encode``, and TMR detection of corrupted mirrored decoder state.
+Generic TMR voting and ``CheckedRange`` saturation are exercised in
+``cpp/tests/platform/test_swifi_platform.cpp``.
 
 ----
 
@@ -515,7 +514,7 @@ Validate them against the current build:
 
 .. code-block:: bash
 
-   python tests/validate_test_vectors.py
+   uv run pytest tests/test_interop_self.py
 
 ----
 
@@ -532,27 +531,27 @@ Test Summary
      - Run time
      - How to run
    * - GD2 unit + integration
-     - 97
-     - ~1,600
-     - < 2 s
+     - 40
+     - ---
+     - seconds
      - ``task test-cpp``
    * - BCH BER simulation
      - 3
      - 26,011
      - ~30 s
-     - ``task test-performance``
-   * - LDPC BER simulation
-     - 4
-     - ~4,000
+     - ``task ber``
+   * - LDPC reference comparison + frame FER sweep
+     - 2
+     - ---
      - ~5 min
-     - ``task test-performance``
+     - ``task ber``
    * - Python bindings
      - included in pytest
      - —
      - < 5 s
      - ``task test-py``
 
-All C++ unit tests pass in under 2 seconds with exit code 0.
+All C++ unit tests pass in a few seconds with exit code 0.
 All performance tests pass with the BER/FER bounds stated in this document.
 
 Related documents:

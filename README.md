@@ -44,7 +44,7 @@ task install        # uv sync --group dev: builds the C++ core + Python package
 Then generate the competition artefacts directly from the CLI:
 
 ```bash
-uv run lunalink generate-codes           # all 210 PRN spreading codes (hex)
+uv run lunalink generate-codes           # all 210 Gold spreading codes (hex)
 uv run lunalink encode --help            # encode a 12-s frame or I/Q signal file
 uv run python examples/01_transmit.py    # 12-s I/Q signal file (writes ~491 MB)
 uv run python examples/03_round_trip.py  # transmit → decode, bit-exact check
@@ -59,7 +59,7 @@ Each pass/fail gate item is one command, run from the repo root after
 
 | Gate item | Command | Evidence |
 |:--|:--|:--|
-| ≥ 12 PRN spreading codes | `uv run lunalink generate-codes` | 210 codes, bit-exact vs Annex 3 (`tests/test_annex3_codes.py`) |
+| ≥ 12 PRN spreading codes | `uv run lunalink generate-codes` | 210 Gold codes (full Gold + Weil + secondary sets in `test-vectors/codes/`), bit-exact vs Annex 3 (`tests/test_annex3_codes.py`) |
 | Complete 12-second frame | `uv run python examples/01_transmit.py` | 6000-symbol frame, all subframes |
 | I/Q signal files | same command | `LSISIQ`-headed float32 file; short vectors in `test-vectors/signals/` |
 | Validation tests | `task test-cpp && task test-py` | full unit/integration suites |

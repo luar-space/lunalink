@@ -25,8 +25,10 @@ to the strictest rule where standards overlap:
    * - MISRA C++:2023
      - MISRA
      - Primary coding rule set. 179 guidelines (4 Directives + 175 Rules).
-       Compliance tracked in ``docs/assurance/misra_cpp2023_gcs.rst``
-       (LUNALINK-MISRA-GCS-001).
+       The full Guideline Compliance Summary (``misra_cpp2023_gcs.rst``,
+       LUNALINK-MISRA-GCS-001) is maintained in the development tree and is
+       not shipped in this release; the per-rule record in this document is
+       the shipped compliance record.
    * - JPL Institutional Coding Standard
      - JPL D-60411
      - 31 rules (LOC-1 through LOC-4) for mission-critical C. Applicable to
@@ -370,7 +372,9 @@ Testing and Evidence Requirements
 ---------------------------------
 [ECSS-E-ST-40C §5.5.3; ECSS-Q-ST-80C §5.5; NASA SWE-127, SWE-128]
 
-1. ``[LSIS-AFS-*]`` tagged functions must achieve 100 percent MC/DC.
+1. ``[LSIS-AFS-*]`` tagged functions target 100 percent MC/DC (design
+   target; the CI gate enforces a 30 percent whole-library floor — see
+   ``metrics_plan.rst``).
    [ECSS Category A practice; NASA SWE-127]
 2. Branch coverage must be >= 95 percent across the core source directories.
 3. Line coverage must be >= 90 percent overall for C++.
@@ -424,13 +428,12 @@ NASA SWE-108, and Power of Ten Rule 10.
 MISRA Compliance
 ~~~~~~~~~~~~~~~~
 MISRA C++:2023 compliance is self-declared per MISRA Compliance:2020. The
-formal Guideline Compliance Summary is maintained at:
-
-  ``docs/assurance/misra_cpp2023_gcs.rst`` (LUNALINK-MISRA-GCS-001)
-
-This document records the status of all 179 guidelines (Compliant, Deviated,
-Disapplied, Manual, or N/A), the deviation register, and the disapplied
-guidelines justification.
+formal Guideline Compliance Summary (``misra_cpp2023_gcs.rst``,
+LUNALINK-MISRA-GCS-001) — recording the status of all 179 guidelines
+(Compliant, Deviated, Disapplied, Manual, or N/A), the deviation register,
+and the disapplied guidelines justification — is maintained in the
+development tree and is not shipped in this release.  The per-rule content
+in this document is the shipped compliance record.
 
 Tool Validation Suite
 ~~~~~~~~~~~~~~~~~~~~~

@@ -19,8 +19,8 @@ Block Diagram
     │  (Gold-2046)     │     │  (Weil-1500)           │
     └────────┬────────┘     └──────────┬───────────┘
              │                          │
-             │                          │
-             ▼                          │
+             │  ◀── Nav Data Symbols    │
+             ▼      (500 sps, C8 frame) │
     ┌─────────────────┐                 │
     │  GD4.1 BPSK(1)  │                 │
     │  Modulator      │                 │
@@ -78,7 +78,7 @@ Data Flow
     
     *   **Primary**: Weil-10230 code (10230 chips, 2 ms epoch).
     *   **Secondary**: 4-bit fixed sequence (S0–S3), repeating every 4 primary epochs.
-    *   **Tertiary**: Weil-1500 code, 1 chip per 4 primary epochs (20 ms duration).
+    *   **Tertiary**: Weil-1500 code, 1 chip per 4 primary epochs (8 ms duration).
     
     The combiner handles phasing logic and enforces ``CheckedRange`` constraints on offsets.
 
@@ -89,7 +89,7 @@ Data Flow
     *   **AFS-Q**: Pilot channel, no data modulation (data symbol always +1).
 
 4.  **IQ Multiplexing (GD4.2)**:
-    The two channels are combined into a single complex baseband stream at the higher chip rate (5.115 Mcps) with aliasing protection and WIP signaling.
+    The two channels are combined into a single complex baseband stream at the higher chip rate (5.115 Mcps) with aliasing protection and watchdog liveness ticks (work-in-progress counter updates for the software watchdog).
 
 Component Status
 ----------------
@@ -113,3 +113,26 @@ Component Status
    * - GD4.2
      - IQ Multiplexer (5.115 MSPS)
      - Implemented [Hardened]
+   * - C5-E
+     - BCH(51,8) Header Encoder
+     - Implemented [Hardened]
+   * - C5-D
+     - BCH(51,8) ML Correlation Decoder
+     - Implemented [Hardened]
+   * - C6
+     - LDPC Encoders (SF2 2400,1200; SF3/SF4 1740,870)
+     - Implemented [Hardened]
+   * - C7
+     - LDPC Decoder (layered sum-product belief propagation)
+     - Implemented [Hardened]
+   * - C8
+     - Navigation Frame Builder (sync, SB1, 60×98 block interleaving)
+     - Implemented
+   * - C9
+     - Navigation Message Parsing (FID/TOI, WN/ITOW, ToT)
+     - Implemented
+
+The GD-prefixed rows are the gateway deliverables this page's diagram covers
+in detail; the C-prefixed rows are the encoding/framing components of the
+full chain (IDs per :doc:`../roadmap`), which feed the ``Nav Data Symbols``
+input above.

@@ -212,8 +212,8 @@ FMEA Table — Forward Error Correction (``bch.cpp``, ``ldpc.cpp``, ``interleave
        100 % coverage required.
 
 
-FMEA Table — Frame Assembly & Modulation (``frame.cpp``, ``modulator.cpp``, ``iq_mux.cpp``)
----------------------------------------------------------------------------------------------
+FMEA Table — Frame Assembly & Modulation (``frame.cpp``, ``modulator.hpp``/``signal_gen.cpp``, ``iq_mux.cpp``)
+--------------------------------------------------------------------------------------------------------------
 
 .. list-table::
    :header-rows: 1
@@ -408,8 +408,8 @@ FMEA Table — State Machine & System-Level (top-level signal chain FSM)
        CI (``cross-arch.yml``).
 
 
-FMEA Table — Telemetry & Fault Reporting (``telemetry.cpp``)
--------------------------------------------------------------
+FMEA Table — Telemetry & Fault Reporting (``telemetry.hpp``)
+------------------------------------------------------------
 
 .. list-table::
    :header-rows: 1
@@ -634,80 +634,6 @@ FMEA Table — RX Pipeline & Frame Decode (``frame_decode.cpp``, ``interleaver.c
      - Pointer-range aliasing check between ``workspace.staging`` and ``out``
        at entry.  Zero-fill and all processing guarded by ``if (ok)``.
        Staging unconditionally scrubbed on all exit paths (§7).
-   * - FM-068
-     - SEU corrupts ``LoopFilter1::integrator`` (DLL integrator runaway)
-     - Code phase drifts uncontrollably → wrong pseudoranges → incorrect
-       navigation solution
-     - D-SWIFI: ``std::clamp`` on integrator every update cycle
-       (±\ ``kMaxDllIntegratorChipsPerS``); C/N0 lock detection transitions
-       channel to ``kLost`` on sustained divergence.
-     - S3
-     - Zone 1-2
-     - Integrator clamped to ±100 chips/s every ``update()`` call.
-       Mirrors the loop-filter integrator saturation pattern.
-       Second-order PI filter (proportional + integral) enables zero
-       steady-state error for constant-rate SCO drift.
-       SWIFI FI-26 (``test_swifi_signal.cpp``) injects 10x saturation
-       value and verifies clamp + tracking recovery.
-       Empirical: SCO parametric sweep 0--50 ppm × 200 epochs
-       (``test_channel_impairments.cpp``), lock maintained at all points.
-       Steady-state DLL bias < 0.10 chips at 10 ppm (200 epochs).
-       Combined impairment test (SCO + phase noise + data + quantization +
-       multipath + Doppler rate) maintains lock at Ec/N0 = 10 dB.
-
-
-   * - FM-075
-     - SEU corrupts ``power_accum_`` during non-coherent integration
-     - Accumulated power grid contains stale/corrupt values → incorrect
-       detection metric → false acquisition lock or missed signal
-     - D-CFI: ``scrub_float_array()`` (secure_scrub via volatile) at entry
-       and exit of ``pcps_search()``; CFI sentinel on epoch accumulation
-       loop (``cfi_epochs = 0xC3C3C3C3``); CFI sentinel on peak-search
-       loop (``cfi_peak = 0xD2D2D2D2``).
-     - S3
-     - Zone 1-2
-     - ``power_accum_`` zeroed via ``secure_scrub()`` before each Doppler
-       bin and after the search completes.  Epoch loop CFI detects skipped
-       iterations.  Peak-search CFI detects truncated scan.  Variance
-       computed in ``double`` to prevent catastrophic cancellation.
-   * - FM-076
-     - SEU corrupts ``n_epochs`` parameter between guard clause and loop
-     - Epoch loop runs wrong number of iterations → incorrect integration
-       depth → metric does not match threshold calibration
-     - D-CFI: ``n_epochs`` is ``uint8_t`` passed by value (register);
-       ``cfi_epochs`` terminal check detects iteration count mismatch.
-       Guard clause validates ``n_epochs ≤ kMaxIntegrationEpochs`` before
-       ``uint8_t`` truncation.
-     - S3
-     - Zone 1
-     - ``n_epochs_unchecked`` validated as ``size_t`` before cast.
-       CFI sentinel verifies actual iterations match expected.
-   * - FM-077
-     - SEU causes ``doppler_wipeoff()`` to skip samples
-     - Partial Doppler removal → smeared correlation peak →
-       degraded acquisition sensitivity or false code delay
-     - D-CFI: ``cfi_wipe = 0xE1E1E1E1`` sentinel in ``doppler_wipeoff()``;
-       terminal check returns false on mismatch; caller
-       ``accumulate_epochs()`` scrubs and returns false on failure.
-     - S3
-     - Zone 1
-     - CFI protects the inner wipe-off loop.  On CFI failure, both
-       ``scratch_`` and ``power_accum_`` are scrubbed before return.
-   * - FM-078
-     - Variance computation produces negative value due to floating-point
-       cancellation → ``σ = 1e-10F`` fallback → inflated metric → false lock
-     - False acquisition on noise → incorrect tracking initialisation →
-       wrong pseudoranges
-     - D-NUM: Variance accumulated in ``double`` precision to eliminate
-       catastrophic cancellation for all practical SNR ranges.
-       Fallback ``σ = 1e-10F`` produces metric ~ ``(peak-mean)/1e-10``,
-       which would exceed any reasonable threshold only if ``peak > mean``
-       by a significant margin (genuine signal present).
-     - S3
-     - Zone 2
-     - ``double`` accumulation provides 15+ significant digits vs 7 for
-       ``float``.  At ``kPcpsFftSize=4096`` cells and ``N≤20`` epochs,
-       the maximum ``sum_pow2`` remains well within ``double`` range.
    * - FM-079
      - ``phi_func()`` NaN/Inf propagation — ``expm1()`` returns 0 for
        extreme input magnitudes, causing division by zero in
@@ -735,8 +661,20 @@ FMEA Table — RX Pipeline & Frame Decode (``frame_decode.cpp``, ``interleaver.c
      - Bounded ``phi_func()`` output ensures ``phi_sum`` cannot overflow.
        Maximum accumulation is ``row_weight × 30.0``.
 
-..
-   Gateway 6 — Message Parsing
+FMEA Table — Message Parsing (``message_parser.cpp``, ``time_of_transmission.cpp``)
+------------------------------------------------------------------------------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 5 25 20 15 8 12 15
+
+   * - ID
+     - Failure Mode
+     - Effect on System
+     - Detection Mechanism
+     - Severity
+     - FIZ Zone
+     - Mitigation
 
    * - FM-069
      - SEU corrupts bit array during ``extract_bits()`` — bit value > 1
@@ -789,8 +727,20 @@ FMEA Table — RX Pipeline & Frame Decode (``frame_decode.cpp``, ``interleaver.c
        overflow.  CFI terminal check ensures formula execution.
        ``secure_scrub_scalar()`` on ``result.t_f`` on non-``kOk`` path.
 
-..
-   Gateway 7 — SISE Calculation
+FMEA Table — SISE Calculation (``sise.cpp``)
+---------------------------------------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 5 25 20 15 8 12 15
+
+   * - ID
+     - Failure Mode
+     - Effect on System
+     - Detection Mechanism
+     - Severity
+     - FIZ Zone
+     - Mitigation
 
    * - FM-073
      - ``compute_sise()`` receives NaN/Inf position or velocity components

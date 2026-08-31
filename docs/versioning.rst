@@ -42,6 +42,9 @@ Cutting a Release
       git tag -a v1.2.3 -m "Release 1.2.3"
       git push origin v1.2.3
 
+   (``task version-tag`` automates this step — it computes the next patch
+   or minor tag; ``DRY_RUN=1`` previews, ``PUSH=1`` pushes.)
+
 3. Rebuild the package to confirm the version resolves correctly::
 
       task build

@@ -208,14 +208,66 @@ Category B requires:
 * FMEA and software safety analysis.
 
 LunaLink's current assurance infrastructure satisfies or exceeds these
-requirements.  See the per-requirement applicability columns in this document for the full tailoring
-record.
+requirements on the technical side; the organisational requirements are
+tailored for the solo-developer competition context as recorded below.
+
+
+Tailoring Record
+----------------
+
+LunaLink is developed by a single engineer for the competition submission.
+The following organisational requirements cannot be satisfied as written by a
+development team acting alone; each is tailored honestly rather than claimed.
+The technical artefacts each process would consume are in place and are
+structured for hand-over to a programme office at flight adoption.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 18 16 30 36
+
+   * - Requirement Area
+     - ECSS Clause
+     - Category B Expectation
+     - LunaLink Tailoring
+   * - Independent Verification & Validation (IV&V)
+     - Q-ST-80C §5.5
+     - Verification activities performed by a party independent of the
+       development team
+     - **Tailored: self-performed.**  Verification is executed by the
+       developer via automated CI gates (coverage, SWIFI, static analysis,
+       sanitizers) rather than an independent party.  Q-ST-80C §5.5
+       independence is noted as unmet; the evidence artefacts are structured
+       for independent re-execution (single-command reproduction).
+   * - Formal reviews (SRR/PDR/CDR/QR/AR)
+     - E-ST-40C §5.1
+     - Milestone reviews with an independent review board
+     - **Tailored: solo-developer gate reviews.**  The competition gateway
+       sequence substitutes for the E-ST-40C §5.1 milestone reviews: each
+       gateway exit is a self-conducted review against documented exit
+       criteria (``governance/sdp.rst``), recorded in
+       ``governance/baseline_register.rst``.  No independent board exists.
+   * - Change Control Board (CCB)
+     - Q-ST-80C §5.4
+     - Multi-party board approving changes to formal baselines
+     - **Tailored: single maintainer + PR discipline.**  All changes flow
+       through pull requests with full CI gates; baseline changes are
+       append-only rows in the baseline register.  The single maintainer is
+       the sole change authority.
+   * - Configuration audits (PCA / FCA)
+     - Q-ST-80C §5.4
+     - Physical and functional configuration audits by an audit authority
+     - **Tailored: automated evidence generation.**  FCA evidence is the
+       golden-vector and SWIFI suites in CI; PCA evidence is the
+       reproducible-build procedure and ``evidence/build_manifest.json``.
+       No independent auditor has executed either audit.
 
 
 Document Inventory
 ------------------
 
-All referenced PDFs are stored in ``docs/standards/esa/``:
+The referenced PDFs are not shipped in this repository (licensing); they are
+obtainable by running ``bash docs/standards/download_standards.sh``, which
+fetches them into ``docs/standards/esa/``:
 
 .. list-table::
    :header-rows: 1

@@ -37,7 +37,7 @@ Injection Technique Coverage
    * - 2
      - **Stuck-at fault** (register corruption handling)
      - FULL
-     - ``TmrValue::inject_fault()``, ``CheckedRange::force_set()``; FI-01–04, FI-19, FI-26, FI-35
+     - ``TmrValue::inject_fault()``, ``CheckedRange::force_set()``; FI-01–FI-04, FI-35, FI-36
    * - 3
      - **Return-value injection** (error-handling paths)
      - FULL
@@ -302,7 +302,7 @@ SWIFI Scenario Coverage
        zeroed; CFI sentinel remains at base value.  Covered by
        ``[LSIS-SISE] SWIFI: compute_sise NaN injection``,
        ``compute_sise Inf injection``, and ``compute_sise clock term injection``.
-     - FM-073
+     - 1 (contained)
      - PASS
    * - FI-38
      - ``compute_sise_percentile()`` validation + scrubbing (FM-074)
@@ -312,7 +312,7 @@ SWIFI Scenario Coverage
      - ``kInvalidInput`` or ``kEmptyData`` returned; percentile outputs zeroed;
        ``position_pass`` and ``velocity_pass`` forced to false.  Covered by the
        four ``[LSIS-SISE] SWIFI: compute_sise_percentile …`` test cases.
-     - FM-074
+     - 1 (contained)
      - PASS
    * - FI-41
      - LDPC SP decoder ``phi_sum`` TMR bitwise mirror detection (FM-080)
@@ -321,9 +321,22 @@ SWIFI Scenario Coverage
      - ``verify_mirrors()`` detects mismatch between primary value and
        complement mirror; returns ``false``; caller scrubs workspace and
        returns ``kFaultDetected``
-     - FM-080
+     - 1 (contained)
      - PASS
 
+
+Retired / Reserved Scenario IDs
+-------------------------------
+
+Scenario IDs are never reused once assigned, so the numbering above contains
+deliberate gaps:
+
+- **FI-16–FI-19, FI-26** — retired.  These IDs were assigned in an earlier
+  development tree to scenarios for components that are not part of this
+  release; the IDs are permanently retired rather than renumbered.
+- **FI-39, FI-40** — reserved; never assigned to a shipped scenario.
+- **FI-42–FI-45** — assigned to the descoped Gateway 6 parser scenarios
+  documented below; no test case carries these tags in this release.
 
 Summary
 -------
@@ -335,19 +348,17 @@ Summary
    * - Metric
      - Value
    * - Total injection scenarios
-     - 34
-   * - SWIFI-automated PASS
-     - 30
-   * - DOCUMENTED residual-risk boundary (FI-02, FI-35, FI-36)
+     - 34 (table rows above)
+   * - Scenario status: PASS
+     - 31 (includes FI-32, whose upper-bound detection is
+       informational-only by design)
+   * - Scenario status: DOCUMENTED residual-risk boundary
+       (FI-02, FI-35, FI-36)
      - 3
-   * - Informational-only (FI-32)
-     - 1
    * - Total accounted for
-     - 34 (30 PASS + 3 DOCUMENTED + 1 informational = 34)
-   * - Documented residual risk (FI-02, FI-35, FI-36)
-     - 3
-   * - Informational-only (FI-32)
-     - 1
+     - 34 (31 PASS + 3 DOCUMENTED)
+   * - SWIFI ``TEST_CASE`` count (all passing)
+     - 42 — see ``evidence/swifi_results.json`` and `Test Suite Reference`_
    * - Undetected faults
      - 0
    * - Single-bit fault detection coverage
@@ -361,21 +372,23 @@ limitations of the TMR pattern: when multiple copies are overwritten
 simultaneously, the majority vote cannot detect the discrepancy.  This is documented in the FMEA (``assurance/fmea.rst``) and
 accepted as a design constraint inherent to TMR without hardware scrubbing.
 
-Planned Scenarios (Gateway 6 — Message Parsing)
+Descoped Scenarios (Gateway 6 — Message Parsing)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following SWIFI scenarios are planned for the Gateway 6 hardening pass.
-They correspond to FMEA entries FM-069 through FM-072.
+The following SWIFI scenarios are **documented and descoped for this
+release**: the parser hardening mechanisms they target are implemented and
+analysed in FMEA entries FM-069 through FM-072, but no automated injection
+test case exists for them yet.  They are not counted in the summary above.
 
-- **FI-37** (planned): CFI skip injection in ``extract_bits()`` — corrupt
+- **FI-42** (descoped): CFI skip injection in ``extract_bits()`` — corrupt
   ``cfi_count`` sentinel; verify ``kFaultDetected`` returned and output
   scrubbed.
-- **FI-38** (planned): Bit-value injection in ``parse_sb2()`` — set a bit
+- **FI-43** (descoped): Bit-value injection in ``parse_sb2()`` — set a bit
   in the SB2 data array to value 2 (invalid); verify ``kInvalidInput``
   propagated from ``extract_bits()``.
-- **FI-39** (planned): CFI skip injection in ``parse_sb3()`` /
+- **FI-44** (descoped): CFI skip injection in ``parse_sb3()`` /
   ``parse_sb4()`` — corrupt ``cfi_count``; verify ``kFaultDetected``.
-- **FI-40** (planned): CFI skip injection in ``compute_tot()`` — corrupt
+- **FI-45** (descoped): CFI skip injection in ``compute_tot()`` — corrupt
   ``cfi_count``; verify ``kFaultDetected`` and ``result.t_f`` scrubbed.
 
 PR #77 Coverage Notes (FM-103)
@@ -430,11 +443,24 @@ FI-22, FI-23).
 Test Suite Reference
 ---------------------
 
-All scenarios in this report correspond 1-to-1 with ``TEST_CASE`` entries in
-the per-module SWIFI test files (``test_swifi_signal.cpp``,
-``test_swifi_encoding.cpp``, ``test_swifi_messages.cpp``,
-``test_swifi_codes.cpp``, ``test_swifi_platform.cpp``).  The test executable is
-``lunalink_swifi_tests``, built with ``LUNALINK_FAULT_INJECTION=1``.
+Every scenario in this report is verified by at least one ``TEST_CASE`` in
+the per-module SWIFI test files (``cpp/tests/<domain>/test_swifi_*.cpp``:
+``test_swifi_signal.cpp``, ``test_swifi_encoding.cpp``,
+``test_swifi_messages.cpp``, ``test_swifi_codes.cpp``,
+``test_swifi_platform.cpp``, ``test_swifi_core.cpp``).  The mapping is not
+1-to-1: the suite contains 42 ``TEST_CASE`` entries (all passing — see
+``evidence/swifi_results.json``) covering the 34 scenarios as follows:
+
+- 32 scenarios map 1-to-1 to a single ``TEST_CASE`` each;
+- **FI-37** is covered by three ``TEST_CASE`` entries (NaN, Inf, and
+  clock-term injection) and **FI-38** by four (mismatched spans, NaN data,
+  empty data, invalid percentile), all in ``test_swifi_core.cpp``;
+- three supporting ``TEST_CASE`` entries carry no scenario ID: the POST
+  step-2 LUT-corruption check, the nominal POST path, and the
+  checksum-golden reporting utility (``test_swifi_platform.cpp``).
+
+The test executable is ``lunalink_swifi_tests``, built with
+``LUNALINK_FAULT_INJECTION=1``.
 
 Run all SWIFI tests:
 

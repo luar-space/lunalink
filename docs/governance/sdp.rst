@@ -44,15 +44,17 @@ eight-gateway milestone sequence.  Each gateway constitutes a formal increment:
      - Source code in ``cpp/{codes,encoding,messages,signal,platform}/``; Python bindings; tests
    * - Verification
      - Implementation phase exit criterion met
-     - All CI workflows green; SWIFI 100%; MC/DC 100%; zero static-analysis
-       violations; WCET within tolerance
+     - All CI workflows green; SWIFI 100%; MC/DC at or above the enforced CI
+       floor (design target 100% on safety-tagged decision points — see
+       ``assurance/metrics_plan.rst``); zero static-analysis violations; WCET
+       within tolerance
      - CI artifacts: ``coverage.rst``, ``fault_coverage.rst``,
        ``static_analysis.rst``, ``wcet_profile.rst``
    * - Baseline & Release
      - Verification phase exit criterion met
      - Git tag signed; Software Version Description produced; golden test vectors
        committed
-     - Git tag; SVD; ``tests/vectors/vX.Y/``
+     - Git tag; SVD; ``test-vectors/``
 
 Roles and Responsibilities
 ---------------------------
@@ -159,8 +161,11 @@ normative requirements; the detailed rationale is in that document.
 
 **Coverage gates** (blocking CI):
 
-*   100% MC/DC on all ``[LSIS-AFS-*]``-tagged functions.
-*   ≥ 90% C++ line coverage.
+*   MC/DC: design target 100% on safety-tagged (``[LSIS-AFS-*]``) decision
+    points; the CI gate currently enforces a 30% whole-library floor
+    (``.github/workflows/coverage-cpp.yml``); the measured value at submission
+    is recorded in the coverage evidence and badge.
+*   ≥ 90% C++ line coverage (CI-enforced).
 *   100% Python test coverage.
 *   WCET profile within ±2% tolerance for all tagged functions.
 *   100% SWIFI single-bit fault detection coverage.
@@ -187,8 +192,9 @@ Entry/Exit Criteria Summary
      - Pre-commit hook passes on all commits in branch (full CI locally)
    * - Verification → Baseline
      - All CI workflows green on ``main``
-     - SWIFI 100%; MC/DC 100%; zero static-analysis violations; WCET in tolerance;
-       golden vectors committed and passing
+     - SWIFI 100%; MC/DC at or above the enforced CI floor (design target
+       100% on safety-tagged decision points); zero static-analysis
+       violations; WCET in tolerance; golden vectors committed and passing
    * - Baseline → Release
      - Verification exit criteria met
      - Signed git tag created; SVD produced; binary MD5 recorded
@@ -255,8 +261,9 @@ Both require:
 3. Lead Developer approval (CCB approval for flight programme context).
 4. A note in the Software Version Description for the affected release.
 
-No deviation or waiver may lower the SWIFI fault detection coverage below 100% or
-lower the MC/DC coverage below 100% for any ``[LSIS-AFS-*]``-tagged function without
+No deviation or waiver may lower the SWIFI fault detection coverage below 100%,
+lower the CI-enforced coverage floors (``.github/workflows/coverage-cpp.yml``), or
+abandon the 100% MC/DC design target for ``[LSIS-AFS-*]``-tagged functions without
 a full safety case justification.
 
 Approval Record
@@ -288,5 +295,7 @@ This document is approved for the LunaLink competition submission baseline.
 .. note::
    In a full flight programme, this section would carry wet or digital signatures from
    the Programme Manager, Chief Engineer, and Software Safety Officer.  For the
-   competition Digital Twin phase, self-certification is used
-   §Organisational Gaps Acknowledged.
+   competition Digital Twin phase, self-certification is used; the organisational
+   roles this leaves unfilled are identified in §Roles and Responsibilities above
+   and in the NASA Compliance Addendum §Organisational Scope Note
+   (``docs/standards/nasa_compliance_addendum.rst``).

@@ -533,11 +533,13 @@ Annex 3 — PRN Spreading Codes
    * - Weil-10230
      - 10,230
      - 210
-     - Aggregate CRC-32: ``0xffffffff780e10a7``
+     - Aggregate CRC-32: ``0x780e10a7`` (carried as ``uint64_t``
+       ``0xffffffff780e10a7`` in ``codebook_checksums.hpp``)
    * - Weil-1500
      - 1,500
      - 210
-     - Aggregate CRC-32: ``0xffffffff031ee19d``
+     - Aggregate CRC-32: ``0x031ee19d`` (carried as ``uint64_t``
+       ``0xffffffff031ee19d`` in ``codebook_checksums.hpp``)
 
 Table generation pipeline:
 
@@ -548,11 +550,13 @@ Table generation pipeline:
 Pre-generated Test Vectors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Test vectors in competition-standard formats are committed under ``test-vectors/``.
-The initial set covers reference spreading codes (PRN 1--12) for all three
-families (Gold-2046, Weil-10230, Weil-1500), validated bit-for-bit against
-Annex 3.  Additional vectors for FEC and framing components will be published
-as each gateway is completed.
+Test vectors in competition-standard formats are committed under ``test-vectors/``
+(``codes/``, ``fec/``, ``frames/``, ``signals/``, ``parsed/``, ``decode/``).
+The spreading-code set covers all 210 PRNs for all three families (Gold-2046,
+Weil-10230, Weil-1500), validated bit-for-bit against Annex 3; FEC, frame,
+signal, and decode-direction vectors are committed alongside them.  The full
+set is published at `luar-space/lsis-afs-test-vectors
+<https://github.com/luar-space/lsis-afs-test-vectors>`__.
 
 Vectors are regenerable from source at any time and validated against the
 live build during CI.
@@ -605,15 +609,15 @@ and linked to the corresponding module and test case.  Example traces:
    * - LSIS-221
      - AFS-I primary code shall be Gold-2046
      - ``prn``
-     - ``test_gold.cpp``
+     - ``cpp/tests/codes/test_prn_generators.cpp``
    * - LSIS-222
      - AFS-Q primary code shall be Weil-10230
      - ``prn``
-     - ``test_weil.cpp``
+     - ``cpp/tests/codes/test_prn_generators.cpp``
    * - LSIS-260
      - Each LNSP node linked to unique code set
      - ``matched_code``
-     - ``test_matched.cpp``
+     - ``cpp/tests/codes/test_matched_code.cpp``
    * - LSIS-FID0-440
      - SB2 encoded using rate-1/2 LDPC
      - ``ldpc``
@@ -647,6 +651,10 @@ Configuration is managed through git with the following controls:
 
 Roadmap
 -------
+
+*Statuses below are the planning snapshot as of 31 March 2026 — see*
+:doc:`roadmap` *for the delivered status; G8 was delivered as* :doc:`api`
+*and* :doc:`evaluation_guide`\ *.*
 
 .. list-table::
    :header-rows: 1
@@ -719,7 +727,7 @@ All gates must pass with exit code 0.
 .. code-block:: bash
 
    python tests/generate_test_vectors.py    # regenerate all vectors
-   python tests/validate_test_vectors.py    # verify against live build
+   uv run pytest tests/test_interop_self.py # validate vectors against live build
 
 ----
 

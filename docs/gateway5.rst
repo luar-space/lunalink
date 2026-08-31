@@ -12,7 +12,7 @@ Quick Build & Run
 
    task test-cpp              # builds and runs all unit tests (< 10 s)
    task swifi                 # runs SWIFI fault-injection suite
-   task test-performance      # BER/FER/Pd performance tests (slow, ~2 min)
+   task performance           # BER/FER/Pd + WCET performance tests (slow)
 
 All tests must pass with exit code 0.
 
@@ -104,7 +104,7 @@ FMEA (``docs/assurance/fmea.rst``):
 Unit tests
 ~~~~~~~~~~
 
-Run: ``task test-cpp`` (file: ``cpp/tests/signal/test_sync_detector.cpp``, 13 tests)
+Run: ``task test-cpp`` (file: ``cpp/tests/signal/test_sync_detector.cpp``, 14 tests)
 
 .. list-table::
    :header-rows: 1
@@ -139,7 +139,7 @@ Run: ``task test-cpp`` (file: ``cpp/tests/signal/test_sync_detector.cpp``, 13 te
    * - All-ones (bipolar +1.0) input
      - ``kNotDetected`` (partial correlation only)
 
-SWIFI scenarios (``cpp/tests/signal/test_fault_injection.cpp``):
+SWIFI scenarios (``cpp/tests/signal/test_swifi_signal.cpp``):
 
 -  **FI-20**: CFI adversarial --- ``inject_cfi_skip(1)`` fires ``kFaultDetected``
    + FaultPacket; output scrubbed
@@ -166,7 +166,7 @@ subframes.
 
 Implementation files:
 
--  ``cpp/include/lunalink/signal/frame_decode.hpp`` --- public API, types,
+-  ``cpp/include/lunalink/messages/frame_decode.hpp`` --- public API, types,
    workspace (~120 KB, static_assert < 200 KB budget)
 -  ``cpp/messages/frame_decode.cpp`` --- pipeline orchestrator
 
@@ -187,7 +187,7 @@ Pipeline stages
    3. Payload extraction (5880 symbols) -> soft deinterleave (60x98)
      |
      v
-   4. Split into SB2 (1960) + SB3 (1960) + SB4 (1960) codewords
+   4. Split into SB2 (2400) + SB3 (1740) + SB4 (1740) codewords
      |
      v
    5. LDPC decode (layered sum-product BP) per subframe
@@ -291,8 +291,7 @@ FMEA (``docs/assurance/fmea.rst``):
 Unit tests
 ~~~~~~~~~~
 
-Run: ``task test-cpp`` (file: ``cpp/tests/test_frame_roundtrip_e2e.cpp``,
-6 test cases)
+Run: ``task integration`` (file: ``cpp/tests/integration/test_e2e.cpp``)
 
 .. list-table::
    :header-rows: 1
@@ -320,7 +319,7 @@ Run: ``task test-cpp`` (file: ``cpp/tests/test_frame_roundtrip_e2e.cpp``,
    * - Gateway 5: frame-level FER sweep
      - Monte Carlo at 3 Eb/N0 points (see Performance Evidence below)
 
-SWIFI scenarios (``cpp/tests/test_fault_injection.cpp``):
+SWIFI scenarios (``cpp/tests/messages/test_swifi_messages.cpp``):
 
 -  **FI-23**: Frame decode CFI skip --- ``cfi_skip_inject = 1`` fires
    ``kFaultDetected`` + FaultPacket; workspace temporaries scrubbed
@@ -330,12 +329,12 @@ SWIFI scenarios (``cpp/tests/test_fault_injection.cpp``):
 Performance Evidence
 --------------------
 
-Sync detection probability (``cpp/tests/test_sync_detection_rate.cpp``):
+Sync detection probability (``cpp/tests/performance/test_sync_detection_rate.cpp``):
 
 -  **Pd > 99% at Eb/N0 = 0 dB** (10,000 Monte Carlo trials)
--  Tagged ``[gd5.3][pd]``; run via ``task test-performance``
+-  Tagged ``[channel][pd]``; run via ``task ber``
 
-Frame-level FER sweep (``cpp/tests/test_frame_roundtrip_e2e.cpp``):
+Frame-level FER sweep (``cpp/tests/integration/test_e2e.cpp``):
 
 .. list-table::
    :header-rows: 1
@@ -366,14 +365,14 @@ Frame-level FER sweep (``cpp/tests/test_frame_roundtrip_e2e.cpp``):
 
 All 350 frames decoded with zero errors at the operating point and above.
 
-Per-subframe BER waterfall (``cpp/tests/test_ldpc_ber.cpp``):
+LDPC decoder quality (``cpp/tests/performance/test_ldpc_reference.cpp``):
 
--  **SF2, SF3, SF4**: BER characterised across noise floor (0.5 dB),
-   waterfall (1.5 dB), and operating point (3.0 dB) zones
--  **Robustness**: 10,000 frames at Eb/N0 = 2.0 dB; BER < 10\ :sup:`-5`
-   confirmed for all three subframe types
+-  **3-way gap decomposition (SF2)**: decoder benchmarked against a
+   reference belief-propagation implementation across the waterfall
+   region; the residual gap is attributed between decoder implementation
+   and code design
 
-WCET profiling (``cpp/tests/test_performance.cpp``):
+WCET profiling (``cpp/tests/performance/test_wcet.cpp``):
 
 -  **Sync detector WCET**: 6000-symbol buffer benchmark
 -  **frame_decode WCET**: 3 input classes (all-zeros, all-ones,
@@ -434,7 +433,7 @@ Compliance Cross-Reference
      - ``sync_detector.cpp`` + ``test_sync_detector.cpp``
    * - |sec|\ 2.4 Frame
      - 6000-symbol frame: SP(68) + SB1(52) + payload(5880)
-     - ``frame_decode.cpp`` + ``test_frame_roundtrip_e2e.cpp``
+     - ``frame_decode.cpp`` + ``test_e2e.cpp``
    * - |sec|\ 2.4.2 BCH
      - BCH(51,8) soft decode of SB1
      - ``frame_decode.cpp`` stage 2 + ``bch.cpp``
@@ -462,29 +461,29 @@ Test Summary
      - Tags
      - How to run
    * - GD5.2 Sync detector unit tests
-     - 13
-     - ``[sync]``
+     - 14
+     - ``[sync_detector]``
      - ``task test-cpp``
    * - GD5.3 E2E round-trip tests
      - 6
-     - ``[e2e][gd5.3]``
-     - ``task test-cpp``
+     - ``[e2e]``
+     - ``task integration``
    * - GD5.3 Sync Pd characterisation
      - 1
-     - ``[gd5.3][pd]``
-     - ``task test-performance``
+     - ``[channel][pd]``
+     - ``task ber``
    * - GD5.3 Frame-level FER sweep
      - 1
-     - ``[e2e][gd5.3][performance]``
-     - ``task test-performance``
-   * - SF2/SF3/SF4 BER waterfall
-     - 6
-     - ``[ldpc][ber][performance]``
-     - ``task test-performance``
+     - ``[channel][fer][e2e]``
+     - ``task ber``
+   * - LDPC decoder quality (gap decomposition)
+     - 1
+     - ``[channel][ber][reference]``
+     - ``task ber``
    * - WCET benchmarks (sync, frame_decode)
      - 2
-     - ``[performance][benchmark]``
-     - ``task test-performance``
+     - ``[wcet]``
+     - ``task wcet``
    * - SWIFI (GD5 scenarios: FI-19 to FI-23)
      - 5
      - ``[swifi]``

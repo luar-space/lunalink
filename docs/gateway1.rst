@@ -48,11 +48,11 @@ Code parameters
 
 Implementation files:
 
--  ``cpp/include/lunalink/signal/prn.hpp`` --- public API (loaders, unpack, checksums)
+-  ``cpp/include/lunalink/codes/prn.hpp`` --- public API (loaders, unpack, checksums)
 -  ``cpp/codes/prn.cpp`` --- loader implementation
--  ``cpp/include/lunalink/signal/gold.hpp`` --- Gold generator class
--  ``cpp/include/lunalink/signal/weil.hpp`` --- Weil generator class
--  ``cpp/include/lunalink/signal/legendre.hpp`` --- Legendre symbol calculator
+-  ``cpp/include/lunalink/codes/gold.hpp`` --- Gold generator class
+-  ``cpp/include/lunalink/codes/weil.hpp`` --- Weil generator class
+-  ``cpp/include/lunalink/codes/legendre.hpp`` --- Legendre symbol calculator
 -  ``cpp/codes/prn_table.cpp`` --- Gold-2046 packed LUT (52.5 KB, 210 PRNs)
 -  ``cpp/codes/prn_table_weil10230.cpp`` --- Weil-10230 packed LUT (262.3 KB)
 -  ``cpp/codes/prn_table_weil1500.cpp`` --- Weil-1500 packed LUT (38.6 KB)
@@ -150,7 +150,7 @@ Hardening
 Unit tests
 ~~~~~~~~~~
 
-Run: ``task test-cpp`` (file: ``cpp/tests/signal/test_prn.cpp``)
+Run: ``task test-cpp`` (file: ``cpp/tests/codes/test_prn.cpp``)
 
 .. list-table::
    :header-rows: 1
@@ -180,7 +180,7 @@ Run: ``task test-cpp`` (file: ``cpp/tests/signal/test_prn.cpp``)
 .. |isin| unicode:: U+2208
 .. |ne| unicode:: U+2260
 
-Generator validation (file: ``cpp/tests/signal/test_prn_generators.cpp``)
+Generator validation (file: ``cpp/tests/codes/test_prn_generators.cpp``)
 
 .. list-table::
    :header-rows: 1
@@ -214,7 +214,7 @@ The matched code combines three code tiers into a single 10230-chip epoch:
 
 Implementation files:
 
--  ``cpp/include/lunalink/signal/matched_code.hpp`` --- public API
+-  ``cpp/include/lunalink/codes/matched_code.hpp`` --- public API
 -  ``cpp/codes/matched_code.cpp`` --- epoch generation
 
 Secondary codes
@@ -306,7 +306,7 @@ Hardening
 Unit tests
 ~~~~~~~~~~
 
-Run: ``task test-cpp`` (file: ``cpp/tests/signal/test_matched_code.cpp``)
+Run: ``task test-cpp`` (file: ``cpp/tests/codes/test_matched_code.cpp``)
 
 .. list-table::
    :header-rows: 1
@@ -339,7 +339,7 @@ Run: ``task test-cpp`` (file: ``cpp/tests/signal/test_matched_code.cpp``)
    * - checked matched helper APIs: saturating logic
      - TMR fault injection bypassed; CheckedRange saturates on out-of-bound read
 
-SWIFI fault injection (file: ``cpp/tests/signal/test_fault_injection.cpp``)
+SWIFI fault injection (file: ``cpp/tests/platform/test_swifi_platform.cpp``)
 
 .. list-table::
    :header-rows: 1
@@ -359,15 +359,15 @@ SWIFI fault injection (file: ``cpp/tests/signal/test_fault_injection.cpp``)
 Cross-Cutting: Coherency & Round-Trip Tests
 --------------------------------------------
 
-Coherency test (``cpp/tests/signal/test_coherency.cpp``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Coherency test (``cpp/tests/codes/test_matched_code.cpp``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Verifies primary/secondary/tertiary phase alignment (LSIS-172) over a full
 6000-epoch frame.  Confirms that epoch boundaries align correctly and that
 the tertiary code advances once every four epochs.
 
-Round-trip test (``cpp/tests/signal/test_roundtrip.cpp``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Round-trip test (``cpp/tests/integration/test_e2e.cpp``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The full TX |rarr| RX round-trip encodes a matched-code epoch through the
 complete signal chain (spreading |rarr| modulation |rarr| IQ multiplexing)
@@ -410,7 +410,7 @@ Python tests: ``task test-py`` (file: ``tests/test_afs.py``)
 Interoperability Test Vectors
 -----------------------------
 
-Pre-generated hex vectors for PRN 1--12 are committed under
+Pre-generated hex vectors for all 210 PRNs are committed under
 ``test-vectors/codes/``:
 
 .. list-table::
@@ -419,7 +419,7 @@ Pre-generated hex vectors for PRN 1--12 are committed under
 
    * - File
      - Content
-   * - ``prn001.hex`` -- ``prn012.hex``
+   * - ``codes_prn001.hex`` -- ``codes_prn210.hex``
      - INI-format with sections: ``[GOLD_CODE]``, ``[WEIL_PRIMARY]``,
        ``[WEIL_TERTIARY]``, ``[SECONDARY_S0]``--``[SECONDARY_S3]``
 
@@ -463,12 +463,12 @@ Test Summary
      - < 5 s
      - ``task test-py``
 
-All C++ unit tests pass in under 2 seconds with exit code 0.
+All C++ unit tests pass in a few seconds with exit code 0.
 SWIFI scenarios verify 100% single-bit fault detection for all GD1 hardening patterns.
 
 Related documents:
 
--  :doc:`signal/compliance_matrix` --- LSIS-110, LSIS-120, LSIS-130, LSIS-140, LSIS-150
+-  :doc:`signal/compliance_matrix` --- CM-110, CM-120, CM-130, CM-140, CM-150
 -  :doc:`signal/architecture` --- module-to-gateway mapping
 -  :doc:`signal/signal_chain` --- transmitter block diagram
 -  :doc:`signal/validation_plan` --- five-level test hierarchy

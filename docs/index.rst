@@ -29,6 +29,15 @@ submission?  Start with the :doc:`evaluation_guide`.
 
 .. toctree::
    :maxdepth: 2
+   :caption: Executive Summary:
+
+   evaluation_guide
+   quickstart
+   roadmap
+   references
+
+.. toctree::
+   :maxdepth: 2
    :caption: Deliverable Verification:
 
    gateway0
@@ -40,14 +49,6 @@ submission?  Start with the :doc:`evaluation_guide`.
    gateway6
    gateway7
    interop_results
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Executive Summary:
-
-   evaluation_guide
-   roadmap
-   references
 
 .. toctree::
    :maxdepth: 2
@@ -110,7 +111,6 @@ submission?  Start with the :doc:`evaluation_guide`.
    :maxdepth: 2
    :caption: Developer & Interoperability:
 
-   quickstart
    developing
    tech_stack
    test_vectors

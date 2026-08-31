@@ -108,17 +108,15 @@ Testing & Quality
 ~~~~~~~~~~~~~~~~~
 *   **Mandate**: White-box unit testing; Cyclomatic Complexity ≤ 10.
 *   **Compliance**: 
-    *   ``pytest-cov`` ensures > 90% coverage.
+    *   ``pytest-cov`` enforces the 100% line-coverage gate (the build fails below it).
     *   ``ruff (C90)`` and ``radon cc`` enforce complexity limits.
     *   ``radon hal`` and ``radon mi`` generate ESA-required quality metrics.
 
 CI/CD Pipeline
 --------------
 
-The GitHub Actions workflow (``.github/workflows/ci.yml``) executes the 
-following checks on every commit:
-
-1.  **Safety Profile**: ASan/UBSan memory and undefined behavior checks.
-2.  **Hardening Audit**: Verifies that ``-fstack-protector-strong`` and RELRO are active.
-3.  **Traceability**: Confirms that all DSP code is linked to LSIS requirement IDs.
-4.  **Performance**: Benchmarks critical paths against Gateway success criteria.
+CI runs as a set of focused GitHub Actions workflows under
+``.github/workflows/`` — lint, Python tests (100% coverage gate), C++
+tests, ASan/UBSan sanitizers, clang-tidy static analysis, C++
+line/branch/MC/DC coverage, fuzzing, and the Sphinx docs build.  The
+full workflow table is in :doc:`developing`.

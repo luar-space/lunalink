@@ -36,8 +36,8 @@ are provided:
 
 Implementation files:
 
--  ``cpp/include/lunalink/signal/modulator.hpp`` --- public API (inlined hot path)
--  ``cpp/signal/modulator.cpp`` --- validation helpers
+-  ``cpp/include/lunalink/signal/modulator.hpp`` --- header-only: public API,
+   validation helpers, inlined hot path
 
 Modulation formula
 ~~~~~~~~~~~~~~~~~~
@@ -88,7 +88,7 @@ Hardening
      - Implementation
    * - Branchless arithmetic
      - ``(1 - 2 * chip) * data_symbol`` --- zero conditional branches in
-       hot loop; constant-time execution prevents timing side channels
+       hot loop; deterministic execution time supports WCET analysis
    * - SEU-resistant status codes
      - ``ModulationStatus`` values use non-contiguous bit patterns with
        Hamming distance |geq| 2 (``kOk`` = 0x5A, ``kFaultDetected`` = 0x99)
@@ -247,21 +247,21 @@ Run: ``task test-cpp`` (file: ``cpp/tests/signal/test_iq_mux.cpp``)
 Cross-Cutting: Integration and Assurance Tests
 -----------------------------------------------
 
-Coherency test (``cpp/tests/signal/test_coherency.cpp``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Coherency test (``cpp/tests/codes/test_matched_code.cpp``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Verifies primary/secondary/tertiary phase alignment (LSIS-172) over a full
 6000-epoch frame.  This is the upstream prerequisite for GD4: if matched-code
 epochs are phase-incorrect, the modulated IQ stream carries the error.
 
-Round-trip test (``cpp/tests/signal/test_roundtrip.cpp``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Round-trip test (``cpp/tests/integration/test_e2e.cpp``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The TX round-trip encodes through the full signal chain: matched-code epoch
 generation (G1) |rarr| BPSK modulation (G4) |rarr| IQ multiplexing (G4),
 verifying that the complete baseband output is reconstructable.
 
-SWIFI fault injection (``cpp/tests/signal/test_fault_injection.cpp``)
+SWIFI fault injection (``cpp/tests/signal/test_swifi_signal.cpp``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. list-table::
@@ -369,7 +369,7 @@ Test Summary
      - < 5 s
      - ``task test-py``
 
-All C++ unit tests pass in under 2 seconds with exit code 0.
+All C++ unit tests pass in a few seconds with exit code 0.
 SWIFI scenarios verify aliasing detection and output scrubbing for both
 modulator and IQ multiplexer.
 

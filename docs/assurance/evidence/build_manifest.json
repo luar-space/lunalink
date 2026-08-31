@@ -1,30 +1,26 @@
 {
-  "generated": "2026-03-15T22:44:32.060612+00:00",
-  "git_sha": "5f406c9af7fec81869da4cbb729feef24539e6ca",
+  "generated": "2026-08-31T18:43:11.958082+00:00",
+  "git_sha": "7dc48478e4efeb71a0de2e49d9889bb2b5e774c5",
+  "build_type": "Debug",
   "compiler": {
     "id": "AppleClang",
     "version": "17.0.0.17000319",
     "path": "/usr/bin/c++"
   },
   "flags": {
-    "core": "",
-    "hardening": ""
+    "core": "-fno-fast-math -ffp-contract=off -fno-exceptions -fno-rtti",
+    "hardening": "-fstack-protector-strong -fno-common -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2"
   },
   "artifacts": [
     {
       "name": "liblunalink_core.a",
-      "sha256": "69acf035b3115700c4e3b9869d7aff51693a6dbff553fb520a7c892b21ede45a",
-      "size_bytes": 779208
-    },
-    {
-      "name": "lunalink_swifi_tests",
-      "sha256": "8bd328426fb55d8f983aa0879bd01c9cd7831b13d11dde59b7197ea6750a1c6f",
-      "size_bytes": 3854872
+      "sha256": "2f47bc16a47f5f58a4fdd1f6caa6e6d53b3dddfbda5b57888201b13473074460",
+      "size_bytes": 2300832
     },
     {
       "name": "test_lunalink",
-      "sha256": "b6010b52ff30551aa8d7a63b5ef0c52836c37d0383a2892b3d9352c1345b496c",
-      "size_bytes": 4686704
+      "sha256": "ec813065c1d435d29c169b8859e3645b599d03bfef00e94351620f918408b146",
+      "size_bytes": 6509792
     }
   ]
 }

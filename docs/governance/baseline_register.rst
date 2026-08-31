@@ -55,16 +55,31 @@ Baseline Register
      - 2026-03-12
      - Gateway 2 Exit
      - Competition Submission
-     - FEC complete: BCH(51,8) encode/decode, LDPC(1200,600) encode,
+     - FEC complete: BCH(51,8) encode/decode, LDPC SF2 (2400,1200) /
+       SF3–SF4 (1740,870) encode,
        60×98 block interleaver, CRC-24Q.  Assurance document suite
        (FMEA, Safety Plan, SCMP, SDP, OSS assessment, certification
        delta, and this register) added and baselined.
+   * - BL-003
+     - ``v1.0-submission``
+     - *(recorded at tagging)*
+     - 2026-08-31
+     - Competition Submission
+     - Lead Developer
+     - Competition submission baseline — final deliverable tag for the
+       ESA-CCSDS competition.  SHA recorded at tagging.
 
 .. note::
 
-   The SHA for BL-002 reflects the HEAD of the ``assurance`` branch at
-   the time this document was authored.  The SHA will be updated to the
-   final merge-to-``main`` SHA by the gateway exit PR.
+   **Provenance.**  This repository is a squashed public export of the
+   development tree prepared for the competition submission.  The historic
+   per-gateway commit SHAs recorded for BL-001 and BL-002 refer to the
+   development tree and do not exist in this repository's history; they are
+   retained verbatim as the historical record.  BL-002's SHA reflects the
+   HEAD of the development ``assurance`` branch at the time the row was
+   authored and is final for this register — the "will be updated at
+   gateway exit" provision is resolved by this export.  BL-003 is the
+   first baseline cut directly from this repository.
 
 Deviation Register
 -------------------
@@ -110,21 +125,25 @@ register:
 2. **S1 safety fixes** additionally require:
 
    * At least **2 approving reviewers**, one of whom must be the Lead Developer.
-   * SWIFI suite 100% pass and MC/DC 100% pass on the fix branch before
-     merge is attempted.
+   * SWIFI suite 100% pass and the CI coverage gate green (design target
+     100% MC/DC on safety-tagged decision points; 30% whole-library
+     CI-enforced floor — see ``assurance/metrics_plan.rst``) on the fix
+     branch before merge is attempted.
 
 3. **Baseline establishment** (appending a row to this register) requires:
 
    * Verification phase exit criteria fully met (per ``sdp.rst``).
-   * Golden test vectors committed to ``tests/vectors/vX.Y/``.
-   * Software Version Description (``assurance/svd.rst``) populated and
-     committed for the tag.
+   * Golden test vectors committed to ``test-vectors/``.
+   * Software Version Description populated and committed for the tag
+     (the SVD, ``svd.rst``, is maintained in the development tree and is
+     not shipped in this release).
    * Lead Developer approval on the baseline PR.
 
 4. **Emergency hot-fixes** (S1 defect discovered post-baseline):
 
    * A new patch-level tag is created (e.g., ``v0.2.1``).
-   * The hot-fix must satisfy all S1 fix-verification requirements in
-     ``assurance/praca.rst`` §Fix Verification Gate.
+   * The hot-fix must satisfy all S1 fix-verification requirements of the
+     PRACA process (the PRACA record, ``praca.rst``, is maintained in the
+     development tree and is not shipped in this release).
    * A new BL row is appended to this register for the patch tag.
    * The SVD for the affected baseline is superseded by the patch SVD.

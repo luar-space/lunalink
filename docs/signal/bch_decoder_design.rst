@@ -25,16 +25,18 @@ traditional syndrome-based algebraic decoder (e.g., Berlekamp-Massey).
 Rationale
 ---------
 
-### 1. Information Entropy vs. Search Space
+1. Information Entropy vs. Search Space
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The SB1 field contains 9 bits of information (2 bits FID, 7 bits TOI). However, 
-the TOI is constrained to 0–99 (§2.3.4.1), resulting in only **400 valid codewords** 
+the TOI is constrained to 0–99 (§2.5.5, Table 22), resulting in only **400 valid codewords** 
 out of the 512 possible in a 9-bit space. 
 
 *   An exhaustive search of 400 candidates is computationally trivial.
 *   The entire codebook occupies only **3.2 KB** (400 x 64-bit words), fitting 
     easily into the L1 cache or tightly coupled memory (TCM) of space-grade MCUs.
 
-### 2. Deterministic Execution (WCET)
+2. Deterministic Execution (WCET)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Algebraic decoders (Berlekamp-Massey, Chien Search) involve complex iterative 
 logic and branching based on the number and position of detected errors. 
 
@@ -44,7 +46,8 @@ logic and branching based on the number and position of detected errors.
     operations regardless of signal quality, providing a guaranteed 
     Worst-Case Execution Time (WCET).
 
-### 3. Coding Gain and Optimality
+3. Coding Gain and Optimality
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Algebraic decoders typically correct errors only up to the formal limit 
 :math:`t = \lfloor (d_{min}-1)/2 \rfloor`. For this code (:math:`d_{min}=5`), 
 an algebraic decoder stops at 2 errors.
@@ -55,7 +58,8 @@ an algebraic decoder stops at 2 errors.
 *   This provides superior performance in low Signal-to-Noise Ratio (SNR) 
     conditions typical of lunar-to-surface links.
 
-### 4. Implementation Simplicity and Verifiability
+4. Implementation Simplicity and Verifiability
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Space flight certification (ECSS-Q-ST-80C / NASA Class B) requires rigorous 
 code auditing and path coverage.
 
@@ -64,7 +68,8 @@ code auditing and path coverage.
 *   The XOR-Popcount logic is mathematically simple, contains no complex 
     branching, and is significantly easier to formally verify and test.
 
-### 5. Radiation Resilience (SEU Mitigation)
+5. Radiation Resilience (SEU Mitigation)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 By using a static Look-Up Table (LUT) stored in ``const`` memory (mapped to 
 Flash/PROM/MRAM):
 

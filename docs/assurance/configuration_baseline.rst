@@ -32,5 +32,6 @@ Reproducibility Procedure
 
 Notes
 -----
-The baseline record may be stored in ``recertification_record.rst`` or an
-explicit release note and must be updated for each release.
+The baseline record may be stored in ``recertification_record.rst``
+(generated on demand by ``task recertify``; not shipped in this release) or
+an explicit release note and must be updated for each release.

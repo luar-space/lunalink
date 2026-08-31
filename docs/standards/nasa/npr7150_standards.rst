@@ -159,7 +159,8 @@ Chapter 4 — Software Engineering Life Cycle Requirements
      - ``cpp/tests/``, ``tests/``, ``task test``
    * - SWE-063
      - Provide a software version description for each release
-     - ``assurance/svd.rst``
+     - ``svd.rst`` (maintained in the development tree; not shipped in
+       this release)
    * - SWE-065
      - Establish and maintain test plans, procedures, tests, and reports
      - ``signal/validation_plan.rst``, CI workflows
@@ -168,7 +169,8 @@ Chapter 4 — Software Engineering Life Cycle Requirements
      - Catch2 + pytest suites
    * - SWE-068
      - Evaluate test results and record the evaluation
-     - CI artifact uploads, ``recertification_record.rst``
+     - CI artifact uploads, ``recertification_record.rst`` (generated on
+       demand by ``task recertify``)
    * - SWE-070
      - Use validated models/simulations for qualification of flight software
      - ``wcet_profile.rst``, ``[performance]`` benchmarks
@@ -202,7 +204,8 @@ Chapter 4 — Software Engineering Life Cycle Requirements
      - Full test suite on every push + pre-commit hook
    * - SWE-192
      - Verify through test the requirements tracing to hazardous events
-     - SWIFI suite (12 fault scenarios)
+     - SWIFI suite — 34 scenarios, 42 test cases; see
+       ``assurance/fault_coverage.rst``
    * - SWE-194
      - Verify all requirements met prior to delivery
      - ``task recertify`` / ``recertify.yml``
@@ -231,13 +234,15 @@ Chapter 5 — Supporting Life Cycle Requirements
      - ``governance/scmp.rst`` §change control
    * - SWE-083
      - Prepare and maintain records of configuration status
-     - ``assurance/svd.rst``
+     - ``svd.rst`` (maintained in the development tree; not shipped in
+       this release)
    * - SWE-084
      - Perform software configuration audits
      - ``task ci-checks``
    * - SWE-086
      - Record, analyse, plan, track, control software risks
-     - ``assurance/praca.rst``
+     - ``praca.rst`` (maintained in the development tree; not shipped in
+       this release)
    * - SWE-087
      - Perform and report peer reviews/inspections
      - PR review process, ``governance/sdp.rst``
@@ -282,7 +287,8 @@ Key topics:
    * - Assurance planning
      - ``assurance/mission_assurance.rst``
    * - Problem reporting (PRACA)
-     - ``assurance/praca.rst``, ``.github/ISSUE_TEMPLATE/bug_report.yml``
+     - PRACA process (``praca.rst``, maintained in the development tree;
+       not shipped in this release); ``.github/ISSUE_TEMPLATE/bug_report.yml``
    * - Metrics
      - ``assurance/metrics_plan.rst``
 
@@ -371,7 +377,7 @@ chapters:
      - ``.clang-tidy``, ``pyproject.toml``
    * - Unit Testing (SWE-062)
      - Complete
-     - 112 Catch2 tests, pytest suite
+     - 302 Catch2 test cases (including the 42-case SWIFI suite), pytest suite
    * - Static Analysis (SWE-135)
      - Complete
      - clang-tidy, cppcheck, pyright, ruff
@@ -383,13 +389,16 @@ chapters:
      - ``governance/scmp.rst``, ``governance/baseline_register.rst``
    * - Problem Reporting (SWE-086/087)
      - Complete
-     - ``assurance/praca.rst``
+     - ``praca.rst`` (maintained in the development tree; not shipped in
+       this release)
    * - Software Version Description (SWE-063)
      - Complete
-     - ``assurance/svd.rst``
+     - ``svd.rst`` (maintained in the development tree; not shipped in
+       this release)
    * - Fault Injection Testing (SWE-192)
      - Complete
-     - 15 SWIFI scenarios
+     - 42 SWIFI test cases covering 34 scenarios (see
+       ``assurance/fault_coverage.rst``)
    * - Recertification (SWE-194)
      - Complete
      - ``recertify.yml``, ``task recertify``
@@ -407,7 +416,9 @@ chapters:
 Document Inventory
 ------------------
 
-All referenced PDFs are stored in ``docs/standards/nasa/``:
+The referenced PDFs are not shipped in this repository (licensing); they are
+obtainable by running ``bash docs/standards/download_standards.sh``, which
+fetches them into ``docs/standards/nasa/``:
 
 .. list-table::
    :header-rows: 1

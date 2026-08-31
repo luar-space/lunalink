@@ -21,7 +21,7 @@ This addendum enables evaluators familiar with the NASA framework to locate comp
 evidence without navigating the ECSS structure directly.
 
 For the ECSS tailoring decisions themselves, see ``docs/standards/esa/ecss_standards.rst``
-(LUNALINK-ECSS-TAIL-001).
+(LUNALINK-STDS-001, §Tailoring Record).
 
 Compliance Matrix
 -----------------
@@ -144,7 +144,8 @@ Compliance Matrix
    * - SWE-127
      - Unit Testing (MC/DC)
      - E-ST-40C §5.5.3
-     - CI MC/DC report; 100% on tagged functions
+     - CI MC/DC report (design target 100% on tagged functions; the CI gate
+       enforces a 30% whole-library floor — see ``assurance/metrics_plan.rst``)
      - Satisfied
    * - SWE-128
      - Integration Testing
@@ -174,13 +175,15 @@ Compliance Matrix
    * - SWE-168
      - PRACA
      - Q-ST-80C §5.6
-     - ``assurance/praca.rst``
-     - Satisfied
+     - PRACA process record (``praca.rst``) maintained in the development
+       tree; GitHub Issues serve as the visible problem-report channel
+     - Partially satisfied — evidence document not included in this release
    * - SWE-181
      - Software Version Description
      - E-ST-40C §5.6
-     - ``assurance/svd.rst``
-     - Satisfied
+     - SVD (``svd.rst``) maintained in the development tree; release tag and
+       ``evidence/build_manifest.json`` carry the shipped version record
+     - Partially satisfied — evidence document not included in this release
 
 Organisational Scope Note
 -------------------------

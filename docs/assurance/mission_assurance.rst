@@ -1,9 +1,10 @@
 Mission Assurance
 =================
 
-LunaLink is engineered for **Class B Flight Software (FSW)** certification,
-deliberately exceeding Category B requirements to satisfy the stricter
-Category A / DO-178C Level A technical controls wherever practical.  This
+LunaLink is engineered to **ECSS Category B** norms (self-assessed; not
+formally certified), deliberately exceeding Category B requirements to satisfy
+the stricter Category A / DO-178C Level A technical controls wherever
+practical.  This
 approach de-risks any future criticality upgrade and demonstrates readiness
 for the most demanding space-software assurance regimes.  The hardening
 patterns draw from NASA (JPL/Goddard), ESA (ESTEC), and JAXA (Tsukuba).
@@ -456,7 +457,7 @@ LunaLink mandates **MC/DC** as its primary coverage metric for all
 safety-critical DSP logic. Line coverage is a secondary, supplementary metric.
 
 *   **Explanation**: Line coverage proves that a line of code was *executed*. For a safety-critical DSP block containing compound boolean guards (e.g., ``if (seu_detected || range_exceeded)``), line coverage only verifies that the branch was reached. It says nothing about whether each individual condition independently affects the outcome. **Modified Condition/Decision Coverage (MC/DC)**, mandated by DO-178C for Level A software, requires demonstrating that: (1) every condition in a decision has been shown to independently affect the decision's outcome, and (2) every condition has been evaluated as both ``true`` and ``false``. Category B / DO-178C Level B requires only Decision Coverage (DC); LunaLink deliberately targets MC/DC to satisfy the stricter Level A / Category A threshold so that a future upgrade to Category A requires no additional test infrastructure. For LunaLink's SEU detection logic—where the difference between a missed fault and a correct detection is a single boolean evaluation—line coverage is not sufficient to constitute a robust safety case regardless of criticality category.
-*   **Mandate**: All functions tagged ``[LSIS-AFS-*]`` in the core source directories must achieve **100% MC/DC** as measured by LLVM's source-based coverage instrumentation (``-fprofile-instr-generate -fcoverage-mapping``). The CI pipeline generates an MC/DC report published to the **documentation site** (``gh-pages``) on every passing build; any regression below 100% for tagged functions is a **blocking** build failure.
+*   **Mandate**: The design target is **100% MC/DC** on all functions tagged ``[LSIS-AFS-*]`` in the core source directories, as measured by LLVM's source-based coverage instrumentation (``-fprofile-instr-generate -fcoverage-mapping``). The CI gate currently enforces a **30% whole-library MC/DC floor** (``MCDC_COVERAGE_MIN`` in ``.github/workflows/coverage-cpp.yml``); the measured value at submission is recorded in the coverage evidence and badge. The CI pipeline generates an MC/DC report on every passing build.
 *   **Line Coverage**: ≥ 90% C++ line coverage and 100% Python coverage are maintained as secondary metrics and reported alongside MC/DC data.
 *   **Benefit**: Provides a mathematically rigorous proof that all safety-critical boolean logic has been independently verified. Although Category B only requires Decision Coverage, LunaLink's MC/DC evidence satisfies the stricter DO-178C Level A / Category A threshold, de-risking any future criticality upgrade.
 
@@ -481,7 +482,7 @@ The core library is strictly decoupled from hardware registers via a HAL.
 *   **ASan/UBSan**: Catch memory safety and undefined behavior at runtime.
 
 *   **Explanation**: Testing alone cannot prove the absence of software bugs. Static analysis tools (Clang-Tidy, Cppcheck) scan the source code for logical errors, memory safety issues, and style violations that may not be triggered by specific test vectors. Dynamic analysis tools (ASan, UBSan) monitor the code at runtime to catch subtle issues like buffer overflows or signed-integer wrapping. By combining these tools with a mandate for MC/DC on safety-critical functions and ≥ 90% C++ line coverage, LunaLink provides empirical proof that the implementation is robust, predictable, and free of the common C++ pitfalls that plague high-reliability systems.
-*   **Coverage**: Mandates **100% MC/DC** on ``[LSIS-AFS-*]``-tagged functions, ≥ 90% C++ line coverage, and 100% Python coverage.
+*   **Coverage**: Targets **100% MC/DC** on ``[LSIS-AFS-*]``-tagged functions (design target; the CI gate enforces a 30% whole-library floor — see §Verification & Tooling), ≥ 90% C++ line coverage (CI-enforced), and 100% Python coverage.
 
 5. Compiler-Level Defenses & Forbidden Optimizations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -520,7 +521,7 @@ Every hardening pattern must be **empirically verified** to detect the fault
 it claims to detect. Documentation of a pattern is not a safety case.
 Demonstration of a pattern is.
 
-*   **Explanation**: A team can implement variable mirroring, TMR, and CFI sentinels with perfect fidelity and still have a latent defect — for example, a critical section that is one instruction too short, allowing a race that the pattern silently misses. The only way to close this gap is **adversarial testing**: deliberately inject the exact fault each pattern is designed to catch, and assert that the detection fires within the expected number of execution cycles. LunaLink maintains a dedicated SWIFI test suite (``tests/fault_injection/``) that is executed as a blocking CI stage. Each test follows the same three-phase structure: **Inject** → **Execute** → **Assert Detection**.
+*   **Explanation**: A team can implement variable mirroring, TMR, and CFI sentinels with perfect fidelity and still have a latent defect — for example, a critical section that is one instruction too short, allowing a race that the pattern silently misses. The only way to close this gap is **adversarial testing**: deliberately inject the exact fault each pattern is designed to catch, and assert that the detection fires within the expected number of execution cycles. LunaLink maintains a dedicated SWIFI test suite (``cpp/tests/<domain>/test_swifi_*.cpp``) that is executed as a blocking CI stage. Each test follows the same three-phase structure: **Inject** → **Execute** → **Assert Detection**.
 
     The SWIFI suite covers the following injection scenarios:
 
@@ -589,16 +590,17 @@ Demonstration of a pattern is.
     ``fault_coverage.rst`` report records 100% single-bit fault detection coverage
     measured by the SWIFI suite.
 
-7. Golden Test Vector Suite (CCSDS / LunaNet ICD) — Gateway 3 Deliverable
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LunaLink will publish a **versioned, machine-readable test vector library** that
+7. Golden Test Vector Suite (CCSDS / LunaNet ICD)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+LunaLink publishes a **versioned, machine-readable test vector library** that
 constitutes the reference for the entire LSIS ecosystem.
 
-*   **Status**: The test vector suite is a **Gateway 3 design specification**.
-    ``tests/generate_test_vectors.py`` provides the scaffolding for vector
-    generation.  The ``tests/vectors/`` directory will be created and populated at
-    Gateway 3 exit.  This section documents the intended design so that the
-    implementation matches the published specification.
+*   **Status**: The test vector suite is **delivered**: vectors are committed
+    under ``test-vectors/`` in this repository and published externally as
+    `luar-space/lsis-afs-test-vectors
+    <https://github.com/luar-space/lsis-afs-test-vectors>`__.
+    ``tests/generate_test_vectors.py`` generates the vectors from the
+    reference implementation.
 
 *   **Design intent**: A reference implementation has two obligations: it must be
     correct, and it must enable others to verify their own correctness against it.
@@ -664,7 +666,9 @@ corresponding NPR requirements.
      - Clang-Tidy + Cppcheck zero-violation reports on ``gh-pages``
    * - E-ST-40C §5.5.3–4
      - Unit & Integration Testing
-     - 100% MC/DC; SWIFI 100% single-bit fault detection; Digital Twin compatibility
+     - MC/DC design target 100% on safety-tagged functions (30% whole-library
+       CI floor; measured value in coverage evidence); SWIFI 100% single-bit
+       fault detection; Digital Twin compatibility
    * - Q-ST-80C §5.4
      - Configuration Management
      - SHA-pinned dependencies; reproducible builds; SCI version register; ``scmp.rst``
@@ -680,10 +684,10 @@ corresponding NPR requirements.
 IV&V (Q-ST-80C §5.5), formal review milestones (E-ST-40C §5.1), formal CM board
 (Q-ST-80C §5.4), and physical configuration audit (Q-ST-80C §5.4) require programme
 office infrastructure and cannot be satisfied by a development team acting alone.
-These items are tailored in the ECSS Tailoring Record
-(recorded per requirement in the standards mapping below) and the corresponding NPR cross-references
-are provided in the NASA Compliance Addendum
-(``docs/standards/nasa_compliance_addendum.rst``).
+These items are tailored in the ECSS standards and tailoring record
+(LUNALINK-STDS-001, ``docs/standards/esa/ecss_standards.rst`` §Tailoring
+Record) and the corresponding NPR cross-references are provided in the NASA
+Compliance Addendum (``docs/standards/nasa_compliance_addendum.rst``).
 
 8. Exhaustive Static Analysis Report
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -694,7 +698,7 @@ passing claims.
 
     *   ``static_analysis.rst``: Full Clang-Tidy output for the core source directories, showing zero MISRA-aligned HICPP violations. Any new violation is a blocking CI failure.
     *   ``cppcheck.rst``: Full Cppcheck output, showing zero errors and zero warnings at the ``--enable=all`` level.
-    *   ``coverage.rst``: LLVM coverage report showing MC/DC percentages per function for all ``[LSIS-AFS-*]``-tagged functions, branch coverage ≥ 95% across the core source directories, and line coverage ≥ 90% overall.
+    *   ``coverage.rst``: LLVM coverage report showing MC/DC percentages per function for all ``[LSIS-AFS-*]``-tagged functions, plus branch and line coverage across the core source directories (the CI-enforced floors are stated in ``metrics_plan.rst``).
 
 *   **Single Command Reproducibility**: All three reports are regenerated by ``task analyze`` in the project Taskfile. Any reviewer can independently reproduce every number in these reports from a clean checkout in under five minutes.
 *   **Benefit**: Transforms analysis from an invisible CI step into a transparent, auditable record — giving reviewers direct evidence of zero violations rather than requiring them to trust the claim.

@@ -5,7 +5,9 @@ LDPC Sum-Product Decoder — Algorithm Card
 
 **Specification references:**
 
-- `LSIS V1.0 <https://www.ccsds.org>`_ §2.4.3 — LDPC encoding, frame structure
+- LSIS V1.0 — *LunaNet Signal-In-Space Recommended Standard — Augmented
+  Forward Signal*, Vol. A, 29 January 2025 (local copy in
+  ``docs/references/``) — §2.4.3: LDPC encoding, frame structure
 - `3GPP TS 38.212 <https://www.3gpp.org/DynaReport/38212.htm>`_ — Base Graph 2
   (BG2) structure shared with 5G NR
 - Competition deliverables, Gateway 2 — ``BER < 10⁻⁵`` at ``SNR > 0 dB``
@@ -225,15 +227,23 @@ Codeword Symmetry Validation
 For `linear codes <https://en.wikipedia.org/wiki/Linear_code>`_ over symmetric
 channels (BPSK AWGN), error performance is theoretically independent of the
 transmitted codeword. Empirically, all-zero messages show lower FER than
-random messages. This is expected: the LSIS-AFS codes use filler bits
-(``z=240`` punctured positions initialised to high-confidence zero), which
-are correct for all-zero messages but a prior assumption for random messages.
-The asymmetry is in the **code construction** (puncturing/filler handling),
-not the decoder algorithm.
+random messages. The mechanism is **puncturing**, not filler bits: the first
+``2·Zc`` systematic bits (240 for SF2, 176 for SF3/SF4) are never
+transmitted, and the decoder initialises their LLRs to 0 — "no channel
+information" (``load_channel_llrs`` in ``ldpc.cpp``). The hard-decision rule
+maps a non-negative LLR to bit 0, so any punctured position that belief
+propagation fails to pin down resolves to 0 — always correct for the
+all-zero message, wrong about half the time for a random message.
+Shortening is a distinct, symmetric mechanism: the 10 SF3/SF4 filler bits
+are *known* zeros regardless of the message and are initialised to a
+high-confidence positive LLR (``kFillerLlr = 250``); SF2 has no filler bits
+at all. The asymmetry therefore sits in the interaction of the code's
+puncturing with the decoder's zero-LLR tie-break, not in the BP update.
 
 All performance measurements in this document use **random messages**, which
-is the conservative (harder) case. The all-zero test confirms the filler-bit
-effect is understood, not that the decoder is pattern-independent.
+is the conservative (harder) case. The all-zero test confirms the
+puncturing effect is understood, not that the decoder is
+pattern-independent.
 
 Bit-Error Forensics
 -------------------
@@ -318,7 +328,7 @@ How to Reproduce
 This runs the full pipeline:
 
 1. Builds ``ldpc_characterise`` (parallel C++ runner, Release mode)
-2. Runs ~80 work items across all CPU cores (~10 minutes)
+2. Runs ~80 work items across all CPU cores (≈25 minutes on 10 threads)
 3. Outputs ``build/algo_card/sp_results.json``
 4. Generates figures to ``docs/_static/algo_card/``
 

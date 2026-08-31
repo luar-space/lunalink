@@ -25,6 +25,10 @@ Disposition Key
      - Spec marks content {LSIS-TBW-nnnn} — cannot implement
    * - **TBC in Spec**
      - Spec marks values {LSIS-TBC-nnnn} — implemented with documented assumption
+   * - **TBD marker** {LSIS-TBD-nnnn}
+     - Cited in evidence cells: spec leaves the value To Be Determined —
+       implemented with a documented interim assumption (see
+       :doc:`spec_findings_report`)
    * - **FLEX**
      - Spec marks as LNSP implementation flexibility — documented in SISICD
 
@@ -38,17 +42,17 @@ Summary
    * - Disposition
      - Count
    * - Implemented
-     - 38
+     - 49
    * - RF / Out of Scope
      - 12
    * - TBW in Spec
-     - 15
+     - 10
    * - TBC in Spec (implemented with assumption)
      - 3
    * - FLEX
      - 2
    * - **Total**
-     - **70**
+     - **76**
 
 ----
 
