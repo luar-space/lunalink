@@ -1,65 +1,65 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites>
-  <testsuite name="test_lunalink" errors="0" failures="0" skipped="0" tests="749" hostname="tbd" time="49.814" timestamp="2026-08-31T14:45:40Z">
+  <testsuite name="test_lunalink" errors="0" failures="0" skipped="0" tests="749" hostname="tbd" time="17.805" timestamp="2026-08-31T15:18:08Z">
     <properties>
-      <property name="random-seed" value="3595547055"/>
+      <property name="random-seed" value="4044452829"/>
       <property name="filters" value="[e2e]"/>
     </properties>
-    <testcase classname="test_lunalink.global" name="[LSIS-AFS-720] E2E round-trip: TX → AWGN → RX → bit-exact recovery" time="0.061" status="run"/>
-    <testcase classname="test_lunalink.global" name="[LSIS-AFS-810] E2E: TX → RX → parse → ToT round-trip" time="0.032" status="run"/>
-    <testcase classname="test_lunalink.global" name="Gateway 5: frame-level FER sweep" time="26.195" status="run">
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-720] E2E round-trip: TX → AWGN → RX → bit-exact recovery" time="0.027" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-810] E2E: TX → RX → parse → ToT round-trip" time="0.016" status="run"/>
+    <testcase classname="test_lunalink.global" name="Gateway 5: frame-level FER sweep" time="9.362" status="run">
       <system-out>
 [FER sweep] Eb/N0=1.5 dB  FER=0 (0/50)  BER=0.0046304 (664/143400)
 [FER sweep] Eb/N0=3 dB  FER=0 (0/100)  BER=0.00450488 (1292/286800)
 [FER sweep] Eb/N0=6 dB  FER=0 (0/200)  BER=0.00464086 (2662/573600)
       </system-out>
     </testcase>
-    <testcase classname="test_lunalink.global" name="E2E round-trip: FID=0 TOI=99 with random offset" time="0.048" status="run"/>
-    <testcase classname="test_lunalink.global" name="E2E: noiseless round-trip (Eb/N0 = infinity)" time="0.043" status="run"/>
-    <testcase classname="test_lunalink.global" name="E2E: CRC rejects corrupted subframe payload" time="0.702" status="run">
+    <testcase classname="test_lunalink.global" name="E2E round-trip: FID=0 TOI=99 with random offset" time="0.020" status="run"/>
+    <testcase classname="test_lunalink.global" name="E2E: noiseless round-trip (Eb/N0 = infinity)" time="0.016" status="run"/>
+    <testcase classname="test_lunalink.global" name="E2E: CRC rejects corrupted subframe payload" time="0.253" status="run">
       <system-out>
 [CRC rejection] status=204  sb2: ldpc=0 crc=0  sb3: ldpc=0 crc=0  sb4: ldpc=0 crc=0
       </system-out>
     </testcase>
-    <testcase classname="test_lunalink.global" name="E2E: consecutive frames with incrementing TOI" time="0.208" status="run"/>
-    <testcase classname="test_lunalink.global" name="E2E: kSyncNotFound then success — decoder is stateless" time="0.041" status="run"/>
-    <testcase classname="test_lunalink.global" name="E2E: frame_decode completes in &lt; 1 second" time="0.052" status="run">
+    <testcase classname="test_lunalink.global" name="E2E: consecutive frames with incrementing TOI" time="0.082" status="run"/>
+    <testcase classname="test_lunalink.global" name="E2E: kSyncNotFound then success — decoder is stateless" time="0.017" status="run"/>
+    <testcase classname="test_lunalink.global" name="E2E: frame_decode completes in &lt; 1 second" time="0.016" status="run">
       <system-out>
-[latency] frame_decode: 30 ms
+[latency] frame_decode: 10 ms
       </system-out>
     </testcase>
-    <testcase classname="test_lunalink.global" name="[LSIS-TABLE11][e2e] all 12 interim codes round-trip/PRN 1" time="0.083" status="run"/>
-    <testcase classname="test_lunalink.global" name="[LSIS-TABLE11][e2e] all 12 interim codes round-trip/PRN 2" time="0.091" status="run"/>
-    <testcase classname="test_lunalink.global" name="[LSIS-TABLE11][e2e] all 12 interim codes round-trip/PRN 3" time="0.083" status="run"/>
-    <testcase classname="test_lunalink.global" name="[LSIS-TABLE11][e2e] all 12 interim codes round-trip/PRN 4" time="0.074" status="run"/>
-    <testcase classname="test_lunalink.global" name="[LSIS-TABLE11][e2e] all 12 interim codes round-trip/PRN 5" time="0.081" status="run"/>
-    <testcase classname="test_lunalink.global" name="[LSIS-TABLE11][e2e] all 12 interim codes round-trip/PRN 6" time="0.086" status="run"/>
-    <testcase classname="test_lunalink.global" name="[LSIS-TABLE11][e2e] all 12 interim codes round-trip/PRN 7" time="0.075" status="run"/>
-    <testcase classname="test_lunalink.global" name="[LSIS-TABLE11][e2e] all 12 interim codes round-trip/PRN 8" time="0.080" status="run"/>
-    <testcase classname="test_lunalink.global" name="[LSIS-TABLE11][e2e] all 12 interim codes round-trip/PRN 9" time="0.086" status="run"/>
-    <testcase classname="test_lunalink.global" name="[LSIS-TABLE11][e2e] all 12 interim codes round-trip/PRN 10" time="0.096" status="run"/>
-    <testcase classname="test_lunalink.global" name="[LSIS-TABLE11][e2e] all 12 interim codes round-trip/PRN 11" time="0.073" status="run"/>
-    <testcase classname="test_lunalink.global" name="[LSIS-TABLE11][e2e] all 12 interim codes round-trip/PRN 12" time="0.086" status="run"/>
-    <testcase classname="test_lunalink.global" name="E2E impairment: round-trip at int16" time="0.069" status="run"/>
-    <testcase classname="test_lunalink.global" name="E2E impairment: round-trip at int8" time="0.090" status="run"/>
-    <testcase classname="test_lunalink.global" name="E2E impairment: FER sweep at int8" time="2.825" status="run">
+    <testcase classname="test_lunalink.global" name="[LSIS-TABLE11][e2e] all 12 interim codes round-trip/PRN 1" time="0.028" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-TABLE11][e2e] all 12 interim codes round-trip/PRN 2" time="0.030" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-TABLE11][e2e] all 12 interim codes round-trip/PRN 3" time="0.029" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-TABLE11][e2e] all 12 interim codes round-trip/PRN 4" time="0.029" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-TABLE11][e2e] all 12 interim codes round-trip/PRN 5" time="0.029" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-TABLE11][e2e] all 12 interim codes round-trip/PRN 6" time="0.029" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-TABLE11][e2e] all 12 interim codes round-trip/PRN 7" time="0.030" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-TABLE11][e2e] all 12 interim codes round-trip/PRN 8" time="0.030" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-TABLE11][e2e] all 12 interim codes round-trip/PRN 9" time="0.031" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-TABLE11][e2e] all 12 interim codes round-trip/PRN 10" time="0.033" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-TABLE11][e2e] all 12 interim codes round-trip/PRN 11" time="0.027" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-TABLE11][e2e] all 12 interim codes round-trip/PRN 12" time="0.028" status="run"/>
+    <testcase classname="test_lunalink.global" name="E2E impairment: round-trip at int16" time="0.027" status="run"/>
+    <testcase classname="test_lunalink.global" name="E2E impairment: round-trip at int8" time="0.030" status="run"/>
+    <testcase classname="test_lunalink.global" name="E2E impairment: FER sweep at int8" time="1.019" status="run">
       <system-out>
 [int8 FER] Eb/N0=3 dB  FER=0 (0/50)
 [int8 FER] Eb/N0=6 dB  FER=0 (0/50)
       </system-out>
     </testcase>
-    <testcase classname="test_lunalink.global" name="E2E impairment: implementation loss int8 vs float32" time="12.153" status="run">
+    <testcase classname="test_lunalink.global" name="E2E impairment: implementation loss int8 vs float32" time="4.476" status="run">
       <system-out>
 [impl loss] Eb/N0=1.5 dB  FER_f32=0 (0/50)  FER_i8=0 (0/50)
       </system-out>
     </testcase>
-    <testcase classname="test_lunalink.global" name="E2E impairment: burst error resilience through interleaver" time="1.620" status="run"/>
+    <testcase classname="test_lunalink.global" name="E2E impairment: burst error resilience through interleaver" time="0.623" status="run"/>
     <system-out>
 [FER sweep] Eb/N0=1.5 dB  FER=0 (0/50)  BER=0.0046304 (664/143400)
 [FER sweep] Eb/N0=3 dB  FER=0 (0/100)  BER=0.00450488 (1292/286800)
 [FER sweep] Eb/N0=6 dB  FER=0 (0/200)  BER=0.00464086 (2662/573600)
 [CRC rejection] status=204  sb2: ldpc=0 crc=0  sb3: ldpc=0 crc=0  sb4: ldpc=0 crc=0
-[latency] frame_decode: 30 ms
+[latency] frame_decode: 10 ms
 [int8 FER] Eb/N0=3 dB  FER=0 (0/50)
 [int8 FER] Eb/N0=6 dB  FER=0 (0/50)
 [impl loss] Eb/N0=1.5 dB  FER_f32=0 (0/50)  FER_i8=0 (0/50)

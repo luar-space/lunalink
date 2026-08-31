@@ -72,7 +72,7 @@ IqPairFloat: TypeAlias = Float32[np.ndarray, "samples 2"]
 IqPairNative: TypeAlias = Int16[np.ndarray, "samples 2"]
 
 # ── Receiver (variable-length) ───────────────────────────────────────────────
-#: Baseband complex samples for correlator input.
+#: Baseband complex samples for receiver-side processing.
 RxSamples: TypeAlias = Complex64[np.ndarray, " samples"]
 #: Demodulated soft-decision symbols (bipolar float).
 SoftSymbols: TypeAlias = Float32[np.ndarray, " symbols"]

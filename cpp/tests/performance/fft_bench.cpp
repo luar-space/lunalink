@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // FFT microbenchmark — A1.V2 of the FFT acceleration plan.
 //
-// See docs/shaping/cislunar_nav/fft-acceleration.md.
 //
 // Tagged [fft_bench] so it doesn't run with the default test suite (Debug)
 // and only fires under `task bench-fft` (Release). Emits CSV rows for the

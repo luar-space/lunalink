@@ -28,7 +28,7 @@ void binary_to_bipolar(std::span<const uint8_t> bits, std::span<float> out) {
 
 /// Add AWGN noise to bipolar symbols at a given Eb/N0 (dB) and convert to
 /// channel LLRs: L(y) = 2*y/σ². For rate-1/2 BPSK: σ² = 1/(2*R*Eb/N0).
-/// Decoder-agnostic: SP uses LLRs directly; AMS applies Q8.7 (×128) on top.
+/// Decoder-agnostic: the SP decoder consumes channel LLRs directly.
 void add_awgn(std::span<float> symbols, float eb_n0_db, std::mt19937& rng, float code_rate = 0.5F) {
   const auto eb_n0_lin = std::pow(10.0F, eb_n0_db / 10.0F);
   const auto sigma_sq = 1.0F / (2.0F * code_rate * eb_n0_lin);

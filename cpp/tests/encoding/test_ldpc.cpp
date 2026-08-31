@@ -355,11 +355,11 @@ TEST_CASE("LDPC: error paths", "[ldpc]") {
         static_cast<uint8_t>(LdpcStatus::kOutputTooSmall));
 }
 
-TEST_CASE("LDPC: extreme LLR decode exercises Q8.7 saturation", "[ldpc]") {
-  // With high-magnitude LLRs (±256.0F → ±32767 in Q8.7), the BP decoder's
-  // sat_sub(lv, lcv) overflows when lv=+32767 and lcv is a large negative
-  // NMS output (≈-24575). This exercises the sat_sub positive-overflow
-  // and sat_add negative-overflow clamping paths.
+TEST_CASE("LDPC: extreme LLR decode exercises numerical clamping", "[ldpc]") {
+  // High-magnitude LLRs (±256.0F) drive the φ-transform into its clamped
+  // regions (|x| > 30 → φ(x) ≈ 0; see the clamping analysis in ldpc.cpp).
+  // Verifies the decoder handles fully saturated channel confidence
+  // gracefully and still converges to the transmitted codeword.
   //
   // Encode a non-trivial message (alternating bits for mixed positive/negative
   // LLRs), then decode with extreme magnitude.
@@ -372,7 +372,7 @@ TEST_CASE("LDPC: extreme LLR decode exercises Q8.7 saturation", "[ldpc]") {
   LdpcEncodeWorkspace enc_ws{};
   REQUIRE(ldpc_encode(LdpcSubframe::kSF3, msg, encoded, enc_ws) == LdpcStatus::kOk);
 
-  // Create extreme-magnitude LLRs (±256.0F) — clamps to ±32767 in Q8.7
+  // Create extreme-magnitude LLRs (±256.0F) — deep inside the clamp region
   std::array<float, kSb3Length> soft{};
   for (size_t i = 0; i < kSb3Length; ++i) {
     soft[i] = (encoded[i] == 0U) ? 256.0F : -256.0F;

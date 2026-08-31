@@ -2,18 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
  * @file test_ldpc_reference.cpp
- * @brief LDPC decoder quality assessment: flight AMS decoder vs float64
- *        sum-product reference vs finite-length sphere packing bound.
+ * @brief LDPC decoder quality assessment: production ldpc_decode() vs an
+ *        independent float64 sum-product reference vs the finite-length
+ *        sphere packing bound.
  *
  * Produces a 3-way comparison table that decomposes the Shannon gap into:
- *   - Code gap: SPB bound → sum-product (inherent to n=2400 code design)
- *   - Algorithm gap: sum-product → AMS (cost of min-sum approximation)
- *   - Implementation gap: (included in algorithm gap — Q8.7 + OMS offset)
+ *   - Code gap: SPB bound → reference SP (inherent to n=2400 code design)
+ *   - Implementation gap: reference SP → production decoder (hardening,
+ *     clamping, and schedule details)
  *
- * The sum-product decoder is test-only. It uses exact log(tanh(x/2))
- * check-node updates in float64 — non-deterministic WCET, no fixed-point,
- * not suitable for flight. It exists solely as the theoretical ceiling
- * for this code and schedule.
+ * The reference sum-product decoder is test-only: an independent,
+ * unhardened implementation using exact log(tanh(x/2)) check-node
+ * updates. It exists solely as the theoretical ceiling for this code
+ * and schedule, so any defect in the production decoder shows up as a
+ * measurable gap against it.
  */
 #include "lunalink/encoding/ldpc.hpp"
 #include "lunalink/encoding/ldpc_tables.hpp"
@@ -37,7 +39,7 @@ namespace {
 // Sum-product reference decoder (float64, test-only)
 // ---------------------------------------------------------------------------
 
-// Layered sum-product BP over the same CSR matrices as the flight decoder.
+// Layered sum-product BP over the same CSR matrices as the production decoder.
 // Check-node update: exact log-domain computation using the identity
 //   φ(x) = -log(tanh(x/2)) = log((e^x + 1) / (e^x - 1))
 // which is its own inverse: φ(φ(x)) = x.
@@ -159,7 +161,7 @@ struct SpDecodeResult {
   uint8_t iterations_used;
 };
 
-// Float64 sum-product decoder — same layered schedule as flight decoder.
+// Float64 sum-product decoder — same layered schedule as the production decoder.
 SpDecodeResult sp_decode(LdpcSubframe type,
                          std::span<const float> symbols,
                          uint8_t max_iters,
@@ -169,7 +171,7 @@ SpDecodeResult sp_decode(LdpcSubframe type,
   const size_t p1_start = p.K_full;
   const size_t p2_start = p1_start + p.mA->num_rows;
 
-  // Initialise L_v from channel LLRs (same mapping as flight decoder)
+  // Initialise L_v from channel LLRs (same mapping as the production decoder)
   std::vector<double> L_v(mother_len, 0.0);
   size_t sym_idx = 0;
   // Systematic bits (after filler)
@@ -206,9 +208,9 @@ SpDecodeResult sp_decode(LdpcSubframe type,
     result.iterations_used = static_cast<uint8_t>(iter + 1);
 
     // Syndrome check: hard-decision on L_v, check all parity rows
-    // (Simplified: use the flight decoder's syndrome check by checking
+    // (Simplified: use the production decoder's syndrome check by checking
     // if hard bits form a valid codeword. For the reference decoder,
-    // we just check convergence by running the flight decoder's
+    // we just check convergence by running the production decoder's
     // syndrome test indirectly — extract hard bits and re-encode.)
     // Shortcut: check if all L_v signs match a valid codeword by
     // checking parity of each row of [A B; C D I].
@@ -250,7 +252,7 @@ SpDecodeResult sp_decode(LdpcSubframe type,
     }
   }
 
-  // Extract hard bits (same as flight decoder: L_v[0..K_nominal-1])
+  // Extract hard bits (same as the production decoder: L_v[0..K_nominal-1])
   for (size_t i = 0; i < p.K_nominal; ++i) {
     out[i] = (L_v[i] < 0.0) ? 1U : 0U;
   }
@@ -486,14 +488,14 @@ RefBerResult run_sp_simulation(LdpcSubframe type,
   return {fer, ber, frame_errors, static_cast<size_t>(frames), total_errors, total_bits};
 }
 
-// Run BER simulation using the flight AMS decoder (same as test_ldpc_ber.cpp).
-RefBerResult run_ams_simulation(LdpcSubframe type,
-                                double eb_no_db,
-                                int frames,
-                                uint16_t k_nominal,
-                                uint16_t n_output,
-                                uint8_t max_iters,
-                                uint32_t seed) {
+// Run BER simulation using the production ldpc_decode() entry point.
+RefBerResult run_production_simulation(LdpcSubframe type,
+                                       double eb_no_db,
+                                       int frames,
+                                       uint16_t k_nominal,
+                                       uint16_t n_output,
+                                       uint8_t max_iters,
+                                       uint32_t seed) {
   std::mt19937 gen(seed);
   const double code_rate = static_cast<double>(k_nominal) / static_cast<double>(n_output);
   const double eb_no_linear = std::pow(10.0, eb_no_db / 10.0);
@@ -559,7 +561,7 @@ find_crossing(const std::vector<double>& snrs, const std::vector<double>& fers, 
 } // namespace
 
 // ---------------------------------------------------------------------------
-// 3-way comparison: SPB bound vs sum-product vs flight AMS
+// 3-way comparison: SPB bound vs reference sum-product vs production decoder
 // ---------------------------------------------------------------------------
 TEST_CASE("LDPC decoder quality: 3-way gap decomposition (SF2)",
           "[channel][ber][reference][slow]") {
@@ -574,14 +576,14 @@ TEST_CASE("LDPC decoder quality: 3-way gap decomposition (SF2)",
 
   std::vector<double> fer_spb(snrs.size());
   std::vector<double> fer_sp(snrs.size());
-  std::vector<double> fer_ams(snrs.size());
+  std::vector<double> fer_prod(snrs.size());
 
   // SPB bound is instant — compute inline.
   for (size_t i = 0; i < snrs.size(); ++i) {
     fer_spb[i] = ppv_fer_bound(kN, kK, snrs[i]);
   }
 
-  // Run SP and AMS simulations in parallel across SNR points.
+  // Run reference-SP and production simulations in parallel across SNR points.
   // Each work item is one (decoder, snr_index) pair → 18 items total.
   struct WorkItem {
     size_t snr_idx;
@@ -591,7 +593,7 @@ TEST_CASE("LDPC decoder quality: 3-way gap decomposition (SF2)",
   items.reserve(snrs.size() * 2);
   for (size_t i = 0; i < snrs.size(); ++i) {
     items.push_back({i, true});  // sum-product
-    items.push_back({i, false}); // flight AMS
+    items.push_back({i, false}); // production decoder
   }
 
   std::atomic<size_t> next_item{0};
@@ -606,9 +608,9 @@ TEST_CASE("LDPC decoder quality: 3-way gap decomposition (SF2)",
             LdpcSubframe::kSF2, snrs[item.snr_idx], kFrames, kK, kN, kIter, kSeed);
         fer_sp[item.snr_idx] = r.fer;
       } else {
-        auto r = run_ams_simulation(
+        auto r = run_production_simulation(
             LdpcSubframe::kSF2, snrs[item.snr_idx], kFrames, kK, kN, kIter, kSeed);
-        fer_ams[item.snr_idx] = r.fer;
+        fer_prod[item.snr_idx] = r.fer;
       }
     }
   };
@@ -627,22 +629,22 @@ TEST_CASE("LDPC decoder quality: 3-way gap decomposition (SF2)",
   // Print results table.
   std::cout << "\n=== LDPC Decoder Quality Assessment (SF2, n=2400, k=1200, rate 1/2) ===\n";
   std::cout << "  SPB = Sphere Packing Bound (Polyanskiy-Poor-Verdú normal approx.)\n";
-  std::cout << "  SP  = Float64 Sum-Product BP (theoretical ceiling for this code)\n";
-  std::cout << "  AMS = Flight decoder: Adjusted Min-Sum, Q8.7, α=5/6, β=32\n";
+  std::cout << "  SP  = independent float64 Sum-Product BP reference (test-only)\n";
+  std::cout << "  PROD = production ldpc_decode(): layered sum-product BP, hardened\n";
   std::cout << "  Frames per point: " << kFrames << " (seed=" << kSeed << ", " << n_threads
             << " threads)\n\n";
 
-  std::cout << "  Eb/N0   |  SPB bound  |  SP FER     |  AMS FER    |  Algo gap   |\n";
+  std::cout << "  Eb/N0   |  SPB bound  |  SP FER     |  PROD FER   |  Impl gap   |\n";
   std::cout << "  --------|-------------|-------------|-------------|-------------|\n";
 
   for (size_t i = 0; i < snrs.size(); ++i) {
     const char* gap_str = "  —";
     char gap_buf[32] = {};
-    if (fer_sp[i] > 0.0 && fer_ams[i] > 0.0 && fer_sp[i] < 0.9 && fer_ams[i] < 0.9) {
-      double ratio = fer_ams[i] / fer_sp[i];
+    if (fer_sp[i] > 0.0 && fer_prod[i] > 0.0 && fer_sp[i] < 0.9 && fer_prod[i] < 0.9) {
+      double ratio = fer_prod[i] / fer_sp[i];
       std::snprintf(gap_buf, sizeof(gap_buf), "  ×%.2f", ratio);
       gap_str = gap_buf;
-    } else if (fer_sp[i] == 0.0 && fer_ams[i] == 0.0) {
+    } else if (fer_sp[i] == 0.0 && fer_prod[i] == 0.0) {
       gap_str = "  both 0";
     }
 
@@ -650,39 +652,36 @@ TEST_CASE("LDPC decoder quality: 3-way gap decomposition (SF2)",
                 snrs[i],
                 fer_spb[i],
                 fer_sp[i],
-                fer_ams[i],
+                fer_prod[i],
                 gap_str);
   }
 
   // Interpolate cliff positions at FER = 1%
   std::vector<double> snr_vec(snrs.begin(), snrs.end());
   double cliff_sp = find_crossing(snr_vec, fer_sp, 0.01);
-  double cliff_ams = find_crossing(snr_vec, fer_ams, 0.01);
+  double cliff_prod = find_crossing(snr_vec, fer_prod, 0.01);
 
   std::cout << "\n  === Gap Decomposition at FER = 1% ===\n";
   std::printf("  Shannon limit (rate 1/2 BI-AWGN):     0.19 dB\n");
   std::printf("  Sum-product cliff (FER=1%%):           %.2f dB\n", cliff_sp);
-  std::printf("  Flight AMS cliff  (FER=1%%):           %.2f dB\n", cliff_ams);
+  std::printf("  Production cliff  (FER=1%%):           %.2f dB\n", cliff_prod);
   std::printf("  ---\n");
-  std::printf("  Total Shannon gap:                     %.2f dB\n", cliff_ams - 0.19);
+  std::printf("  Total Shannon gap:                     %.2f dB\n", cliff_prod - 0.19);
   std::printf("    Code + decoder gap (Shannon → SP):   %.2f dB  [code design + BP schedule]\n",
               cliff_sp - 0.19);
-  std::printf("    Algorithm gap      (SP → AMS):       %.2f dB  [min-sum approx + Q8.7 + OMS]\n",
-              cliff_ams - cliff_sp);
+  std::printf("    Implementation gap (SP → PROD):      %.2f dB  [hardening + clamping]\n",
+              cliff_prod - cliff_sp);
   std::printf("  Note: SPB finite-length bound is negligible at n=%d (FER < 10^-70\n", kN);
   std::printf("  in the waterfall region). The gap is dominated by code design.\n");
 
-  double algo_gap = cliff_ams - cliff_sp;
+  double algo_gap = cliff_prod - cliff_sp;
   std::cout << "\n  === Verdict ===\n";
   if (algo_gap < 0.15) {
-    std::cout << "  Algorithm gap < 0.15 dB — AMS is near-optimal for this code.\n";
-    std::cout << "  Investing in a better decoder algorithm is NOT recommended.\n";
-  } else if (algo_gap < 0.3) {
-    std::cout << "  Algorithm gap " << algo_gap << " dB — modest room for improvement.\n";
-    std::cout << "  Consider per-layer alpha or GA-MS if the gap justifies the effort.\n";
+    std::cout << "  Implementation gap < 0.15 dB — the production decoder is\n";
+    std::cout << "  near-optimal for this code; no algorithmic headroom remains.\n";
   } else {
-    std::cout << "  Algorithm gap " << algo_gap << " dB — significant headroom remains.\n";
-    std::cout << "  Investigate sum-product approximations or improved OMS tuning.\n";
+    std::cout << "  Implementation gap " << algo_gap << " dB — investigate schedule or\n";
+    std::cout << "  numerical details in the production decoder.\n";
   }
 
   // Basic sanity checks
@@ -692,6 +691,6 @@ TEST_CASE("LDPC decoder quality: 3-way gap decomposition (SF2)",
       CHECK(fer_sp[i] >= fer_spb[i] * 0.5); // allow 2× margin for statistical noise
     }
   }
-  // AMS must not be dramatically worse than SP
+  // The production decoder must not be dramatically worse than the reference
   CHECK(algo_gap < 1.0); // sanity — >1 dB gap would indicate a bug
 }

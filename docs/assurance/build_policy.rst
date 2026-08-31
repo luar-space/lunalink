@@ -140,6 +140,5 @@ Enforcement
   manually before merge; (ii) the ``pre-commit`` and ``pre-push``
   Taskfile recipes wired into git hooks via ``task install-hooks``;
   (iii) operator discipline.  This matches the no-CI-for-bench
-  rationale captured in ``docs/shaping/cislunar_nav/fft-acceleration.md``.
 - The Tier 3 Windows build is validated by ``test-python.yml`` (Python 3.12
   on ``windows-latest``).
