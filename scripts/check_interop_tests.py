@@ -25,14 +25,10 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 LANS_DIR = REPO_ROOT / "third_party" / "LANS-AFS-SIM"
 
-POCKETSDR_DIR = REPO_ROOT / "third_party" / "PocketSDR"
-
 REQUIRED_BINARIES = [
     LANS_DIR / "afs_sim",
     LANS_DIR / "dump_lans_codes",
     LANS_DIR / "dump_lans_frame",
-    POCKETSDR_DIR / "dump_pocketsdr_codes",
-    POCKETSDR_DIR / "pocket_acq",  # G-06.2 correlator cross-decode
 ]
 
 # (test file, minimum collected count). Thresholds picked well below the
@@ -40,12 +36,8 @@ REQUIRED_BINARIES = [
 INTEROP_TEST_FLOORS: list[tuple[str, int]] = [
     ("tests/test_interop_codes.py", 400),  # 420 parameterised currently
     ("tests/test_interop_frames.py", 4),  # 5 cases currently
-    ("tests/test_interop_decode.py", 4),  # 4 live + 1 skipped (G-06.1)
-    ("tests/test_interop_pocketsdr_codes.py", 20),  # 25 parameterised currently
-    (
-        "tests/test_interop_acquire_pocketsdr.py",
-        4,
-    ),  # 3 parametrised + sign gate (G-06.2)
+    ("tests/test_interop_decode.py", 2),  # acquisition + despread-decode
+    ("tests/test_interop_self.py", 10),  # 17 cases currently
 ]
 
 

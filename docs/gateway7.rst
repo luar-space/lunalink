@@ -136,7 +136,7 @@ GD7.2 --- Round-Trip E2E Validation
 **Spec reference:** Gateway 7 deliverables (round-trip tests).
 
 Full signal chain round-trip: navigation data → frame_build → modulate →
-AWGN channel → correlator → frame_decode → message parse → verify
+AWGN channel → soft-symbol demodulation → frame_decode → message parse → verify
 bit-exact recovery.
 
 **Test evidence** (``cpp/tests/integration/test_e2e.cpp``):
@@ -254,9 +254,9 @@ BSD-2-Clause), an independent LSIS-AFS implementation.
      - **PASS**
      - BCH, CRC-24, LDPC, interleaver all match
    * - L3
-     - C++ correlator acquire + track + decode
+     - Cross-decode of LANS-AFS-SIM I/Q signal
      - **PASS**
-     - PCPS lock, DLL/PLL track, CRC-verified nav data
+     - PCPS acquisition, PLL despread, CRC-verified nav data
 
 Full results: :doc:`interop_results`
 
@@ -307,8 +307,7 @@ GD7.4 --- Performance Benchmark Validation
 
 - ``test_wcet.cpp`` --- LDPC encode/decode, BCH ML, sync detect
 - ``test_bch_ber.cpp`` --- BCH FER sweep (7 Eb/N0 points)
-- ``test_ldpc_ber.cpp`` --- LDPC waterfall (9 SNR points), alpha sweep, quantization
-- ``test_correlator_perf.cpp`` --- PCPS acquisition, DLL/PLL loop
+- ``test_ldpc_reference.cpp`` --- LDPC decoder quality vs reference decoders
 - ``test_sync_detection_rate.cpp`` --- Frame sync Pd vs SNR
 
 .. code-block:: bash

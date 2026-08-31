@@ -72,7 +72,7 @@ Gateway 2: Forward Error Correction
      - Block De-interleaving (soft LLR, 60×98 column-to-row transpose)
      - ✅
      - Implemented [Hardened] in ``interleaver.cpp``; volatile CFI
-   * - LSIS-340
+   * - LSIS-FID0-467
      - CRC-24 for Message Integrity
      - ✅
      - Implemented [Hardened] CRC-24Q (0x864CFB)
@@ -226,17 +226,17 @@ Gateway 8: Documentation & Examples
      - Notes
    * - LSIS-DOC-API
      - API Reference (Sphinx + Doxygen)
-     - Partial
-     - Ongoing; Sphinx deployed to gh-pages
+     - ✅
+     - ``api.rst`` + NumPy-style docstrings with runnable examples
    * - LSIS-DOC-EXAMPLES
      - Usage Examples (Notebooks)
-     - TODO
-     - GD8.2
+     - ✅
+     - Three tutorial notebooks in ``docs/notebooks/`` + ``examples/``
    * - LSIS-DOC-COMPLIANCE
      - Final Compliance Matrix
-     - Partial
+     - ✅
      - This document
    * - LSIS-DOC-FINDINGS
      - Spec Findings Report
-     - Partial
+     - ✅
      - ``spec_findings_report.rst``

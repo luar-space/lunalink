@@ -59,9 +59,8 @@ public:
   ///
   /// Thread-safety: Fft<N> is **not** safe to share across threads.  The
   /// ``mutable`` split-complex scratch (``realp_`` / ``imagp_``) is rewritten
-  /// on every call.  Each owning thread must hold its own instance — this
-  /// is the convention used by ``Correlator`` (one Fft<N> per Correlator,
-  /// one Correlator per worker thread) and the bench harness.
+  /// on every call.  Each owning thread must hold its own instance — one
+  /// Fft<N> per worker thread, the convention used by the bench harness.
   void forward(std::span<Complex, N> buf) const noexcept {
     const auto setup = setup_fwd();
     if (setup == nullptr) [[unlikely]] {
@@ -143,8 +142,8 @@ private:
   /// the Apple/vDSP backend, which holds per-instance ``mutable``
   /// split-complex scratch).  Despite this asymmetry, callers should
   /// treat Fft<N> as *not* shareable to keep the cross-platform
-  /// contract uniform — Correlator owns one Fft<N> per worker thread
-  /// regardless of backend.
+  /// contract uniform — one Fft<N> per worker thread regardless of
+  /// backend.
   Fft() noexcept {
     // Twiddle factors: W_N^k = exp(-j 2π k/N) for k=0..N/2-1.
     for (uint32_t k = 0; k < N / 2U; ++k) {
@@ -279,34 +278,5 @@ public:
     return true;
   }
 };
-
-/// Convenience alias for 2048-pt FFT (EPL correlator integration length).
-using Fft2048 = Fft<2048>;
-
-/// 4096-pt FFT for unambiguous PCPS acquisition.
-/// Zero-padding the 2046-chip code + 2048-sample received signal to 4096
-/// gives linear (not circular) cross-correlation, eliminating the code-phase
-/// ambiguity from the 2048/2046 mismatch (spec finding SF-004).
-using Fft4096 = Fft<4096>;
-
-/// 8192-pt FFT for GPS L1 C/A acquisition at 8 spc with dynamic FFT sizing
-/// (next_pow2(8184) = 8192).
-using Fft8192 = Fft<8192>;
-
-/// 16384-pt FFT for multi-signal PCPS acquisition:
-///   - GPS L1 C/A at 8 spc (1023 × 8 = 8184 samples, zero-padded)
-///   - BeiDou B1C at 1 spc (10230 chips, zero-padded)
-///   - AFS-Q at 1 spc (10230 chips, zero-padded)
-using Fft16384 = Fft<16384>;
-
-/// 32768-pt FFT for GPS L5 acquisition at 2 samples/chip and
-/// Galileo E1 at 8 samples/chip (4092 × 8 = 32736 samples).
-/// Zero-padded for linear cross-correlation.
-using Fft32768 = Fft<32768>;
-
-/// 65536-pt FFT for deep coherent integration on long-code signals:
-///   - AFS-Q at t_coh=4 epochs (10230 × 4 = 40920 samples)
-///   - BeiDou B1C / NavIC at t_coh=2+ epochs
-using Fft65536 = Fft<65536>;
 
 } // namespace lunalink::signal

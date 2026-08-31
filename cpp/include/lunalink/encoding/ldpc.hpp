@@ -2,13 +2,13 @@
 /// @file ldpc.hpp
 /// @brief LDPC encoder and sum-product BP decoder for LSIS-AFS subframes.
 ///
-/// **Hardening rationale:** This open-source decoder uses float64 arithmetic
-/// (not flight-suitable for targets without FPU). The structural hardening
-/// patterns (CFI sentinels, TMR mirroring, bounds checks, secure scrub) are
-/// retained deliberately: they demonstrate the assurance framework that the
-/// flight decoder (proprietary AMS variant, Q8.7 integer) inherits. Removing
-/// them from the OSS decoder would break the assurance evidence chain — the
-/// SWIFI tests, FMEA, and fault_coverage.rst reference these patterns by name.
+/// **Hardening rationale:** This decoder uses float64 arithmetic (a
+/// fixed-point port would be required for flight targets without an FPU).
+/// The structural hardening patterns (CFI sentinels, TMR mirroring, bounds
+/// checks, secure scrub) are applied deliberately even so: they carry the
+/// assurance framework, and a fixed-point port inherits them unchanged.
+/// Removing them would break the assurance evidence chain — the SWIFI
+/// tests, FMEA, and fault_coverage.rst reference these patterns by name.
 /// The hardening cost on desktop hardware is negligible (<2% overhead).
 
 #include "lunalink/core/safety.hpp"

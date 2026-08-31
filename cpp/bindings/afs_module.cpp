@@ -9,7 +9,6 @@
 #include "lunalink/messages/frame_decode.hpp"
 #include "lunalink/messages/message_parser.hpp"
 #include "lunalink/messages/time_of_transmission.hpp"
-// correlator.hpp removed — correlator is proprietary (receiver module).
 #include "lunalink/core/sise.hpp"
 #include "lunalink/signal/file_format.hpp"
 #include "lunalink/signal/iq_mux.hpp"
@@ -1360,7 +1359,6 @@ tuple[FrameDecodeResult, ndarray, ndarray, ndarray, FrameDecodeStatus]
   m.attr("WEIL_1500_CHIP_LENGTH") = kWeil1500ChipLength;
   m.attr("PRN_COUNT") = kPrnCount;
   m.attr("CHIP_RATE_HZ") = kAfsIChipRateHz; // 1.023e6 (from prn.hpp)
-  // DOPPLER_BIN_SPACING_HZ removed — was V1 correlator constant.
 
   // Signal parameters (signal_parameters.csv)
   m.attr("CENTER_FREQUENCY_HZ") = kCenterFrequencyHz;

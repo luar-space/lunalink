@@ -1,9 +1,9 @@
-Development Roadmap
-===================
+Development Status
+==================
 
-This document outlines the phased development plan for LunaLink, tracking 
-past achievements and upcoming milestones toward a complete, flight-ready 
-AFS-I and AFS-Q Signal-In-Space (SIS) reference implementation.
+This document tracks the phased development of LunaLink from first PRN
+codes to the complete, validated AFS-I and AFS-Q Signal-In-Space (SIS)
+reference implementation delivered for the competition.
 
 Phased Implementation
 ---------------------
@@ -22,19 +22,18 @@ Phased Implementation
      - Complete AFS Transmitter (AFS-I/Q Mux, SB1 Encoder, Docs)
      - ✅ Completed
    * - **V3**
-     - Full Codec implementation (BCH/LDPC decoder, CRC-24, All MSG types)
-     - 🏗️ In Progress
+     - Full Codec implementation (BCH/LDPC codec, CRC-24, decode chain)
+     - ✅ Completed
    * - **V4**
-     - Validation & Interop (Golden test vectors, BER curves, HW-in-the-loop)
-     - 📅 Scheduled
+     - Validation & Interop (test vectors, BER curves, cross-implementation
+       decode against LANS-AFS-SIM)
+     - ✅ Completed
    * - **V5**
-     - PNT Pipeline (Satellite constellation simulation, Position Fix)
-     - 📅 Scheduled
+     - PNT Pipeline (constellation simulation, position fix)
+     - 📅 Future work — beyond competition scope
 
-Implementation Progress
------------------------
-
-### Component Traceability (V3 Focus)
+Component Traceability
+----------------------
 
 .. list-table::
    :header-rows: 1
@@ -62,22 +61,30 @@ Implementation Progress
      - BCH(51,8) ML Correlation Decoder (Radiation-Hardened)
      - ✅ Done
    * - **C6**
-     - LDPC(1200,600) Encoder (5G NR Sub-matrices)
-     - 🏗️ In Progress
+     - LDPC Encoders (5G NR base graph 2; SF2 1200/2400, SF3/SF4 870/1740)
+     - ✅ Done
    * - **C7**
-     - LDPC(1200,600) Decoder (Min-Sum / Belief Propagation)
-     - ❌ Not Started
+     - LDPC Decoder (layered sum-product belief propagation)
+     - ✅ Done
    * - **C8**
-     - Navigation Frame Builder (Sync, Interleaving, Scrambling)
-     - ⚠️ Partial
+     - Navigation Frame Builder (sync, SB1, 60×98 block interleaving)
+     - ✅ Done
    * - **C9**
-     - Navigation Message Serializer (22 Message Types)
-     - ❌ Not Started
+     - Navigation Message Parsing (FID/TOI, WN/ITOW, time of transmission;
+       SB3/SB4 payloads as raw bit-slices per the V1.0 TBW field layouts)
+     - ✅ Done
 
-Current Deliverables Status
----------------------------
+Deliverables Status
+-------------------
 
-*   **Standards Compliance**: 95% of M1 requirements traced and implemented.
-*   **Architecture Documentation**: Complete design record for all core modules.
-*   **Mission Assurance**: 100% Python and 98% C++ test coverage reached for core signal chain.
-*   **Interoperability**: Test vector format defined; Golden set generation scheduled for V4.
+*   **Standards compliance**: mandatory LSIS V1.0 requirements traced and
+    implemented — see :doc:`signal/compliance_matrix` and
+    :doc:`signal/shall_inventory`.
+*   **Architecture documentation**: complete design record for all core
+    modules (:doc:`gateway0`, :doc:`signal/architecture`).
+*   **Mission assurance**: 100% Python line coverage (CI-gated); C++
+    coverage and MC/DC evidence per :doc:`assurance/mission_assurance`.
+*   **Interoperability**: bit-exact cross-check and signal cross-decode
+    against LANS-AFS-SIM (:doc:`interop_results`); test vectors published
+    at `luar-space/lsis-afs-test-vectors
+    <https://github.com/luar-space/lsis-afs-test-vectors>`__.

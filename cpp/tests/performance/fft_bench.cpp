@@ -115,8 +115,8 @@ template <uint32_t N> double measure_single_ns(size_t iters) {
 
 
 template <uint32_t N> double measure_threaded_ns(size_t iters, size_t n_threads) {
-  // Each thread owns its own Fft + buffer to mirror the campaign's
-  // thread-local correlator state.
+  // Each thread owns its own Fft + buffer — Fft<N> is not shareable
+  // across threads (see fft.hpp thread-safety contract).
   std::atomic<bool> go{false};
   std::vector<std::thread> threads;
   threads.reserve(n_threads);
@@ -281,7 +281,7 @@ TEST_CASE("FFT microbench: size × backend × mode grid", "[fft_bench][slow]") {
   bench_size<32768>(csv);
   bench_size<65536>(csv);
 
-  // No assertion — bench is for measurement, not pass/fail.
-  // The regression gate lives at scripts/bench_regression_check.py (A1.V4).
+  // No assertion — bench is for measurement, not pass/fail; compare the CSV
+  // against benchmarks/baseline/fft_bench.csv by hand.
   SUCCEED("Bench rows written to " << output_csv_path());
 }

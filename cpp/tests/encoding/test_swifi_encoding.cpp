@@ -65,9 +65,8 @@ TEST_CASE("SWIFI: ldpc_encode_forced_return — fi_force_status returns injected
   REQUIRE(ldpc_encode(LdpcSubframe::kSF2, msg, out, ws) == LdpcStatus::kOk);
 }
 
-// Note: SP decoder has no tunable parameters (no α/β), so there is no
-// parameter-corruption SWIFI test. The AMS-specific β corruption test
-// lives in the proprietary test suite.
+// Note: the SP decoder has no tunable parameters (no α/β), so there is no
+// parameter-corruption SWIFI test.
 
 // ---------------------------------------------------------------------------
 // FI-41 — TMR phi_sum mirror corruption: verify_mirrors() detects bit flip

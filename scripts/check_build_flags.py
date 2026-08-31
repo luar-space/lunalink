@@ -3,7 +3,7 @@
 check_build_flags.py — SWE-109 compile-flag gate.
 
 Reads compile_commands.json and verifies that every translation unit under
-the core source directories (open + proprietary) carries required hardening
+the core source directories carries required hardening
 flags, is free of forbidden compiler flags, and is free of forbidden
 preprocessor defines (dev/bench-only macros that must never reach a flight
 build — see ``docs/assurance/build_policy.rst``).
@@ -39,11 +39,10 @@ FORBIDDEN_FLAGS = [
 # Preprocessor defines that gate dev/bench-only code paths. They add heap
 # allocation, atomic counters, or other behaviour that must never be present
 # in a flight binary. Catalogue is normative — see
-# ``docs/assurance/build_policy.rst`` (Dev/Bench-Only Compile Flags).
-FORBIDDEN_DEFINES = [
-    "LUNALINK_BENCH_COUNT_FFTS",
-    "LUNALINK_DEV_RX_FFT_CACHE",
-]
+# ``docs/assurance/build_policy.rst``. Currently empty: no dev/bench-only
+# macro exists in this tree, but the gate stays wired so any future one
+# must be registered here to be caught.
+FORBIDDEN_DEFINES: list[str] = []
 
 
 # Match -DNAME or -DNAME=VALUE as a standalone token.
@@ -89,8 +88,6 @@ CORE_SOURCE_DIRS = (
     "cpp/messages/",
     "cpp/signal/",
     "cpp/platform/",
-    "cpp/proprietary/codes/",
-    "cpp/proprietary/signal/",
 )
 
 

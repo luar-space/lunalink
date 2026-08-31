@@ -29,14 +29,8 @@ from lunalink.afs._afs import BCH_INPUT_BITS as BCH_INPUT_BITS
 from lunalink.afs._afs import BLOCK_INTERVAL_DURATION as BLOCK_INTERVAL_DURATION
 from lunalink.afs._afs import CENTER_FREQUENCY_HZ as CENTER_FREQUENCY_HZ
 from lunalink.afs._afs import CHIP_RATE_HZ as CHIP_RATE_HZ
-
-# CODE_PERIOD_S removed — was V1 correlator constant.
 from lunalink.afs._afs import DEFAULT_SYNC_THRESHOLD as DEFAULT_SYNC_THRESHOLD
-
-# DOPPLER_BIN_SPACING_HZ removed — was V1 correlator constant.
 from lunalink.afs._afs import EPOCHS_PER_FRAME as EPOCHS_PER_FRAME
-
-# FFT_SIZE removed — was V1 correlator constant.
 from lunalink.afs._afs import FRAM_HEADER_BYTES as FRAM_HEADER_BYTES
 from lunalink.afs._afs import FRAME_DURATION_S as FRAME_DURATION_S
 from lunalink.afs._afs import FRAME_DURATION_SEC as FRAME_DURATION_SEC
@@ -65,12 +59,8 @@ from lunalink.afs._afs import MAGIC_FRAM as MAGIC_FRAM
 from lunalink.afs._afs import MAGIC_IQS2 as MAGIC_IQS2
 from lunalink.afs._afs import MAGIC_IQSG as MAGIC_IQSG
 from lunalink.afs._afs import MAGIC_LSIS as MAGIC_LSIS
-
-# MAX_CHANNELS removed — was V1 correlator constant.
 from lunalink.afs._afs import PAYLOAD_LENGTH as PAYLOAD_LENGTH
 from lunalink.afs._afs import PRN_COUNT as PRN_COUNT
-
-# SAMPLE_RATE_HZ removed — was V1 correlator constant.
 from lunalink.afs._afs import SB1_LENGTH as SB1_LENGTH
 from lunalink.afs._afs import SB2_CED_BITS as SB2_CED_BITS
 from lunalink.afs._afs import SB2_CED_OFFSET as SB2_CED_OFFSET
@@ -145,8 +135,6 @@ from lunalink.afs._afs import SyncResult as SyncResult
 from lunalink.afs._afs import Toi as Toi
 from lunalink.afs._afs import TotResult as TotResult
 from lunalink.afs._afs import TotStatus as TotStatus
-
-# TrackingState, UniformPrior, Correlator removed — proprietary receiver module.
 # Functions — direct re-exports (no Python wrapper overhead)
 from lunalink.afs._afs import bch_codebook_checksum as bch_codebook_checksum
 from lunalink.afs._afs import bch_decode as bch_decode

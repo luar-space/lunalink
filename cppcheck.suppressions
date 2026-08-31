@@ -41,10 +41,3 @@ unmatchedSuppression
 // Add file-specific suppressions here with justification.
 // Format: <id>:<filename>:<line>
 
-// syntaxError in test_correlator.cpp: cppcheck cannot resolve Catch2 TEST_CASE
-// macros when preceding code in an anonymous namespace uses types from headers
-// cppcheck cannot find (Correlator, SignalConfig, etc.).  The code compiles and
-// runs correctly under GCC/Clang with full include paths.  Suppressed at file
-// level because the parse failure cascades from the namespace to all subsequent
-// TEST_CASE macros.
-syntaxError:cpp/proprietary/tests/signal/test_correlator.cpp

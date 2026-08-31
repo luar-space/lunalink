@@ -137,7 +137,6 @@ select = [
 ]
 # Campaign driver + code-generator utilities: allow missing docstrings on
 # private helpers and the long inline ICD/ablation comments.
-"scripts/lugre_campaign.py" = ["D103", "E501"]
 "scripts/generate_galileo_e5a.py" = ["D103", "E501"]
 "scripts/fuzz_seed_corpus.py" = ["D103", "E501"]
 # Investigation-grade test modules — H0-dump env-var guard and the joint

@@ -1,7 +1,7 @@
 /**
  * @file test_swifi_signal.cpp
  * @brief SWIFI tests for signal subsystem: modulator aliasing, IQ mux aliasing,
- *        correlator TMR/CFI/adversarial, sync detector CFI/TMR/recovery.
+ *        sync detector CFI/TMR/recovery.
  *
  * Compiled with LUNALINK_FAULT_INJECTION=1.
  */
@@ -10,7 +10,6 @@
 #include "lunalink/core/safety.hpp"
 #include "lunalink/core/telemetry.hpp"
 #include "lunalink/messages/frame.hpp"
-// correlator.hpp removed — correlator is proprietary.
 #include "lunalink/signal/iq_mux.hpp"
 #include "lunalink/signal/modulator.hpp"
 #include "lunalink/signal/sync_detector.hpp"

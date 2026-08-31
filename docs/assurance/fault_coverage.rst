@@ -328,13 +328,6 @@ SWIFI Scenario Coverage
 Summary
 -------
 
-.. note::
-
-   This catalogue covers the open-source distribution.  SWIFI scenarios
-   exercising the multi-signal correlator are maintained in the closed-source
-   tree and are not listed here; the totals below count published scenarios
-   only.
-
 .. list-table::
    :header-rows: 1
    :widths: 40 60

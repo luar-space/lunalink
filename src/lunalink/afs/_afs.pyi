@@ -318,16 +318,12 @@ def generate_iq_frame_float(
 IQ_PAIRS_PER_EPOCH: int
 IQ_PAIRS_PER_FRAME: int
 
-# Correlator types and class moved to lunalink.receiver._receiver (proprietary).
-
 AFS_I_CODE_LENGTH: int
-# V1 correlator constants removed (FFT_SIZE, SAMPLE_RATE_HZ, etc.).
 GOLD_CHIP_LENGTH: int
 WEIL_10230_CHIP_LENGTH: int
 WEIL_1500_CHIP_LENGTH: int
 PRN_COUNT: int
 CHIP_RATE_HZ: float
-# DOPPLER_BIN_SPACING_HZ removed — was V1 correlator constant.
 
 # Signal parameters (signal_parameters.csv)
 CENTER_FREQUENCY_HZ: float

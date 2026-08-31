@@ -9,10 +9,11 @@ Installation
 
 .. code-block:: bash
 
-   pip install lunalink          # from PyPI (when published)
-   # or from source:
-   git clone https://github.com/luar-space/lsis-afs && cd lunalink
-   pip install -e .
+   git clone https://github.com/luar-space/lsis-afs && cd lsis-afs
+   task install   # uv sync --group dev — builds the C++ core + Python package
+
+   # library-only alternative (no dev tooling):
+   pip install .
 
 LunaLink has **zero runtime dependencies** beyond the C++ extension that ships
 with the package.  NumPy is used internally but does not need to be installed

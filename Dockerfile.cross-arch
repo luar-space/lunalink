@@ -1,7 +1,7 @@
 # Cross-architecture build & test for LunaLink C++ core.
 # Usage: docker buildx build --platform linux/arm64 --progress=plain -f Dockerfile.cross-arch .
 #
-# Targets: linux/arm64 (LE, strict alignment — Kria KR260 proxy)
+# Targets: linux/arm64 (LE, strict alignment)
 #          linux/s390x (BE, strict alignment — endianness validation)
 #
 # Tests run inside RUN directives — build success = tests pass.

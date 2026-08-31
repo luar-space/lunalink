@@ -334,8 +334,10 @@ TEST_CASE("E2E impairment: burst error resilience through interleaver", "[e2e][i
   const BurstCase cases[] = {
       {30, true},    // half-column: ≤1 error per position
       {60, true},    // full column: exactly 1 per position — design point
-      {120, true},   // 2 columns: ≤2 per position — LDPC handles easily
-      {240, true},   // 4 columns: ≤4 per position — still within capability
+      {120, true},   // 2 columns: ≤2 per position — LDPC handles this
+      {240, false},  // 4 columns: 4 confident-wrong LLRs per position on top
+                     // of 3 dB AWGN exceeds the SP decoder's margin — must
+                     // be *detected* (LDPC non-convergence or CRC), not decoded
       {1200, false}, // 20 columns: ≥20% hard-flipped → overwhelms LDPC + CRC
   };
 

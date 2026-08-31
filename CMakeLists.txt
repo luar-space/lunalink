@@ -7,8 +7,6 @@ option(BUILD_TESTING "Build unit tests" ON)
 option(ENABLE_COVERAGE "Enable coverage reporting" OFF)
 option(ENABLE_SANITIZERS "Enable sanitizers" OFF)
 option(LUNALINK_FAULT_INJECTION "Enable fault-injection APIs for SWIFI tests" OFF)
-option(LUNALINK_BENCH_COUNT_FFTS "Enable FFT call counter (bench builds only — not for flight)" OFF)
-option(LUNALINK_DEV_RX_FFT_CACHE "Enable rx-FFT memoisation in Correlator (dev/bench builds only — adds heap, not for flight)" OFF)
 option(ENABLE_LLVM_COVERAGE "Enable LLVM source-based coverage (MC/DC, requires Clang)" OFF)
 option(ENABLE_STACK_USAGE "Enable -fstack-usage to produce .su files for stack analysis" OFF)
 option(ENABLE_FUZZING "Build libFuzzer harnesses for parser/FEC entry points (requires Clang)" OFF)
@@ -131,7 +129,6 @@ add_library(lunalink_core
     # signal/ — Baseband & RX (Gateway 4-5)
     cpp/signal/modulator.cpp
     cpp/signal/iq_mux.cpp
-    # correlator.cpp removed — receiver::Correlator in proprietary/ supersedes
     cpp/signal/sync_detector.cpp
     cpp/signal/signal_gen.cpp
     # core/ — Utilities (Gateway 7)
@@ -161,11 +158,6 @@ if(LUNALINK_FAULT_INJECTION)
     target_compile_definitions(lunalink_core PUBLIC LUNALINK_FAULT_INJECTION=1)
 endif()
 
-# --- Proprietary Receiver Library ---
-# Multi-signal receiver code (GPS, Galileo, BeiDou). Export-excluded.
-# Same flight flags as lunalink_core (-fno-exceptions, -fno-rtti).
-
-
 # --- Python Bindings ---
 if(BUILD_PYTHON_BINDINGS)
     find_package(Python 3.8 COMPONENTS Interpreter Development.Module REQUIRED)
@@ -191,9 +183,6 @@ if(BUILD_PYTHON_BINDINGS)
     # Install the extension into the package structure
     install(TARGETS _afs DESTINATION lunalink/afs)
 
-    # --- Proprietary Receiver Bindings ---
-    # Note: binding code requires exceptions (throw nb::value_error etc.),
-    #   so LUNALINK_CORE_FLAGS (-fno-exceptions -fno-rtti) is NOT applied here.
 endif()
 
 # --- Unit Tests ---
@@ -228,7 +217,6 @@ if(BUILD_TESTING)
         # signal/
         cpp/tests/signal/test_modulator.cpp
         cpp/tests/signal/test_iq_mux.cpp
-        # test_correlator.cpp removed — correlator tests moved to proprietary/tests/
         cpp/tests/signal/test_sync_detector.cpp
         # core/
         cpp/tests/core/test_sise.cpp
@@ -236,12 +224,12 @@ if(BUILD_TESTING)
         cpp/tests/platform/test_safety.cpp
         # integration/
         cpp/tests/integration/test_e2e.cpp
+        cpp/tests/integration/test_e2e_impairments.cpp
         # tool_validation/
         cpp/tests/tool_validation/test_coverage_canary.cpp
         # performance/
         cpp/tests/performance/test_bch_ber.cpp
         cpp/tests/performance/test_ldpc_reference.cpp
-        # test_correlator_perf.cpp removed — correlator tests moved to proprietary/tests/
         cpp/tests/performance/test_sync_detection_rate.cpp
         cpp/tests/performance/test_wcet.cpp
         cpp/tests/performance/fft_bench.cpp
@@ -290,16 +278,7 @@ if(BUILD_TESTING)
             PROPERTIES LABELS swifi
         )
     endif()
-    # --- Proprietary SWIFI tests (requires both FAULT_INJECTION and PROPRIETARY) ---
-
     endif() # LUNALINK_FAULT_INJECTION
-
-    # --- Proprietary Receiver Tests ---
-
-    # AMS parameter sweep tool (proprietary — only builds with AMS decoder)
-    # add_executable(ldpc_sweep scripts/ldpc_sweep.cpp)
-    # target_link_libraries(ldpc_sweep PRIVATE lunalink_core)
-    # target_include_directories(ldpc_sweep PRIVATE ${CMAKE_SOURCE_DIR}/cpp/include)
 
     # LDPC performance characterisation tool (parallel, outputs JSON for algo card)
     add_executable(ldpc_characterise scripts/ldpc_characterise.cpp)
@@ -307,19 +286,6 @@ if(BUILD_TESTING)
     target_include_directories(ldpc_characterise PRIVATE ${CMAKE_SOURCE_DIR}/cpp/include)
     set_target_properties(ldpc_characterise PROPERTIES EXCLUDE_FROM_ALL TRUE)
 endif() # BUILD_TESTING
-
-# --- Proprietary AMS decoder (tidy-only, not linked) ---
-# Provides compile_commands.json entry for clang-tidy static analysis.
-# This target is never linked into the library or tests — the OSS build
-# uses the sum-product decoder in cpp/encoding/ldpc.cpp.
-if(EXISTS "${CMAKE_SOURCE_DIR}/cpp/proprietary/ldpc_ams.cpp")
-    add_library(lunalink_ams_tidy OBJECT cpp/proprietary/ldpc_ams.cpp)
-    target_include_directories(lunalink_ams_tidy PRIVATE
-        ${CMAKE_SOURCE_DIR}/cpp/include
-        ${CMAKE_SOURCE_DIR}/cpp/proprietary)
-    target_compile_options(lunalink_ams_tidy PRIVATE ${LUNALINK_WARNING_FLAGS})
-    set_target_properties(lunalink_ams_tidy PROPERTIES EXCLUDE_FROM_ALL TRUE)
-endif()
 
 # --- Coverage Analysis ---
 if(ENABLE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -329,16 +295,6 @@ if(ENABLE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(test_lunalink PRIVATE --coverage)
     target_link_options(test_lunalink PRIVATE --coverage)
 
-    if(TARGET lunalink_proprietary)
-        target_compile_options(lunalink_proprietary PRIVATE --coverage)
-        target_link_options(lunalink_proprietary PRIVATE --coverage)
-        target_compile_options(test_receiver PRIVATE --coverage)
-        target_link_options(test_receiver PRIVATE --coverage)
-        if(TARGET receiver_swifi_tests)
-            target_compile_options(receiver_swifi_tests PRIVATE --coverage)
-            target_link_options(receiver_swifi_tests PRIVATE --coverage)
-        endif()
-    endif()
 endif()
 
 # --- LLVM Source-Based Coverage (MC/DC) ---
@@ -356,14 +312,6 @@ if(ENABLE_LLVM_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         if(TARGET lunalink_swifi_tests)
             target_compile_options(lunalink_swifi_tests PRIVATE ${LLVM_COV_FLAGS})
             target_link_options(lunalink_swifi_tests PRIVATE ${LLVM_COV_FLAGS})
-        endif()
-        if(TARGET test_receiver)
-            target_compile_options(test_receiver PRIVATE ${LLVM_COV_FLAGS})
-            target_link_options(test_receiver PRIVATE ${LLVM_COV_FLAGS})
-        endif()
-        if(TARGET receiver_swifi_tests)
-            target_compile_options(receiver_swifi_tests PRIVATE ${LLVM_COV_FLAGS})
-            target_link_options(receiver_swifi_tests PRIVATE ${LLVM_COV_FLAGS})
         endif()
     endif()
 elseif(ENABLE_LLVM_COVERAGE AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -384,16 +332,6 @@ if(ENABLE_SANITIZERS AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
         target_link_options(lunalink_swifi_tests PRIVATE ${SANITIZE_FLAGS})
     endif()
 
-    if(TARGET lunalink_proprietary)
-        target_compile_options(lunalink_proprietary PRIVATE ${SANITIZE_FLAGS})
-        target_link_options(lunalink_proprietary PRIVATE ${SANITIZE_FLAGS})
-        target_compile_options(test_receiver PRIVATE ${SANITIZE_FLAGS})
-        target_link_options(test_receiver PRIVATE ${SANITIZE_FLAGS})
-        if(TARGET receiver_swifi_tests)
-            target_compile_options(receiver_swifi_tests PRIVATE ${SANITIZE_FLAGS})
-            target_link_options(receiver_swifi_tests PRIVATE ${SANITIZE_FLAGS})
-        endif()
-    endif()
 endif()
 
 # --- Stack Usage Analysis ---

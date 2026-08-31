@@ -42,7 +42,7 @@ cmake -B build/fuzz -S . \
   -DCMAKE_C_COMPILER="$(brew --prefix llvm)/bin/clang" \
   -DCMAKE_CXX_COMPILER="$(brew --prefix llvm)/bin/clang++" \
   -DENABLE_FUZZING=ON -DBUILD_TESTING=OFF -DBUILD_PYTHON_BINDINGS=OFF \
-  -DBUILD_PROPRIETARY=OFF -DCMAKE_BUILD_TYPE=Debug
+  -DCMAKE_BUILD_TYPE=Debug
 cmake --build build/fuzz --parallel
 ./build/fuzz/fuzz_message_parser corpus/message_parser
 ```

@@ -19,7 +19,7 @@ Categories
   reproduced in a host-target test environment.
 
 - **HAL_STUB** — hardware abstraction layer stub. The function signature exists
-  to support target integration (Kria KR260 Cortex-R5F) but the implementation
+  to support embedded-target integration but the implementation
   is a no-op or trivial on the host. Will be covered by hardware-in-the-loop
   (HIL) testing at TRL-5.
 

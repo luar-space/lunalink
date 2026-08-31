@@ -23,7 +23,7 @@ PLATFORMS: dict[str, dict[str, str]] = {
         "docker_platform": "linux/arm64",
         "endian": "LE",
         "alignment": "Strict",
-        "purpose": "ARM validation, Kria KR260 proxy",
+        "purpose": "ARM validation (LE, strict alignment)",
     },
     "s390x": {
         "docker_platform": "linux/s390x",

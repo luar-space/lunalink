@@ -157,7 +157,7 @@ def reconcile_fi_sets(fault_coverage_path: str) -> bool:
         return False
 
     doc_set = doc_fi_set(fault_coverage_path)
-    test_set = tests_fi_set(["cpp/tests", "cpp/proprietary/tests"])
+    test_set = tests_fi_set(["cpp/tests"])
     missing_tests = sorted(doc_set - test_set)
     missing_docs = sorted(test_set - doc_set)
 

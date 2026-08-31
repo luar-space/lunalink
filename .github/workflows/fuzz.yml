@@ -55,7 +55,7 @@ jobs:
           cmake -B build/fuzz -S . -G Ninja \
             -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
             -DENABLE_FUZZING=ON -DBUILD_TESTING=OFF \
-            -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_PROPRIETARY=OFF \
+            -DBUILD_PYTHON_BINDINGS=OFF \
             -DCMAKE_BUILD_TYPE=Debug
           cmake --build build/fuzz --parallel
 

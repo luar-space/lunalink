@@ -1,16 +1,10 @@
 #pragma once
 
 // Shared helpers for performance benchmarks.  Keep this header dependency-light
-// (no Catch2, no project headers): it is included from both
-// ``cpp/tests/performance/`` (open-source bench files) and
-// ``cpp/proprietary/tests/signal/`` (proprietary bench files), and pulling
-// project-specific includes here would couple the two trees.
+// (no Catch2, no project headers) so bench files stay self-contained.
 //
 // Schema-specific CSV row writers live in their respective bench files —
-// the fft_bench schema (size × backend × mode × ns/fft) and the
-// acquisition_bench schema (signal × fft_size × variant × µs/acquire) are
-// not interchangeable; abstracting them would add complexity without
-// reducing duplication.
+// e.g. the fft_bench schema (size × backend × mode × ns/fft).
 
 #include <algorithm>
 #include <cmath>

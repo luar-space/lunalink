@@ -50,60 +50,9 @@ tasks:
     cmd: uv sync --group dev --reinstall-package lunalink
 
   bench:
-    desc: Run all bench surfaces (fft + acq + campaign) and the regression gate against benchmarks/baseline/.
+    desc: Run the FFT microbenchmark; compare against benchmarks/baseline/fft_bench.csv.
     cmds:
       - task: bench-fft
-      - task: bench-acq
-      - task: bench-campaign
-      - task: bench-regression
-
-  bench-install:
-    desc: Reinstall the C++ extension with bench-only flags (FFT counter + rx-FFT cache).
-    cmd: CMAKE_ARGS="-DLUNALINK_BENCH_COUNT_FFTS=ON -DLUNALINK_DEV_RX_FFT_CACHE=ON" uv sync --group dev --reinstall-package lunalink
-
-  bench-regression:
-    desc: Compare benchmarks/latest/detections.jsonl against baseline within tolerances.
-    cmd: uv run python scripts/bench_regression_check.py
-
-  bench-campaign:
-    desc: Run the --bench LuGRE campaign on canonical subset (OP9_0/OP17_0/OP21_0).
-    vars:
-      REPO_ROOT:
-        sh: dirname "$(git rev-parse --path-format=absolute --git-common-dir)"
-      IQS_DIR: '{{.REPO_ROOT}}/docs/references/lugre/LuGRE/L0/IQS'
-    cmds:
-      - task: bench-install
-      - mkdir -p benchmarks/latest
-      - bash scripts/write_hw_fingerprint.sh benchmarks/latest/hw_fingerprint.json
-      # ``--shared-rx-fft`` is what makes the cache hot — the committed
-      # baseline (77.46s wall, ~95K fwd FFTs) was captured with it.
-      # Without this flag the dispatcher fans out per-PRN, every thread-
-      # local Correlator's cache stays cold, and the bench measures the
-      # A2-only path (~1.99M fwd FFTs).
-      - >
-        uv run python scripts/lugre_campaign.py --bench --shared-rx-fft
-        --data-dir "{{.IQS_DIR}}"
-        --bench-dir benchmarks/latest
-
-  bench-acq:
-    desc: Run [acq_bench] meso-bench (per-signal acquire + per-FFT cost), emit benchmarks/latest/acquisition_bench.csv.
-    vars:
-      GENERATOR:
-        sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
-      BUILD_DIR: build/bench
-    cmds:
-      - mkdir -p {{.BUILD_DIR}} benchmarks/latest
-      - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release -DLUNALINK_BENCH_COUNT_FFTS=ON
-      - |
-        # [acq_bench] lives in test_receiver, which only exists when
-        # cpp/proprietary/ is present -- absent in the OSS export.
-        if [ ! -d cpp/proprietary ]; then
-          echo "SKIP: bench-acq needs cpp/proprietary/ (not in the OSS export)"
-          exit 0
-        fi
-        cmake --build {{.BUILD_DIR}} --target test_receiver --parallel
-        LUNALINK_BENCH_OUTPUT_CSV=benchmarks/latest/acquisition_bench.csv \
-          "{{.BUILD_DIR}}/test_receiver" "[acq_bench]" --reporter console
 
   bench-fft:
     desc: Run [fft_bench] microbench (size × backend × mode), emit benchmarks/latest/fft_bench.csv.
@@ -113,44 +62,16 @@ tasks:
       BUILD_DIR: build/bench
     cmds:
       - mkdir -p {{.BUILD_DIR}} benchmarks/latest
-      - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release -DLUNALINK_BENCH_COUNT_FFTS=ON
+      - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release
       - cmake --build {{.BUILD_DIR}} --target test_lunalink --parallel
       - LUNALINK_BENCH_OUTPUT_CSV=benchmarks/latest/fft_bench.csv {{.BUILD_DIR}}/test_lunalink "[fft_bench]" --reporter console
-
-  bench-build-check:
-    desc: Configure-and-build the dev-flag-on path so namespace/include/template bugs gated by LUNALINK_BENCH_COUNT_FFTS or LUNALINK_DEV_RX_FFT_CACHE are caught at merge time.  Builds both bench binaries and runs the trivially-fast [rx_fft_cache] regression tests (which only exist when both flags are on); skips the multi-second [fft_bench] / [acq_bench] timing tests.  Wired into ci-checks because the default ci path does not enable these flags and therefore never compiles ``acquisition_bench.cpp`` or the ifdef'd cache code in ``correlator.cpp``.
-    vars:
-      GENERATOR:
-        sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
-      BUILD_DIR: build/bench-flags
-    cmds:
-      - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release -DLUNALINK_BENCH_COUNT_FFTS=ON -DLUNALINK_DEV_RX_FFT_CACHE=ON
-      - |
-        # test_receiver only exists when cpp/proprietary/ is present (see the
-        # BUILD_PROPRIETARY guard in CMakeLists.txt) -- absent in the OSS export.
-        TARGETS="test_lunalink"
-        [ -d cpp/proprietary ] && TARGETS="$TARGETS test_receiver"
-        # shellcheck disable=SC2086
-        cmake --build {{.BUILD_DIR}} --target $TARGETS --parallel
-      # Run only the [rx_fft_cache] tests — they're 1–2 acquires each
-      # and assert the cache hit-rate contract that the regression
-      # gate cannot see (cache is a perf optimisation, not a
-      # correctness mechanism).  Excludes [fft_bench] / [acq_bench].
-      - |
-        if [ -x "{{.BUILD_DIR}}/test_receiver" ]; then
-          "{{.BUILD_DIR}}/test_receiver" "[rx_fft_cache]" --reporter compact
-        else
-          echo "SKIP: test_receiver not built (cpp/proprietary/ absent)"
-        fi
 
   bench-baseline-update:
     desc: Promote benchmarks/latest/ → benchmarks/baseline/ (review diff before committing).
     cmds:
-      - test -d benchmarks/latest || (echo "benchmarks/latest/ missing — run task bench-campaign first" && exit 1)
+      - test -d benchmarks/latest || (echo "benchmarks/latest/ missing — run task bench-fft first" && exit 1)
       - mkdir -p benchmarks/baseline
       - cp -v benchmarks/latest/*.csv benchmarks/baseline/
-      - cp -v benchmarks/latest/*.jsonl benchmarks/baseline/
-      - cp -v benchmarks/latest/hw_fingerprint.json benchmarks/baseline/
       - git status benchmarks/baseline/
 
   install-hooks:
@@ -248,39 +169,8 @@ tasks:
           --reporter console \
           --reporter "junit::out={{.BUILD_DIR}}/test-results/lunalink.xml"
       - |
-        # test_receiver is built from cpp/proprietary/tests/, which is absent
-        # from the OSS export.  Skip cleanly there instead of hard-failing.
-        if [ ! -x "{{.BUILD_DIR}}/test_receiver" ]; then
-          echo "SKIP: test_receiver not built (cpp/proprietary/ absent)"
-          exit 0
-        fi
-        SHARDS={{.NCPU}}
-        PIDS=()
-        for i in $(seq 0 $((SHARDS - 1))); do
-          {{.BUILD_DIR}}/test_receiver "~[slow]" \
-            --shard-count "$SHARDS" --shard-index "$i" --abort \
-            --rng-seed {{.RNG_SEED}} \
-            --reporter console \
-            --reporter "junit::out={{.BUILD_DIR}}/test-results/receiver_shard_${i}.xml" &
-          PIDS+=($!)
-        done
-        RESULT=0
-        for pid in "${PIDS[@]}"; do
-          wait "$pid" || RESULT=1
-        done
-        exit $RESULT
-      - |
-        RECEIVER_ARGS=""
-        if [ -x "{{.BUILD_DIR}}/test_receiver" ]; then
-          RECEIVER_ARGS="--binary {{.BUILD_DIR}}/test_receiver"
-          for f in {{.BUILD_DIR}}/test-results/receiver_shard_*.xml; do
-            [ -f "$f" ] && RECEIVER_ARGS="$RECEIVER_ARGS --xml $f"
-          done
-        fi
-        # shellcheck disable=SC2086
         python3 scripts/check_test_durations.py \
           --xml {{.BUILD_DIR}}/test-results/lunalink.xml \
-          $RECEIVER_ARGS \
           --binary {{.BUILD_DIR}}/test_lunalink \
           --threshold 5.0
     silent: false
@@ -302,15 +192,6 @@ tasks:
           --abort --rng-seed {{.RNG_SEED}} \
           --reporter console \
           --reporter "junit::out={{.BUILD_DIR}}/test-results/lunalink_acceptance.xml"
-      - |
-        if [ ! -x "{{.BUILD_DIR}}/test_receiver" ]; then
-          echo "SKIP: test_receiver not built (cpp/proprietary/ absent)"
-          exit 0
-        fi
-        {{.BUILD_DIR}}/test_receiver \
-          --abort --rng-seed {{.RNG_SEED}} \
-          --reporter console \
-          --reporter "junit::out={{.BUILD_DIR}}/test-results/receiver_acceptance.xml"
     silent: false
 
   ldpc-algo-card:
@@ -369,8 +250,7 @@ tasks:
           --suppressions-list=cppcheck.suppressions \
           --template='{file}:{line}: [{severity}] {id}: {message}' \
           --quiet \
-          cpp/include/ cpp/codes/ cpp/encoding/ cpp/messages/ cpp/signal/ cpp/platform/ \
-          $([ -d cpp/proprietary ] && echo cpp/proprietary/)
+          cpp/include/ cpp/codes/ cpp/encoding/ cpp/messages/ cpp/signal/ cpp/platform/
     silent: false
 
   pyright:
@@ -495,12 +375,6 @@ tasks:
       - cmake -B build/sanitize -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=ON
       - cmake --build build/sanitize --parallel
       - build/sanitize/test_lunalink "~[slow]" --abort
-      - |
-        if [ -x build/sanitize/test_receiver ]; then
-          build/sanitize/test_receiver "~[slow]" --abort
-        else
-          echo "SKIP: test_receiver not built (cpp/proprietary/ absent)"
-        fi
     silent: false
 
   fuzz:
@@ -528,7 +402,7 @@ tasks:
           -DCMAKE_C_COMPILER="$(dirname {{.CLANGXX}})/clang"
           -DCMAKE_CXX_COMPILER="{{.CLANGXX}}"
           -DENABLE_FUZZING=ON -DBUILD_TESTING=OFF -DBUILD_PYTHON_BINDINGS=OFF
-          -DBUILD_PROPRIETARY=OFF -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_BUILD_TYPE=Debug
       - cmake --build build/fuzz --parallel
       - mkdir -p corpus/message_parser corpus/frame_decode corpus/fec fuzz-artifacts
       # The committed seed dir is passed as a second corpus: libFuzzer reads it
@@ -561,7 +435,7 @@ tasks:
           echo "libFuzzer needs LLVM Clang (Apple Clang lacks it). Install: brew install llvm"
           exit 1
         fi
-      - cmake -B build/fuzz -S . -DCMAKE_C_COMPILER="$(dirname {{.CLANGXX}})/clang" -DCMAKE_CXX_COMPILER="{{.CLANGXX}}" -DENABLE_FUZZING=ON -DBUILD_TESTING=OFF -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_PROPRIETARY=OFF -DCMAKE_BUILD_TYPE=Debug
+      - cmake -B build/fuzz -S . -DCMAKE_C_COMPILER="$(dirname {{.CLANGXX}})/clang" -DCMAKE_CXX_COMPILER="{{.CLANGXX}}" -DENABLE_FUZZING=ON -DBUILD_TESTING=OFF -DBUILD_PYTHON_BINDINGS=OFF -DCMAKE_BUILD_TYPE=Debug
       - cmake --build build/fuzz --parallel
       - build/fuzz/fuzz_message_parser -runs=0 cpp/fuzz/seeds/message_parser
       - build/fuzz/fuzz_fec -runs=0 cpp/fuzz/seeds/fec
@@ -605,7 +479,7 @@ tasks:
           exit 0
         fi
         # Collect staged .cpp source files (exclude bindings and tests)
-        STAGED=$(git diff --cached --name-only --diff-filter=ACM -- 'cpp/codes/*.cpp' 'cpp/encoding/*.cpp' 'cpp/messages/*.cpp' 'cpp/signal/*.cpp' 'cpp/platform/*.cpp' 'cpp/proprietary/codes/*.cpp' 'cpp/proprietary/signal/*.hpp' 'cpp/include/*.hpp')
+        STAGED=$(git diff --cached --name-only --diff-filter=ACM -- 'cpp/codes/*.cpp' 'cpp/encoding/*.cpp' 'cpp/messages/*.cpp' 'cpp/signal/*.cpp' 'cpp/platform/*.cpp' 'cpp/include/*.hpp')
         if [ -z "$STAGED" ]; then
           echo "No staged C++ source files — skipping tidy."
           exit 0
@@ -636,20 +510,7 @@ tasks:
       - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DLUNALINK_FAULT_INJECTION=ON
       - cmake --build {{.BUILD_DIR}} --parallel
       - "{{.BUILD_DIR}}/lunalink_swifi_tests --reporter junit::out={{.BUILD_DIR}}/swifi_results.xml --reporter console"
-      - |
-        # receiver_swifi_tests lives in cpp/proprietary/tests/ — absent from the
-        # OSS export, where the published catalogue also omits its FI rows.
-        if [ -x "{{.BUILD_DIR}}/receiver_swifi_tests" ]; then
-          "{{.BUILD_DIR}}/receiver_swifi_tests" \
-            --reporter junit::out={{.BUILD_DIR}}/receiver_swifi_results.xml \
-            --reporter console
-          python3 scripts/swifi_report.py \
-            --xml {{.BUILD_DIR}}/swifi_results.xml \
-            --xml {{.BUILD_DIR}}/receiver_swifi_results.xml
-        else
-          echo "SKIP: receiver_swifi_tests not built (cpp/proprietary/ absent)"
-          python3 scripts/swifi_report.py --xml {{.BUILD_DIR}}/swifi_results.xml
-        fi
+      - python3 scripts/swifi_report.py --xml {{.BUILD_DIR}}/swifi_results.xml
     silent: false
 
   interop:
@@ -672,11 +533,13 @@ tasks:
         echo "Comparing LunaLink against LANS-AFS-SIM, bit-exact:"
         echo "  I3  PRN spreading codes  — Gold + Weil, PRN 1..210"
         echo "  I4  Encoded frames       — BCH + CRC-24 + LDPC + interleaver, 6000 symbols"
-        echo "  I5  Self-consistency     — published test vectors"
+        echo "  I5  Signal cross-decode  — LANS-AFS-SIM I/Q → LunaLink decode"
+        echo "  I6  Self-consistency     — published test vectors"
         echo ""
         uv run pytest --no-cov -q \
           tests/test_interop_codes.py \
           tests/test_interop_frames.py \
+          tests/test_interop_decode.py \
           tests/test_interop_self.py
         echo ""
         echo "PASS: LunaLink is bit-exact with an independent implementation."
@@ -807,27 +670,6 @@ tasks:
       - echo "PDF built at docs/_build/latex/LunaLink-Gateway0-Phase1.pdf"
     silent: false
 
-  paper:
-    desc: "Build a paper PDF. Usage: task paper -- lugre_characterisation"
-    cmds:
-      - |
-        PAPER_DIR="docs/papers/{{.CLI_ARGS}}"
-        if [ ! -f "$PAPER_DIR/main.tex" ]; then
-          echo "Paper not found: $PAPER_DIR/main.tex"
-          echo "Available papers:"
-          ls -d docs/papers/*/main.tex 2>/dev/null | sed 's|docs/papers/||;s|/main.tex||'
-          exit 1
-        fi
-        cd "$PAPER_DIR" && latexmk -pdf -interaction=nonstopmode main.tex
-        echo "PDF built at $PAPER_DIR/main.pdf"
-    silent: false
-
-  paper-clean:
-    desc: "Clean paper build artifacts. Usage: task paper-clean -- lugre_characterisation"
-    cmds:
-      - cd "docs/papers/{{.CLI_ARGS}}" && latexmk -C
-    silent: false
-
   docs-serve:
     desc: Serve the documentation locally with auto-reload.
     cmds:
@@ -859,7 +701,7 @@ tasks:
   swifi-reconcile:
     desc: >-
       SWIFI traceability dry-run — parse `fault_coverage.rst` vs. `// FI-NN`
-      test-comment anchors in `cpp/tests` and `cpp/proprietary/tests`.
+      test-comment anchors in `cpp/tests`.
       Fails (exit 1) on any missing anchor or orphan row.  No binary run
       required, so this is safe to call from `task ci-checks` without
       building the SWIFI binary.
@@ -875,7 +717,6 @@ tasks:
       - task: clang-sa
       - task: check-flags
       - task: test-cpp
-      - task: bench-build-check
       - task: swifi-reconcile
       - task: swifi
       - task: traceability
