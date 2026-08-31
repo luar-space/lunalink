@@ -1,3 +1,5 @@
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """Check max dimensions of LDPC CSV index files."""
 
 import csv

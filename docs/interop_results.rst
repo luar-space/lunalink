@@ -7,7 +7,7 @@ Cross-Implementation Interoperability Results
 
 **Implementations under test:**
 
-- **LunaLink** v0.1.22 — C++ / Python LSIS-AFS reference implementation
+- **LunaLink** v1.0 — C++ / Python LSIS-AFS reference implementation
 - **LANS-AFS-SIM** (Ebinuma) — C, BSD-2-Clause, https://github.com/osqzss/LANS-AFS-SIM
 
 **Reference:** Sobukawa & Ebinuma, *Aerospace* 12(7), 2025

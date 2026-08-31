@@ -45,6 +45,15 @@ Generate a 12-second AFS I/Q signal file in three steps:
    # 3. Write to disk with the LSISIQ metadata header
    write_iq_file("signal.iq", iq, AFS_Q_CHIP_RATE, prn_id=1)
 
+For external analysis tools (spreadsheets, MATLAB/Octave, pandas), the same
+samples can be exported as CSV with :func:`~lunalink.afs.write_iq_csv`:
+
+.. code-block:: python
+
+   from lunalink.afs import write_iq_csv
+
+   write_iq_csv("signal.csv", iq)   # header row "sample,i,q", one row per sample
+
 The returned ``frame`` is a :class:`~lunalink.afs.TransmitFrame` with the raw
 6000 binary symbols and metadata (``fid``, ``toi``, ``prn_id``).  The ``iq``
 array has shape ``(N, 2)`` with interleaved I/Q float32 samples at the native
@@ -181,7 +190,7 @@ exceptions:
 LDPC tuning
 ~~~~~~~~~~~
 
-The LDPC decoder defaults to 50 iterations with a normalised min-sum algorithm.
+The LDPC decoder defaults to 50 iterations of layered sum-product belief propagation.
 You can adjust the iteration count:
 
 .. code-block:: python

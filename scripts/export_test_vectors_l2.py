@@ -1,3 +1,5 @@
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 r"""Generate Level 2 interoperability test vectors (encoded frames).
 
 Writes one ``frame_{name}.bin`` file per test message into the target

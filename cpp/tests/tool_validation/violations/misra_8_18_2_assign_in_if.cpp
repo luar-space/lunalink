@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023 Rule 8.18.2 (Required): Assignment operators shall not be
 // used in sub-expressions.
 // Expected diagnostic: bugprone-assignment-in-if-condition

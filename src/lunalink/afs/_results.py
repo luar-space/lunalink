@@ -1,3 +1,5 @@
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """Structured result types for the high-level AFS API."""
 
 from __future__ import annotations

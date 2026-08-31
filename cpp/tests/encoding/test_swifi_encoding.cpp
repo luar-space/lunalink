@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file test_swifi_encoding.cpp
  * @brief SWIFI tests for encoding subsystem: LDPC matrix integrity,

@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // Power of Ten Rule 4 / JPL Rule 25: Functions should be no longer than 60
 // lines of text.
 // Expected diagnostic: readability-function-size

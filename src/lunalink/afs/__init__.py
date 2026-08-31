@@ -1,3 +1,5 @@
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """LunaLink AFS subpackage — Augmented Forward Signal implementation."""
 
 from lunalink.afs._array_types import BchCodeword as BchCodeword
@@ -160,6 +162,7 @@ from lunalink.afs.signal import (
     sync_detect,
     weil1500_code,
     weil10230_code,
+    write_iq_csv,
     write_iq_file,
 )
 
@@ -257,6 +260,7 @@ __all__ = [
     "multiplex_iq",
     "generate_iq_epoch",
     "generate_iq_frame",
+    "write_iq_csv",
     "write_iq_file",
     # Message parsing & timing
     "MessageType",

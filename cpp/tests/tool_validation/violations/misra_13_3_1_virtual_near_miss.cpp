@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023 Rule 13.3.1 (Required): Virtual function signatures must
 // match exactly; near-misses indicate bugs.
 // Expected diagnostic: bugprone-virtual-near-miss

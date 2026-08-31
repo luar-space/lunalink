@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023 Rule 8.2.10 (Required): Functions shall not call themselves.
 // JPL Rule 4, Power of Ten Rule 1.
 // Expected diagnostic: misc-no-recursion

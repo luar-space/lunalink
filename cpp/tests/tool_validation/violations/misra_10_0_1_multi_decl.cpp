@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023 Rule 10.0.1 (Required): Each variable shall be declared in a
 // separate declaration statement.
 // Expected diagnostic: readability-isolate-declaration

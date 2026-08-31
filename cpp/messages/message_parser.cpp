@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 /// @file message_parser.cpp
 /// @brief Navigation message parsers for decoded subframe data. [LSIS-AFS-801/802/803]
 ///

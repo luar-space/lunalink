@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023 Rule 8.2.2 (Required): C-style casts and functional notation
 // casts shall not be used.
 // Expected diagnostic: cppcoreguidelines-pro-type-cstyle-cast

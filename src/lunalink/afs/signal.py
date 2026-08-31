@@ -1,3 +1,5 @@
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """AFS signal generation, codec wrappers, and I/Q file export.
 
 This module re-exports all symbols from the C++ ``_afs`` extension and adds
@@ -135,6 +137,7 @@ from lunalink.afs._afs import SyncResult as SyncResult
 from lunalink.afs._afs import Toi as Toi
 from lunalink.afs._afs import TotResult as TotResult
 from lunalink.afs._afs import TotStatus as TotStatus
+
 # Functions — direct re-exports (no Python wrapper overhead)
 from lunalink.afs._afs import bch_codebook_checksum as bch_codebook_checksum
 from lunalink.afs._afs import bch_decode as bch_decode
@@ -260,7 +263,7 @@ def write_iq_file(
 ) -> None:
     """Write I/Q samples to a binary file with a 128-byte metadata header.
 
-    Header format (per docs/shaping/test-vector-format.md):
+    Header format (per ``docs/test_vectors.rst``):
         - Magic:       ``"LSISIQ"`` + 2 null bytes (8 bytes)
         - Version:     ``1`` (uint32 LE, 4 bytes)
         - Sample rate: ``float64`` LE (8 bytes)
@@ -307,3 +310,42 @@ def write_iq_file(
     with open(path, "wb") as f:
         f.write(header)
         f.write(interleaved.tobytes())
+
+
+@jaxtyped(typechecker=beartype)
+def write_iq_csv(
+    path: str | os.PathLike[str],
+    iq_data: IqPairFloat,
+) -> None:
+    """Write I/Q samples to a CSV file for external analysis.
+
+    Emits a header row ``sample,i,q`` followed by one row per sample.
+    CSV trades size for tool compatibility (spreadsheets, MATLAB/Octave,
+    pandas); for full 12-second signals prefer the binary format from
+    :func:`write_iq_file`.
+
+    Parameters
+    ----------
+    path : str or os.PathLike
+        Output file path.
+    iq_data : IqPairFloat
+        I/Q data with shape (N, 2).
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> iq = np.array([[1.0, 0.0], [-1.0, 0.0]], dtype=np.float32)
+    >>> write_iq_csv("signal.csv", iq)  # doctest: +SKIP
+    """
+    n_samples = iq_data.shape[0]
+    out = np.empty((n_samples, 3), dtype=np.float64)
+    out[:, 0] = np.arange(n_samples, dtype=np.float64)
+    out[:, 1:] = iq_data
+    np.savetxt(
+        path,
+        out,
+        fmt=("%d", "%.9g", "%.9g"),
+        delimiter=",",
+        header="sample,i,q",
+        comments="",
+    )

@@ -1,3 +1,5 @@
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 # ruff: noqa: D102
 """I4 — L2 Interoperability: frame encoding comparison with LANS-AFS-SIM.
 

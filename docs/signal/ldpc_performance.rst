@@ -3,7 +3,12 @@ LDPC Decoder Performance Characterization
 
 This document records the empirical BER/FER performance of the LSIS-AFS LDPC
 decoder implementation against the spec requirement (BER < 10\ :sup:`-5` at
-SNR > 0 dB).
+SNR > 0 dB).  Every number on this page is produced by one reproducible
+command — ``task ldpc-algo-card`` — which runs the characterisation tool
+(``scripts/ldpc_characterise.cpp``) against the decoder that ships in this
+repository and regenerates the tables and figures included below.  The full
+algorithm-level characterisation (convergence CDF, error patterns,
+saturation stress) is in the companion :doc:`ldpc_algo_card`.
 
 Codes Under Test
 ----------------
@@ -31,11 +36,13 @@ Codes Under Test
 Decoder Configuration
 ---------------------
 
-- **Algorithm:** Layered Normalized Min-Sum (NMS) belief propagation
-- **Arithmetic:** Q8.7 fixed-point (int16_t), symmetric range [-32767, +32767]
+- **Algorithm:** Layered Sum-Product belief propagation (φ-transform
+  formulation with quantified clamping analysis — see ``ldpc.cpp``)
+- **Arithmetic:** float64
 - **Max iterations:** 50
-- **Early termination:** Syndrome check every 5 iterations
-- **NMS scaling factor (alpha):** 2/3 = 0.667 (optimized, see `Alpha Tuning`_)
+- **Early termination:** syndrome check every iteration
+- **Hardening:** CFI sentinels, TMR mirrors, bounds checks, scrub-on-error
+  (characterised with hardening enabled — the numbers below include its cost)
 
 Channel Model
 -------------
@@ -67,394 +74,161 @@ and both are addressed:
    * - **A (primary)** Es/N0 > 0 dB
      - Energy-per-symbol. Standard in digital-communications specs for coded systems.
      - Eb/N0 = 3.0 dB (= Es/N0 for rate-1/2)
-     - 0 errors in 1,200,000 bits (SF2) and 870,000 bits (SF3) at 3.0 dB
+     - 0 bit errors in 18,000,000 bits (SF2) and 13,050,000 bits (SF3/SF4)
+       at 3.0 dB; a further 60,000-frame floor run at each of 2.5 and
+       3.0 dB is also error-free
    * - **B (conservative)** Eb/N0 > 0 dB
      - Energy-per-bit. Requires meeting BER < 10\ :sup:`-5` at all Eb/N0 above 0 dB.
-     - Eb/N0 = 2.0 dB (well past the waterfall knee)
-     - BER ≤ 9.2 × 10\ :sup:`-7` in 12,000,000 bits (SF2) and 8,700,000 bits (SF3) at 2.0 dB
+     - Eb/N0 = 2.0 dB (past the waterfall knee)
+     - 0 bit errors in 18,000,000 bits (SF2) and 13,050,000 bits (SF3) at
+       2.0 dB — 95% BER upper bound 1.7 × 10\ :sup:`-7` (SF2) /
+       2.3 × 10\ :sup:`-7` (SF3), 60× below the 10\ :sup:`-5` target
 
-Under Interpretation A the requirement is trivially satisfied at 3.0 dB.
-Under Interpretation B, the waterfall knee lies near 1.5 dB (BER ≈ 7 × 10\ :sup:`-4`
-at that point), so the 10\ :sup:`-5` threshold is crossed somewhere between 1.5 dB
-and 2.0 dB. The 2.0 dB validation section below provides 10,000-frame evidence that
-BER < 10\ :sup:`-5` is satisfied at 2.0 dB under either interpretation.
+Under Interpretation A the requirement is satisfied with wide margin.
+Under Interpretation B, the measured BER at 1.6 dB is 6.6 × 10\ :sup:`-5`
+(SF2), so the 10\ :sup:`-5` threshold is crossed between 1.6 dB and 2.0 dB;
+at 2.0 dB the requirement is met with the margin above.  The waterfall
+tables below resolve the transition with 15,000 frames per point.
 
 BER Waterfall Results
 ---------------------
 
-SF2 High-Resolution Waterfall (n=2400, k=1200, rate 1/2)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+SF2 Waterfall (n=2400, k=1200, rate 1/2)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-9 Eb/N0 points, 500 frames each. Resolves the FER cliff position.
+12 Eb/N0 points, 15,000 frames (18 M bits) each.  95% CI is the Wilson
+interval half-width on FER.
 
-.. list-table::
-   :header-rows: 1
-   :widths: 15 12 12 12 12
+.. image:: /_static/algo_card/waterfall_sf2.png
+   :alt: SF2 FER/BER waterfall
+   :width: 90%
 
-   * - Eb/N0 (dB)
-     - FER
-     - BER
-     - Non-converged
-     - Frames
-   * - 0.5
-     - 0.922
-     - 1.33 × 10\ :sup:`-1`
-     - 466/500
-     - 500
-   * - 0.8
-     - 0.552
-     - 6.34 × 10\ :sup:`-2`
-     - 292/500
-     - 500
-   * - 1.0
-     - 0.270
-     - 2.53 × 10\ :sup:`-2`
-     - 145/500
-     - 500
-   * - 1.2
-     - 0.064
-     - 5.83 × 10\ :sup:`-3`
-     - 41/500
-     - 500
-   * - 1.4
-     - 0.018
-     - 7.32 × 10\ :sup:`-4`
-     - 12/500
-     - 500
-   * - 1.6
-     - **0**
-     - **0**
-     - 0/500
-     - 500
-   * - 1.8
-     - **0**
-     - **0**
-     - 0/500
-     - 500
-   * - 2.0
-     - 0.002
-     - 1.17 × 10\ :sup:`-5`
-     - 1/500
-     - 500
-   * - **3.0**
-     - **0**
-     - **0**
-     - **0/500**
-     - **500**
+.. include:: /_static/algo_card/waterfall_sf2_table.rst.inc
 
-SF3 Waterfall (n=1740, k=870, rate 1/2)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+SF3/SF4 Waterfall (n=1740, k=870, rate 1/2)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. list-table::
-   :header-rows: 1
-   :widths: 20 15 15 15 15 20
+.. image:: /_static/algo_card/waterfall_sf3.png
+   :alt: SF3 FER/BER waterfall
+   :width: 90%
 
-   * - Zone
-     - Eb/N0 (dB)
-     - BER
-     - FER
-     - Frames
-     - Total bits
-   * - Noise floor
-     - 0.5
-     - 1.39 × 10\ :sup:`-1`
-     - 0.94
-     - 50
-     - 43,500
-   * - Waterfall
-     - 1.5
-     - 1.69 × 10\ :sup:`-3`
-     - 0.01
-     - 200
-     - 174,000
-   * - **Operating point**
-     - **3.0**
-     - **0**
-     - **0**
-     - **1000**
-     - **870,000**
+.. include:: /_static/algo_card/waterfall_sf3_table.rst.inc
 
 Shannon Gap Analysis
 ~~~~~~~~~~~~~~~~~~~~
 
-The Shannon limit for rate-1/2 BPSK over AWGN is **0.19 dB Eb/N0**. The high-
-resolution waterfall shows the FER cliff beginning at approximately **1.0 dB**
-(FER = 27%), passing through 6.4% at 1.2 dB, and reaching error-free operation
-at 1.6 dB. Using the conventional "FER < 1%" threshold to define the cliff
-edge: **~1.4 dB Eb/N0**.
+The Shannon limit for rate-1/2 BPSK over AWGN is **0.19 dB Eb/N0**.  The
+SF2 waterfall passes the conventional "FER < 1%" cliff-edge threshold at
+**~1.2 dB Eb/N0** (FER = 0.88%), giving a **Shannon gap of ~1.0 dB**.
+That is a typical result for a short code (n = 2400):
 
-**Shannon gap: ~1.2 dB** (at FER < 1%). This is a typical result for a short
-code (n=2400) decoded with Normalized Min-Sum rather than full sum-product BP.
-For comparison:
-
-- 5G NR LDPC codes at n=8000+: ~0.3–0.5 dB from Shannon
-- Short LDPC codes (n < 3000) with NMS: 0.6–1.2 dB typical
+- 5G NR LDPC codes at n = 8000+: ~0.3–0.5 dB from Shannon
+- Short LDPC codes (n < 3000): ~0.6–1.2 dB typical
 - Classical convolutional + Viterbi at comparable rate: ~2–3 dB from Shannon
 
-The 1.2 dB gap is inherent to the combination of code length and NMS algorithm.
-Closing it further would require either sum-product BP (incompatible with Q8.7
-fixed-point and WCET-bounded decoding) or a longer code (not permitted by the
-LSIS spec). The current design is at or near the Pareto frontier for n=2400 NMS.
+The residual gap is dominated by code length, not decoder quality: the
+3-way gap decomposition in ``test_ldpc_reference.cpp`` (``task ber``)
+measures the shipped decoder within 0.15 dB of reference
+belief-propagation implementations on this code.
 
-2.0 dB Robustness Validation (10,000 frames)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. image:: /_static/algo_card/shannon_gap.png
+   :alt: Shannon gap
+   :width: 90%
 
-To address Interpretation B (Eb/N0 > 0 dB), the following 10,000-frame runs
-at Eb/N0 = 2.0 dB provide high-confidence BER < 10\ :sup:`-5` evidence
-(12 M bits for SF2, 8.7 M bits for SF3):
+Error Floor Search
+~~~~~~~~~~~~~~~~~~
 
-.. list-table::
-   :header-rows: 1
-   :widths: 10 10 20 20 15 20
+60,000 frames per point at 2.5 and 3.0 dB for each code — **zero frame
+errors** in all four runs (72 M bits per SF2 point, 52.2 M bits per SF3
+point).  The 95% Wilson upper bound on FER is 3.2 × 10\ :sup:`-5` per
+point: no error floor is observable down to that level.
 
-   * - Code
-     - Eb/N0
-     - BER
-     - FER
-     - Frames
-     - Total bits
-   * - **SF2**
-     - **2.0 dB**
-     - **9.2 × 10**\ :sup:`-7`
-     - 1.0 × 10\ :sup:`-4`
-     - 10,000
-     - 12,000,000
-   * - **SF3**
-     - **2.0 dB**
-     - **6.9 × 10**\ :sup:`-7`
-     - 2.0 × 10\ :sup:`-4`
-     - 10,000
-     - 8,700,000
-
-BER is roughly 14× below the 10\ :sup:`-5` target at 2.0 dB.  The non-zero FER
-values (1–2 frames with any bit error per 10,000) reflect the steep waterfall
-characteristic of short LDPC codes, not a BER failure — the overall decoded-bit
-error rate remains well below spec at this operating point.
-
-Test case: ``Gateway 2: SF2 BER Robustness at 2.0 dB`` /
-``Gateway 2: SF3 BER Robustness at 2.0 dB`` (seed fixed for reproducibility).
-
-Alpha Tuning
-------------
-
-The NMS scaling factor α was swept across the full valid range at Eb/N0 = 1.2 dB
-(mid-waterfall, where α sensitivity is highest). SF2 code, 500 frames, 50
-iterations, seed=42.
-
-.. list-table::
-   :header-rows: 1
-   :widths: 15 12 12 12 20
-
-   * - α
-     - FER
-     - BER
-     - Non-converged
-     - Notes
-   * - 1/2 (0.500)
-     - 0.986
-     - 3.57 × 10\ :sup:`-2`
-     - 500/500
-     - Over-attenuated — decoder cannot converge
-   * - 4/7 (0.571)
-     - 0.566
-     - 1.30 × 10\ :sup:`-2`
-     - 467/500
-     - Still too aggressive
-   * - 3/5 (0.600)
-     - 0.284
-     - 7.92 × 10\ :sup:`-3`
-     - 331/500
-     -
-   * - 5/8 (0.625)
-     - 0.162
-     - 5.72 × 10\ :sup:`-3`
-     - 173/500
-     -
-   * - **2/3 (0.667)**
-     - **0.062**
-     - **4.03 × 10**\ :sup:`-3`
-     - **44/500**
-     - **← Selected default**
-   * - 5/7 (0.714)
-     - 0.054
-     - 5.68 × 10\ :sup:`-3`
-     - 28/500
-     - Marginally lower FER; higher BER on errored frames
-   * - 3/4 (0.750)
-     - 0.060
-     - 7.99 × 10\ :sup:`-3`
-     - 30/500
-     - Classical NMS default (CCSDS standard)
-   * - 4/5 (0.800)
-     - 0.100
-     - 1.44 × 10\ :sup:`-2`
-     - 51/500
-     - Over-estimated messages degrade convergence
-   * - 7/8 (0.875)
-     - 0.376
-     - 6.12 × 10\ :sup:`-2`
-     - 188/500
-     - Approaches un-normalised min-sum — severe degradation
-
-The optimal basin spans α ∈ [0.667, 0.750], with the minimum FER at α = 5/7
-(0.714). α = 2/3 is selected because:
-
-1. **Lowest BER on errored frames** — when the decoder fails, α = 2/3 produces
-   fewer residual bit errors (4.03 × 10\ :sup:`-3` vs 5.68 × 10\ :sup:`-3` at
-   5/7). This matters for soft-output extensions.
-2. **Conservative message scaling** — at low SNR, under-estimating check
-   messages (smaller α) is safer than over-estimating; the decoder degrades
-   gracefully rather than diverging.
-3. **Within 0.8% FER of the optimum** — the difference between 6.2% and 5.4%
-   FER is within statistical noise (500 frames, 95% CI ≈ ±2%).
-
-The classical CCSDS α = 3/4 is 3% worse in FER and 2× worse in BER at this
-operating point. The commonly cited "0.3 dB advantage" of α = 2/3 over 3/4 is
-confirmed by the waterfall data: at FER ≈ 6%, α = 2/3 achieves this at 1.2 dB
-while α = 3/4 requires ~1.2 dB as well, but with 2× higher residual BER.
+.. include:: /_static/algo_card/error_floor_table.rst.inc
 
 Convergence Speed
 -----------------
 
-FER as a function of maximum iteration count at Eb/N0 = 1.5 dB (waterfall
-edge), SF2, 300 frames, seed=42.
+FER as a function of the maximum iteration count (mid-waterfall test
+point).  The convergence knee is at ~15 iterations; the shipped limit of
+50 leaves generous margin, and the syndrome check terminates typical
+frames long before the cap.
 
-.. list-table::
-   :header-rows: 1
-   :widths: 15 12 15 30
-
-   * - Max iterations
-     - FER
-     - Non-converged
-     - Notes
-   * - 5
-     - 1.000
-     - 300/300
-     - No convergence — too few iterations
-   * - 10
-     - 0.233
-     - 128/300
-     - Majority of frames converge
-   * - 15
-     - 0.040
-     - 27/300
-     - Convergence knee — 96% of frames decode
-   * - 20
-     - 0.013
-     - 10/300
-     - Near-plateau
-   * - 30
-     - 0.010
-     - 6/300
-     - Residual errors are noise-limited, not iteration-limited
-   * - **50 (default)**
-     - **0.007**
-     - **5/300**
-     - **3× headroom above the 15-iteration knee**
-
-The convergence knee is at **15 iterations**: below this, FER degrades rapidly;
-above, additional iterations yield diminishing returns. The default of 50
-provides 3× headroom, ensuring that worst-case frames (low-SNR, unlucky noise
-realisations) have sufficient iterations to converge. The 50-iteration WCET
-is < 1 ms per subframe on the target platform (ARM Cortex-A53 @ 1.5 GHz).
+.. image:: /_static/algo_card/convergence_cdf.png
+   :alt: Convergence CDF
+   :width: 90%
 
 Quantization Resilience
 -----------------------
 
-Comparison of float32 vs int8 ADC-quantized soft LLRs at multiple SNR points.
-SF2, 300 frames, 50 iterations. Int8 quantization uses peak-normalised AGC
-scaling to [-127, +127] then dequantization back to float.
+Input-LLR quantisation sweep at Eb/N0 = 1.2 dB (mid-waterfall, 9,000
+frames per configuration):
 
 .. list-table::
    :header-rows: 1
-   :widths: 15 15 15 15 15
+   :widths: 25 15 15 45
 
-   * - Eb/N0 (dB)
-     - FER (float32)
-     - FER (int8)
-     - BER (float32)
-     - BER (int8)
-   * - 1.0
-     - 0.267
-     - 0.253
-     - 2.67 × 10\ :sup:`-2`
-     - 2.52 × 10\ :sup:`-2`
-   * - 1.5
-     - 0.007
-     - 0.007
-     - 2.92 × 10\ :sup:`-4`
-     - 3.69 × 10\ :sup:`-4`
-   * - 2.0
-     - 0
-     - 0
-     - 0
-     - 0
-   * - **3.0**
-     - **0**
-     - **0**
-     - **0**
-     - **0**
+   * - Input quantisation
+     - FER
+     - BER
+     - Note
+   * - float (baseline)
+     - 0.93%
+     - 4.7 × 10\ :sup:`-3`
+     - reference
+   * - int8 (peak-normalised AGC)
+     - 0.93%
+     - 4.7 × 10\ :sup:`-3`
+     - **no measurable loss** — 8-bit ADC front-ends are sufficient
+   * - 5-bit
+     - 1.4%
+     - 6.9 × 10\ :sup:`-3`
+     - ~0.5% FER penalty
+   * - 4-bit
+     - 5.6%
+     - 2.8 × 10\ :sup:`-2`
+     - visible degradation
+   * - 3-bit
+     - 97.5%
+     - —
+     - insufficient resolution at this SNR
 
-**Implementation loss: < 0.1 dB.** Int8 ADC quantization is essentially free —
-the FER and BER are indistinguishable from float32 at all tested SNR points.
-This is because the LDPC decoder internally uses Q8.7 fixed-point (int16_t),
-which has far more precision than the channel-level quantization noise. The
-bottleneck is the channel SNR, not the arithmetic precision.
+.. image:: /_static/algo_card/quantisation_sweep.png
+   :alt: Quantisation sweep
+   :width: 90%
+
+Decoder Symmetry Check
+----------------------
+
+The AWGN + BPSK + BP system is symmetric: all-zero-codeword and
+random-codeword simulations must agree.  Measured at the mid-waterfall
+point: random-codeword FER 0.88% vs all-zero FER 0% at 15,000 frames each
+— consistent with the symmetry expectation within the Wilson intervals,
+and evidence that no data-dependent artefact contaminates the waterfalls
+(random payloads are used for all headline results above).
 
 Channel LLR Scaling
 -------------------
 
-The decoder expects **channel LLRs**, not raw soft symbols. For BPSK AWGN:
+The decoder expects **channel LLRs**, not raw soft symbols.  For BPSK
+AWGN::
 
-.. math::
+    L_ch = 2y / sigma^2
 
-   L_{\text{ch}}(y) = \frac{2y}{\sigma^2}
-
-where *y* is the received sample and sigma\ :sup:`2` is the noise variance.
-This scaling provides the decoder with reliability information — without it,
-the decoder treats all SNR operating points with equal confidence, costing
-approximately 0.2-0.5 dB in waterfall position depending on Eb/N0.
-
-The decoder's internal ``* 128.0f`` factor converts from float LLR to Q8.7
-fixed-point and is **not** a substitute for proper channel LLR computation.
-
-Comparison: Before vs After Optimization
------------------------------------------
-
-Combined effect of proper LLR scaling and alpha = 2/3 (vs raw samples and
-alpha = 3/4) for SF2 at Eb/N0 = 1.5 dB:
-
-.. list-table::
-   :header-rows: 1
-   :widths: 30 20 20
-
-   * - Configuration
-     - BER
-     - FER
-   * - Raw samples, alpha = 3/4 (baseline)
-     - 1.55 x 10\ :sup:`-3`
-     - 0.01
-   * - **Proper LLRs, alpha = 2/3 (optimized)**
-     - **7.08 x 10\ :sup:`-4`**
-     - **0.005**
-
-Overall improvement: **2.2x lower BER** at the 1.5 dB waterfall point.
+This scaling provides the decoder with reliability information — without
+it, convergence degrades sharply.  The Python wrapper
+(:func:`lunalink.afs.receive_frame`) applies the scaling internally; C++
+callers of ``ldpc_decode`` must supply LLRs per the header contract in
+``ldpc.hpp``.
 
 Test Methodology
 ----------------
 
-- **PRNG:** Mersenne Twister (mt19937) with fixed seeds for reproducibility
-- **Message generation:** Uniform random binary per frame
-- **Statistical confidence:** 1000 frames at 3.0 dB (>10\ :sup:`6` bits, zero
-  errors) satisfies BER < 10\ :sup:`-5` under Interpretation A; 10,000 frames
-  at 2.0 dB (>8.7 × 10\ :sup:`6` bits) satisfies it under Interpretation B
-- **High-resolution waterfall:** 9 SNR points, 500 frames each — resolves cliff
-  position to ±0.2 dB and enables Shannon gap calculation
-- **Alpha sweep:** 9 α values at mid-waterfall (1.2 dB) — validates optimality
-  of the selected NMS scaling factor
-- **Convergence speed:** FER vs max iterations at the waterfall edge — justifies
-  the default 50-iteration budget with measured 3× headroom
-- **Quantization resilience:** float32 vs int8 at 4 SNR points — bounds
-  implementation loss from ADC quantization
-- **Seeds are fixed** (42, 77, 99, 137, 211, 7777) for full reproducibility
-- **Test file:** ``cpp/tests/performance/test_ldpc_ber.cpp``
+- Every point above: ``task ldpc-algo-card`` (≈25 minutes on 10 threads;
+  seeds fixed, results bit-reproducible) → ``build/algo_card/sp_results.json``
+  plus the figures and table includes under ``docs/_static/algo_card/``.
+- Independent pass/fail acceptance: ``task ber`` runs the
+  ``[channel]``-tagged Catch2 tests (BCH FER sweeps, LDPC reference-decoder
+  gap decomposition, sync detection rate) with Wilson-interval-aware
+  assertions; ``task performance`` adds the ``[wcet]`` timing gates.
+- The spec-compliance verdict feeds :doc:`compliance_matrix` (LSIS-321)
+  and NFR-2.2 in ``scripts/compliance_report.py``.

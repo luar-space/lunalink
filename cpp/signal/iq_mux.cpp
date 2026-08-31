@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 #include "lunalink/signal/iq_mux.hpp"
 
 #include "lunalink/codes/prn.hpp"

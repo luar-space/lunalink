@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file test_swifi_messages.cpp
  * @brief SWIFI tests for messages subsystem: frame_build aliasing,

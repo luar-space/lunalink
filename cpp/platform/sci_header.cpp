@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 #include "lunalink/platform/sci_header.hpp"
 
 #include "lunalink/core/crc32.hpp"

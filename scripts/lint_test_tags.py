@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """Fail if any Catch2 TEST_CASE/SCENARIO in cpp/tests/ lacks a tag string.
 
 The routing contract is: test-cpp runs `~[slow]`, acceptance runs everything.

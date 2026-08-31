@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023 Rule 7.11.2 (Required): An array passed as a function argument
 // shall not decay to a pointer.
 // JPL Rule 26.

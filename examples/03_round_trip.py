@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """End-to-end: transmit → perfect channel → decode → verify."""
 
 import numpy as np

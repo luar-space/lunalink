@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """Orchestrator: produce all 6 Level-2 LANS-AFS-SIM frame dumps.
 
 Invokes the ``dump_lans_frame`` harness once per test message defined

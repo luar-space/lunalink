@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="test_lunalink" errors="0" failures="0" skipped="0" tests="84383" hostname="tbd" time="159.360" timestamp="2026-08-31T14:56:26Z">
+    <properties>
+      <property name="random-seed" value="3463621310"/>
+      <property name="filters" value="[channel]"/>
+    </properties>
+    <testcase classname="test_lunalink.global" name="Gateway 5: frame-level FER sweep" time="1.877" status="run">
+      <system-out>
+[FER sweep] Eb/N0=1.5 dB  FER=0 (0/50)  BER=0.0046304 (664/143400)
+[FER sweep] Eb/N0=3 dB  FER=0 (0/100)  BER=0.00450488 (1292/286800)
+[FER sweep] Eb/N0=6 dB  FER=0 (0/200)  BER=0.00464086 (2662/573600)
+      </system-out>
+    </testcase>
+    <testcase classname="test_lunalink.global" name="BCH hard vs soft: noise floor at 2.0 dB" time="0.068" status="run">
+      <system-out>
+[BCH BER] Eb/N0=2 dB  hard FER=0.144778 +/- 0.00726988  soft FER=0.0208889 +/- 0.0029611 (95% CI)  [9000 frames, 3 seeds x 3000]
+      </system-out>
+    </testcase>
+    <testcase classname="test_lunalink.global" name="BCH hard vs soft: waterfall sweep 3-6 dB" time="0.334" status="run">
+      <system-out>
+[BCH BER] Eb/N0=3 dB  hard FER=0.066 +/- 0.00513181  soft FER=0.00666667 +/- 0.00169404 (95% CI)  [9000 frames, 3 seeds x 3000]
+[BCH BER] Eb/N0=4 dB  hard FER=0.0223333 +/- 0.00305901  soft FER=0.00122222 +/- 0.000752414 (95% CI)  [9000 frames, 3 seeds x 3000]
+[BCH BER] Eb/N0=5 dB  hard FER=0.004 +/- 0.00132084  soft FER=0 +/- 0.000213331 (95% CI)  [9000 frames, 3 seeds x 3000]
+[BCH BER] Eb/N0=6 dB  hard FER=0.000888889 +/- 0.000651358  soft FER=0 +/- 0.000213331 (95% CI)  [9000 frames, 3 seeds x 3000]
+[BCH BER] 6.0 dB soft upper bound: 0.000213331 (95% CI, 9000 frames)
+      </system-out>
+    </testcase>
+    <testcase classname="test_lunalink.global" name="BCH hard vs soft: operating point 7.6 dB" time="0.226" status="run">
+      <system-out>
+[BCH BER] Eb/N0=7.6 dB  hard FER=3.33333e-05 +/- 9.14635e-05  soft FER=0 +/- 6.40185e-05 (95% CI)  [30000 frames, 3 seeds x 10000]
+[BCH BER] 7.6 dB hard upper bound: 9.14635e-05  soft upper bound: 6.40185e-05 (95% CI, 30000 frames)
+      </system-out>
+    </testcase>
+    <testcase classname="test_lunalink.global" name="LDPC decoder quality: 3-way gap decomposition (SF2)" time="151.550" status="run">
+      <system-out>
+=== LDPC Decoder Quality Assessment (SF2, n=2400, k=1200, rate 1/2) ===
+  SPB = Sphere Packing Bound (Polyanskiy-Poor-Verdú normal approx.)
+  SP  = Float64 Sum-Product BP (theoretical ceiling for this code)
+  AMS = Flight decoder: Adjusted Min-Sum, Q8.7, α=5/6, β=32
+  Frames per point: 2000 (seed=42, 10 threads)
+
+  Eb/N0   |  SPB bound  |  SP FER     |  AMS FER    |  Algo gap   |
+  --------|-------------|-------------|-------------|-------------|
+
+  === Gap Decomposition at FER = 1% ===
+
+  === Verdict ===
+  Algorithm gap &lt; 0.15 dB — AMS is near-optimal for this code.
+  Investing in a better decoder algorithm is NOT recommended.
+      </system-out>
+    </testcase>
+    <testcase classname="test_lunalink.global" name="Sync detection Pfa: &lt; 1% at 0 dB noise" time="0.107" status="run"/>
+    <testcase classname="test_lunalink.global" name="Sync detection Pd vs Eb/N0: > 99% at 0 dB" time="5.198" status="run"/>
+    <system-out>
+[FER sweep] Eb/N0=1.5 dB  FER=0 (0/50)  BER=0.0046304 (664/143400)
+[FER sweep] Eb/N0=3 dB  FER=0 (0/100)  BER=0.00450488 (1292/286800)
+[FER sweep] Eb/N0=6 dB  FER=0 (0/200)  BER=0.00464086 (2662/573600)
+[BCH BER] Eb/N0=2 dB  hard FER=0.144778 +/- 0.00726988  soft FER=0.0208889 +/- 0.0029611 (95% CI)  [9000 frames, 3 seeds x 3000]
+[BCH BER] Eb/N0=3 dB  hard FER=0.066 +/- 0.00513181  soft FER=0.00666667 +/- 0.00169404 (95% CI)  [9000 frames, 3 seeds x 3000]
+[BCH BER] Eb/N0=4 dB  hard FER=0.0223333 +/- 0.00305901  soft FER=0.00122222 +/- 0.000752414 (95% CI)  [9000 frames, 3 seeds x 3000]
+[BCH BER] Eb/N0=5 dB  hard FER=0.004 +/- 0.00132084  soft FER=0 +/- 0.000213331 (95% CI)  [9000 frames, 3 seeds x 3000]
+[BCH BER] Eb/N0=6 dB  hard FER=0.000888889 +/- 0.000651358  soft FER=0 +/- 0.000213331 (95% CI)  [9000 frames, 3 seeds x 3000]
+[BCH BER] 6.0 dB soft upper bound: 0.000213331 (95% CI, 9000 frames)
+[BCH BER] Eb/N0=7.6 dB  hard FER=3.33333e-05 +/- 9.14635e-05  soft FER=0 +/- 6.40185e-05 (95% CI)  [30000 frames, 3 seeds x 10000]
+[BCH BER] 7.6 dB hard upper bound: 9.14635e-05  soft upper bound: 6.40185e-05 (95% CI, 30000 frames)
+
+=== LDPC Decoder Quality Assessment (SF2, n=2400, k=1200, rate 1/2) ===
+  SPB = Sphere Packing Bound (Polyanskiy-Poor-Verdú normal approx.)
+  SP  = Float64 Sum-Product BP (theoretical ceiling for this code)
+  AMS = Flight decoder: Adjusted Min-Sum, Q8.7, α=5/6, β=32
+  Frames per point: 2000 (seed=42, 10 threads)
+
+  Eb/N0   |  SPB bound  |  SP FER     |  AMS FER    |  Algo gap   |
+  --------|-------------|-------------|-------------|-------------|
+
+  === Gap Decomposition at FER = 1% ===
+
+  === Verdict ===
+  Algorithm gap &lt; 0.15 dB — AMS is near-optimal for this code.
+  Investing in a better decoder algorithm is NOT recommended.
+    </system-out>
+    <system-err/>
+  </testsuite>
+</testsuites>

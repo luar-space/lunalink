@@ -1,3 +1,5 @@
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 # ruff: noqa: D101, D102  — test classes and methods are self-documenting by name.
 """Tests for the high-level Python API (receive_frame, transmit_frame, vectors)."""
 

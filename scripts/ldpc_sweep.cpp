@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // ldpc_sweep.cpp — Parallel 2D α×β sweep for Adjusted Min-Sum LDPC decoder.
 // Standalone tool, not a Catch2 test. Compile with:
 //   cmake --build build/ber --target ldpc_sweep

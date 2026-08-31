@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // Power of Ten Rule 4 / JPL Rule 25: Functions shall have low cognitive
 // complexity; deeply nested control flow shall be avoided.
 // Expected diagnostic: readability-function-cognitive-complexity

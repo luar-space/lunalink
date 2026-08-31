@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // libFuzzer harness: navigation-message parsers (SB2/SB3/SB4) and bit extraction.
 //
 // These functions consume decoded navigation data — one bit per byte — that

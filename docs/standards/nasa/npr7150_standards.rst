@@ -109,13 +109,13 @@ Chapter 3 — Software Management Requirements
      - N/A (tailored — open-source project)
    * - SWE-033
      - Assess acquisition vs. development options
-     - ``assurance/oss_assessment.rst``
+     - ``assurance/tool_confidence.rst``
    * - SWE-052
      - Bi-directional traceability
      - ``signal/compliance_matrix.rst``
    * - SWE-156
      - Cybersecurity assessment on software components
-     - ``assurance/oss_assessment.rst`` (dependency audit)
+     - ``assurance/tool_confidence.rst`` (dependency audit)
    * - SWE-207
      - Identify and implement secure coding practices
      - HICPP clang-tidy, ``-fno-exceptions -fno-rtti``
@@ -132,7 +132,7 @@ Chapter 4 — Software Engineering Life Cycle Requirements
      - LunaLink Evidence
    * - SWE-050
      - Establish, capture, and maintain software requirements
-     - ``assurance/srs.rst``
+     - ``signal/shall_inventory.rst`` (requirement inventory)
    * - SWE-051
      - Perform requirements analysis from system-level requirements
      - ``signal/compliance_matrix.rst``
@@ -276,7 +276,7 @@ Key topics:
    * - 8739.8B Topic
      - LunaLink Evidence
    * - Software safety analysis
-     - ``assurance/safety_plan.rst``, ``assurance/fmea.rst``
+     - ``assurance/fmea.rst``, ``assurance/fault_coverage.rst``
    * - Fault injection / fault tolerance
      - ``assurance/fault_coverage.rst``, SWIFI suite
    * - Assurance planning
@@ -359,7 +359,7 @@ chapters:
      - ``governance/sdp.rst``
    * - Software Requirements (SWE-050–055)
      - Complete
-     - ``assurance/srs.rst``, ``signal/compliance_matrix.rst``
+     - ``signal/shall_inventory.rst``, ``signal/compliance_matrix.rst``
    * - Software Architecture (SWE-057)
      - Complete
      - ``signal/architecture.rst``
@@ -395,7 +395,7 @@ chapters:
      - ``recertify.yml``, ``task recertify``
    * - Safety Analysis
      - Complete
-     - ``assurance/safety_plan.rst``, ``assurance/fmea.rst``
+     - ``assurance/fmea.rst``, ``assurance/fault_coverage.rst``
    * - Validation on Target Platform (SWE-073)
      - Scoped to Flight
      - Digital twin only; flight target at programme adoption

@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023 Rule 5.13.4 (Required): Literal suffixes shall be upper case.
 // Expected diagnostic: hicpp-uppercase-literal-suffix
 

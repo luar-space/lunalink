@@ -1,12 +1,12 @@
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """Generate Level 1 interoperability test vectors for all 210 PRNs.
 
 Writes one ``codes_prn{NNN}.hex`` file per PRN into the target directory,
 in the standardized format defined in :mod:`lunalink.afs.vectors`.
 
 Intended to target the public ``lsis-afs-test-vectors`` repository so that
-regenerating the distribution is a one-shot command. The generator itself
-stays in the private LunaLink repo per the drip-campaign visibility plan
-(see ``docs/shaping/competition_reveal_strategy.md``).
+regenerating the distribution is a one-shot command.
 """
 
 from __future__ import annotations

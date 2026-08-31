@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """Parse JUnit XML from SWIFI test run and produce a JSON evidence artifact.
 
 Also reconciles scenario count against fault_coverage.rst.

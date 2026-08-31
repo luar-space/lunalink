@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 /*
  * G-16 — one-shot harness to extract LDPC-encoded reference codewords from
  * LANS-AFS-SIM. Run once, copy the hex output into

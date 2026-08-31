@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 /// @file time_of_transmission.cpp
 /// @brief Time of Transmission calculator per LSIS-720. [LSIS-AFS-810]
 ///

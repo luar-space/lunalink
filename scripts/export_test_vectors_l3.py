@@ -1,3 +1,5 @@
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 r"""Generate Level 3 interoperability test vectors (baseband I/Q signals).
 
 Reads ``frame_*.bin`` files from the public ``lsis-afs-test-vectors``

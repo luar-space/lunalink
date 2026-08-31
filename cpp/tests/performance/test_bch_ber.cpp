@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // ---------------------------------------------------------------------------
 // BCH(51,8) Decoder Performance Characterisation — BPSK AWGN
 //

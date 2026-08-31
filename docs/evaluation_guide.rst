@@ -45,6 +45,11 @@ deliverables to the **ESA-CCSDS Delivery Outline** requirements.
     acceptance runs.
 *   **Type Safety**: All interfaces utilize semantic wrappers (``Fid``,
     ``Toi``, ``PrnId``) to prevent human-in-the-loop errors.
+*   **Committed Results**: ``docs/assurance/evidence/`` ships the generated
+    artifacts from the submission run — ``compliance_report.json`` (per-
+    requirement pass/fail), JUnit XML for the unit/integration, E2E, WCET,
+    BER, and SWIFI suites, plus the traceability JSON — so results can be
+    inspected without running anything.
 *   **Verification Evidence**: 100% Python line coverage is CI-gated;
     C++ line/branch coverage and MC/DC evidence are tracked per
     :doc:`assurance/mission_assurance`.

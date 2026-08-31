@@ -1,3 +1,5 @@
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """Generate Level 5 interoperability test vectors (parsed JSON).
 
 Reads ``frame_*.bin`` files from the public ``lsis-afs-test-vectors``

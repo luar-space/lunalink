@@ -10,8 +10,6 @@ project. The canonical entry points are:
   certifiable flight software.
 - ``docs/assurance/traceability_matrix.rst``: Canonical requirements-to-evidence
   traceability matrix.
-- ``docs/assurance/test_procedures.rst``: Formal test procedure template and
-  examples.
 - ``docs/assurance/tool_confidence.rst``: Toolchain confidence record for
   evidence artifacts.
 - ``docs/assurance/build_policy.rst``: Flight vs non-flight build policy.

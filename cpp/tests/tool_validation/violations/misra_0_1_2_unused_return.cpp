@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023 Rule 0.1.2 (Required): The value returned by a function
 // having a non-void return type that is not an overloaded operator shall be
 // used. JPL Rule 14, Power of Ten Rule 7.

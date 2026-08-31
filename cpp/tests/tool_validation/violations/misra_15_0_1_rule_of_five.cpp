@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023 Rule 15.0.1 (Required): Special member functions shall be
 // provided appropriately (Rule of Five).
 // Expected diagnostic: cppcoreguidelines-special-member-functions

@@ -1,3 +1,5 @@
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """Byte-exact cross-check of Level 1 code vectors against LNIS Annex 3.
 
 Guards the claim that the LunaLink reference implementation produces hex

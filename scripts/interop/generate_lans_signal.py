@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """I2 — Generate I/Q signal from LANS-AFS-SIM for interoperability testing.
 
 Usage:

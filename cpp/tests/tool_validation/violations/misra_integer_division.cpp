@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // Bugprone: Integer division result used in floating-point context loses
 // precision.
 // Expected diagnostic: bugprone-integer-division

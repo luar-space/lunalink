@@ -125,7 +125,10 @@ tasks:
       - mkdir -p {{.BUILD_DIR}}
       - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release
       - cmake --build {{.BUILD_DIR}} --parallel
-      - "{{.BUILD_DIR}}/test_lunalink [channel] --reporter console"
+      - mkdir -p {{.BUILD_DIR}}/test-results
+      - >-
+        "{{.BUILD_DIR}}/test_lunalink" "[channel]" --reporter console
+        --reporter "junit::out={{.BUILD_DIR}}/ber_results.xml"
     silent: false
 
   integration:

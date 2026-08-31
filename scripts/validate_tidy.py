@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """Tool Validation Suite — clang-tidy MISRA C++:2023 enforcement verification.
 
 Part of the static analysis evidence chain for ECSS-Q-ST-80C §5.5.

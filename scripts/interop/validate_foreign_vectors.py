@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """I6 — Validate test vectors from any LSIS-AFS implementation.
 
 Checks format, dimensions, and optionally decodes foreign test vectors

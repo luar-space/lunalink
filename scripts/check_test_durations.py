@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """Fail if any test in a JUnit XML report took >threshold seconds without [slow].
 
 Routing contract: `test-cpp` filters `~[slow]` so fast tests stay fast. A test

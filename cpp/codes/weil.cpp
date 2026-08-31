@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 #include "lunalink/codes/weil.hpp"
 
 #include "lunalink/codes/legendre.hpp"
@@ -112,6 +114,10 @@ PrnStatus WeilGenerator::construct_weil(uint16_t prime,
   // for fault detection
   uint16_t t_mir = 0xFFFFU;
 
+  // Single-exit policy note: unlike bch.cpp/frame.cpp, this function uses
+  // guarded early returns for its CFI/TMR terminal checks.  Every exit path
+  // scrubs the output first, which is the property the single-exit rule
+  // exists to guarantee (see c_plus_plus_guidelines.rst "Control Flow").
   for (uint16_t t = 0; t < prime; ++t) {
     t_mir = static_cast<uint16_t>(~t);
     if (t != static_cast<uint16_t>(~t_mir)) [[unlikely]] {

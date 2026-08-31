@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 #pragma once
 
 // Shared helpers for performance benchmarks.  Keep this header dependency-light

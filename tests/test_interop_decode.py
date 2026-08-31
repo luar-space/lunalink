@@ -1,3 +1,5 @@
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """L3 Interoperability: cross-implementation signal decode.
 
 Generates I/Q from LANS-AFS-SIM (an independent third-party LSIS-AFS

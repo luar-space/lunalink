@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="lunalink_swifi_tests" errors="0" failures="0" skipped="0" tests="63245" hostname="tbd" time="0.286" timestamp="2026-08-31T14:45:43Z">
+    <properties>
+      <property name="random-seed" value="4147126076"/>
+    </properties>
+    <testcase classname="lunalink_swifi_tests.global" name="[LSIS-SISE] SWIFI: compute_sise NaN injection — kInvalidInput, output scrubbed" time="0.000" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="[LSIS-SISE] SWIFI: compute_sise Inf injection — kInvalidInput, output scrubbed" time="0.000" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="[LSIS-SISE] SWIFI: compute_sise clock term injection — NaN in ct scrubbed" time="0.000" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="[LSIS-SISE] SWIFI: compute_sise_percentile mismatched spans — kInvalidInput, output scrubbed" time="0.000" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="[LSIS-SISE] SWIFI: compute_sise_percentile NaN in data — kInvalidInput, output scrubbed" time="0.000" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="[LSIS-SISE] SWIFI: compute_sise_percentile empty data — kEmptyData, output scrubbed" time="0.000" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="[LSIS-SISE] SWIFI: compute_sise_percentile invalid percentile — kInvalidInput, output scrubbed" time="0.000" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: FI-01 — tmr_single_copy_corrupt — vote() corrects minority copy" time="0.000" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: tmr_two_of_three_different — no majority, recovery fails" time="0.000" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: tmr_two_of_three_same — wrong majority wins" time="0.000" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: FI-02 — tmr_all_copies_same_corrupt — documents residual risk" time="0.000" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: FI-03 — checked_range_force_beyond_max — next write saturates" time="0.000" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: FI-04 — cfi_guard_inject_skip — detect skipped step" time="0.000" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="[SW-SAF-03] SWIFI: FI-08 — fsm_illegal_transition — Zone 3, telemetry packet emitted" time="0.000" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: FI-09 — fsm_two_consecutive_frame_faults — escalates to kSafeMode" time="0.000" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: FI-11 — saturating_arithmetic_clamp — CheckedRange clamps out-of-range correctly" time="0.000" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: FI-12 — watchdog_lower_bound_trip — FaultPacket emitted on under-run" time="0.000" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: watchdog_upper_bound_exceeded — informational detection via inject" time="0.000" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: watchdog_zero_tick_starvation — lower-bound trip on zero ticks" time="0.000" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: watchdog_boundary_ticks — exact t_min and t_max pass" time="0.000" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: FI-10 — fsm_on_frame_fault_from_kSafeMode — FIZ-3 telemetry, stays in kSafeMode" time="0.000" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="[SW-SAF-04] SWIFI: post_step2_lut_corrupt — run_post returns {kFaultDetected, 2}" time="0.000" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="checksum-golden: print BCH, Weil, and Legendre codebook checksums" time="0.014" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="[SW-SAF-04] run_post: nominal system returns kPass" time="0.024" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: FI-05 — lut_bit_flip_ldpc_matrix — integrity check fails" time="0.001" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: ldpc_encode_forced_return — fi_force_status returns injected status" time="0.013" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: ldpc_decode_phi_mirror_corruption — TMR detects corrupted phi_sum_mir" time="0.041" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: FI-06 — aliasing_overlap_modulator — kFaultDetected before write" time="0.000" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: FI-07 — aliasing_overlap_iq_mux — kFaultDetected before write" time="0.024" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: sync_detector_cfi_skip — injected milestone skip fires kFaultDetected" time="0.002" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: sync_detector_tmr_peak — vote repairs single-copy offset corruption" time="0.003" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: sync_detector_cfi_recovery — clean detection after injected fault" time="0.005" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="[LSIS-AFS-601] SWIFI: aliasing_overlap_frame_build_partial — kFaultDetected before write" time="0.006" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="[LSIS-AFS-605] SWIFI: aliasing_overlap_frame_build — kFaultDetected before write" time="0.007" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="[LSIS-AFS-610] SWIFI: subframe_builder_cfi_milestone_skip — LDPC LUT fault skips milestone 3" time="0.004" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="[SW-SAF-01] [LSIS-AFS-606] SWIFI: frame_assembler_cfi_milestone_skip — LDPC LUT fault skips SB2 milestone" time="0.007" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: frame_decode_cfi_skip — skipped milestone fires kFaultDetected" time="0.047" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: subframe_build_sb2_forced_ldpc_fail — output scrubbed on injected failure" time="0.002" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: frame_build_forced_ldpc_fail — full frame scrubbed on injected failure" time="0.014" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: frame_decode_forced_sync_fail — workspace scrubbed on injected sync failure" time="0.024" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: frame_decode_forced_ldpc_fail — workspace scrubbed on injected LDPC failure" time="0.044" status="run"/>
+    <testcase classname="lunalink_swifi_tests.global" name="SWIFI: legendre_cbit_scrub_detect — runtime CRC matches build-time golden (self-signed, catches SEU on cache only)" time="0.003" status="run"/>
+    <system-out/>
+    <system-err/>
+  </testsuite>
+</testsuites>

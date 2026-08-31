@@ -167,7 +167,7 @@ ECSS-Q-HB-80-03A Rev.1 — Software Dependability and Safety
 Directly relevant to LunaLink's:
 
 * ``docs/assurance/fmea.rst`` — Failure Mode and Effects Analysis.
-* ``docs/assurance/safety_plan.rst`` — Software Safety Plan.
+* ``docs/assurance/fmea.rst`` + ``docs/assurance/fault_coverage.rst`` — software safety analysis and fault-coverage evidence.
 * ``docs/assurance/fault_coverage.rst`` — SWIFI fault coverage matrix.
 
 
@@ -208,7 +208,7 @@ Category B requires:
 * FMEA and software safety analysis.
 
 LunaLink's current assurance infrastructure satisfies or exceeds these
-requirements.  See ``docs/assurance/ecss_tailoring.rst`` for the full tailoring
+requirements.  See the per-requirement applicability columns in this document for the full tailoring
 record.
 
 

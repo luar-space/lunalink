@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023 Rule 7.0.6 (Required): Implicit widening of a multiplication
 // result shall not occur.
 // Expected diagnostic: bugprone-implicit-widening-of-multiplication-result

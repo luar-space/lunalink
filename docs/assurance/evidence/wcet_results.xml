@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Catch2TestRun name="test_lunalink" rng-seed="1861266749" xml-format-version="3" catch2-version="3.4.0" filters="[wcet]">
+  <TestCase name="WCET budget: BCH ML decode &lt; 3 µs" tags="[slow][wcet][wcet-budget]" filename="cpp/tests/performance/test_wcet.cpp" line="90">
+    <OverallResult success="true" skips="0"/>
+  </TestCase>
+  <TestCase name="WCET budget: sync_detect (6000 symbols) &lt; 700 µs" tags="[slow][wcet][wcet-budget]" filename="cpp/tests/performance/test_wcet.cpp" line="98">
+    <OverallResult success="true" skips="0"/>
+  </TestCase>
+  <TestCase name="WCET budget: LDPC decode SF2 (50 iter) &lt; 4 ms" tags="[slow][wcet][wcet-budget]" filename="cpp/tests/performance/test_wcet.cpp" line="115">
+    <OverallResult success="true" skips="0"/>
+  </TestCase>
+  <TestCase name="WCET budget: LDPC decode SF3 (50 iter) &lt; 5 ms" tags="[slow][wcet][wcet-budget]" filename="cpp/tests/performance/test_wcet.cpp" line="134">
+    <OverallResult success="true" skips="0"/>
+  </TestCase>
+  <TestCase name="WCET budget: frame_decode (pseudo-random payload) &lt; 20 ms" tags="[slow][wcet][wcet-budget]" filename="cpp/tests/performance/test_wcet.cpp" line="154">
+    <OverallResult success="true" skips="0"/>
+  </TestCase>
+  <TestCase name="Gateway 2: WCET Analysis" tags="[slow][wcet]" filename="cpp/tests/performance/test_wcet.cpp" line="198">
+    <BenchmarkResults name="LDPC encode SF2" samples="100" resamples="100000" iterations="1" clockResolution="27.4569" estimatedDuration="8.24595e+07">
+      <!-- All values in nano seconds -->
+      <mean value="794446" lowerBound="771870" upperBound="877663" ci="0.95"/>
+      <standardDeviation value="193697" lowerBound="55310.1" upperBound="441946" ci="0.95"/>
+      <outliers variance="0.957578" lowMild="0" lowSevere="0" highMild="6" highSevere="14"/>
+    </BenchmarkResults>
+    <BenchmarkResults name="LDPC decode SF2 (50 iter)" samples="100" resamples="100000" iterations="1" clockResolution="27.4569" estimatedDuration="8.11623e+07">
+      <!-- All values in nano seconds -->
+      <mean value="754641" lowerBound="729416" upperBound="816211" ci="0.95"/>
+      <standardDeviation value="188394" lowerBound="89150.3" upperBound="355501" ci="0.95"/>
+      <outliers variance="0.967641" lowMild="3" lowSevere="0" highMild="3" highSevere="7"/>
+    </BenchmarkResults>
+    <BenchmarkResults name="BCH ML decode" samples="100" resamples="100000" iterations="35" clockResolution="27.4569" estimatedDuration="2.807e+06">
+      <!-- All values in nano seconds -->
+      <mean value="991.244" lowerBound="990.949" upperBound="992.197" ci="0.95"/>
+      <standardDeviation value="2.42506" lowerBound="0.873896" upperBound="5.43067" ci="0.95"/>
+      <outliers variance="0.0099" lowMild="2" lowSevere="0" highMild="0" highSevere="1"/>
+    </BenchmarkResults>
+    <OverallResult success="true" skips="0"/>
+  </TestCase>
+  <TestCase name="Gateway 5: Sync Detector WCET" tags="[slow][wcet]" filename="cpp/tests/performance/test_wcet.cpp" line="224">
+    <BenchmarkResults name="sync_detect (6000 symbols)" samples="100" resamples="100000" iterations="1" clockResolution="27.4569" estimatedDuration="1.64942e+07">
+      <!-- All values in nano seconds -->
+      <mean value="202513" lowerBound="166774" upperBound="335323" ci="0.95"/>
+      <standardDeviation value="310211" lowerBound="53732" upperBound="713290" ci="0.95"/>
+      <outliers variance="0.989935" lowMild="0" lowSevere="0" highMild="0" highSevere="2"/>
+    </BenchmarkResults>
+    <OverallResult success="true" skips="0"/>
+  </TestCase>
+  <TestCase name="Gateway 2: LDPC Decode Throughput" tags="[slow][wcet]" filename="cpp/tests/performance/test_wcet.cpp" line="242">
+    <Section name="SF2 — alpha sweep throughput" filename="cpp/tests/performance/test_wcet.cpp" line="243">
+      <BenchmarkResults name="LDPC decode SF2 sum-product" samples="100" resamples="100000" iterations="1" clockResolution="27.4569" estimatedDuration="1.54625e+08">
+        <!-- All values in nano seconds -->
+        <mean value="1.49988e+06" lowerBound="1.45379e+06" upperBound="1.5491e+06" ci="0.95"/>
+        <standardDeviation value="241603" lowerBound="215210" upperBound="311026" ci="0.95"/>
+        <outliers variance="0.914903" lowMild="0" lowSevere="0" highMild="1" highSevere="0"/>
+      </BenchmarkResults>
+      <OverallResults successes="0" failures="0" expectedFailures="0" skipped="false"/>
+    </Section>
+    <Section name="SF3 — baseline throughput" filename="cpp/tests/performance/test_wcet.cpp" line="257">
+      <BenchmarkResults name="LDPC decode SF3 alpha=0.75" samples="100" resamples="100000" iterations="1" clockResolution="27.4569" estimatedDuration="1.12238e+08">
+        <!-- All values in nano seconds -->
+        <mean value="1.22751e+06" lowerBound="1.16065e+06" upperBound="1.32383e+06" ci="0.95"/>
+        <standardDeviation value="403465" lowerBound="305203" upperBound="570086" ci="0.95"/>
+        <outliers variance="0.978611" lowMild="0" lowSevere="0" highMild="2" highSevere="6"/>
+      </BenchmarkResults>
+      <OverallResults successes="0" failures="0" expectedFailures="0" skipped="false"/>
+    </Section>
+    <OverallResult success="true" skips="0"/>
+  </TestCase>
+  <TestCase name="Gateway 5: frame_decode WCET" tags="[slow][wcet]" filename="cpp/tests/performance/test_wcet.cpp" line="270">
+    <BenchmarkResults name="frame_decode (all-zeros)" samples="100" resamples="100000" iterations="1" clockResolution="27.4569" estimatedDuration="2.94405e+08">
+      <!-- All values in nano seconds -->
+      <mean value="3.21342e+06" lowerBound="2.95711e+06" upperBound="3.93428e+06" ci="0.95"/>
+      <standardDeviation value="2.01749e+06" lowerBound="864204" upperBound="4.31155e+06" ci="0.95"/>
+      <outliers variance="0.989611" lowMild="0" lowSevere="0" highMild="2" highSevere="7"/>
+    </BenchmarkResults>
+    <BenchmarkResults name="frame_decode (all-ones)" samples="100" resamples="100000" iterations="1" clockResolution="27.4569" estimatedDuration="4.27943e+08">
+      <!-- All values in nano seconds -->
+      <mean value="4.03227e+06" lowerBound="3.85824e+06" upperBound="4.30537e+06" ci="0.95"/>
+      <standardDeviation value="1.09287e+06" lowerBound="773375" upperBound="1.56841e+06" ci="0.95"/>
+      <outliers variance="0.967999" lowMild="0" lowSevere="0" highMild="2" highSevere="3"/>
+    </BenchmarkResults>
+    <BenchmarkResults name="frame_decode (pseudo-random)" samples="100" resamples="100000" iterations="1" clockResolution="27.4569" estimatedDuration="4.24235e+08">
+      <!-- All values in nano seconds -->
+      <mean value="4.03423e+06" lowerBound="3.89379e+06" upperBound="4.21775e+06" ci="0.95"/>
+      <standardDeviation value="815687" lowerBound="641356" upperBound="1.1413e+06" ci="0.95"/>
+      <outliers variance="0.946551" lowMild="0" lowSevere="0" highMild="1" highSevere="1"/>
+    </BenchmarkResults>
+    <OverallResult success="true" skips="0"/>
+  </TestCase>
+  <OverallResults successes="5" failures="0" expectedFailures="0" skips="0"/>
+  <OverallResultsCases successes="9" failures="0" expectedFailures="0" skips="0"/>
+</Catch2TestRun>

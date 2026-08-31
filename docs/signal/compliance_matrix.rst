@@ -5,6 +5,18 @@ This matrix tracks the implementation status of every requirement in the
 LSIS-AFS Specification (LSIS V1.0), organized by the competition's
 8-Gateway structure.
 
+.. note::
+
+   **Requirement-ID schemes.** Two complementary ID families appear across
+   the project.  *Specification-level* IDs (``LSIS-110``, ``LSIS-FID0-467``,
+   …) — used in this matrix and in :doc:`shall_inventory` — enumerate the
+   spec's "shall" statements by gateway.  *Implementation-level* tags
+   (``[LSIS-AFS-101]``, ``[LSIS-AFS-501]``, …) — used in source code, test
+   names, and :doc:`../assurance/traceability_matrix` — identify the
+   functions that implement them, and are what the CI traceability gate
+   enforces.  The shall inventory carries the mapping: each of its rows
+   cites the implementing ``[LSIS-AFS-*]`` tag in its evidence column.
+
 Gateway 1: Spreading Code Generation
 -------------------------------------
 
@@ -61,9 +73,9 @@ Gateway 2: Forward Error Correction
      - ✅
      - Implemented [Hardened]; CSR-hardened; H·c=0 self-check
    * - LSIS-321
-     - LDPC(1200,600) Decoder (Layered NMS BP, Q8.7 fixed-point)
+     - LDPC Decoder (Layered Sum-Product BP, float64)
      - ✅
-     - Implemented [Hardened]; NMS α=0.75; BER waterfall verified
+     - Implemented [Hardened]; BER waterfall verified (``ldpc_performance``)
    * - LSIS-330
      - Block Interleaving for SB2-SB4 (60×98)
      - ✅

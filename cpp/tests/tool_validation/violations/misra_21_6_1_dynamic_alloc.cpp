@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023 Rule 21.6.1 (Advisory, treated as Required by LunaLink):
 // Dynamic memory should not be used.
 // JPL Rule 5, Power of Ten Rule 3.

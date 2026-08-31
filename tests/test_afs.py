@@ -1,3 +1,5 @@
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """Tests for AFS signal generation (C1–C5)."""
 
 import os
@@ -73,6 +75,7 @@ from lunalink.afs import (
     sync_detect,
     weil1500_code,
     weil10230_code,
+    write_iq_csv,
     write_iq_file,
 )
 
@@ -134,7 +137,7 @@ class TestPrnCode:
         """Different PRN IDs produce different sequences."""
         assert not np.array_equal(prn_code(1), prn_code(2))
 
-    def test_out_of_range_raises(self):
+    def test_out_of_range_saturates(self):
         """Out-of-range PRN IDs are saturated safely (C-Pattern 4)."""
         # PRN 0 -> saturates to 1
         chips0 = prn_code(0)
@@ -167,7 +170,7 @@ class TestWeil10230Code:
         """Different PRN IDs produce different sequences."""
         assert not np.array_equal(weil10230_code(1), weil10230_code(2))
 
-    def test_out_of_range_raises(self):
+    def test_out_of_range_saturates(self):
         """Out-of-range PRN IDs are saturated safely (C-Pattern 4)."""
         chips0 = weil10230_code(0)  # saturates to 1
         assert chips0.shape == (10230,)
@@ -198,7 +201,7 @@ class TestWeil1500Code:
         """Different PRN IDs produce different sequences."""
         assert not np.array_equal(weil1500_code(1), weil1500_code(2))
 
-    def test_out_of_range_raises(self):
+    def test_out_of_range_saturates(self):
         """Out-of-range PRN IDs are saturated safely (C-Pattern 4)."""
         chips0 = weil1500_code(0)  # saturates to 1
         assert chips0.shape == (1500,)
@@ -270,7 +273,7 @@ class TestMatchedCodeEpoch:
         assert INTERIM_ASSIGNMENT_MAX_PRN == 12
         assert TERTIARY_CODE_LENGTH == 1500
 
-    def test_out_of_range_raises(self):
+    def test_out_of_range_saturates(self):
         """Out-of-range inputs are saturated safely (C-Pattern 4)."""
         # PRN 0 -> saturates to 1
         chips = matched_code_epoch(0, 0)
@@ -658,6 +661,48 @@ class TestWriteIqFile:
         try:
             write_iq_file(path, iq, AFS_Q_CHIP_RATE, 1, duration_s=0.002)
             assert os.path.getsize(path) == 128 + 10230 * 2 * 4
+        finally:
+            os.unlink(path)
+
+
+class TestWriteIqCsv:
+    """Tests for write_iq_csv (CSV I/Q export for analysis, FR-3.5)."""
+
+    def test_roundtrip_values(self):
+        """CSV rows reproduce the sample index and I/Q values."""
+        iq = np.array([[1.0, 0.5], [-1.0, -0.5], [0.25, 0.0]], dtype=np.float32)
+        with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as f:
+            path = f.name
+        try:
+            write_iq_csv(path, iq)
+            back = np.loadtxt(path, delimiter=",", skiprows=1)
+            assert back.shape == (3, 3)
+            np.testing.assert_array_equal(back[:, 0], [0.0, 1.0, 2.0])
+            np.testing.assert_allclose(back[:, 1:], iq, rtol=1e-6)
+        finally:
+            os.unlink(path)
+
+    def test_header_row(self):
+        """First line is the sample,i,q column header."""
+        iq = np.array([[1.0, 0.0]], dtype=np.float32)
+        with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as f:
+            path = f.name
+        try:
+            write_iq_csv(path, iq)
+            with open(path) as f:
+                assert f.readline().strip() == "sample,i,q"
+        finally:
+            os.unlink(path)
+
+    def test_wrong_shape_raises(self):
+        """1D input raises TypeCheckError."""
+        from jaxtyping import TypeCheckError
+
+        with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as f:
+            path = f.name
+        try:
+            with pytest.raises(TypeCheckError, match="iq_data"):
+                write_iq_csv(path, np.zeros(100, dtype=np.float32))
         finally:
             os.unlink(path)
 

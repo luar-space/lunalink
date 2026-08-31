@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """Cross-architecture build & test orchestrator.
 
 Uses Docker buildx + QEMU emulation to build and test the C++ core on

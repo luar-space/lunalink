@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023 Rule 8.7.1 (Required): Array indexing shall only be done
 // with constant expressions.
 // Expected diagnostic: cppcoreguidelines-pro-bounds-constant-array-index

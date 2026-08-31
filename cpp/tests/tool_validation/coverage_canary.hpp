@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // coverage_canary.hpp — Tool Validation: known-coverage canary functions.
 //
 // These functions have KNOWN coverage properties. The tool validation suite

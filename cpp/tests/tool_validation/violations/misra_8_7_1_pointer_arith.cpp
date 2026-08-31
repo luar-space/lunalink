@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023 Rule 8.7.1 (Required): Pointer arithmetic shall not be used.
 // JPL Rule 26, Power of Ten Rule 9.
 // Expected diagnostic: cppcoreguidelines-pro-bounds-pointer-arithmetic

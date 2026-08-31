@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """Generate a build manifest capturing binary hashes, compiler info, and flags.
 
 Usage:

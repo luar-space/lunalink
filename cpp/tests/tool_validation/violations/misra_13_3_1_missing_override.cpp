@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023 Rule 13.3.1 (Required): An overriding function shall be
 // declared with the override or final specifier.
 // Expected diagnostic: modernize-use-override

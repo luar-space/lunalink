@@ -1,3 +1,5 @@
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """Generate Level-2/3 FEC component test vectors (Phase 3) — full, byte-exact.
 
 Writes four JSON files into ``<output_dir>`` (typically the ``fec/`` subdir of

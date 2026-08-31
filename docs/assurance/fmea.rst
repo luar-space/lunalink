@@ -391,8 +391,8 @@ FMEA Table — State Machine & System-Level (top-level signal chain FSM)
      - **Implemented** — ``WindowedWatchdog`` class in ``watchdog.hpp``; lower-bound
        trip emits ``FaultPacket(fiz_level=2)``; 4 SWIFI scenarios (FI-12, FI-32–34)
        cover under-run, over-run, starvation, and exact-boundary conditions.
-       WCET-derived lower and upper thresholds documented in
-       ``assurance/wcet_profile.rst``.  Lower-bound trip treated as Critical Fault;
+       WCET-derived lower and upper thresholds documented in the CI-generated
+       WCET profile report (``task wcet``).  Lower-bound trip treated as Critical Fault;
        Zone 3 response.
    * - FM-034
      - CFI binary identity (SCI header) corrupt at boot

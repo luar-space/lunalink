@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // Bounds-checked array access: all workspace array indices are validated by
 // precondition checks (bounds_ok, K_nominal, K_full) before use. Suppressing
 // constant-array-index for workspace member access is intentional.

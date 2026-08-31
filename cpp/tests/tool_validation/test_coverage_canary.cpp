@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // test_coverage_canary.cpp — Tool Validation: coverage canary tests.
 //
 // These tests exercise SPECIFIC paths in coverage_canary.hpp to create

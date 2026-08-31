@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """Create the next semver tag based on the latest v* tag reachable from HEAD."""
 
 from __future__ import annotations

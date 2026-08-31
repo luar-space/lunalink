@@ -20,7 +20,7 @@ imposes requirements at least as stringent as the corresponding NPR SWE requirem
 This addendum enables evaluators familiar with the NASA framework to locate compliance
 evidence without navigating the ECSS structure directly.
 
-For the ECSS tailoring decisions themselves, see ``docs/assurance/ecss_tailoring.rst``
+For the ECSS tailoring decisions themselves, see ``docs/standards/esa/ecss_standards.rst``
 (LUNALINK-ECSS-TAIL-001).
 
 Compliance Matrix
@@ -48,7 +48,7 @@ Compliance Matrix
    * - SWE-027
      - Software Safety Plan
      - Q-ST-80C §5.3/§5.5
-     - ``assurance/safety_plan.rst``
+     - ``assurance/fmea.rst``, ``assurance/fault_coverage.rst``
      - Satisfied
    * - SWE-028
      - Software FMEA — failure mode enumeration
@@ -68,7 +68,7 @@ Compliance Matrix
    * - SWE-050
      - COTS/OSS Assessment
      - Q-ST-80C §5.7
-     - ``assurance/oss_assessment.rst``
+     - ``assurance/tool_confidence.rst``
      - Satisfied
    * - SWE-058
      - Detailed Design
@@ -78,7 +78,7 @@ Compliance Matrix
    * - SWE-070
      - OSS Version Control & Licence
      - Q-ST-80C §5.7
-     - ``assurance/oss_assessment.rst``
+     - ``assurance/tool_confidence.rst``
      - Satisfied
    * - SWE-074
      - Configuration Management (technical)
@@ -98,7 +98,7 @@ Compliance Matrix
    * - SWE-083
      - Software Requirements Specification
      - E-ST-40C §5.3
-     - ``assurance/srs.rst``
+     - ``signal/shall_inventory.rst``
      - Satisfied
    * - SWE-088
      - Requirements Traceability
@@ -189,8 +189,8 @@ Four SWE requirements (SWE-020, SWE-079, SWE-121, SWE-155) require programme off
 infrastructure — independent review teams, a formal Change Control Board, IV&V
 contractors, and physical configuration audits.  These are structurally outside the
 scope of a development team acting alone and are documented in full in
-``docs/assurance/certification_delta.rst`` and the ECSS tailoring record
-(``docs/assurance/ecss_tailoring.rst``).
+the SDP (``docs/governance/sdp.rst``) and the ECSS tailoring record
+(``docs/standards/esa/ecss_standards.rst``).
 
 The technical artefacts required by these SWEs are in place and structured for
 immediate consumption by a programme office upon flight adoption.

@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023: Object slicing shall not occur when passing a derived class
 // object to a function accepting a base class by value.
 // Expected diagnostic: cppcoreguidelines-slicing

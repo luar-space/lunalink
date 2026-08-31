@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // FFT microbenchmark — A1.V2 of the FFT acceleration plan.
 //
 // See docs/shaping/cislunar_nav/fft-acceleration.md.

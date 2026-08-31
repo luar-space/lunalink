@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023 Rule 10.1.1 (Advisory): A parameter that is not modified
 // should be declared const.
 // Expected diagnostic: readability-non-const-parameter

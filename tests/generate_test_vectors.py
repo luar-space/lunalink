@@ -1,3 +1,5 @@
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """LSIS-AFS interoperability test vector generator.
 
 Generates test vectors per docs/references/interoperability.pdf.

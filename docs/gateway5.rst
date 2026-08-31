@@ -190,7 +190,7 @@ Pipeline stages
    4. Split into SB2 (1960) + SB3 (1960) + SB4 (1960) codewords
      |
      v
-   5. LDPC decode (NMS, Q8.7 fixed-point) per subframe
+   5. LDPC decode (layered sum-product BP) per subframe
      |
      v
    6. CRC-24Q verify per subframe (gated on LDPC convergence)
@@ -439,7 +439,7 @@ Compliance Cross-Reference
      - BCH(51,8) soft decode of SB1
      - ``frame_decode.cpp`` stage 2 + ``bch.cpp``
    * - |sec|\ 2.4.3 LDPC
-     - LDPC(1/2) decode SF2/SF3/SF4 (NMS, Q8.7)
+     - LDPC(1/2) decode SF2/SF3/SF4 (sum-product BP)
      - ``frame_decode.cpp`` stage 5 + ``ldpc.cpp``
    * - |sec|\ 2.4.4 Interleave
      - 60\ |x|\ 98 soft deinterleaver
@@ -485,8 +485,8 @@ Test Summary
      - 2
      - ``[performance][benchmark]``
      - ``task test-performance``
-   * - SWIFI (GD5 scenarios: FI-16, FI-19 to FI-23)
-     - 6
+   * - SWIFI (GD5 scenarios: FI-19 to FI-23)
+     - 5
      - ``[swifi]``
      - ``task swifi``
 
@@ -499,7 +499,7 @@ Related documents:
 -  :doc:`signal/icd` --- formal interface control document
 -  :doc:`assurance/mission_assurance` --- CFI, TMR, scrubbing patterns
 -  :doc:`assurance/fmea` --- FM-055 to FM-066 (sync, frame decode)
--  :doc:`assurance/fault_coverage` --- FI-16, FI-19 to FI-23 SWIFI catalogue
+-  :doc:`assurance/fault_coverage` --- FI-19 to FI-23 SWIFI catalogue
 
 .. |rarr| unicode:: U+2192
 .. |x| unicode:: U+00D7

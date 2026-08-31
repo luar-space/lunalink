@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 #pragma once
 /// @file file_format.hpp
 /// @brief LSIS-AFS binary file format definitions (file_format_headers.csv).

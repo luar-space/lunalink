@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // N7 Space coding standard: Large parameters should be passed by const
 // reference, not by value.
 // Expected diagnostic: performance-unnecessary-value-param

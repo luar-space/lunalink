@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """V1 demo: Gold-2046 chip sequence and power spectrum for AFS-I.
 
 Generates the AFS-I BPSK(1) signal for PRN 1, plots the chip sequence

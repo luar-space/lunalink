@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 #include "lunalink/messages/frame.hpp"
 #include "lunalink/messages/frame_decode.hpp"
 #include "lunalink/messages/message_parser.hpp"

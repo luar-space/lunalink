@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """Generate a seed corpus for the libFuzzer harnesses in ``cpp/fuzz/``.
 
 Each harness interprets its raw input in a specific way (see the harness

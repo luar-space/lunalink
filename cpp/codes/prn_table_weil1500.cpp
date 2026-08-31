@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 #include "lunalink/codes/prn_table_weil1500.hpp"
 
 #include "lunalink/core/safety.hpp"

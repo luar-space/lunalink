@@ -1,0 +1,685 @@
+{
+  "title": "LSIS-AFS Compliance Report",
+  "document_id": "LUNALINK-COMPLIANCE-001",
+  "generated_by": "scripts/compliance_report.py",
+  "junit_files": [
+    "/Users/marco/code/lunalink-oss/build/test_results.xml",
+    "/Users/marco/code/lunalink-oss/build/test_e2e.xml",
+    "/Users/marco/code/lunalink-oss/build/swifi-ninja/swifi_results.xml"
+  ],
+  "total_test_cases": 320,
+  "requirements": [
+    {
+      "id": "LSIS-AFS-101",
+      "test_files": [
+        "cpp/tests/codes/test_prn.cpp",
+        "cpp/tests/codes/test_prn_generators.cpp"
+      ],
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/codes/gold.hpp",
+        "cpp/include/lunalink/codes/prn.hpp"
+      ],
+      "matched_tests": [
+        "[LSIS-AFS-101] gold_prn returns distinct sequences for different PRNs",
+        "[LSIS-AFS-101] gold_prn PRN 1 first byte matches reference",
+        "[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/Gold-2046: All 210 PRNs",
+        "[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/Weil-10230: Generator produces valid binary output",
+        "[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/Weil-1500: Generator produces valid binary output",
+        "[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/Generator error paths",
+        "[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/PRN 38 generates successfully (was zeroed placeholder, now fixed)"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-AFS-102",
+      "test_files": [
+        "cpp/tests/codes/test_prn.cpp",
+        "cpp/tests/codes/test_prn_generators.cpp"
+      ],
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/codes/prn.hpp",
+        "cpp/include/lunalink/codes/weil.hpp"
+      ],
+      "matched_tests": [
+        "[LSIS-AFS-102] weil10230_prn returns distinct sequences for different PRNs",
+        "[LSIS-AFS-102] weil10230_prn PRN 1 first chips match reference",
+        "[LSIS-AFS-102] weil1500_prn returns distinct sequences for different PRNs",
+        "[LSIS-AFS-102] weil1500_prn PRN 1 first byte matches reference",
+        "[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/Gold-2046: All 210 PRNs",
+        "[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/Weil-10230: Generator produces valid binary output",
+        "[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/Weil-1500: Generator produces valid binary output",
+        "[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/Generator error paths",
+        "[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/PRN 38 generates successfully (was zeroed placeholder, now fixed)"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-AFS-201",
+      "test_files": [
+        "cpp/tests/signal/test_modulator.cpp"
+      ],
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/signal/modulator.hpp"
+      ],
+      "matched_tests": [
+        "[LSIS-AFS-201] modulate_bpsk_i chip mapping with +1 symbol",
+        "[LSIS-AFS-201] modulate_bpsk_i chip mapping with -1 symbol",
+        "[LSIS-AFS-201] modulate_bpsk_i full PRN 1 all values in {-1, +1}",
+        "[LSIS-AFS-201] modulate_bpsk_i returns explicit error status",
+        "[LSIS-AFS-201] modulate_bpsk_i rejects invalid data symbol",
+        "[LSIS-AFS-201] modulate_bpsk_i rejects non-binary chips"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-AFS-300",
+      "test_files": [
+        "cpp/tests/messages/test_frame.cpp"
+      ],
+      "code_files": [
+        "cpp/messages/frame.cpp",
+        "cpp/messages/message_parser.cpp"
+      ],
+      "matched_tests": [
+        "[LSIS-AFS-300] SB2 builder enforces LSIS-300 pattern regardless of caller input",
+        "[LSIS-AFS-300] frame_build emits LSIS-300 pattern in the SB2 spare region"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-AFS-301",
+      "test_files": [
+        "cpp/tests/signal/test_iq_mux.cpp"
+      ],
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/signal/iq_mux.hpp",
+        "cpp/include/lunalink/signal/signal_gen.hpp",
+        "cpp/signal/iq_mux.cpp"
+      ],
+      "matched_tests": [
+        "[LSIS-AFS-301] multiplex_iq upsamples I by factor 5",
+        "[LSIS-AFS-301] multiplex_iq Q channel passes through at chip rate",
+        "[LSIS-AFS-301] multiplex_iq output length is 2 * 10230 interleaved",
+        "[LSIS-AFS-301] multiplex_iq 50/50 power: I and Q have equal amplitude",
+        "[LSIS-AFS-301] multiplex_iq rejects undersized inputs and outputs",
+        "[LSIS-AFS-301] multiplex_iq rejects invalid sample values"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-AFS-320",
+      "test_files": [
+        "cpp/tests/encoding/test_ldpc.cpp"
+      ],
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/encoding/ldpc_tables.cpp",
+        "cpp/include/lunalink/encoding/ldpc.hpp",
+        "cpp/include/lunalink/encoding/ldpc_tables.hpp",
+        "cpp/include/lunalink/messages/message_parser.hpp",
+        "cpp/messages/message_parser.cpp"
+      ],
+      "matched_tests": [
+        "[LSIS-AFS-320] LDPC Encoder: bit-exact vs LANS-AFS-SIM reference",
+        "[LSIS-AFS-320] LDPC Encoder: basic execution/SF2 Encoding",
+        "[LSIS-AFS-320] LDPC Encoder: basic execution/SF3 Encoding",
+        "[LSIS-AFS-320] LDPC Encoder: basic execution/SF4 Encoding",
+        "[LSIS-AFS-320] LDPC Encoder: error paths",
+        "[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF2 - All Zeros (linear code property)",
+        "[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF2 - Alternating pattern",
+        "[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF3 - All Zeros",
+        "[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF3 - Alternating pattern",
+        "[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF4 - Alternating pattern (reuses SF3 matrices)",
+        "[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF2 - Custom alpha (5/8 = 0.625)",
+        "[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF2 - Decoder returns kNotConverged on corrupted input"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-AFS-321",
+      "test_files": [
+        "cpp/tests/encoding/test_ldpc.cpp"
+      ],
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/encoding/ldpc.cpp",
+        "cpp/include/lunalink/encoding/ldpc.hpp"
+      ],
+      "matched_tests": [
+        "[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF2 - All Zeros (linear code property)",
+        "[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF2 - Alternating pattern",
+        "[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF3 - All Zeros",
+        "[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF3 - Alternating pattern",
+        "[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF4 - Alternating pattern (reuses SF3 matrices)",
+        "[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF2 - Custom alpha (5/8 = 0.625)",
+        "[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF2 - Decoder returns kNotConverged on corrupted input"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-AFS-401",
+      "test_files": [
+        "cpp/tests/codes/test_matched_code.cpp"
+      ],
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/codes/matched_code.cpp",
+        "cpp/include/lunalink/codes/matched_code.hpp"
+      ],
+      "matched_tests": [
+        "[LSIS-AFS-401] secondary_code_index cycles through S0-S3",
+        "[LSIS-AFS-401] secondary codes match spec Table 10",
+        "[LSIS-AFS-401] matched_code_epoch equals primary XOR secondary XOR tertiary",
+        "[LSIS-AFS-401] matched_code_epoch differs across secondary code boundary",
+        "[LSIS-AFS-401] matched_code_epoch changes across tertiary chip boundary",
+        "[LSIS-AFS-401] matched_code_epoch different PRNs produce different sequences",
+        "[LSIS-AFS-401] default interim mapping only applies to PRN 1-12",
+        "[LSIS-AFS-401] matched_code_epoch_checked rejects invalid inputs",
+        "[LSIS-AFS-401] matched_code_epoch_checked supports tertiary phase offset",
+        "[LSIS-AFS-401] Matched Code Coherency (LSIS-172)"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-AFS-467",
+      "test_files": [
+        "cpp/tests/encoding/test_crc.cpp"
+      ],
+      "code_files": [
+        "cpp/include/lunalink/encoding/crc.hpp"
+      ],
+      "matched_tests": [
+        "[LSIS-AFS-467] CRC-24: Basic correctness"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-AFS-470",
+      "test_files": [
+        "cpp/tests/encoding/test_interleaver.cpp"
+      ],
+      "code_files": [
+        "cpp/include/lunalink/encoding/interleaver.hpp"
+      ],
+      "matched_tests": [
+        "[LSIS-AFS-470][LSIS-AFS-471] Block Interleaver: Round-trip correctness"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-AFS-471",
+      "test_files": [
+        "cpp/tests/encoding/test_interleaver.cpp"
+      ],
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/encoding/interleaver.cpp",
+        "cpp/include/lunalink/encoding/interleaver.hpp"
+      ],
+      "matched_tests": [
+        "[LSIS-AFS-470][LSIS-AFS-471] Block Interleaver: Round-trip correctness"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-AFS-501",
+      "test_files": [
+        "cpp/tests/encoding/test_bch.cpp"
+      ],
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/encoding/bch.hpp"
+      ],
+      "matched_tests": [
+        "[LSIS-AFS-501] BCH decoder: zero errors",
+        "[LSIS-AFS-501] BCH decoder: single error correction",
+        "[LSIS-AFS-501] BCH decoder: double error correction (all 1326 pairs)",
+        "[LSIS-AFS-501] BCH codebook exhaustive check",
+        "[LSIS-AFS-501] BCH soft decoder: clean symbols",
+        "[LSIS-AFS-501] BCH soft decoder: noisy symbols corrected",
+        "[LSIS-AFS-501] BCH soft decoder: exhaustive codebook",
+        "[LSIS-AFS-501] BCH spec test vector: Figure 8 (FID=0, TOI=69)"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-AFS-601",
+      "test_files": [
+        "cpp/tests/messages/test_frame.cpp",
+        "cpp/tests/messages/test_swifi_messages.cpp"
+      ],
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/messages/frame.hpp",
+        "cpp/messages/frame.cpp"
+      ],
+      "matched_tests": [
+        "[LSIS-AFS-601] frame_build_partial returns kOk for valid inputs",
+        "[LSIS-AFS-601] frame_build_partial SB1 region matches standalone bch_encode",
+        "[LSIS-AFS-601] frame_build_partial SB1 with spec test vector (FID=0, TOI=69)",
+        "[LSIS-AFS-601] frame_build_partial SB2-SB4 region is zero-padded",
+        "[LSIS-AFS-601] frame_build_partial exhaustive FID x TOI",
+        "[LSIS-AFS-601] SWIFI: aliasing_overlap_frame_build_partial \u2014 kFaultDetected before write"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-AFS-602",
+      "test_files": [
+        "cpp/tests/messages/test_frame.cpp"
+      ],
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/messages/frame.hpp"
+      ],
+      "matched_tests": [
+        "[LSIS-AFS-602] subframe_build_sb2 returns kOk for zero data",
+        "[LSIS-AFS-602] subframe_build_sb2 output is binary",
+        "[LSIS-AFS-602] subframe_build_sb2 round-trip: encode, decode, verify CRC"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-AFS-603",
+      "test_files": [
+        "cpp/tests/messages/test_frame.cpp"
+      ],
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/messages/frame.hpp"
+      ],
+      "matched_tests": [
+        "[LSIS-AFS-603] subframe_build_sb3 returns kOk for zero data",
+        "[LSIS-AFS-603] subframe_build_sb3 round-trip: encode, decode, verify CRC"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-AFS-604",
+      "test_files": [
+        "cpp/tests/messages/test_frame.cpp"
+      ],
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/messages/frame.hpp"
+      ],
+      "matched_tests": [
+        "[LSIS-AFS-604] subframe_build_sb4 returns kOk for zero data",
+        "[LSIS-AFS-604] subframe_build_sb4 round-trip: encode, decode, verify CRC"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-AFS-605",
+      "test_files": [
+        "cpp/tests/messages/test_frame.cpp",
+        "cpp/tests/messages/test_swifi_messages.cpp"
+      ],
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/messages/frame.hpp"
+      ],
+      "matched_tests": [
+        "[LSIS-AFS-605] frame_build returns kOk for valid inputs",
+        "[LSIS-AFS-605] frame_build all symbols are binary",
+        "[LSIS-AFS-605] frame_build SB1 region matches standalone bch_encode",
+        "[LSIS-AFS-605] frame_build accepts all valid FID values",
+        "[LSIS-AFS-605] frame_build payload round-trip: deinterleave, decode, verify",
+        "[LSIS-AFS-605] SWIFI: aliasing_overlap_frame_build \u2014 kFaultDetected before write"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-AFS-606",
+      "test_files": [
+        "cpp/tests/messages/test_swifi_messages.cpp"
+      ],
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/messages/frame.hpp"
+      ],
+      "matched_tests": [
+        "[SW-SAF-01] [LSIS-AFS-606] SWIFI: frame_assembler_cfi_milestone_skip \u2014 LDPC LUT fault skips SB2 milestone"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-AFS-610",
+      "test_files": [
+        "cpp/tests/messages/test_swifi_messages.cpp"
+      ],
+      "code_files": [
+        "cpp/messages/frame.cpp"
+      ],
+      "matched_tests": [
+        "[LSIS-AFS-610] SWIFI: subframe_builder_cfi_milestone_skip \u2014 LDPC LUT fault skips milestone 3"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-AFS-710",
+      "test_files": [
+        "cpp/tests/signal/test_sync_detector.cpp"
+      ],
+      "code_files": [
+        "cpp/include/lunalink/signal/sync_detector.hpp",
+        "cpp/signal/sync_detector.cpp"
+      ],
+      "matched_tests": [
+        "[LSIS-AFS-710] SyncDetector: detects sync pattern at start of frame",
+        "[LSIS-AFS-710] SyncDetector: detects sync pattern at arbitrary offset",
+        "[LSIS-AFS-710] SyncDetector: detects sync in moderate noise"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-AFS-720",
+      "test_files": [
+        "cpp/tests/integration/test_e2e.cpp",
+        "cpp/tests/messages/test_frame.cpp"
+      ],
+      "code_files": [
+        "cpp/include/lunalink/messages/frame_decode.hpp",
+        "cpp/messages/frame_decode.cpp"
+      ],
+      "matched_tests": [
+        "[LSIS-AFS-720] frame_decode: clean round-trip recovers data",
+        "[LSIS-AFS-720] frame_decode: clean round-trip with offset",
+        "[LSIS-AFS-720] E2E round-trip: TX \u2192 AWGN \u2192 RX \u2192 bit-exact recovery"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-AFS-801",
+      "test_files": [
+        "cpp/tests/messages/test_message_parser.cpp"
+      ],
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/messages/message_parser.hpp",
+        "cpp/messages/message_parser.cpp"
+      ],
+      "matched_tests": [
+        "[LSIS-AFS-801][messages] extract_bits basic",
+        "[LSIS-AFS-801][messages] extract_bits at offset",
+        "[LSIS-AFS-801][messages] extract_bits single bit",
+        "[LSIS-AFS-801][messages] extract_bits 32 bits",
+        "[LSIS-AFS-801][messages] extract_bits out of bounds",
+        "[LSIS-AFS-801][messages] extract_bits zero n_bits",
+        "[LSIS-AFS-801][messages] extract_bits invalid bit value",
+        "[LSIS-AFS-801][messages] parse_sb2 extracts WN and ITOW",
+        "[LSIS-AFS-801][messages] parse_sb2 boundary WN=8191 ITOW=503",
+        "[LSIS-AFS-801][messages] parse_sb2 zero values",
+        "[LSIS-AFS-801][messages] parse_sb2 wrong size",
+        "[LSIS-AFS-801][messages] parse_sb2 propagates extract_bits error",
+        "[LSIS-AFS-801][messages] parse_sb2 propagates ITOW extract error",
+        "[LSIS-AFS-801][messages] validate_spare_bits correct pattern",
+        "[LSIS-AFS-801][messages] validate_spare_bits incorrect pattern",
+        "[LSIS-AFS-801][messages] validate_spare_bits empty rejects",
+        "[LSIS-AFS-801][messages] validate_spare_bits single bit"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-AFS-802",
+      "test_files": [
+        "cpp/tests/messages/test_message_parser.cpp"
+      ],
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/messages/message_parser.hpp",
+        "cpp/messages/message_parser.cpp"
+      ],
+      "matched_tests": [
+        "[LSIS-AFS-802][messages] parse_sb3 extracts type field",
+        "[LSIS-AFS-802][messages] parse_sb3 all known types",
+        "[LSIS-AFS-802][messages] parse_sb3 unknown type",
+        "[LSIS-AFS-802][messages] parse_sb3 wrong size",
+        "[LSIS-AFS-802][messages] parse_sb3 propagates extract_bits error",
+        "[LSIS-AFS-802][messages] type_field_to_message_type unknown values"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-AFS-803",
+      "test_files": [
+        "cpp/tests/messages/test_message_parser.cpp"
+      ],
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/messages/message_parser.hpp",
+        "cpp/messages/message_parser.cpp"
+      ],
+      "matched_tests": [
+        "[LSIS-AFS-803][messages] parse_sb4 extracts type field",
+        "[LSIS-AFS-803][messages] parse_sb4 wrong size",
+        "[LSIS-AFS-803][messages] parse_sb4 propagates extract_bits error"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-AFS-810",
+      "test_files": [
+        "cpp/tests/integration/test_e2e.cpp",
+        "cpp/tests/messages/test_time_of_transmission.cpp"
+      ],
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/include/lunalink/messages/time_of_transmission.hpp",
+        "cpp/messages/time_of_transmission.cpp"
+      ],
+      "matched_tests": [
+        "[LSIS-AFS-810][messages] compute_tot all zeros",
+        "[LSIS-AFS-810][messages] compute_tot basic",
+        "[LSIS-AFS-810][messages] compute_tot with delta_t_lrt",
+        "[LSIS-AFS-810][messages] compute_tot boundary values",
+        "[LSIS-AFS-810][messages] compute_tot negative delta",
+        "[LSIS-AFS-810][messages] compute_tot individual components/WN only",
+        "[LSIS-AFS-810][messages] compute_tot individual components/ITOW only",
+        "[LSIS-AFS-810][messages] compute_tot individual components/TOI only",
+        "[LSIS-AFS-810][messages] compute_tot invalid WN",
+        "[LSIS-AFS-810][messages] compute_tot invalid ITOW",
+        "[LSIS-AFS-810][messages] compute_tot invalid TOI",
+        "[LSIS-AFS-810][messages] compute_tot NaN delta rejected",
+        "[LSIS-AFS-810][messages] compute_tot +Inf delta rejected",
+        "[LSIS-AFS-810][messages] compute_tot -Inf delta rejected",
+        "[LSIS-AFS-810][messages] compute_tot TOI 0 and 99",
+        "[LSIS-AFS-810][messages] compute_tot ITOW 0 and 503",
+        "[LSIS-AFS-810][messages] compute_tot one week consistency",
+        "[LSIS-AFS-810] E2E: TX \u2192 RX \u2192 parse \u2192 ToT round-trip"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "LSIS-SISE",
+      "test_files": [
+        "cpp/tests/core/test_sise.cpp",
+        "cpp/tests/core/test_swifi_core.cpp"
+      ],
+      "code_files": [
+        "cpp/bindings/afs_module.cpp",
+        "cpp/core/sise.cpp",
+        "cpp/include/lunalink/core/sise.hpp"
+      ],
+      "matched_tests": [
+        "[LSIS-SISE][core] compute_sise zero error",
+        "[LSIS-SISE][core] compute_sise known spatial error (3-4-5)",
+        "[LSIS-SISE][core] compute_sise with clock bias (4th component)",
+        "[LSIS-SISE][core] compute_sise combined spatial + clock",
+        "[LSIS-SISE][core] compute_sise clock drift in velocity",
+        "[LSIS-SISE][core] compute_sise position only",
+        "[LSIS-SISE][core] compute_sise NaN rejection/NaN in spatial component",
+        "[LSIS-SISE][core] compute_sise NaN rejection/NaN in clock component",
+        "[LSIS-SISE][core] compute_sise NaN rejection/NaN velocity broadcast",
+        "[LSIS-SISE][core] compute_sise Inf rejection",
+        "[LSIS-SISE][core] compute_sise large values",
+        "[LSIS-SISE][core] percentile sorted data",
+        "[LSIS-SISE][core] percentile all pass",
+        "[LSIS-SISE][core] percentile boundary at limit",
+        "[LSIS-SISE][core] percentile empty data",
+        "[LSIS-SISE][core] percentile mismatched spans",
+        "[LSIS-SISE][core] percentile invalid percentile value/percentile > 1",
+        "[LSIS-SISE][core] percentile invalid percentile value/percentile < 0",
+        "[LSIS-SISE][core] percentile invalid percentile value/percentile NaN",
+        "[LSIS-SISE][core] percentile NaN in data",
+        "[LSIS-SISE][core] percentile single sample",
+        "[LSIS-SISE][core] percentile large dataset",
+        "[LSIS-SISE][core] percentile 50th (median)",
+        "[LSIS-SISE][core] 24-hour SISE trajectory with age-of-data growth/24h no refresh \u2014 exceeds 40m limit",
+        "[LSIS-SISE][core] 24-hour SISE trajectory with age-of-data growth/10h refresh cycle \u2014 within 40m limit",
+        "[LSIS-SISE] SWIFI: compute_sise NaN injection \u2014 kInvalidInput, output scrubbed",
+        "[LSIS-SISE] SWIFI: compute_sise Inf injection \u2014 kInvalidInput, output scrubbed",
+        "[LSIS-SISE] SWIFI: compute_sise clock term injection \u2014 NaN in ct scrubbed",
+        "[LSIS-SISE] SWIFI: compute_sise_percentile mismatched spans \u2014 kInvalidInput, output scrubbed",
+        "[LSIS-SISE] SWIFI: compute_sise_percentile NaN in data \u2014 kInvalidInput, output scrubbed",
+        "[LSIS-SISE] SWIFI: compute_sise_percentile empty data \u2014 kEmptyData, output scrubbed",
+        "[LSIS-SISE] SWIFI: compute_sise_percentile invalid percentile \u2014 kInvalidInput, output scrubbed"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "SW-SAF-01",
+      "test_files": [
+        "cpp/tests/messages/test_swifi_messages.cpp"
+      ],
+      "code_files": [
+        "cpp/include/lunalink/messages/frame.hpp"
+      ],
+      "matched_tests": [
+        "[SW-SAF-01] [LSIS-AFS-606] SWIFI: frame_assembler_cfi_milestone_skip \u2014 LDPC LUT fault skips SB2 milestone"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "SW-SAF-02",
+      "test_files": [
+        "cpp/tests/platform/test_safety.cpp"
+      ],
+      "code_files": [
+        "cpp/include/lunalink/core/safety.hpp"
+      ],
+      "matched_tests": [
+        "[SW-SAF-02] CheckedRange: saturation boundaries",
+        "[SW-SAF-02] TmrValue: voting logic (2-of-3) and active repair",
+        "[SW-SAF-02] secure_scrub: verify memory is zeroed",
+        "[SW-SAF-02] FSM: double frame fault escalates to kSafeMode",
+        "[SW-SAF-02] FSM: on_frame_ok recovers from kFrameFault",
+        "[SW-SAF-02] FSM: on_frame_ok is silent in kOperational",
+        "[SW-SAF-02] FSM: on_frame_ok ignored in kSafeMode",
+        "[SW-SAF-02] Watchdog: install and retrieve",
+        "[SW-SAF-02] FSM: illegal transition emits telemetry",
+        "[SW-SAF-02] FSM: on_frame_fault from non-operational emits telemetry"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "SW-SAF-03",
+      "test_files": [
+        "cpp/tests/platform/test_swifi_platform.cpp"
+      ],
+      "code_files": [
+        "cpp/include/lunalink/core/telemetry.hpp"
+      ],
+      "matched_tests": [
+        "[SW-SAF-03] SWIFI: FI-08 \u2014 fsm_illegal_transition \u2014 Zone 3, telemetry packet emitted"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "SW-SAF-04",
+      "test_files": [
+        "cpp/tests/platform/test_swifi_platform.cpp"
+      ],
+      "code_files": [
+        "cpp/include/lunalink/platform/post.hpp"
+      ],
+      "matched_tests": [
+        "[SW-SAF-04] SWIFI: post_step2_lut_corrupt \u2014 run_post returns {kFaultDetected, 2}",
+        "[SW-SAF-04] run_post: nominal system returns kPass"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "SW-SAF-06",
+      "test_files": [
+        "cpp/tests/platform/test_safety.cpp"
+      ],
+      "code_files": [
+        "cpp/encoding/ldpc.cpp",
+        "cpp/include/lunalink/core/safety.hpp",
+        "cpp/include/lunalink/encoding/ldpc.hpp",
+        "cpp/include/lunalink/messages/frame_decode.hpp",
+        "cpp/messages/frame_decode.cpp"
+      ],
+      "matched_tests": [
+        "[SW-SAF-06] frame_decode: aliasing workspace with rx_symbols detected"
+      ],
+      "status": "PASS"
+    }
+  ],
+  "nfr": [
+    {
+      "id": "NFR-1.1",
+      "description": "Code generation < 1 s per PRN",
+      "status": "PASS",
+      "evidence": "Benchmark results in wcet_results.xml"
+    },
+    {
+      "id": "NFR-1.2",
+      "description": "Frame encoding < 100 ms per frame",
+      "status": "PASS",
+      "evidence": "Benchmark results in wcet_results.xml"
+    },
+    {
+      "id": "NFR-1.3",
+      "description": "Frame decoding < 1 s per frame",
+      "status": "PASS",
+      "evidence": "1 test(s) passed"
+    },
+    {
+      "id": "NFR-2.1",
+      "description": "Spreading codes match Annex3 references exactly",
+      "status": "PASS",
+      "evidence": "7 test(s) passed"
+    },
+    {
+      "id": "NFR-2.2",
+      "description": "BER < 1e-1 at SNR > 0 dB",
+      "status": "PASS",
+      "evidence": "Benchmark results in ber_results.xml"
+    },
+    {
+      "id": "NFR-2.3",
+      "description": "Frame sync detection > 99% at SNR > 0 dB",
+      "status": "PASS",
+      "evidence": "3 test(s) passed"
+    },
+    {
+      "id": "NFR-3.1",
+      "description": "Unit tests for all components",
+      "status": "PASS",
+      "evidence": "320 test cases executed"
+    },
+    {
+      "id": "NFR-3.3",
+      "description": "Test coverage > 90%",
+      "status": "NOT_RUN",
+      "evidence": "Validated by coverage CI gate"
+    }
+  ],
+  "summary": {
+    "total_requirements": 31,
+    "pass": 31,
+    "untested": 0,
+    "not_run": 0,
+    "fail": 0,
+    "total_nfr": 8,
+    "nfr_pass": 7,
+    "nfr_not_run": 1,
+    "nfr_fail": 0
+  }
+}

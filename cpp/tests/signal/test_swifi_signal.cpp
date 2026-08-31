@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file test_swifi_signal.cpp
  * @brief SWIFI tests for signal subsystem: modulator aliasing, IQ mux aliasing,

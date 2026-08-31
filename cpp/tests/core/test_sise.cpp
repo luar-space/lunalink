@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 /// @file test_sise.cpp
 /// @brief Tests for SISE (Signal-In-Space Error) per LSIS V1.0 §2.2.2. [LSIS-SISE]
 

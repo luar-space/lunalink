@@ -1,3 +1,5 @@
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 # ruff: noqa: UP040, F722 — jaxtyping aliases require TypeAlias (not `type`
 # keyword) for runtime evaluation, and ruff misparses jaxtyping dimension
 # strings like "samples 2".

@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // N7 Space coding standard: std::move shall not be applied to a const
 // argument, as it has no effect.
 // Expected diagnostic: performance-move-const-arg

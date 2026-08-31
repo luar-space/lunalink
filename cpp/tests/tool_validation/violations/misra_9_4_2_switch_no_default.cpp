@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023 Rule 9.4.2 (Required): A switch-statement shall have a
 // default label as the last switch-label.
 // Expected diagnostic: bugprone-switch-missing-default-case

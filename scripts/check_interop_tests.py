@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """G-15 sanity gate — verify interop tests are not silently skipped in CI.
 
 Every `tests/test_interop_*.py` file is guarded by
 `pytest.mark.skipif(not BIN.is_file(), ...)`. If CI doesn't build the
 third-party binaries before pytest runs, those tests silently provide
 zero coverage — which is the single most important finding from the
-2026-04-12 test audit (see docs/shaping/test-audit.md G-15).
+2026-04-12 test audit (gate G-15).
 
 This script runs after the LANS-AFS-SIM build step and asserts:
 

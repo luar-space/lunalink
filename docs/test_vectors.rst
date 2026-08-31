@@ -108,11 +108,51 @@ JSON field extraction using the official schema:
       "time_of_transmission": 1234567890.123
     }
 
-Workflow
---------
+What ships where
+----------------
+
+This repository commits a compact vector set under ``test-vectors/``:
+
+*   ``codes/`` — 210 × ``codes_prn{NNN}.hex`` (Level 1, sectioned hex format)
+*   ``frames/`` — encoded 6000-symbol frames with the ``LSISAFS`` header
+*   ``signals/`` — I/Q vectors with the ``LSISIQ`` header: PRN 1 at full
+    12-second duration, plus short (2 ms) vectors for PRN 1–12 at both
+    sample rates, gzipped to keep the clone light
+*   ``parsed/`` — parsed-data JSONs
+*   ``fec/`` and ``decode/`` — component-level FEC and decode-chain vectors
+    beyond the competition's mandatory formats
+
+The full-size shared distribution — including 12-second signals for the
+Table 11 PRNs, bundled oracles (Annex 3, LANS-AFS-SIM dumps,
+PocketSDR-AFS), and a zero-dependency validator — is published at
+`luar-space/lsis-afs-test-vectors
+<https://github.com/luar-space/lsis-afs-test-vectors>`__.
+
+A 12-second signal for **any** PRN regenerates in under a second:
 
 ::
 
-    task vectors          # regenerate all vectors from current code
-    task vectors-check    # validate headers and checksums
-    task vectors-release  # tag + create GitHub release
+    uv run lunalink encode --format iq32 --prn 7 --rate 10230000 --out signal_prn007_12s.iq
+
+Parsed-data caveat (LSIS V1.0 TBW fields)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Only fields that LSIS V1.0 actually pins (FID/TOI per Tables 13/14,
+WN/ITOW per Table 22, ToT per §2.5.5, CRC-24Q per §2.4.3.1.3) are emitted
+as concrete values in ``parsed_*.json``.  CED, Health, Time Conversions,
+and the SB3/SB4 data layouts are still *to be written* in V1.0; those are
+surfaced as raw bit-slices with explicit ``_lsis_ref`` markers so
+consumers can byte-equal-compare without inventing bit positions the spec
+does not define.
+
+Regeneration
+------------
+
+::
+
+    # everything, into a checkout of the shared vectors repository
+    uv run python scripts/export_test_vectors_all.py --public-repo <path>
+
+    # individual levels / local subsets
+    uv run python scripts/export_test_vectors_l1.py test-vectors/codes
+    uv run python scripts/export_test_vectors_fec.py --output-dir test-vectors/fec

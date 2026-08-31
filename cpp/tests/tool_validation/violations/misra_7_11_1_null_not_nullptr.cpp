@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023 Rule 7.11.1 (Required): nullptr shall be the only form of the
 // null-pointer-constant.
 // Expected diagnostic: modernize-use-nullptr

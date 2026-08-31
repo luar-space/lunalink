@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // libFuzzer harness: full RX decode pipeline (frame_decode).
 //
 // frame_decode orchestrates sync detection -> soft BCH -> deinterleave ->

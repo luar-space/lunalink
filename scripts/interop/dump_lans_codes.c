@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 /*
  * Harness to extract PRN codes from LANS-AFS-SIM for interop comparison.
  *

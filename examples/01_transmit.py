@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """Generate a 12-second AFS I/Q signal file in 3 lines."""
 
 from lunalink.afs import (
@@ -7,6 +9,9 @@ from lunalink.afs import (
     transmit_frame,
     write_iq_file,
 )
+
+# Heads-up: a full 12-second frame at the native AFS-Q rate is ~491 MB on disk.
+print("Generating a 12-second frame; signal.iq will be ~491 MB...")
 
 # 1. Create test payload (all-zeros navigation data)
 sb2, sb3, sb4 = make_test_payload("zeros")

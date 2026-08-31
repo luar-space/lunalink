@@ -237,8 +237,8 @@ Code parameters
 
 Implementation files:
 
-- ``cpp/include/lunalink/signal/ldpc.hpp`` — public API, workspace types
-- ``cpp/encoding/ldpc.cpp`` — encoder (two-stage sparse), decoder (layered NMS-BP)
+- ``cpp/include/lunalink/encoding/ldpc.hpp`` — public API, workspace types
+- ``cpp/encoding/ldpc.cpp`` — encoder (two-stage sparse), decoder (layered sum-product BP)
 - ``cpp/encoding/ldpc_tables.cpp`` — 10 sparse parity matrices (CSR format)
 
 Encoder (``ldpc_encode``)
@@ -248,15 +248,17 @@ Two-stage sparse encoding: p1 = B\ :sup:`-1`·(A·s), p2 = C·s + D·p1
 (mod 2).  A post-encode H·c=0 parity check verifies correctness and
 detects faults before the codeword leaves the encoder.
 
-Decoder (``ldpc_decode``) — Layered NMS Belief Propagation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Decoder (``ldpc_decode``) — Layered Sum-Product Belief Propagation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- **Algorithm:** Layered Normalized Min-Sum (NMS)
-- **Arithmetic:** Q8.7 fixed-point (int16_t), symmetric saturation at ±32767
+- **Algorithm:** Layered Sum-Product BP (φ-transform formulation, with a
+  quantified numerical-clamping analysis in ``ldpc.cpp``)
+- **Arithmetic:** float64
 - **Max iterations:** 50 (caller-configurable)
-- **Early termination:** syndrome check every 5 iterations
-- **NMS alpha:** 2/3 = 0.667 — outperforms the standard CCSDS value of 3/4
-  by approximately 0.3 dB (tuning evidence in ``docs/signal/ldpc_performance.rst``)
+- **Early termination:** syndrome check every iteration
+- **Decoder quality:** within 0.15 dB of reference belief-propagation
+  implementations on this code (3-way gap decomposition,
+  ``test_ldpc_reference.cpp``)
 
 Hardening
 ~~~~~~~~~
@@ -317,13 +319,14 @@ interpretations of the SNR convention are addressed:
    * - **A (primary)** Es/N0 > 0 dB
      - Energy-per-symbol (standard for coded systems)
      - Eb/N0 = 3.0 dB
-     - BER = 0, FER = 0 in 1,200,000 bits (SF2) and 870,000 bits (SF3)
+     - BER = 0, FER = 0 in 18,000,000 bits (SF2) and 13,050,000 bits (SF3)
    * - **B (conservative)** Eb/N0 > 0 dB
      - Energy-per-bit
      - Eb/N0 = 2.0 dB
-     - BER ≤ 9.2 × 10\ :sup:`-7` in 12,000,000 bits (SF2); BER ≤ 6.9 × 10\ :sup:`-7` in 8,700,000 bits (SF3)
+     - BER = 0 in 18,000,000 bits (SF2, 95% upper bound 1.7 × 10\ :sup:`-7`)
+       and 13,050,000 bits (SF3, 95% upper bound 2.3 × 10\ :sup:`-7`)
 
-Full discussion and alpha tuning data: ``docs/signal/ldpc_performance.rst``
+Full discussion: ``docs/signal/ldpc_performance.rst``
 
 ----
 
@@ -555,5 +558,5 @@ All performance tests pass with the BER/FER bounds stated in this document.
 Related documents:
 
 - ``docs/signal/bch_performance.rst`` — BCH hard vs soft characterisation
-- ``docs/signal/ldpc_performance.rst`` — LDPC BER waterfall and alpha tuning
+- ``docs/signal/ldpc_performance.rst`` — LDPC BER waterfall characterisation
 - ``docs/signal/compliance_matrix.rst`` — full spec-to-code mapping

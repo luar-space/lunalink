@@ -288,5 +288,5 @@ This document is approved for the LunaLink competition submission baseline.
 .. note::
    In a full flight programme, this section would carry wet or digital signatures from
    the Programme Manager, Chief Engineer, and Software Safety Officer.  For the
-   competition Digital Twin phase, self-certification is used per ``certification_delta.rst``
+   competition Digital Twin phase, self-certification is used
    §Organisational Gaps Acknowledged.

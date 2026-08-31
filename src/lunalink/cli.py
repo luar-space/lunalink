@@ -1,3 +1,5 @@
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """LunaLink command-line interface.
 
 Workshop-shape artefact production for the ESA-CCSDS Goonhilly

@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file test_swifi_core.cpp
  * @brief SWIFI tests for core subsystem: SISE CFI sentinel skip and scrubbing.

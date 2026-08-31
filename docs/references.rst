@@ -8,12 +8,11 @@ Primary Specifications
 ----------------------
 
 *   **LSIS-AFS**: `Lunar Net Signal-In-Space Recommended Standard – Augmented Forward Signal (Vol-A) <https://github.com/luar-space/lsis-afs/blob/main/docs/references/lunanet-signal-in-space-recommended-standard-augmented-forward-signal-vol-a.pdf>`_ (LSIS V1.0, 29 Jan 2025).
-*   **CCSDS 235.1**: `Space Communications Session Control <https://public.ccsds.org/Pubs/235x1b1.pdf>`_ (Draft/Current Version).
 
 Engineering & Mission Assurance
 -------------------------------
 
-*   **NASA Class A**: `NASA-STD-8739.8B: Software Assurance and Software Engineering <https://standards.nasa.gov/standard/NASA/NASA-STD-87398>`_.
+*   **NASA Software Assurance**: `NASA-STD-8739.8B: Software Assurance and Software Engineering <https://standards.nasa.gov/standard/NASA/NASA-STD-87398>`_.
 *   **ESA ECSS**: `ECSS-E-ST-40C: Software Engineering Standard <https://ecss.nl/standard/ecss-e-st-40c-software-engineering/>`_.
 *   **ESA ECSS-Q**: `ECSS-Q-ST-80C: Software Product Assurance <https://ecss.nl/standard/ecss-q-st-80c-rev-1-software-product-assurance/>`_.
 *   **MISRA C++:2023**: Guidelines for the use of the C++ language in critical systems.

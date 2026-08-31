@@ -1,3 +1,5 @@
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """Smoke tests for the public-repo test-vector producer scripts.
 
 The producers in ``scripts/export_test_vectors_*.py`` are the lunalink

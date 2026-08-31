@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023 Rule 9.6.1 (Advisory, treated as Required by LunaLink):
 // The goto statement should not be used.
 // JPL Rule 11, Power of Ten Rule 1.

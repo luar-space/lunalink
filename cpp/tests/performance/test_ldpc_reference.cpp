@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file test_ldpc_reference.cpp
  * @brief LDPC decoder quality assessment: flight AMS decoder vs float64

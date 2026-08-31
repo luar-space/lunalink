@@ -127,7 +127,6 @@ add_library(lunalink_core
     cpp/messages/message_parser.cpp
     cpp/messages/time_of_transmission.cpp
     # signal/ — Baseband & RX (Gateway 4-5)
-    cpp/signal/modulator.cpp
     cpp/signal/iq_mux.cpp
     cpp/signal/sync_detector.cpp
     cpp/signal/signal_gen.cpp

@@ -1,3 +1,5 @@
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """LunaLink — LSIS-AFS reference implementation.
 
 Top-level convenience re-exports for the most common entry points.

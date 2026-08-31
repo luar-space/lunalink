@@ -1,6 +1,9 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 #include "lunalink/codes/legendre.hpp"
 #include "lunalink/codes/matched_code.hpp"
 #include "lunalink/codes/prn.hpp"
+#include "lunalink/core/sise.hpp"
 #include "lunalink/encoding/bch.hpp"
 #include "lunalink/encoding/crc.hpp"
 #include "lunalink/encoding/interleaver.hpp"
@@ -9,7 +12,6 @@
 #include "lunalink/messages/frame_decode.hpp"
 #include "lunalink/messages/message_parser.hpp"
 #include "lunalink/messages/time_of_transmission.hpp"
-#include "lunalink/core/sise.hpp"
 #include "lunalink/signal/file_format.hpp"
 #include "lunalink/signal/iq_mux.hpp"
 #include "lunalink/signal/modulator.hpp"
@@ -24,6 +26,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <string>
 #include <cstring>
 #include <span>
 #include <vector>
@@ -498,7 +501,9 @@ ndarray of float32
         auto status = ldpc_encode(
             type, checked_span<uint8_t>(msg, "msg"), std::span<uint8_t>(dst, n_out), enc_ws);
         if (status != LdpcStatus::kOk)
-          throw nb::value_error("LDPC encode failed");
+          throw nb::value_error(
+              ("LDPC encode failed (LdpcStatus " + std::to_string(static_cast<int>(status)) + ")")
+                  .c_str());
         return out;
       },
       "type"_a,
@@ -598,10 +603,12 @@ True
       [](uint8_t fid, uint8_t toi) {
         auto [out, dst] = make_numpy_1d<uint8_t>(6000);
         FrameBuildWorkspace fbw{};
-        if (frame_build_partial(
-                static_cast<Fid>(fid), Toi(toi), std::span<uint8_t, 6000>(dst, 6000), fbw) !=
-            FrameStatus::kOk)
-          throw nb::value_error("Frame build failed");
+        const auto status = frame_build_partial(
+            static_cast<Fid>(fid), Toi(toi), std::span<uint8_t, 6000>(dst, 6000), fbw);
+        if (status != FrameStatus::kOk)
+          throw nb::value_error(
+              ("Frame build failed (FrameStatus " + std::to_string(static_cast<int>(status)) + ")")
+                  .c_str());
         return out;
       },
       "fid"_a,
@@ -647,7 +654,9 @@ ndarray of uint8
                                   ws,
                                   fbw);
         if (status != FrameStatus::kOk)
-          throw nb::value_error("Frame build failed");
+          throw nb::value_error(
+              ("Frame build failed (FrameStatus " + std::to_string(static_cast<int>(status)) + ")")
+                  .c_str());
         return out;
       },
       "fid"_a,
@@ -921,7 +930,7 @@ ndarray of int16, shape (10230, 2)
       [](int id) {
         PrnCode p;
         if (weil10230_prn_packed(PrnId{static_cast<uint8_t>(id)}, p) != PrnStatus::kOk)
-          throw nb::value_error("Bad ID");
+          throw nb::value_error("prn_id must be in [1, 210]");
         return unpack_prn(p);
       },
       "prn_id"_a,
@@ -943,7 +952,7 @@ ndarray of uint8
       [](int id) {
         PrnCode p;
         if (weil1500_prn_packed(PrnId{static_cast<uint8_t>(id)}, p) != PrnStatus::kOk)
-          throw nb::value_error("Bad ID");
+          throw nb::value_error("prn_id must be in [1, 210]");
         return unpack_prn(p);
       },
       "prn_id"_a,
@@ -967,7 +976,7 @@ ndarray of uint8
         MatchedCodeAssignment a;
         if (default_matched_assignment_checked(PrnId{static_cast<uint8_t>(id)}, a) !=
             MatchedCodeStatus::kOk)
-          throw nb::value_error("Bad ID");
+          throw nb::value_error("prn_id must be in [1, 210]");
         if (matched_code_epoch_checked(a,
                                        static_cast<uint16_t>(epoch),
                                        std::span<uint8_t>(dst, 10230)) != MatchedCodeStatus::kOk)

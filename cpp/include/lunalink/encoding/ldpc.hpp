@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 #pragma once
 /// @file ldpc.hpp
 /// @brief LDPC encoder and sum-product BP decoder for LSIS-AFS subframes.

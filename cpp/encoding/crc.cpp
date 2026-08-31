@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // NOLINTBEGIN(hicpp-use-auto) -- explicit types improve readability in CRC polynomial code
 #include "lunalink/encoding/crc.hpp"
 

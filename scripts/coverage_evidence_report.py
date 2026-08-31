@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 r"""Generate structured coverage evidence for ECSS-Q-ST-80C §5.5 certification.
 
 Reports functional test coverage (the primary structural coverage metric) with

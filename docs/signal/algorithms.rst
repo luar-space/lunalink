@@ -8,8 +8,8 @@ Architectural Hardening Patterns
 
 To meet the rigorous requirements of lunar missions (satellites, landers, and rovers), the implementation employs the following mission-critical patterns:
 
-*   **Fixed-Point Arithmetic (Q8.7):** All Belief Propagation (BP) calculations in the LDPC decoder use 16-bit fixed-point integers. This ensures **bit-perfect determinism** across different CPU architectures and significantly reduces power consumption on lunar hardware lacking advanced Floating Point Units (FPUs).
-*   **Flat Worst-Case Execution Time (WCET):** Critical loops in the BCH decoder, CRC-24 generator, and LDPC min-sum update are implemented using **branchless logic**. By removing data-dependent branches, the implementation guarantees a stable execution time, which is essential for real-time scheduling and avoiding "jitter" in navigation streams.
+*   **Strict, Reproducible Arithmetic:** All Belief Propagation (BP) calculations in the LDPC decoder use IEEE-754 float64 with ``-fno-fast-math`` and a fixed, layered update order, giving **bit-reproducible results** run-to-run and across conforming toolchains. The numerically sensitive φ-transform is clamped with a quantified worst-case error analysis (documented in ``ldpc.cpp``). For flight targets without an FPU, the structural hardening transfers unchanged to a fixed-point port.
+*   **Flat Worst-Case Execution Time (WCET):** Critical loops in the BCH decoder, CRC-24 generator, and LDPC check-node update are implemented using **branchless logic**. By removing data-dependent branches, the implementation guarantees a stable execution time, which is essential for real-time scheduling and avoiding "jitter" in navigation streams.
 *   **Re-entrant Design (Workspace Pattern):** The LDPC decoder uses a dedicated `LdpcWorkspace` struct for all scratchpad memory. This removes dependency on static local buffers, allowing a single satellite node to track multiple concurrent signal sources (e.g., multiple rovers) without data corruption.
 *   **LUT Memory Pinning:** All large Look-Up Tables (LDPC matrices, BCH codebooks, Weil sequences) utilize the `LUNALINK_LUT_SECTION` macro. This pins the data to non-volatile memory (Flash/MRAM), preventing unnecessary RAM usage and protecting the "Golden Matrices" from radiation-induced volatile memory flips.
 
@@ -51,15 +51,15 @@ LDPC Encoder: Two-Stage Sparse Matrix Multiplication
 *   **Efficiency:** Sparse matrix multiplication avoids the $O(n^2)$ complexity of standard dense generator matrix multiplication. This is critical for high-throughput navigation messages on low-power lunar hardware.
 *   **Low Memory:** Only the sparse sub-matrices ($A, B, C, D$) need to be stored, significantly reducing the ROM/Flash footprint compared to a full generator matrix.
 
-LDPC Decoder: Layered Normalized Min-Sum Algorithm (L-NMS)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+LDPC Decoder: Layered Sum-Product Belief Propagation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Algorithm:** A variation of Belief Propagation (BP) that updates check-node and variable-node messages in a serial "layered" schedule, using the Min-Sum approximation with a multiplicative normalization factor ($\alpha = 0.75$).
+**Algorithm:** Belief Propagation (BP) that updates check-node and variable-node messages in a serial "layered" schedule, using the exact Sum-Product check-node update in its φ-transform formulation ($\phi(x) = -\ln\tanh(x/2)$, self-inverse), which turns the product of hyperbolic tangents into a numerically stable sum.
 
 **Rationale:**
 *   **Convergence Speed:** Layered scheduling converges approximately $2\times$ faster than standard "flooding" schedules, reducing the number of required iterations and thus CPU cycles.
-*   **Hardware Efficiency:** The Min-Sum approximation replaces computationally expensive hyperbolic functions (`tanh`, `atanh`) with simple comparisons (`min`) and additions. This avoids floating-point libraries and is ideal for FPGA/ASIC offloading.
-*   **Performance:** The Normalized correction ($\alpha = 0.75$) mitigates the over-estimation of reliability inherent in standard Min-Sum via multiplicative scaling. NMS is preferred over Offset Min-Sum (OMS) for LSIS-AFS because the heavy puncturing of the mother code creates degree-1 parity variables whose zero-valued extrinsic information would be destroyed by a subtractive offset.
+*   **Decoding Optimality:** Sum-Product is the exact BP update — no Min-Sum approximation loss. The 3-way gap decomposition in ``test_ldpc_reference.cpp`` measures the shipped decoder within 0.15 dB of reference BP implementations on this code, i.e. essentially at the algorithmic optimum for its length.
+*   **Numerical Robustness:** The φ-transform's singular endpoints are clamped with a quantified worst-case error analysis (upper clamp error ≈ 1.9e-13; empirically verified not to shift the waterfall by more than 0.01 dB — see ``ldpc.cpp``).
 *   **Memory Footprint:** Layered decoding allows for "in-place" memory updates, reducing the RAM requirement for LLR storage by nearly 50% compared to flooding.
 
 Integrity & Shaping

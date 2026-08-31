@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file test_swifi_codes.cpp
  * @brief SWIFI tests for codes subsystem: Legendre golden CRC integrity.

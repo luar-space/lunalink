@@ -95,6 +95,6 @@ Design Rationale & Traceability
 -------------------------------
 
 Each gateway deliverable (GD8.1) includes a **Design Rationale** section explaining:
-*   **Algorithm Choice:** e.g., "Min-Sum BP chosen for LDPC decoding to ensure fixed-point stability and deterministic latency."
+*   **Algorithm Choice:** e.g., "Layered Sum-Product BP chosen for LDPC decoding — exact check-node update with a clamped, numerically analysed φ-transform."
 *   **Mathematical Alignment:** Code snippets linked to Equation 1, Equation 2, and Figure 7/8 of the LSIS spec.
 *   **Implementation Trade-offs:** Rationale for static buffer sizing vs. heap flexibility.

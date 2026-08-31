@@ -117,13 +117,12 @@ Exclusion Register
    * - ``encoding/ldpc.cpp``
      - ~86%
      - DEFENCE_IN_DEPTH
-     - Saturating arithmetic (``sat_add``/``sat_sub``) overflow paths require
-       accumulated Q8.7 fixed-point values exceeding ±32767 — unlikely with
-       NMS α=0.75 damping on well-formed inputs. Sparse matrix bounds checks
-       (``check_single_row_parity``, ``multiply_sparse_hardened``,
-       ``sparse_row_dot_product``) require corrupted row_ptr/col_indices
-       arrays (radiation effect on .rodata). Alpha validation edge cases
-       covered by existing tests.
+     - Sparse matrix bounds checks (``check_single_row_parity``,
+       ``multiply_sparse_hardened``, ``sparse_row_dot_product``) require
+       corrupted row_ptr/col_indices arrays (radiation effect on .rodata).
+       CFI sentinel and TMR mirror violation paths require injected
+       control-flow faults — exercised by the SWIFI build, which is
+       excluded from the coverage build.
    * - ``core/sise.cpp``
      - ~90%
      - DEFENCE_IN_DEPTH

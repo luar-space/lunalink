@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023 Rule 21.10.2 (Required): setjmp / longjmp shall not be used.
 // Expected diagnostic: cert-err52-cpp
 

@@ -30,7 +30,6 @@ Assurance Document Index
 ------------------------
 - ``docs/assurance/c_plus_plus_guidelines.rst``: C++20 coding standard and patterns.
 - ``docs/assurance/traceability_matrix.rst``: Canonical requirements-to-evidence matrix.
-- ``docs/assurance/test_procedures.rst``: Formal test procedure template and examples.
 - ``docs/assurance/tool_confidence.rst``: Toolchain and evidence trust record.
 - ``docs/assurance/build_policy.rst``: Build tiers and compiler policy.
 - ``docs/assurance/configuration_baseline.rst``: Release baseline and reproducibility.
@@ -656,7 +655,7 @@ corresponding NPR requirements.
      - Evidence
    * - E-ST-40C §5.5.1
      - Coding Standards
-     - Design Constraints section; compiler flag assertions; ``static_analysis.rst``
+     - Design Constraints section; compiler flag assertions; ``static_analysis.rst`` (CI-generated, published to the docs site)
    * - E-ST-40C §5.3
      - Requirements Traceability
      - Bidirectional traceability mandate; ``compliance_matrix.rst``
@@ -671,10 +670,10 @@ corresponding NPR requirements.
      - SHA-pinned dependencies; reproducible builds; SCI version register; ``scmp.rst``
    * - Q-ST-80C §5.3/§5.5
      - Software FMEA / Safety
-     - ``fmea.rst`` — full software FMEA table; ``safety_plan.rst``
+     - ``fmea.rst`` — full software FMEA table; ``fault_coverage.rst``
    * - Q-ST-80C §5.7
      - Software Reuse Assessment
-     - ``oss_assessment.rst`` — COTS/OSS assessment
+     - ``tool_confidence.rst`` — tool confidence / COTS assessment
 
 **Organisational requirements — outside the scope of this reference implementation**:
 
@@ -682,7 +681,7 @@ IV&V (Q-ST-80C §5.5), formal review milestones (E-ST-40C §5.1), formal CM boar
 (Q-ST-80C §5.4), and physical configuration audit (Q-ST-80C §5.4) require programme
 office infrastructure and cannot be satisfied by a development team acting alone.
 These items are tailored in the ECSS Tailoring Record
-(``docs/assurance/ecss_tailoring.rst``) and the corresponding NPR cross-references
+(recorded per requirement in the standards mapping below) and the corresponding NPR cross-references
 are provided in the NASA Compliance Addendum
 (``docs/standards/nasa_compliance_addendum.rst``).
 

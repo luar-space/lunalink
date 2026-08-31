@@ -1,3 +1,5 @@
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 # ruff: noqa: D102
 """I3 — L1 Interoperability: PRN code bit-exact comparison with LANS-AFS-SIM.
 

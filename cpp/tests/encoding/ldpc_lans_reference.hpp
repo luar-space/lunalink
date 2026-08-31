@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // G-16 — LANS-AFS-SIM LDPC reference codewords for test_ldpc.cpp.
 //
 // Purpose: independent correctness anchor for `ldpc_encode()` at unit-test

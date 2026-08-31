@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // ldpc_characterise.cpp — Parallel LDPC decoder performance characterisation.
 // Standalone tool, outputs structured JSON to stdout.
 // Compile: cmake --build build/algo_card --target ldpc_characterise

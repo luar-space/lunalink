@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 r"""Compute effective C++ coverage excluding NOCOVER-marked lines.
 
 Parses llvm-cov LCOV export and cross-references source-level NOCOVER

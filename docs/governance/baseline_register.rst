@@ -91,7 +91,7 @@ apply, a description, the approving authority, and the resolution.
 .. note::
 
    All compensating controls and self-certification scopes acknowledged in
-   the competition context are documented in ``certification_delta.rst``,
+   the competition context are documented in the SDP (``docs/governance/sdp.rst``),
    not here.  This register covers process deviations only.
 
 Change Authority

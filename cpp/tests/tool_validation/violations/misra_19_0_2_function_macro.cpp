@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023 Rule 19.0.2 (Required): Function-like macros shall not be
 // defined.
 // JPL Rule 20, Power of Ten Rule 8.

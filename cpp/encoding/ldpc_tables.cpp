@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 /// @file ldpc_tables.cpp
 /// @brief LDPC parity-check sub-matrices in CSR format, generated from LSIS Annex G/H.
 /// Each matrix includes a build-time CRC-32 for CBIT verification. [LSIS-AFS-320]

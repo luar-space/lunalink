@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023 Rule 11.6.1 (Required): All variables shall be initialized
 // at the point of declaration.
 // Expected diagnostic: cppcoreguidelines-init-variables

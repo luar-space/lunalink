@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """I1 — Clone and build LANS-AFS-SIM (Ebinuma's independent LSIS-AFS implementation).
 
 https://github.com/osqzss/LANS-AFS-SIM

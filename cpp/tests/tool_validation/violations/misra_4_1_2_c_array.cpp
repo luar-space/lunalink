@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023 Rule 4.1.2 / 11.3.1 (Required): C-style arrays shall not be
 // used; prefer std::array.
 // Expected diagnostic: modernize-avoid-c-arrays

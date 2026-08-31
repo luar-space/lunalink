@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 /// @file frame_decode.cpp
 /// @brief RX pipeline orchestrator: sync → BCH → deinterleave → LDPC → CRC. [LSIS-AFS-720]
 

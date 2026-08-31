@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // libFuzzer harness: forward-error-correction decode entry points.
 //
 // Secondary targets that all take a buffer: CRC-24Q verify/calculate, the hard-

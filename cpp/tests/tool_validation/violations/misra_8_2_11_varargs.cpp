@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023 Rule 8.2.11 (Required): An argument passed via ellipsis shall
 // have an appropriate type.
 // Rule 21.10.1 (Required): The features of <cstdarg> shall not be used.

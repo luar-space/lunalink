@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="test_lunalink" errors="0" failures="0" skipped="0" tests="649463" hostname="tbd" time="1.906" timestamp="2026-08-31T14:44:50Z">
+    <properties>
+      <property name="random-seed" value="1825673452"/>
+      <property name="filters" value="~[slow]"/>
+    </properties>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-101] gold_prn returns distinct sequences for different PRNs" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-101] gold_prn PRN 1 first byte matches reference" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-102] weil10230_prn returns distinct sequences for different PRNs" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-102] weil10230_prn PRN 1 first chips match reference" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-102] weil1500_prn returns distinct sequences for different PRNs" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-102] weil1500_prn PRN 1 first byte matches reference" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="PRN APIs: saturating logic (C-Pattern 4)" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="Weil codebook checksums (CBIT integrity)" time="0.025" status="run"/>
+    <testcase classname="test_lunalink.global" name="PrnId: Triple Modular Redundancy (TMR) resilience" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="PRN: invalid PRN ID forces error" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="Legendre: hand-computed oracle for p=7 (true external anchor)" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="Legendre: checksum stability" time="0.002" status="run"/>
+    <testcase classname="test_lunalink.global" name="Legendre: direct generation and cached access" time="0.003" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/Gold-2046: All 210 PRNs" time="0.472" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/Weil-10230: Generator produces valid binary output" time="0.146" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/Weil-1500: Generator produces valid binary output" time="0.035" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/Generator error paths" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/PRN 38 generates successfully (was zeroed placeholder, now fixed)" time="0.002" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-401] secondary_code_index cycles through S0-S3" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-401] secondary codes match spec Table 10" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-401] matched_code_epoch equals primary XOR secondary XOR tertiary" time="0.043" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-401] matched_code_epoch differs across secondary code boundary" time="0.013" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-401] matched_code_epoch changes across tertiary chip boundary" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-401] matched_code_epoch different PRNs produce different sequences" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="kEpochsPerFrame is 6000" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-401] default interim mapping only applies to PRN 1-12" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-401] matched_code_epoch_checked rejects invalid inputs" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-401] matched_code_epoch_checked supports tertiary phase offset" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="checked matched helper APIs: saturating logic" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="matched_code_epoch_checked: error paths" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="matched_code_epoch_checked: invalid tertiary PRN" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-401] Matched Code Coherency (LSIS-172)" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-501] BCH decoder: zero errors" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-501] BCH decoder: single error correction" time="0.002" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-501] BCH decoder: double error correction (all 1326 pairs)" time="0.038" status="run"/>
+    <testcase classname="test_lunalink.global" name="BCH decoder: confidence threshold (NASA safety)" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="BCH decoder: ambiguity detection" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-501] BCH codebook exhaustive check" time="0.005" status="run"/>
+    <testcase classname="test_lunalink.global" name="BCH codebook checksum" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-501] BCH soft decoder: clean symbols" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-501] BCH soft decoder: noisy symbols corrected" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-501] BCH soft decoder: exhaustive codebook" time="0.053" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-501] BCH spec test vector: Figure 8 (FID=0, TOI=69)" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="BCH: Ambiguous Match Detection" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="BCH soft decode: invalid LLR (NaN)" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="BCH soft decode: infinite LLR" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="BCH codebook checksum: stable across calls" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="BCH: kAmbiguousMatch on equidistant received word" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-320] LDPC Encoder: bit-exact vs LANS-AFS-SIM reference" time="0.010" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-320] LDPC Encoder: basic execution/SF2 Encoding" time="0.007" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-320] LDPC Encoder: basic execution/SF3 Encoding" time="0.028" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-320] LDPC Encoder: basic execution/SF4 Encoding" time="0.006" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-320] LDPC Encoder: error paths" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="LDPC: Table CRC32 integrity (all 10 matrices)" time="0.008" status="run"/>
+    <testcase classname="test_lunalink.global" name="LDPC: Table CRC32 integrity (all 10 matrices)/CRC tamper detection: modified num_entries" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="LDPC: Table CRC32 integrity (all 10 matrices)/CRC tamper detection: modified crc32" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="LDPC: Matrix dimension consistency" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="LDPC: Matrix dimension consistency/Max row weight within buffer bounds" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF2 - All Zeros (linear code property)" time="0.012" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF2 - Alternating pattern" time="0.024" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF3 - All Zeros" time="0.007" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF3 - Alternating pattern" time="0.013" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF4 - Alternating pattern (reuses SF3 matrices)" time="0.013" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF2 - Custom alpha (5/8 = 0.625)" time="0.026" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF2 - Decoder returns kNotConverged on corrupted input" time="0.034" status="run"/>
+    <testcase classname="test_lunalink.global" name="LDPC: output buffer reuse — SF3 then SF2 into same buffer" time="0.020" status="run"/>
+    <testcase classname="test_lunalink.global" name="LDPC: error paths" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="LDPC: extreme LLR decode exercises Q8.7 saturation" time="0.010" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-467] CRC-24: Basic correctness" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="CRC-24: Round-trip and error detection" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="CRC-24: verify rejects too-short input" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="CRC-24: verify detects corruption" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="CRC-24: calculate then verify round-trip" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-470][LSIS-AFS-471] Block Interleaver: Round-trip correctness" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="Block Interleaver: Specific mapping check" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="Block Interleaver: Error handling" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="deinterleave: aliasing detection (hard)" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="deinterleave_soft: aliasing detection" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="deinterleave: input/output size checks" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="interleave: aliasing detection" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-601] frame_build_partial returns kOk for valid inputs" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-601] frame_build_partial SB1 region matches standalone bch_encode" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-601] frame_build_partial SB1 with spec test vector (FID=0, TOI=69)" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-601] frame_build_partial SB2-SB4 region is zero-padded" time="0.007" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-601] frame_build_partial exhaustive FID x TOI" time="0.053" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-602] subframe_build_sb2 returns kOk for zero data" time="0.009" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-603] subframe_build_sb3 returns kOk for zero data" time="0.004" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-604] subframe_build_sb4 returns kOk for zero data" time="0.008" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-602] subframe_build_sb2 output is binary" time="0.008" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-602] subframe_build_sb2 round-trip: encode, decode, verify CRC" time="0.022" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-603] subframe_build_sb3 round-trip: encode, decode, verify CRC" time="0.009" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-604] subframe_build_sb4 round-trip: encode, decode, verify CRC" time="0.015" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-605] frame_build returns kOk for valid inputs" time="0.014" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-605] frame_build all symbols are binary" time="0.022" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-605] frame_build SB1 region matches standalone bch_encode" time="0.018" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-605] frame_build accepts all valid FID values" time="0.077" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-605] frame_build payload round-trip: deinterleave, decode, verify" time="0.043" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-300] SB2 builder enforces LSIS-300 pattern regardless of caller input" time="0.016" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-300] frame_build emits LSIS-300 pattern in the SB2 spare region" time="0.036" status="run"/>
+    <testcase classname="test_lunalink.global" name="SB3 round-trip preserves arbitrary spare-region bit patterns (SB3 spare layout is message-type-specific — builder enforcement not applicable)" time="0.031" status="run"/>
+    <testcase classname="test_lunalink.global" name="frame_decode: input too small rejected" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="frame_decode: sync not found on zero input" time="0.002" status="run"/>
+    <testcase classname="test_lunalink.global" name="frame_build_partial: validates FID/TOI" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="frame_build: full build with non-zero data" time="0.018" status="run"/>
+    <testcase classname="test_lunalink.global" name="commit_frame: CRC failure detection" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="frame_build_partial: invalid FID/TOI rejected" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-720] frame_decode: clean round-trip recovers data" time="0.057" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-720] frame_decode: clean round-trip with offset" time="0.090" status="run"/>
+    <testcase classname="test_lunalink.global" name="frame_decode: BCH decodes with noisy SB1 (wrong FID/TOI)" time="0.047" status="run"/>
+    <testcase classname="test_lunalink.global" name="frame_decode: NaN in SB1 causes BCH failure" time="0.015" status="run"/>
+    <testcase classname="test_lunalink.global" name="frame_decode: LDPC fails (not kOk) when payload replaced with noise" time="0.082" status="run"/>
+    <testcase classname="test_lunalink.global" name="frame_decode: classify result distinguishes LDPC and CRC failures" time="0.044" status="run"/>
+    <testcase classname="test_lunalink.global" name="frame_decode: insufficient symbols after sync offset" time="0.007" status="run"/>
+    <testcase classname="test_lunalink.global" name="frame_decode: non-finite sync threshold rejected" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="frame_build: invalid FID rejected" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="frame_build: invalid TOI rejected" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-801][messages] extract_bits basic" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-801][messages] extract_bits at offset" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-801][messages] extract_bits single bit" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-801][messages] extract_bits 32 bits" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-801][messages] extract_bits out of bounds" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-801][messages] extract_bits zero n_bits" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-801][messages] extract_bits invalid bit value" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-801][messages] parse_sb2 extracts WN and ITOW" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-801][messages] parse_sb2 boundary WN=8191 ITOW=503" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-801][messages] parse_sb2 zero values" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-801][messages] parse_sb2 wrong size" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-801][messages] parse_sb2 propagates extract_bits error" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-801][messages] parse_sb2 propagates ITOW extract error" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-802][messages] parse_sb3 extracts type field" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-802][messages] parse_sb3 all known types" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-802][messages] parse_sb3 unknown type" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-802][messages] parse_sb3 wrong size" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-802][messages] parse_sb3 propagates extract_bits error" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-803][messages] parse_sb4 extracts type field" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-803][messages] parse_sb4 wrong size" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-803][messages] parse_sb4 propagates extract_bits error" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-801][messages] validate_spare_bits correct pattern" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-801][messages] validate_spare_bits incorrect pattern" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-801][messages] validate_spare_bits empty rejects" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-801][messages] validate_spare_bits single bit" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-802][messages] type_field_to_message_type unknown values" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-810][messages] compute_tot all zeros" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-810][messages] compute_tot basic" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-810][messages] compute_tot with delta_t_lrt" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-810][messages] compute_tot boundary values" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-810][messages] compute_tot negative delta" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-810][messages] compute_tot individual components/WN only" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-810][messages] compute_tot individual components/ITOW only" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-810][messages] compute_tot individual components/TOI only" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-810][messages] compute_tot invalid WN" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-810][messages] compute_tot invalid ITOW" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-810][messages] compute_tot invalid TOI" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-810][messages] compute_tot NaN delta rejected" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-810][messages] compute_tot +Inf delta rejected" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-810][messages] compute_tot -Inf delta rejected" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-810][messages] compute_tot TOI 0 and 99" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-810][messages] compute_tot ITOW 0 and 503" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-810][messages] compute_tot one week consistency" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-201] modulate_bpsk_i chip mapping with +1 symbol" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-201] modulate_bpsk_i chip mapping with -1 symbol" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-201] modulate_bpsk_i full PRN 1 all values in {-1, +1}" time="0.003" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-201] modulate_bpsk_i returns explicit error status" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-201] modulate_bpsk_i rejects invalid data symbol" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-201] modulate_bpsk_i rejects non-binary chips" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="modulate_bpsk_any: invalid chip value rejected" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-301] multiplex_iq upsamples I by factor 5" time="0.017" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-301] multiplex_iq Q channel passes through at chip rate" time="0.011" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-301] multiplex_iq output length is 2 * 10230 interleaved" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-301] multiplex_iq 50/50 power: I and Q have equal amplitude" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-301] multiplex_iq rejects undersized inputs and outputs" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-301] multiplex_iq rejects invalid sample values" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="SyncDetector: rejects empty input" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="SyncDetector: rejects input shorter than sync length" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="SyncDetector: accepts input exactly sync length" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-710] SyncDetector: detects sync pattern at start of frame" time="0.003" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-710] SyncDetector: detects sync pattern at arbitrary offset" time="0.003" status="run"/>
+    <testcase classname="test_lunalink.global" name="SyncDetector: detects sync at end of buffer" time="0.004" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-AFS-710] SyncDetector: detects sync in moderate noise" time="0.005" status="run"/>
+    <testcase classname="test_lunalink.global" name="SyncDetector: fails detection in heavy noise (no sync)" time="0.003" status="run"/>
+    <testcase classname="test_lunalink.global" name="SyncDetector: custom threshold affects detection" time="0.008" status="run"/>
+    <testcase classname="test_lunalink.global" name="SyncDetector: set_threshold rejects invalid values" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="SyncDetector: second_peak is lower than peak_metric" time="0.003" status="run"/>
+    <testcase classname="test_lunalink.global" name="SyncDetector: CFI fault emits telemetry" time="0.003" status="run"/>
+    <testcase classname="test_lunalink.global" name="SyncDetector: all-zeros input returns kNotDetected" time="0.006" status="run"/>
+    <testcase classname="test_lunalink.global" name="SyncDetector: all-ones input (bipolar +1.0) gives partial correlation" time="0.002" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] compute_sise zero error" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] compute_sise known spatial error (3-4-5)" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] compute_sise with clock bias (4th component)" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] compute_sise combined spatial + clock" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] compute_sise clock drift in velocity" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] compute_sise position only" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] compute_sise NaN rejection/NaN in spatial component" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] compute_sise NaN rejection/NaN in clock component" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] compute_sise NaN rejection/NaN velocity broadcast" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] compute_sise Inf rejection" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] compute_sise large values" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] percentile sorted data" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] percentile all pass" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] percentile boundary at limit" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] percentile empty data" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] percentile mismatched spans" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] percentile invalid percentile value/percentile > 1" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] percentile invalid percentile value/percentile &lt; 0" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] percentile invalid percentile value/percentile NaN" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] percentile NaN in data" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] percentile single sample" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] percentile large dataset" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] percentile 50th (median)" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] 24-hour SISE trajectory with age-of-data growth/24h no refresh — exceeds 40m limit" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[LSIS-SISE][core] 24-hour SISE trajectory with age-of-data growth/10h refresh cycle — within 40m limit" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[SW-SAF-02] CheckedRange: saturation boundaries" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[SW-SAF-02] TmrValue: voting logic (2-of-3) and active repair" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="Fid/Toi/PrnId: repair coverage" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[SW-SAF-02] secure_scrub: verify memory is zeroed" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="wip_tick: coverage" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="CheckedRange: Edge cases" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="TmrValue: equality operator" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="Fid: NODE constants" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="TmrValue: Default constructor coverage" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="TmrValue: no majority scenario" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="CheckedRange: force invalid via memory tamper" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="TmrValue: repair paths (all branches)" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="TmrValue: fault injection overwrites all copies" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="Status codes: exhaustive sentinel values" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[SW-SAF-02] FSM: double frame fault escalates to kSafeMode" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[SW-SAF-02] FSM: on_frame_ok recovers from kFrameFault" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[SW-SAF-02] FSM: on_frame_ok is silent in kOperational" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[SW-SAF-02] FSM: on_frame_ok ignored in kSafeMode" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[SW-SAF-02] Watchdog: install and retrieve" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="PrnId: comparison and size_t conversion" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[SW-SAF-02] FSM: illegal transition emits telemetry" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[SW-SAF-02] FSM: on_frame_fault from non-operational emits telemetry" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="CaptureTelemetryHal: overflow and reset" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="Safety: TMR voting and CFI detection (Gateway 2)/TMR Majority Voting (Radiation Resilience)" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="Safety: TMR voting and CFI detection (Gateway 2)/CFI (Control Flow Integrity) Detection" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="Safety: TMR voting and CFI detection (Gateway 2)/Range Hardening (Invalid State Rejection)" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="CfiGuard: constructor, tick, verify" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="WindowedWatchdog: tick, reset, evaluate" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="[SW-SAF-06] frame_decode: aliasing workspace with rx_symbols detected" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="frame_build: aliasing data with output detected" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="frame_build: aliasing workspace with output detected" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="modulator: aliasing input with output detected" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="LDPC decode: zero iterations rejected" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="LDPC decode: output buffer too small" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="frame_build_partial: aliasing staging with output detected" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="Watchdog: install, lock, and locked-install rejection" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="IQ mux: aliasing I-channel with output detected" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="Coverage canary: line coverage — true branch only" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="Coverage canary: branch coverage — cases 0,1,2 only" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="Coverage canary: MC/DC full — all conditions independent" time="0.000" status="run"/>
+    <testcase classname="test_lunalink.global" name="Coverage canary: MC/DC partial — only (T,T) tested" time="0.000" status="run"/>
+    <system-out/>
+    <system-err/>
+  </testsuite>
+</testsuites>

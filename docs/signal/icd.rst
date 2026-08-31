@@ -203,7 +203,7 @@ implementations are injected at construction time.
 .. code-block:: text
 
    Byte 0–1  : Magic (0xFA, 0xCE)
-   Byte 2    : FIZ level (1–4, per safety_plan.rst §Fault Isolation Zones)
+   Byte 2    : FIZ level (1–4, per the fault-isolation zones in fault_coverage.rst)
    Byte 3    : Severity (0x01 = informational … 0xFF = safety-critical halt)
    Byte 4–7  : Error code (AfsErrorCode, little-endian uint32)
    Byte 8–11 : Frame ID at time of fault (little-endian uint32)

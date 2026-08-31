@@ -1,3 +1,5 @@
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """Regenerate every level of the public ``lsis-afs-test-vectors`` set.
 
 One-shot orchestrator: drives ``export_test_vectors_l1.py`` (codes),

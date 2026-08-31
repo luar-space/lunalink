@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 #include "lunalink/core/telemetry.hpp"
 #include "lunalink/signal/sync_detector.hpp"
 

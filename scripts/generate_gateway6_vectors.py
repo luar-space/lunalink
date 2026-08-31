@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """Generate Gateway 6 interoperability test vectors (JSON).
 
 Produces a set of message parsing and ToT test vectors that other teams

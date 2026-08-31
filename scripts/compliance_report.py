@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 r"""LSIS-AFS Compliance Report Generator.
 
 Produces a machine-readable JSON artifact mapping every LSIS requirement and
@@ -179,7 +181,9 @@ def _eval_nfr_test(nfr_id: str, nfr_info: dict, test_results: dict[str, bool]) -
 def _eval_nfr_benchmark(nfr_id: str, nfr_info: dict) -> dict:
     """Evaluate a single NFR against benchmark results."""
     bench_file = nfr_info.get("benchmark_file")
-    if bench_file and (BUILD_DIR / bench_file).exists():
+    if bench_file and any(
+        (d / bench_file).exists() for d in (BUILD_DIR, BUILD_DIR / "performance")
+    ):
         status = "PASS"
         evidence = f"Benchmark results in {bench_file}"
     else:

@@ -150,7 +150,7 @@ Module Design
      - BCH(51,8) Encoder and ML Correlation Decoder
    * - ``ldpc``
      - G2
-     - LDPC 5G NR Encoder (SF2/SF3/SF4) and Layered NMS Decoder
+     - LDPC 5G NR Encoder (SF2/SF3/SF4) and Layered Sum-Product Decoder
    * - ``interleaver``
      - G2
      - Block Interleaver/Deinterleaver (60\ |x|\ 98)

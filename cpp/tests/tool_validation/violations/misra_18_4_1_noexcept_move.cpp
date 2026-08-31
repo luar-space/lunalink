@@ -1,3 +1,5 @@
+// Copyright 2025-2026 Marco Fiscato
+// SPDX-License-Identifier: Apache-2.0
 // MISRA C++:2023 Rule 18.4.1 (Required): Move and swap operations shall be
 // declared noexcept. N7 Space coding standard.
 // Expected diagnostic: performance-noexcept-move-constructor

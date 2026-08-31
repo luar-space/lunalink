@@ -1,3 +1,5 @@
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """Verify requirement-to-test traceability for LSIS-AFS and SW-SAF tags.
 
 Scans C++ source and header files for [LSIS-AFS-*] and [SW-SAF-*] requirement

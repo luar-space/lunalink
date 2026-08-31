@@ -1,3 +1,5 @@
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """Interoperability test vector generation in competition format.
 
 Produces full-length, bit-exact vectors for cross-team validation

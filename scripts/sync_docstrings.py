@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2025-2026 Marco Fiscato
+# SPDX-License-Identifier: Apache-2.0
 """Check that C++ header @param tags and binding docstring Parameters stay in sync.
 
 Parses:
