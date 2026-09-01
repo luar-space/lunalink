@@ -257,9 +257,9 @@ separately; on a fresh clone budget ~40 min, since it includes
 
 Beyond the gate, all nine gateways (0–8) are delivered with one verification
 guide each, and all **20 rubric NFRs are tracked**, 20 PASS.
-`task compliance-report` regenerates that record — run `task performance`
-first, or four timing and BER NFRs report NOT_RUN, because their JUnit
-evidence is what `task performance` produces.
+`task compliance-report` regenerates that record from a clean clone in one
+command — it runs the WCET and BER suites itself, because four of the NFRs
+are graded from their JUnit output.
 
 The judge-oriented tour — scoring categories, gateway checklists, the full
 NFR table, technical constraints and stated limits — is the
@@ -274,7 +274,7 @@ task test-cpp      # ~1 min   C++ unit + integration tests (229 cases)
 task test-py       # ~5 s     Python tests (100% coverage gate, 1237 tests)
 task swifi         # ~50 s    SWIFI fault-injection campaign (42/42)
 task interop       # ~10 s    cross-check against an independent implementation
-task compliance-report  # ~25 s  spec-requirement → test traceability report
+task compliance-report  # ~3 min  requirement → test traceability, 31/31 and 20/20
 task performance   # ~3 min   WCET + constant-time + BER channel simulations
 task ci-checks     # ~40 min  the CI gate in one command, offline
 ```

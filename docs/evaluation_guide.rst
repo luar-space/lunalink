@@ -286,16 +286,17 @@ delivered repository — none is asserted.
 
 .. code-block:: bash
 
-   task performance        # produces wcet_results.xml and ber_results.xml
    task compliance-report
    # 31/31 requirements PASS; NFRs: 20 PASS
 
-``task compliance-report`` reads the JUnit evidence present in the working
-tree.  Run on its own from a fresh clone it reports **16 PASS, 4 NOT_RUN**:
-NFR-1.1, NFR-1.2 and NFR-1.4 need ``wcet_results.xml`` and
-NFR-2.2 needs ``ber_results.xml``, both of which ``task performance``
-generates.  The committed
-``docs/assurance/evidence/compliance_report.json`` is the full run.
+One command, ~3 minutes from a clean clone.  It runs the unit, integration,
+SWIFI, WCET and BER suites and grades against their JUnit output — NFR-1.1,
+NFR-1.2 and NFR-1.4 come from ``wcet_results.xml``, NFR-2.2 from
+``ber_results.xml``.  The report will not grade an NFR from evidence the run
+did not produce, and does not fall back to the committed evidence, so a
+regression shows up as a failure rather than as last week's pass.  The
+committed ``docs/assurance/evidence/compliance_report.json`` is the
+submission run.
 
 ----
 

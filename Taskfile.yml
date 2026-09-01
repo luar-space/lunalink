@@ -599,7 +599,11 @@ tasks:
     silent: false
 
   compliance-report:
-    desc: Generate LSIS-AFS compliance report (JSON artifact + summary table).
+    desc: >-
+      Generate the LSIS-AFS compliance report (JSON artifact + summary table).
+      Runs `task performance` first: NFR-1.1/1.2/1.4 are graded from
+      wcet_results.xml and NFR-2.2 from ber_results.xml, so without it those
+      four report NOT_RUN.
     vars:
       GENERATOR:
         sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
@@ -611,6 +615,11 @@ tasks:
       - '"{{.BUILD_DIR}}/test_lunalink" -r junit -o build/test_results.xml "~[slow]"'
       - '"{{.BUILD_DIR}}/test_lunalink" -r junit -o build/test_e2e.xml "[e2e]"'
       - task: swifi
+      # WCET and BER evidence for NFR-1.1/1.2/1.4 and NFR-2.2. The report
+      # refuses to grade an NFR from evidence the run did not produce, and
+      # deliberately does not fall back to the committed evidence — that
+      # would report a previous run's results as if they were this one's.
+      - task: performance
       - python3 scripts/compliance_report.py
     silent: false
 
