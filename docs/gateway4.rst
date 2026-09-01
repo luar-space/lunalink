@@ -46,9 +46,9 @@ Modulation formula
 
    sample[i] = (1 - 2 * chip[i]) * data_symbol
 
-This branchless arithmetic maps chip 0 |rarr| +1 and chip 1 |rarr| -1,
-then applies the data symbol sign.  Zero conditional branches in the hot
-loop ensures constant-time execution regardless of input values.
+This branchless arithmetic maps chip 0 |rarr| +1 and chip 1 |rarr| -1, then
+applies the data symbol sign.  With no conditional branch in the hot loop,
+execution time is constant whatever the input.
 
 .. |rarr| unicode:: U+2192
 
