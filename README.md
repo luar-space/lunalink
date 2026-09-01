@@ -14,6 +14,10 @@ Built as part of the **ESA-CCSDS Protocol Development Outreach Competition**.
 > it and the command that verifies it. The rendered site is the intended
 > reading surface: the `docs/` sources are reStructuredText, and their
 > cross-references do not resolve in GitHub's file viewer.
+>
+> **Reading offline?** After `task install`, `task docs-serve` builds the same
+> site in ~15 s and serves it at <http://127.0.0.1:8000> with auto-reload —
+> nothing to deploy. `task docs-pdf` produces a single PDF instead.
 
 ## Features
 
@@ -26,7 +30,17 @@ Built as part of the **ESA-CCSDS Protocol Development Outreach Competition**.
 
 ## What makes this implementation different
 
-Every claim below has a command beside it, or in
+If you have fifteen minutes, this is the tour — `task install`, then three
+commands that exercise the claims we would most want checked:
+
+```bash
+task interop      # ~10 s  bit-exact against an independent implementation
+task swifi        # ~50 s  42/42 fault-injection scenarios
+task test-cpp && task test-py   # ~1 min  229 C++ cases, 1237 Python tests
+```
+
+The nine sections below expand on that. Every claim in them has a command
+beside it or in
 [Verifying the implementation](#verifying-the-implementation). Nothing here
 is asserted.
 
@@ -104,6 +118,7 @@ Shannon gap into two attributable halves — **code gap** (inherent to the
 n=2400 design) and **implementation gap** (hardening, clamping, schedule).
 The shipped, TMR/CFI-hardened decoder lands **within 0.15 dB of reference
 belief propagation**: the ~1.0 dB total gap is the code's, not ours.
+(`task ldpc-algo-card` regenerates the comparison.)
 
 ### 4. FEC characterised, not merely tested
 
@@ -114,7 +129,9 @@ shipped cap of 50; and a quantisation sweep showing **int8 costs no
 measurable performance**, so an 8-bit ADC front-end suffices — a
 receiver-design conclusion, not just a test result. The BCH layer ships two
 exhaustive-ML decoders, hard- and soft-decision, the soft one worth ~2 dB of
-link budget.
+link budget. `task ldpc-algo-card` regenerates the LDPC characterisation
+(waterfalls, error floor, convergence, quantisation); `task performance`
+runs the BCH and channel simulations.
 
 ### 5. Verification depth
 
@@ -205,16 +222,31 @@ Library-only use (no dev tools) also works with plain pip: `pip install .`
 
 ## For evaluators
 
-Each pass/fail gate item is one command, run from the repo root after
-`task install`:
+**Nothing to run?** `docs/assurance/evidence/` ships the generated artefacts
+from the submission run as committed data — `compliance_report.json`
+(per-requirement and per-NFR pass/fail), `traceability.json`,
+`coverage_summary.json`, `swifi_results.json`, and JUnit XML for the
+unit/integration, E2E, WCET, BER and SWIFI suites. Every result claimed here
+can be inspected without a toolchain.
 
-| Gate item | Command | Evidence |
-|:--|:--|:--|
-| ≥ 12 PRN spreading codes | `uv run lunalink generate-codes` | 210 Gold codes (full Gold + Weil + secondary sets in `test-vectors/codes/`), bit-exact vs Annex 3 (`tests/test_annex3_codes.py`) |
-| Complete 12-second frame | `uv run python examples/01_transmit.py` | 6000-symbol frame, all subframes |
-| I/Q signal files | same command | `LSISIQ`-headed file — float32 or int16 (`sample_format=`), read back with `read_iq_file`; short vectors in `test-vectors/signals/` |
-| Validation tests | `task test-cpp && task test-py` | full unit/integration suites |
-| Setup/build instructions | this file + [docs/quickstart.rst](docs/quickstart.rst) | — |
+Each pass/fail gate item is one command, run from the repo root after
+`task install` (~1 min):
+
+| Gate item | Command | Time | Evidence |
+|:--|:--|:--|:--|
+| ≥ 12 PRN spreading codes | `uv run lunalink generate-codes` | < 1 s | 210 Gold codes written to `codes.txt` as 210 × 512 hex, bit-exact vs Annex 3 (`tests/test_annex3_codes.py`); full Gold + Weil + secondary sets in `test-vectors/codes/` |
+| Complete 12-second frame | `uv run python examples/01_transmit.py` | ~2 s | 6000-symbol frame, all subframes |
+| I/Q signal files | same command | — | `LSISIQ`-headed file — float32 or int16 (`sample_format=`), read back with `read_iq_file`; short vectors in `test-vectors/signals/` (writes a 491 MB `signal.iq`) |
+| Validation tests | `task test-cpp && task test-py` | ~1 min | full unit/integration suites — 229 C++ cases, 1237 Python tests |
+| Setup/build instructions | this file + [docs/quickstart.rst](docs/quickstart.rst) | — | — |
+
+Timings are wall-clock from a clean clone on an Apple M-series laptop, and
+include the first cold C++ build. Two commands need network on their first
+run only: `task test-cpp` (fetches Catch2) and `task interop` (clones
+LANS-AFS-SIM); everything else is offline.
+
+`task ci-checks` reproduces all 16 CI workflows locally if you would rather
+run one command than pick from the list.
 
 Beyond the gate, all nine gateways (0–8) are delivered with one verification
 guide each, and all **20 rubric NFRs are tracked**: 19 PASS, and NFR-5.4
@@ -231,13 +263,17 @@ NFR table, technical constraints and stated limits — is the
 Every claim below is one command. No manual setup.
 
 ```bash
-task test-cpp      # C++ unit + integration tests
-task test-py       # Python tests (100% coverage gate)
-task swifi         # SWIFI fault-injection campaign
-task interop       # cross-check against an independent implementation
-task performance   # BER waterfalls + WCET timing acceptance (longer run)
-task compliance-report  # spec-requirement → test traceability report
+task test-cpp      # ~1 min   C++ unit + integration tests (229 cases)
+task test-py       # ~5 s     Python tests (100% coverage gate, 1237 tests)
+task swifi         # ~50 s    SWIFI fault-injection campaign (42/42)
+task interop       # ~10 s    cross-check against an independent implementation
+task compliance-report  # ~25 s  spec-requirement → test traceability report
+task performance   # ~3 min   WCET + constant-time + BER channel simulations
+task ci-checks     # all 16 CI workflows, locally and offline
 ```
+
+Times are from a clean clone on an Apple M-series laptop, first run, cold
+build included.
 
 ### Interoperability
 
@@ -275,10 +311,24 @@ API reference, per-gateway deliverable verification, compliance matrix,
 assurance evidence (FMEA, fault coverage, MC/DC), and interoperability
 results.
 
-Build it locally with `task docs-build` (output in `docs/_build/html/`).
-The `docs/` sources are reStructuredText; read them through the published
-site rather than GitHub's file viewer, which does not resolve Sphinx
-cross-references.
+Three ways to read it locally — the `docs/` sources are reStructuredText, so
+read them through one of these rather than GitHub's file viewer, which does
+not resolve Sphinx cross-references:
+
+| Command | What you get | Time |
+|:--|:--|:--|
+| `task docs-serve` | the site at <http://127.0.0.1:8000>, auto-reloading | ~15 s |
+| `task docs-pdf` | one PDF (`docs/_build/latex/`); needs TeX Live | ~10 s |
+| `task docs-build` | static HTML in `docs/_build/html/` | ~35 min fresh, ~15 s after |
+
+`task docs-serve` is the one to use for reading — it needs no notebook
+execution and emits no Sphinx warnings. `task docs-build` is the CI gate, not
+the reading path: on a fresh clone it first runs the LDPC characterisation
+(`task ldpc-algo-card` — a Monte-Carlo campaign whose error-floor points are
+60,000 frames each) to produce the algorithm-card figures, then re-executes
+every tutorial notebook and builds with `-W` (warnings-as-errors). The
+characterisation is where the 35 minutes goes: once
+`build/algo_card/sp_results.json` exists, the same command takes ~15 s.
 
 ## Provenance
 
