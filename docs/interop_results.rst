@@ -10,6 +10,18 @@ Cross-Implementation Interoperability Results
 - **LunaLink** v1.0 — C++ / Python LSIS-AFS reference implementation
 - **LANS-AFS-SIM** (Ebinuma) — C, BSD-2-Clause, https://github.com/osqzss/LANS-AFS-SIM
 
+LANS-AFS-SIM is a transmit-side simulator: it exposes
+``encode_LDPC_AFS_SF2``/``SF3`` and no decode, acquisition or tracking entry
+point.  That shapes what can be compared.  Encoding is deterministic, so
+bit-exact agreement is the complete comparison and is what L1–L2 check.
+Decoding is statistical, so it is characterised rather than compared — and
+only LunaLink has a decoder to characterise, which is why the receiver
+measurements in :doc:`signal/ldpc_algo_card` are LunaLink's shipped decoder
+against LunaLink's own unhardened float64 reference decoder and the
+finite-length sphere-packing bound, not against LANS-AFS-SIM.  It is also
+why the reverse direction (L4–L5) names PocketSDR-AFS rather than
+LANS-AFS-SIM: closing it needs a third-party *receiver*.
+
 **Reference:** Sobukawa & Ebinuma, *Aerospace* 12(7), 2025
 
 .. note::
