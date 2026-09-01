@@ -3,10 +3,9 @@ Build Tiers and Compiler Policy
 
 Purpose
 -------
-Define the three build tiers, their compiler toolchains, and the assurance
-obligations that apply at each tier.  All tiers share the same C++ source
-tree (``cpp/``); the differences are in compiler selection, flags, and
-verification scope.
+The three build tiers, their compiler toolchains, and the assurance
+obligations each carries.  All three share one C++ source tree (``cpp/``) and
+differ only in compiler, flags and verification scope.
 
 Build Tier Overview
 -------------------
@@ -118,8 +117,8 @@ Platform-specific constructs are abstracted in
 - ``has_force_set_v<T, U>`` — SFINAE trait replacing a ``requires``
   expression that older MSVC versions do not support.
 
-These macros ensure the flight build (Tier 1) is unchanged; only the
-MSVC code path is affected.
+The flight build (Tier 1) is untouched by these macros; only the MSVC path
+changes.
 
 Enforcement
 -----------

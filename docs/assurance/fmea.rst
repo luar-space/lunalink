@@ -12,9 +12,10 @@ Fault Containment Architecture described in ``mission_assurance.rst``.  Where th
 specifies *how* LunaLink responds to faults, this document analyses *what can go wrong*,
 *what happens to the system if it does*, and *how the fault is detected and contained*.
 
-The scope is all safety-critical software functions in the core C++ source directories.  Hardware failure
-modes (power supply, oscillator, memory DRAM/SRAM) are outside scope and are treated
-as inputs to this analysis via the system-level hazard analysis.
+Scope: every safety-critical software function in the core C++ source
+directories.  Hardware failure modes — power supply, oscillator, DRAM/SRAM —
+fall outside it and enter this analysis as inputs from the system-level hazard
+analysis.
 
 Severity Classification
 -----------------------
@@ -777,8 +778,8 @@ FMEA Table — SISE Calculation (``sise.cpp``)
 Open FMEA Items
 ---------------
 
-The following failure modes are identified as requiring further analysis and are
-tracked as open items.  They are not currently mitigated by a software-layer control.
+Three failure modes need further analysis and carry no software-layer
+mitigation today.  They are tracked as open items.
 
 .. list-table::
    :header-rows: 1

@@ -1,8 +1,8 @@
 Assurance Document Index
 ========================
 
-This folder contains the assurance and certification-support artifacts for the
-project. The canonical entry points are:
+Assurance and certification-support artefacts for the project.  The canonical
+entry points:
 
 - ``docs/assurance/mission_assurance.rst``: Mission assurance philosophy and
   hardening requirements.

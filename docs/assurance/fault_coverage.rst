@@ -10,14 +10,14 @@ Fault Coverage Report
 Purpose
 -------
 
-This document records the Software-Implemented Fault Injection (SWIFI) test suite
-coverage for LunaLink.  It constitutes the primary evidence artefact for
-``SW-SAF-06`` ("the SWIFI suite shall achieve 100% single-bit fault detection
-coverage for all hardening patterns").
+SWIFI (Software-Implemented Fault Injection) test-suite coverage for LunaLink,
+and the primary evidence artefact for ``SW-SAF-06`` ("the SWIFI suite shall
+achieve 100% single-bit fault detection coverage for all hardening
+patterns").
 
 The table below is **human-curated and aligned with the SWIFI test suite** in
-the per-module SWIFI test files.  It is updated whenever a new fault scenario
-is added or a hardening pattern is modified.
+the per-module test files.  Adding a fault scenario or changing a hardening
+pattern means updating it.
 
 Injection Technique Coverage
 ----------------------------
@@ -368,9 +368,10 @@ Summary
 
 The residual risks (FI-02 — all-TMR-copies-same corruption; FI-35/FI-36 — TMR
 two-of-three corruption with different/same bad values) are acknowledged
-limitations of the TMR pattern: when multiple copies are overwritten
-simultaneously, the majority vote cannot detect the discrepancy.  This is documented in the FMEA (``assurance/fmea.rst``) and
-accepted as a design constraint inherent to TMR without hardware scrubbing.
+limitations of the TMR pattern: overwrite several copies at once and the
+majority vote has nothing left to compare against.  That limit is inherent to
+TMR without hardware scrubbing, and the FMEA (``assurance/fmea.rst``) records
+it as such.
 
 Descoped Scenarios (Gateway 6 — Message Parsing)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

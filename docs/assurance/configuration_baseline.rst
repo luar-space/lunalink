@@ -3,8 +3,8 @@ Configuration Baseline and Reproducible Builds
 
 Purpose
 -------
-Define how a release build is frozen, reproduced, and verified. The baseline
-ensures that certification evidence is tied to an immutable configuration.
+How a release build is frozen, reproduced and verified.  The baseline ties
+certification evidence to one immutable configuration.
 
 Baseline Requirements
 ---------------------

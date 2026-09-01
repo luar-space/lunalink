@@ -3,13 +3,13 @@ Toolchain Confidence and Evidence
 
 Purpose
 -------
-Record the toolchain and analysis tools used to generate certification-grade
-artifacts, along with the rationale for trust in their outputs.
+The toolchain and analysis tools behind every certification-grade artefact,
+and the grounds for trusting what they report.
 
 Scope
 -----
-Applies to all flight build and verification tools used to produce evidence
-artifacts (static analysis, coverage, SWIFI, and release builds).
+Every flight build and verification tool that produces an evidence artefact:
+static analysis, coverage, SWIFI, release builds.
 
 Tool Records
 ------------
@@ -146,7 +146,7 @@ gaps in clang-tidy (verified during tool validation suite development):
        enforced by code review and the project's use of runtime checks
        (return bool) over ``assert()`` for flight APIs.
 
-These limitations are mitigated by:
+Three things cover the gap:
 
 1. Compiler warnings covering the same violation class.
 2. The project's coding conventions avoiding the problematic patterns entirely

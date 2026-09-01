@@ -10,10 +10,9 @@ Software Metrics Plan
 Purpose
 -------
 
-This Software Metrics Plan defines the quantitative measures collected during
-LunaLink development, the tools used to collect them, the thresholds that
-constitute compliance, and the escalation procedure when a threshold is
-breached.
+The quantitative measures collected during LunaLink development: what each
+one is, which tool collects it, the threshold that constitutes compliance, and
+what happens when one is breached.
 
 It satisfies ECSS-Q-HB-80-04A (NPR 7150.2D SWE-164, "the project shall develop a
 Software Metrics Plan that identifies software metrics to be used to manage the
@@ -95,8 +94,7 @@ Metrics Catalogue
 Escalation Procedure
 ---------------------
 
-The standard escalation procedure applies when any metric crosses its
-threshold:
+Any metric crossing its threshold triggers the same five steps:
 
 1. **CI gate fires** — the relevant GitHub Actions job transitions to
    ``failure``.  The pull request is blocked from merging by the branch

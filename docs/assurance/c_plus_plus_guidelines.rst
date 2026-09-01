@@ -3,17 +3,16 @@ C++20 Style Guide for ECSS Class B Certifiable Software
 
 Purpose and Scope
 -----------------
-This guide defines the C++20 subset, patterns, and verification expectations
-required for deterministic, fault-tolerant, radiation-hardened flight software.
-It is derived from the mission assurance principles documented in
-``docs/assurance/mission_assurance.rst`` and targets ECSS-E-ST-40C Category B
-software. Where practical, it aligns with stricter Category A / DO-178C Level A
-controls to de-risk future upgrades.
+The C++20 subset, patterns and verification expectations that deterministic,
+fault-tolerant, radiation-hardened flight software demands.  It follows from
+the mission assurance principles in ``docs/assurance/mission_assurance.rst``
+and targets ECSS-E-ST-40C Category B software, reaching for the stricter
+Category A / DO-178C Level A controls where that is practical.
 
 Standards Applicability
 -----------------------
-This guide is the union of requirements from the following standards, resolved
-to the strictest rule where standards overlap:
+It unions the requirements of the standards below, taking the strictest rule
+wherever two overlap:
 
 .. list-table::
    :header-rows: 1
@@ -54,8 +53,8 @@ to the strictest rule where standards overlap:
 
 Compatibility Assessment
 ~~~~~~~~~~~~~~~~~~~~~~~~
-All six coding standards are **fully compatible** for LunaLink's scope. The few
-minor tensions are resolved as follows:
+All six coding standards are compatible across LunaLink's scope.  Five
+tensions need resolving:
 
 - **MISRA 6.7.1** (no function-local statics) vs. **P10 Rule 6** (smallest scope):
   LunaLink bans function-local statics in flight paths; uses file-scope ``constinit``
@@ -259,8 +258,9 @@ Traceability and Requirement Tagging
 
 Hardening Patterns
 ------------------
-These patterns are mandatory when applicable to the domain logic. They exceed
-all referenced standards and represent LunaLink's radiation-hardening approach.
+These patterns are mandatory wherever the domain logic admits them.  They go
+beyond every referenced standard; radiation hardening is where LunaLink adds
+its own.
 
 SEU-resistant enumerations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -432,13 +432,13 @@ formal Guideline Compliance Summary (``misra_cpp2023_gcs.rst``,
 LUNALINK-MISRA-GCS-001) — recording the status of all 179 guidelines
 (Compliant, Deviated, Disapplied, Manual, or N/A), the deviation register,
 and the disapplied guidelines justification — is maintained in the
-development tree and is not shipped in this release.  The per-rule content
-in this document is the shipped compliance record.
+development tree and is not shipped in this release.  What this document
+records per rule is the shipped compliance record.
 
 Tool Validation Suite
 ~~~~~~~~~~~~~~~~~~~~~
-Tool confidence is demonstrated by a **tool validation suite** of 47
-deliberately-broken C++ source files in ``cpp/tests/tool_validation/violations/``.
+A **tool validation suite** carries the tool-confidence argument: 47
+deliberately broken C++ source files in ``cpp/tests/tool_validation/violations/``.
 Each file contains exactly one coding violation and declares the expected
 clang-tidy diagnostic. The runner script (``scripts/validate_tidy.py``,
 invoked via ``task validate-tidy``) proves that the tool detects every
