@@ -29,10 +29,12 @@ namespace {
 // build when a stage exceeds its spec budget, regardless of history.
 //
 // The TEST_CASEs below are tagged `[wcet][wcet-budget][slow]`:
-//   - `[slow]` excludes them from `task test-cpp` (Debug build), so the
-//     budgets — calibrated against Release builds — never run in Debug
-//     where timings are 3-14× slower and would flake. (sync_detect, for
-//     example, runs in 64 µs Release vs 899 µs Debug on the same host.)
+//   - `[slow]` excludes them from `task test-cpp` (Debug build), where
+//     timings are 3-14× slower and would flake. (sync_detect, for example,
+//     runs in 64 µs Release vs 899 µs Debug on the same host.)  The tag is
+//     not enough on its own: `task test-acceptance` and acceptance.yml run
+//     the whole binary in Debug, which is why the budgets also guard on the
+//     build type below.
 //   - `[wcet]` is included by the nightly `wcet.yml` workflow, which
 //     builds Release (`-DCMAKE_BUILD_TYPE=Release`) and already has the
 //     perf regression machinery wired up. Adding these tests there gives
@@ -45,6 +47,16 @@ namespace {
 // Release build. If a budget flakes on a specific CI runner, bump the
 // number in the test — do NOT loosen the iteration count below ~10,
 // because averaging is what keeps the measurement stable.
+// A Debug run measures the build, not the implementation: four of the five
+// budgets fail there.  Skip rather than fail, so a whole-binary Debug run
+// stays green while the gate still bites in Release.
+#ifdef NDEBUG
+#define LUNALINK_SKIP_UNLESS_RELEASE() ((void)0)
+#else
+#define LUNALINK_SKIP_UNLESS_RELEASE()                                                             \
+  SKIP("WCET budgets are Release-only; run `task wcet` or `task performance`")
+#endif
+
 template <typename F> double measure_avg_us(F&& f, size_t iters) {
   using clock = std::chrono::steady_clock;
   const auto start = clock::now();
@@ -90,6 +102,7 @@ void prepare_soft_symbols(LdpcSubframe type, std::span<float> soft, float snr_sc
 // auditors can see the drift if CI hardware changes.
 
 TEST_CASE("WCET budget: BCH ML decode < 3 µs", "[wcet][wcet-budget][slow]") {
+  LUNALINK_SKIP_UNLESS_RELEASE();
   // Observed: 238 ns (M-series Release build). Budget 3 µs = 12×.
   std::array<uint8_t, 52> bch_in{};
   const double avg_us = measure_avg_us([&]() { return bch_decode(bch_in); }, 1000);
@@ -98,6 +111,7 @@ TEST_CASE("WCET budget: BCH ML decode < 3 µs", "[wcet][wcet-budget][slow]") {
 }
 
 TEST_CASE("WCET budget: sync_detect (6000 symbols) < 700 µs", "[wcet][wcet-budget][slow]") {
+  LUNALINK_SKIP_UNLESS_RELEASE();
   // Observed: 64 µs (M-series Release). Budget 700 µs ≈ 11×.
   NullTelemetryHal hal;
   SyncDetector det(hal);
@@ -115,6 +129,7 @@ TEST_CASE("WCET budget: sync_detect (6000 symbols) < 700 µs", "[wcet][wcet-budg
 }
 
 TEST_CASE("WCET budget: LDPC decode SF2 (50 iter) < 4 ms", "[wcet][wcet-budget][slow]") {
+  LUNALINK_SKIP_UNLESS_RELEASE();
   // Observed: 386 µs (M-series Release, clean signal, NMS). Budget 4 ms ≈ 10×.
   std::array<uint8_t, 1200> msg_sf2{};
   std::array<uint8_t, 2400> encoded_sf2{};
@@ -134,6 +149,7 @@ TEST_CASE("WCET budget: LDPC decode SF2 (50 iter) < 4 ms", "[wcet][wcet-budget][
 }
 
 TEST_CASE("WCET budget: LDPC decode SF3 (50 iter) < 5 ms", "[wcet][wcet-budget][slow]") {
+  LUNALINK_SKIP_UNLESS_RELEASE();
   // Observed: 497 µs (M-series Release, clean signal). Budget 5 ms ≈ 10×.
   std::array<uint8_t, 870> msg_sf3{};
   std::array<uint8_t, 1740> encoded_sf3{};
@@ -154,6 +170,7 @@ TEST_CASE("WCET budget: LDPC decode SF3 (50 iter) < 5 ms", "[wcet][wcet-budget][
 
 TEST_CASE("WCET budget: frame_decode (pseudo-random payload) < 20 ms",
           "[wcet][wcet-budget][slow]") {
+  LUNALINK_SKIP_UNLESS_RELEASE();
   // Observed: 1.75 ms (M-series Release, pseudo-random payload). Budget 20 ms ≈ 11×.
   // This is the end-to-end wall-clock that matters for the 1 s frame cadence:
   // 20 ms gives 50× real-time headroom on the worst-case class.
