@@ -172,7 +172,11 @@ traceability matrix, coverage evidence, SWIFI report, stack usage, build
 manifest, algorithm cards — produced by script rather than maintained by
 hand. An on-demand recertification workflow runs every gate against any git
 ref and emits a signed-off, milestone-tagged record. `task ci-checks`
-reproduces all 16 CI workflows locally, offline.
+reproduces the CI gate locally and offline — build, lint, formatting, Clang
+Static Analyzer, both test suites, SWIFI, traceability, doc metrics,
+clang-tidy and its qualification, sanitisers, docs. The workflows outside it
+are the long ones, each its own task: `task performance` (WCET, BER),
+`task test-acceptance`, `task coverage-cpp`, `task fuzz`, `task cross-arch`.
 
 ### 8. Documentation organised around assessment
 
@@ -235,7 +239,7 @@ Each pass/fail gate item is one command, run from the repo root after
 | Gate item | Command | Time | Evidence |
 |:--|:--|:--|:--|
 | ≥ 12 PRN spreading codes | `uv run lunalink generate-codes` | < 1 s | 210 Gold codes written to `codes.txt` as 210 × 512 hex, bit-exact vs Annex 3 (`tests/test_annex3_codes.py`); full Gold + Weil + secondary sets in `test-vectors/codes/` |
-| Complete 12-second frame | `uv run python examples/01_transmit.py` | ~2 s | 6000-symbol frame, all subframes |
+| Complete 12-second frame | `uv run python examples/01_transmit.py` | ~1 s | 6000-symbol frame, all subframes |
 | I/Q signal files | same command | — | `LSISIQ`-headed file — float32 or int16 (`sample_format=`), read back with `read_iq_file`; short vectors in `test-vectors/signals/` (writes a 491 MB `signal.iq`) |
 | Validation tests | `task test-cpp && task test-py` | ~1 min | full unit/integration suites — 229 C++ cases, 1237 Python tests |
 | Setup/build instructions | this file + [docs/quickstart.rst](docs/quickstart.rst) | — | — |
@@ -245,14 +249,19 @@ include the first cold C++ build. Two commands need network on their first
 run only: `task test-cpp` (fetches Catch2) and `task interop` (clones
 LANS-AFS-SIM); everything else is offline.
 
-`task ci-checks` reproduces all 16 CI workflows locally if you would rather
-run one command than pick from the list.
+`task ci-checks` runs the whole CI gate in one command. It excludes the long
+workflows — `task performance`, `task test-acceptance`, `task coverage-cpp`,
+`task fuzz`, `task cross-arch` — and the interop cross-check, so run those
+separately; on a fresh clone budget ~40 min, since it includes
+`task docs-build`.
 
 Beyond the gate, all nine gateways (0–8) are delivered with one verification
 guide each, and all **20 rubric NFRs are tracked**: 19 PASS, and NFR-5.4
 (version-control history) reported as a limitation rather than a pass,
 because this public release is a squashed export. `task compliance-report`
-regenerates that record.
+regenerates that record — run `task performance` first, or four timing and
+BER NFRs report NOT_RUN, because their JUnit evidence is what
+`task performance` produces.
 
 The judge-oriented tour — scoring categories, gateway checklists, the full
 NFR table, technical constraints and stated limits — is the
@@ -269,7 +278,7 @@ task swifi         # ~50 s    SWIFI fault-injection campaign (42/42)
 task interop       # ~10 s    cross-check against an independent implementation
 task compliance-report  # ~25 s  spec-requirement → test traceability report
 task performance   # ~3 min   WCET + constant-time + BER channel simulations
-task ci-checks     # all 16 CI workflows, locally and offline
+task ci-checks     # ~40 min  the CI gate in one command, offline
 ```
 
 Times are from a clean clone on an Apple M-series laptop, first run, cold

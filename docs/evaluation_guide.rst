@@ -284,8 +284,16 @@ delivered repository — none is asserted.
 
 .. code-block:: bash
 
+   task performance        # produces wcet_results.xml and ber_results.xml
    task compliance-report
    # 31/31 requirements PASS; NFRs: 19 PASS, 1 LIMITATION
+
+``task compliance-report`` reads the JUnit evidence present in the working
+tree.  Run on its own from a fresh clone it reports **15 PASS, 4 NOT_RUN, 1
+LIMITATION**: NFR-1.1, NFR-1.2 and NFR-1.4 need ``wcet_results.xml`` and
+NFR-2.2 needs ``ber_results.xml``, both of which ``task performance``
+generates.  The committed
+``docs/assurance/evidence/compliance_report.json`` is the full run.
 
 ----
 
