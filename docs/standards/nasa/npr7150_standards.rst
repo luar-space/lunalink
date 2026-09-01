@@ -4,8 +4,8 @@ NASA NPR 7150.2D Software Engineering Standards
 :Document ID: LUNALINK-STDS-002
 :Last Updated: 2026-03-13
 
-This document catalogues the NASA software engineering standards relevant to
-space software certification.  LunaLink's assurance infrastructure is built
+A catalogue of the NASA software engineering standards that bear on space
+software certification.  LunaLink's assurance infrastructure is built
 against **NPR 7150.2D** (Class B equivalent).
 
 .. contents:: On this page

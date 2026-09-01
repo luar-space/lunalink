@@ -10,10 +10,9 @@ Software Development Plan
 Purpose
 -------
 
-This Software Development Plan (SDP) defines the lifecycle model, roles and
-responsibilities, development tools, and entry/exit criteria applied to LunaLink.
-It formalises the practices described informally in ``developing.rst`` to satisfy
-ECSS-E-ST-40C Rev.1 §5.2 (NPR 7150.2D SWE-013).
+The lifecycle model, roles, development tools and entry/exit criteria that
+govern LunaLink.  It formalises what ``developing.rst`` describes informally,
+as ECSS-E-ST-40C Rev.1 §5.2 (NPR 7150.2D SWE-013) requires.
 
 Lifecycle Model
 ---------------
@@ -135,9 +134,9 @@ Development Tools
 Coding Standards
 -----------------
 
-The coding standards and forbidden constructs are defined in full in
-``mission_assurance.rst`` §Design Constraints.  This section summarises the
-normative requirements; the detailed rationale is in that document.
+``mission_assurance.rst`` §Design Constraints defines the coding standards and
+forbidden constructs in full.  What follows is the normative summary; the
+rationale lives there.
 
 **Language**: C++20, compiled with ``-std=c++20``.
 
@@ -214,8 +213,8 @@ runs the full quality pipeline in order:
 7. ``sanitize`` — ASan + UBSan recompile and test
 8. ``docs-build`` — Sphinx documentation build
 
-Any step failure blocks the commit.  Bypassing with ``--no-verify`` is strongly
-discouraged and must be documented in the commit message if used.
+Any step failure blocks the commit.  ``--no-verify`` bypasses the hook; a
+commit that uses it must say why in its message.
 
 CI Pipeline
 -----------

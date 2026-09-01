@@ -4,8 +4,8 @@ ECSS Software Certification Standards
 :Document ID: LUNALINK-STDS-001
 :Last Updated: 2026-03-13
 
-This document catalogues the European Cooperation for Space Standardization
-(ECSS) standards relevant to space software certification.  LunaLink's
+A catalogue of the European Cooperation for Space Standardization (ECSS)
+standards that bear on space software certification.  LunaLink's
 assurance infrastructure is natively structured against **ECSS-E-ST-40C Rev.1**
 and **ECSS-Q-ST-80C Rev.2**, with NASA NPR 7150.2D maintained as a secondary
 cross-reference (see ``docs/standards/nasa_compliance_addendum.rst``).

@@ -10,15 +10,15 @@ NASA Compliance Addendum
 Purpose
 -------
 
-LunaLink's assurance infrastructure is natively structured against **ECSS-E-ST-40C Rev.1**
-and **ECSS-Q-ST-80C Rev.2**.  This addendum provides a single lookup table mapping all 29
-NASA NPR 7150.2D SWE requirements to their ECSS equivalents and to the LunaLink artefacts
-that satisfy them.
+LunaLink's assurance infrastructure is structured against **ECSS-E-ST-40C
+Rev.1** and **ECSS-Q-ST-80C Rev.2**.  One lookup table below maps all 29 NASA
+NPR 7150.2D SWE requirements to their ECSS equivalents and to the LunaLink
+artefacts that satisfy them.
 
 For the technical software engineering requirements relevant to LunaLink's scope, ECSS
 imposes requirements at least as stringent as the corresponding NPR SWE requirements.
-This addendum enables evaluators familiar with the NASA framework to locate compliance
-evidence without navigating the ECSS structure directly.
+An evaluator who knows the NASA framework can find the compliance evidence
+without reading the ECSS structure first.
 
 For the ECSS tailoring decisions themselves, see ``docs/standards/esa/ecss_standards.rst``
 (LUNALINK-STDS-001, §Tailoring Record).

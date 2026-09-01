@@ -10,9 +10,8 @@ Software Configuration Management Plan
 Purpose and Scope
 -----------------
 
-This Software Configuration Management Plan (SCMP) defines the processes, tools, and
-authority structure used to identify, control, and audit LunaLink software
-configurations throughout the development lifecycle.
+The processes, tools and authority structure that identify, control and audit
+LunaLink software configurations across the development lifecycle.
 
 Scope: all software items under change control, including source code, build scripts,
 toolchain manifests, test data (golden vectors), and documentation.

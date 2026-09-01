@@ -10,10 +10,9 @@ Configuration Baseline Register
 Purpose
 -------
 
-This register is the authoritative record of formal configuration baselines
-established during LunaLink development.  Each baseline maps a git tag to a
-lifecycle phase exit, records the approving authority, and captures the SHA
-of the tagged commit.
+The authoritative record of formal configuration baselines.  Each row maps a
+git tag to a lifecycle phase exit, names the approving authority, and captures
+the SHA of the tagged commit.
 
 A baseline is established whenever a gateway exit is declared and its
 verification criteria are met (per ``governance/sdp.rst`` §Entry/Exit
@@ -112,8 +111,7 @@ apply, a description, the approving authority, and the resolution.
 Change Authority
 -----------------
 
-The following change authority rules apply to all baselines recorded in this
-register:
+Four rules govern change authority for every baseline in this register:
 
 1. **Pull requests to ``main``** require:
 
@@ -122,7 +120,7 @@ register:
      coverage-cpp, docs).
    * No open S1 PRACA issues.
 
-2. **S1 safety fixes** additionally require:
+2. **S1 safety fixes** also require:
 
    * At least **2 approving reviewers**, one of whom must be the Lead Developer.
    * SWIFI suite 100% pass and the CI coverage gate green (design target
