@@ -248,9 +248,10 @@ BSD-2-Clause), an independent LSIS-AFS implementation.
      - Result
      - Detail
    * - L1
-     - Gold + Weil code bit-exact (PRN 1–12)
+     - Gold + Weil code bit-exact (PRN 1–210)
      - **PASS**
-     - 0 chip mismatches across 24 code comparisons
+     - 0 chip mismatches across 420 code comparisons
+       (0/2046 per Gold code, 0/10230 per Weil code)
    * - L2
      - Frame encoding bit-exact (5 payloads)
      - **PASS**
@@ -325,16 +326,22 @@ GD7.5 --- Compliance Validation
 **Spec reference:** All LSIS requirements.
 
 - **Shall-statement inventory:** ``docs/signal/shall_inventory.rst`` --- every
-  LSIS-NNN identifier in LSIS V1.0 mapped to disposition (70 total: 38
-  implemented, 12 RF/out-of-scope, 15 TBW, 3 TBC, 2 FLEX).
-- **Compliance matrix:** ``docs/signal/compliance_matrix.rst`` --- all G1-G7
-  requirements tracked; zero TODOs remaining for G1-G7.
+  LSIS-NNN identifier in LSIS V1.0 mapped to disposition (76 total: 49
+  implemented, 12 RF/out-of-scope, 10 TBW, 3 TBC, 2 FLEX).
+- **Compliance matrix:** ``docs/signal/compliance_matrix.rst`` --- all G1-G8
+  requirements tracked; zero TODOs remaining.
 - **Traceability matrix:** ``docs/assurance/traceability_matrix.rst`` ---
-  22 LSIS-AFS + 5 SW-SAF requirements mapped to tests; 100% coverage.
-- **Test coverage:** over 300 C++ test cases pass (including 42 SWIFI
-  fault-injection scenarios).
+  26 LSIS-AFS + 5 SW-SAF requirements mapped to tests; 100% coverage.
+- **Test coverage:** 320 C++ test cases pass (plus 42 SWIFI
+  fault-injection scenarios, run separately by ``task swifi``).
+
+The counts above are read from the generated evidence in
+``docs/assurance/evidence/`` (``traceability.json``,
+``compliance_report.json``); regenerate both with the commands below rather
+than editing them here.
 
 .. code-block:: bash
 
-   task test-cpp       # fast unit + integration suites pass
-   task traceability   # 27 requirements, 0 orphans
+   task test-cpp          # fast unit + integration suites pass
+   task traceability      # 31 requirements, 0 orphans
+   task compliance-report # 31/31 requirements PASS; 19/20 NFRs PASS

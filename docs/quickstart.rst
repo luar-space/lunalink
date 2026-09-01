@@ -45,6 +45,27 @@ Generate a 12-second AFS I/Q signal file in three steps:
    # 3. Write to disk with the LSISIQ metadata header
    write_iq_file("signal.iq", iq, AFS_Q_CHIP_RATE, prn_id=1)
 
+Pass ``sample_format="int16"`` to store the samples at full scale as 16-bit
+integers instead — half the file size, the convention used by SDR capture
+files, and the format LANS-AFS-SIM emits:
+
+.. code-block:: python
+
+   write_iq_file("signal.iq", iq, AFS_Q_CHIP_RATE, prn_id=1,
+                 sample_format="int16")
+
+Read either format back with :func:`~lunalink.afs.read_iq_file`, which takes
+the format from the file header and always returns normalised float32:
+
+.. code-block:: python
+
+   from lunalink.afs import read_iq_file
+
+   sig = read_iq_file("signal.iq")
+   sig.iq             # float32 (N, 2), in [-1.0, +1.0]
+   sig.sample_format  # 'int16' or 'float32'
+   sig.sample_rate, sig.duration_s, sig.prn_id
+
 For external analysis tools (spreadsheets, MATLAB/Octave, pandas), the same
 samples can be exported as CSV with :func:`~lunalink.afs.write_iq_csv`:
 

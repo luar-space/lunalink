@@ -144,10 +144,29 @@ tasks:
       - "{{.BUILD_DIR}}/test_lunalink [e2e] --reporter console"
     silent: false
 
+  constant-time:
+    desc: >-
+      Gate input-independence of the branchless primitives (Release): fails if
+      class-to-class timing spread exceeds the measured tolerance.
+    vars:
+      GENERATOR:
+        sh: which ninja >/dev/null 2>&1 && echo "Ninja" || echo "Unix Makefiles"
+      BUILD_DIR: build/performance
+    cmds:
+      - mkdir -p {{.BUILD_DIR}}
+      - cmake -B {{.BUILD_DIR}} -S . -G "{{.GENERATOR}}" -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release
+      - cmake --build {{.BUILD_DIR}} --parallel
+      # Release only: Debug timings are 3-14x slower and the spread is dominated
+      # by unoptimised loop overhead rather than by the data path (see the
+      # Debug/Release note in cpp/tests/performance/test_wcet.cpp).
+      - '{{.BUILD_DIR}}/test_lunalink "[constant-time]" --reporter console'
+    silent: false
+
   performance:
     desc: Run all performance tests — [wcet] timing report + [ber] channel simulations.
     cmds:
       - task: wcet
+      - task: constant-time
       - task: ber
     silent: false
 
@@ -298,12 +317,19 @@ tasks:
       - "{{.LLVM_DIR}}/llvm-cov report build/coverage/test_lunalink -object build/coverage/lunalink_swifi_tests -instr-profile=build/coverage/lunalink.profdata -show-mcdc-summary -ignore-filename-regex='_deps|tests'"
       - echo "MC/DC Coverage report generated at build/coverage/html/index.html"
       - |
-        LINE_PCT=$({{.LLVM_DIR}}/llvm-cov report build/coverage/test_lunalink \
+        # llvm-cov TOTAL column order: regions, functions, lines, branches, MC/DC.
+        # Index each metric explicitly — taking the first '%' field reports
+        # REGION coverage under a "line" label, which overstates the line figure.
+        {{.LLVM_DIR}}/llvm-cov report build/coverage/test_lunalink \
           -object build/coverage/lunalink_swifi_tests \
           -instr-profile=build/coverage/lunalink.profdata \
+          -show-mcdc-summary \
           -ignore-filename-regex='_deps|tests' 2>/dev/null | \
-          awk '/TOTAL/{for(i=1;i<=NF;i++) if($i ~ /%/) {gsub(/%/,"",$i); print $i; exit}}')
-        echo "Line coverage: ${LINE_PCT}% (informational — effective coverage is the gate)"
+          grep '^TOTAL' | grep -oE '[0-9]+\.[0-9]+%' | \
+          awk 'NR==1{printf "Region coverage: %s (>= 90%% gate)\n", $0}
+               NR==3{printf "Line coverage:   %s (>= 85%% floor)\n", $0}
+               NR==5{printf "MC/DC coverage:  %s (>= 30%% gate)\n", $0}'
+        echo "Authoritative verdict and per-file waivers: task coverage-report"
     silent: false
 
   coverage-oss:
@@ -366,7 +392,12 @@ tasks:
   coverage-report:
     desc: Generate structured coverage evidence report (RST + JSON) from existing coverage data.
     cmds:
-      - python3 scripts/coverage_evidence_report.py --build-dir build/coverage
+      # Writes straight into the shipped evidence set so the committed
+      # artifact is always the one a reviewer can regenerate, never a copy.
+      - |
+        python3 scripts/coverage_evidence_report.py --build-dir build/coverage \
+          --output-rst docs/assurance/coverage_evidence.rst \
+          --output-json docs/assurance/evidence/coverage_summary.json
     silent: false
 
   sanitize:
@@ -553,6 +584,20 @@ tasks:
     cmd: python3 scripts/verify_traceability.py
     silent: false
 
+  check-doc-metrics:
+    desc: >-
+      Fail if documented coverage figures or the NOCOVER annotation count drift
+      from the generated evidence and the source tree.
+    cmd: python3 scripts/check_doc_metrics.py
+    silent: false
+
+  validate-export:
+    desc: >-
+      Build and test the COMMITTED tree only (git archive), catching files that
+      exist on disk but were never committed. Requires a clean working tree.
+    cmd: scripts/validate_export.sh {{.CLI_ARGS}}
+    silent: false
+
   compliance-report:
     desc: Generate LSIS-AFS compliance report (JSON artifact + summary table).
     vars:
@@ -723,14 +768,16 @@ tasks:
       - task: swifi-reconcile
       - task: swifi
       - task: traceability
+      - task: check-doc-metrics
       - task: tidy
       - task: validate-tidy
       - task: test-py
       - task: sanitize
       - task: docs-build
-      # validate-export is CI-only (.github/workflows/validate-export.yml runs on
-      # push to main). It rebuilds a fresh venv inside the exported tree, which
-      # adds ~60s locally for a check whose audience is a fresh-clone user.
+      # `task validate-export` is deliberately NOT in this list: it requires a
+      # clean working tree, and ci-checks is normally run mid-change. It runs in
+      # CI on every push to main (.github/workflows/validate-export.yml) and
+      # should be run by hand before tagging a release.
       #
       # Discard the regenerated artefacts only — `swifi-report.py` rewrites
       # `swifi_results.json`, `verify_traceability.py` rewrites

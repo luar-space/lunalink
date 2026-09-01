@@ -32,6 +32,29 @@ Phased Implementation
      - PNT Pipeline (constellation simulation, position fix)
      - 📅 Future work — beyond competition scope
 
+Post-submission work
+--------------------
+
+Named here so the boundary of what has been demonstrated is explicit:
+
+1. **Reverse-direction interoperability (interop L4/L5).**  LunaLink
+   decodes an independent implementation's signal (:doc:`interop_results`
+   L3, demonstrated).  The reverse — an independent receiver, e.g.
+   PocketSDR-AFS, decoding a LunaLink signal — is supported by published
+   vectors, oracles and a zero-dependency validator, but has **not** been
+   run.  This is the first item of post-submission work.
+2. **Hardware-in-the-loop verification.**  The HAL_STUB coverage waivers in
+   :doc:`assurance/coverage_exclusions` resolve at TRL-5 on target
+   hardware (PolarFire SoC).
+3. **Effective-coverage gate promotion.**  ``task coverage-effective`` reports
+   98.24% repository-wide; 45 uncovered lines across 13 files still need an
+   individual disposition (test it, or mark it with a justified category)
+   before the check can become a blocking gate in ``task ci-checks``.  The
+   spreading-code generators in ``cpp/codes/`` are already at 100.0% with
+   zero unmarked lines (:doc:`gateway1`).
+4. **PNT pipeline (V5).**  Constellation simulation and position fix, as
+   above.
+
 Component Traceability
 ----------------------
 

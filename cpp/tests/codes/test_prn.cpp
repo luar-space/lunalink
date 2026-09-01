@@ -204,7 +204,7 @@ TEST_CASE("PRN: invalid PRN ID forces error", "[prn]") {
 TEST_CASE("Legendre: hand-computed oracle for p=7 (true external anchor)", "[prn][legendre]") {
   // G-02: independent correctness anchor for `generate_legendre_sequence()`.
   //
-  // The flight Legendre tables (p=10223, 1499, 3607, 10243) are protected at
+  // The flight Legendre tables (p=10223, 1499) are protected at
   // runtime by a self-signed CRC — valid as CBIT but not as a correctness
   // oracle. Here we hand-compute the expected sequence for p=7 from the
   // definition of the Legendre symbol and assert bit-exact output, which

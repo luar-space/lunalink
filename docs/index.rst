@@ -48,6 +48,7 @@ submission?  Start with the :doc:`evaluation_guide`.
    gateway5
    gateway6
    gateway7
+   gateway8
    interop_results
 
 .. toctree::
@@ -63,6 +64,7 @@ submission?  Start with the :doc:`evaluation_guide`.
    assurance/fmea
    assurance/fault_coverage
    assurance/metrics_plan
+   assurance/coverage_evidence
    assurance/coverage_exclusions
    signal/compliance_matrix
    signal/shall_inventory

@@ -111,11 +111,28 @@ Levels 4–5: reverse direction and parsing
 -----------------------------------------
 
 The results above cover levels 1–3 of the competition's five-level
-interoperability plan in this repository.  Levels 4 (an *independent
-receiver* decoding LunaLink-generated signals — PocketSDR-AFS, Ebinuma's
-software-defined receiver) and 5 (navigation-data parsing cross-checks) are
-maintained in the public test-vector repository, which ships all five
-levels with bundled oracles and a zero-dependency validator:
+interoperability plan.  Levels 4 (an *independent receiver* decoding
+LunaLink-generated signals — PocketSDR-AFS, Ebinuma's software-defined
+receiver) and 5 (navigation-data parsing cross-checks) are the reverse
+direction.
+
+.. important::
+
+   **Status of levels 4–5.**  LunaLink publishes the vectors, the expected
+   outputs and a validator for both levels, and ``task interop`` exercises
+   them against LunaLink's own decoder.  **A completed decode of a LunaLink
+   signal by PocketSDR-AFS — or by any third-party receiver — is not
+   claimed.**  Nothing on this page depends on it: the demonstrated
+   cross-implementation decode is L3 above, in which LunaLink decodes
+   LANS-AFS-SIM's signal.
+
+   Closing the reverse direction is the first item of post-submission work
+   (:doc:`roadmap`).  Any team wishing to close it needs only the published
+   vectors below; the validator reports per-field agreement without
+   requiring LunaLink to be installed.
+
+The vectors are maintained in the public test-vector repository, which
+ships all five levels with bundled oracles and a zero-dependency validator:
 
    https://github.com/luar-space/lsis-afs-test-vectors
 

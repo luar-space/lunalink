@@ -300,6 +300,23 @@ All GD4 components are exposed to Python via ``lunalink.afs``.
    * - ``multiplex_iq``
      - ``(i: BpskChipsI, q: BpskChipsQ) -> IqMuxNative``
      - Interleaved IQ at 5.115 MSPS
+   * - ``write_iq_file``
+     - ``(path, iq, sample_rate, prn_id, duration_s=None,
+       sample_format="float32") -> None``
+     - Signal file export (FR-3.5).  ``LSISIQ`` header + interleaved
+       samples; ``sample_format`` selects **float32** or **int16**, both
+       required by TC-2
+   * - ``read_iq_file``
+     - ``(path) -> IqFile``
+     - Reads either format back, taking it from the header rather than
+       guessing; always returns normalised float32
+   * - ``write_iq_csv``
+     - ``(path, iq) -> None``
+     - CSV export for external analysis tools (FR-3.5)
+
+Signal file export therefore covers all three formats the constraints name:
+binary int16, binary float32, and CSV.  See :doc:`test_vectors` for the
+container layout.
 
 Python tests: ``task test-py`` (file: ``tests/test_afs.py``)
 

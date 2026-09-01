@@ -1,5 +1,5 @@
-Gateway 2: Forward Error Correction — Judge's Verification Guide
-================================================================
+Gateway 2: Forward Error Correction --- Verification Guide
+===========================================================
 
 This document maps each Gateway 2 deliverable to its implementation,
 tests, and evidence.  A judge can verify compliance by reading this

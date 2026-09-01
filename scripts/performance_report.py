@@ -74,6 +74,11 @@ def format_time(ns: float) -> str:
     return f"{ns:.1f} ns"
 
 
+# Maximum 95% CI half-width, as a percentage of the mean, for a benchmark
+# sample to be considered stable enough to report.  Exceeding it fails the run.
+CI_SPREAD_LIMIT_PCT = 25.0
+
+
 def evaluate(entries: list[BenchmarkEntry]) -> tuple[list[str], bool]:
     """Evaluate benchmark confidence intervals. Return (verdicts, any_failed)."""
     verdicts: list[str] = []
@@ -88,10 +93,19 @@ def evaluate(entries: list[BenchmarkEntry]) -> tuple[list[str], bool]:
         ci_spread_pct = (e.high_mean_ns - e.low_mean_ns) / e.mean_ns * 100.0
         cv_pct = e.stddev_ns / e.mean_ns * 100.0
 
-        # Flag if the 95% CI exceeds ±5% of the mean (realistic for shared runners).
-        if ci_spread_pct > 10.0:
+        # Measurement-quality gate.  A wide 95% CI means the sample is too noisy
+        # for the benchmark to support any claim, so it fails rather than being
+        # silently reported.  This is NOT a constant-time check: the
+        # input-independence of the branchless primitives is gated separately
+        # and per-input-class by cpp/tests/performance/test_constant_time.cpp.
+        # Benchmarks whose runtime is legitimately data-dependent (ldpc_decode
+        # and frame_decode early-terminate on a satisfied syndrome) are bounded
+        # by the absolute budgets in test_wcet.cpp, not by spread.
+        if ci_spread_pct > CI_SPREAD_LIMIT_PCT:
+            failed = True
             verdicts.append(
-                f"WARN  {e.name}: 95% CI spread {ci_spread_pct:.1f}% "
+                f"FAIL  {e.name}: 95% CI spread {ci_spread_pct:.1f}% "
+                f"exceeds {CI_SPREAD_LIMIT_PCT:.0f}% "
                 f"(mean={format_time(e.mean_ns)}, CV={cv_pct:.1f}%)"
             )
         else:

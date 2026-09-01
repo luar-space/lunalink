@@ -85,7 +85,9 @@ Interoperability Risks
    Interoperability requires agreement on SB2 field layout once the spec
    committee defines it.
 
-Both issues are documented as **Spec Finding SF-005**.
+Both issues are in the spec findings register: the type field width is
+:ref:`SF-004 <sf-004>` and the SB2 field layout is :ref:`SF-005 <sf-005>`
+(:doc:`signal/spec_findings_report`).
 
 ----
 
@@ -655,12 +657,16 @@ the type field width TBC and SB2 layout assumptions.
 
 ----
 
-Spec Finding SF-005
--------------------
+Spec Findings SF-002, SF-004 and SF-005
+----------------------------------------
 
 **Title:** Message field layouts are TBW in LSIS V1.0
 
 **Severity:** Interoperability risk (High)
+
+**Register entries:** :ref:`SF-002 <sf-002>` (message content TBW),
+:ref:`SF-004 <sf-004>` (type field width TBC), :ref:`SF-005 <sf-005>`
+(SB2 field layout TBW) in :doc:`signal/spec_findings_report`.
 
 **Description:** Of the 23 message types in Table 21, only **1** (MSG-G8)
 has fully defined field layouts.  13 messages are part of LunaNet 1.0

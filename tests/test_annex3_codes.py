@@ -6,6 +6,17 @@ Guards the claim that the LunaLink reference implementation produces hex
 representations of Gold-2046, Weil-10230 and Weil-1500 codes that match the
 normative Annex 3 attachments for every PRN 1-210.  This is the oracle the
 public ``lsis-afs-test-vectors`` package relies on.
+
+Scope note: ``prn_code()``, ``weil10230_code()`` and ``weil1500_code()``
+return the compiled codebook (the Annex 3 attachments transcribed by
+``scripts/gen_prn_table.py``), so what this module proves is that the
+*shipped public API* is byte-exact against Annex 3 — including the
+transcription, packing and unpacking paths, which is what an external
+consumer of the test vectors depends on.  The complementary check, that the
+*live generators* (``GoldGenerator``, ``WeilGenerator``) reproduce that
+codebook chip-for-chip across all 210 PRNs in all three families, is
+``cpp/tests/codes/test_prn_generators.cpp``.  Together the two close the
+loop: generator == codebook == Annex 3.
 """
 
 from __future__ import annotations

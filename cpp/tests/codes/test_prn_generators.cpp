@@ -13,6 +13,12 @@ using namespace lunalink::signal;
 
 TEST_CASE("[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3",
           "[prn]") {
+  // The packed `*_prn_packed()` codebooks are the Annex 3 attachments
+  // transcribed verbatim by `scripts/gen_prn_table.py` from
+  // `docs/references/{006,007,008}_*.txt`, and are checksum-guarded at load
+  // (`codebook_checksums.hpp`).  Asserting generator == codebook is therefore
+  // the bit-exact Annex 3 conformance check for the live generators, for every
+  // chip of every PRN 1-210 in all three code families.
   GoldGenerator gold_gen;
   WeilGenerator weil_gen;
 
@@ -35,25 +41,42 @@ TEST_CASE("[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation a
     }
   }
 
-  SECTION("Weil-10230: Generator produces valid binary output") {
+  SECTION("Weil-10230: All 210 PRNs") {
     std::array<uint8_t, kWeil10230ChipLength> generated{};
-    // Verify generator runs without fault for a sample of PRNs.
-    for (uint8_t prn = 1; prn <= 10; ++prn) {
+    for (uint8_t prn = 1; prn <= kPrnCount; ++prn) {
       PrnId id{prn};
       REQUIRE(weil_gen.generate_primary(id, generated) == PrnStatus::kOk);
+
+      PrnCode lut;
+      REQUIRE(weil10230_prn_packed(id, lut) == PrnStatus::kOk);
+
       for (uint16_t i = 0; i < kWeil10230ChipLength; ++i) {
-        REQUIRE((generated[i] == 0 || generated[i] == 1));
+        uint8_t lut_chip = 0;
+        REQUIRE(unpack_chip(lut, i, lut_chip) == PrnStatus::kOk);
+        if (generated[i] != lut_chip) {
+          FAIL("Weil-10230 Mismatch PRN " << static_cast<int>(prn) << " chip "
+                                          << static_cast<int>(i));
+        }
       }
     }
   }
 
-  SECTION("Weil-1500: Generator produces valid binary output") {
+  SECTION("Weil-1500: All 210 PRNs") {
     std::array<uint8_t, kWeil1500ChipLength> generated{};
-    for (uint8_t prn = 1; prn <= 10; ++prn) {
+    for (uint8_t prn = 1; prn <= kPrnCount; ++prn) {
       PrnId id{prn};
       REQUIRE(weil_gen.generate_tertiary(id, generated) == PrnStatus::kOk);
+
+      PrnCode lut;
+      REQUIRE(weil1500_prn_packed(id, lut) == PrnStatus::kOk);
+
       for (uint16_t i = 0; i < kWeil1500ChipLength; ++i) {
-        REQUIRE((generated[i] == 0 || generated[i] == 1));
+        uint8_t lut_chip = 0;
+        REQUIRE(unpack_chip(lut, i, lut_chip) == PrnStatus::kOk);
+        if (generated[i] != lut_chip) {
+          FAIL("Weil-1500 Mismatch PRN " << static_cast<int>(prn) << " chip "
+                                         << static_cast<int>(i));
+        }
       }
     }
   }

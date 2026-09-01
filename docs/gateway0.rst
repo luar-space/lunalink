@@ -1,9 +1,14 @@
 .. meta::
-   :description: Phase 1 deliverable for the ESA-CCSDS Protocol Development Competition
+   :description: Gateway 0 (Design & Architecture) and Milestone 1 deliverable for the ESA-CCSDS Protocol Development Competition
 
-=========================================================================
-LSIS-AFS Reference Implementation — Standards Compliance & Architecture
-=========================================================================
+=================================================================================
+Gateway 0: Design & Architecture --- Standards Compliance & Architecture
+=================================================================================
+
+This document serves two deliverables at once: **Gateway 0 (Design &
+Architecture)** of the competition rubric, and the **Milestone 1** standards
+compliance and architecture deliverable of the ESA-CCSDS Delivery Outline.
+The Gateway 0 checklist is mapped in `Gateway 0 deliverables`_ below.
 
 .. only:: latex
 
@@ -47,6 +52,55 @@ prototyping and test-vector generation.  Both specification data annexes
 (Annex 2: LDPC submatrices, Annex 3: PRN spreading codes) have been loaded,
 converted to native data structures, and validated against the reference
 material.
+
+----
+
+.. _gateway 0 deliverables:
+
+Gateway 0 deliverables
+----------------------
+
+The rubric lists eight Gateway 0 deliverables.  Each is mapped to the
+section of this document that carries it.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 38 30 32
+
+   * - Rubric deliverable
+     - Section
+     - Also see
+   * - System architecture document
+     - `System Architecture & Code Structure`_
+     - :doc:`signal/architecture`
+   * - Component interaction diagrams
+     - `Signal Chain`_ (encode and decode pipelines)
+     - :doc:`signal/signal_chain`
+   * - Technology stack selection
+     - `Technology Stack`_
+     - :doc:`tech_stack`
+   * - Development environment setup
+     - `Technology Stack & Development Environment`_,
+       `Continuous Integration`_
+     - :doc:`quickstart`, :doc:`developing`
+   * - Testing strategy and framework
+     - `Testing Strategy & Validation Framework`_
+     - :doc:`signal/validation_plan`
+   * - Code structure and module design
+     - `Module Design`_
+     - :doc:`signal/architecture`
+   * - Interface definitions
+     - `Interface Definitions & Data Formats`_
+     - :doc:`signal/icd`
+   * - Data format specifications
+     - `Interface Definitions & Data Formats`_
+     - :doc:`test_vectors`, :doc:`signal/sisicd`
+
+**Success criteria.**  Architecture defined with clear components
+(`Module Design`_); development environment ready and reproducible
+(``task install``, :doc:`quickstart`); testing framework established
+(`Test Infrastructure`_ — Catch2 for C++, pytest for Python, both wired
+into blocking CI gates).
 
 ----
 
@@ -95,10 +149,11 @@ adopted resolution.
        standardised digital baseband format for SDR-to-SDR exchange.
        Without one, teams cannot cross-validate transmitter and receiver
        implementations at the IQ level.
-     - LunaLink proposes interleaved signed 16-bit IQ pairs at the AFS-Q
-       chip rate (5.115 MSPS) as a digital interchange format for
-       hardware-in-the-loop and cross-team validation.  This is a LunaLink
-       proposal, not an LSIS or competition requirement.
+     - LunaLink emits the interchange shape used at the interoperability
+       workshop: headerless interleaved ``float32`` little-endian
+       ``[I0, Q0, I1, Q1, ...]`` (``lunalink encode --format iq32``), plus a
+       self-describing ``LSISIQ``-headed variant for archival use.  Both are
+       documented in :doc:`test_vectors`.
 
 .. |S| unicode:: U+00A7
 

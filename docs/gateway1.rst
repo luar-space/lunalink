@@ -196,8 +196,12 @@ Generator validation (file: ``cpp/tests/codes/test_prn_generators.cpp``)
      - PRN 1--10 produce chips |isin| {0, 1}
    * - Generator error paths
      - Invalid PRN, undersized output |rarr| correct error status
-   * - Weil zero insertion_index (PRN 38)
-     - Regression: ``kFaultDetected`` returned (guards silent skip)
+   * - Weil PRN 38 generates successfully
+     - Regression: PRN 38 once carried a zeroed placeholder row
+       (k=0, p=0); it now holds the Appendix D values (k=4858, p=824) and
+       returns ``kOk``.  The ``insertion_index == 0`` guard in
+       ``construct_weil`` therefore cannot fire for any of the 210 PRNs
+       (minimum insertion index across the table is 1)
 
 ----
 
@@ -465,6 +469,91 @@ Test Summary
 
 All C++ unit tests pass in a few seconds with exit code 0.
 SWIFI scenarios verify 100% single-bit fault detection for all GD1 hardening patterns.
+
+Success criteria
+----------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 40 18 42
+
+   * - Criterion
+     - Result
+     - Evidence
+   * - All codes match reference hexadecimal values from Annex 3
+     - **Pass**
+     - 210/210 PRNs, every chip, for Gold-2046, Weil-10230 and Weil-1500
+       (``tests/test_annex3_codes.py``); independently corroborated
+       bit-exact against LANS-AFS-SIM (:doc:`interop_results` L1)
+   * - Code generation completes in < 1 second per PRN
+     - **Pass**
+     - < 10 ms measured (NFR-1.1, ``task wcet``)
+   * - All 12 interim test codes (Table 11) working
+     - **Pass**
+     - ``[LSIS-TABLE11]`` parameterised sweep, PRN 1–12 round-trip
+       (:doc:`gateway7`)
+   * - **100% test coverage for code generators**
+     - **Pass**
+     - Every file in ``cpp/codes/`` is at **100.0% effective coverage** —
+       every line a test can reach is reached, and every remaining line is
+       an explicitly categorised ``NOCOVER`` defence-in-depth path.
+       See below.
+
+Coverage of the code generators
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Raw line coverage understates this: these generators are hardened, so a
+large share of their lines are fault-detection paths that execute only when
+a bit flips.  ``scripts/effective_coverage.py`` measures coverage of
+*coverable* lines and **fails if any uncovered line is not inside a NOCOVER
+region**, so an untested line cannot hide behind a percentage.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 34 22 22 22
+
+   * - File
+     - Raw line coverage
+     - NOCOVER lines
+     - Effective coverage
+   * - ``codes/gold.cpp``
+     - 88.24%
+     - 6
+     - **100.0%**
+   * - ``codes/legendre.cpp``
+     - 75.00%
+     - 24
+     - **100.0%**
+   * - ``codes/matched_code.cpp``
+     - 88.31%
+     - 9
+     - **100.0%**
+   * - ``codes/prn.cpp``
+     - 100.00%
+     - 0
+     - **100.0%**
+   * - ``codes/weil.cpp``
+     - 75.51%
+     - 24
+     - **100.0%**
+
+.. code-block:: bash
+
+   task coverage-effective   # 0 unmarked uncovered lines in cpp/codes/
+
+Every exclusion is categorised and milestone-reviewed in
+:doc:`assurance/coverage_exclusions`.
+
+.. note::
+
+   **Scope.** The Legendre cache holds exactly the two primes LSIS-AFS uses:
+   p=10223 for the Weil-10230 AFS-Q primary code (Appendix D) and p=1499 for
+   the Weil-1500 tertiary code (Appendix E).  Earlier revisions also
+   generated and CRC-verified the BeiDou B1C primes p=3607 and p=10243;
+   those were removed as out of scope for this specification.  Dropping them
+   halves the per-access integrity check (CRC-32 over ~11.7 KB instead of
+   ~26 KB on every ``get_cached_legendre`` call) and removes ~13.8 KB from
+   the ``.lunalink_lut`` section.
 
 Related documents:
 

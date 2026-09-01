@@ -7,12 +7,16 @@ three Python-level functions that have logic beyond simple delegation:
 
 - ``generate_iq_epoch`` — C++ epoch generation + optional Python resampling
 - ``generate_iq_frame`` — C++ frame generation with optional C++ resampling
-- ``write_iq_file`` — binary file I/O with LSISIQ header
+- ``write_iq_file`` / ``read_iq_file`` — binary file I/O with LSISIQ header
 """
 
 from __future__ import annotations
 
+import io
 import os
+import struct
+from dataclasses import dataclass
+from typing import Literal
 
 import numpy as np
 from beartype import beartype
@@ -184,6 +188,27 @@ from lunalink.afs._afs import weil1500_code as weil1500_code
 from lunalink.afs._afs import weil10230_code as weil10230_code
 from lunalink.afs._array_types import FrameSymbols, IqPairFloat
 
+# ── I/Q container constants (LSISIQ, per docs/test_vectors.rst) ─────────────
+
+#: Full-scale value used when storing I/Q samples as int16.  Normalised
+#: samples in [-1.0, +1.0] map to [-32767, +32767]; -32768 is never emitted,
+#: so negation is exact and the mapping is symmetric.
+IQ_INT16_FULL_SCALE = 32767.0
+
+#: Sample formats the ``LSISIQ`` container can carry, per TC-2.
+IqSampleFormat = Literal["float32", "int16"]
+
+#: Size of the ``LSISIQ`` file metadata header in bytes.  Distinct from the
+#: C++ ``IQ_HEADER_BYTES`` (32), which sizes a different container.
+LSISIQ_HEADER_BYTES = 128
+
+_IQ_MAGIC = b"LSISIQ\x00\x00"
+_IQ_VERSION = 1
+_IQ_DTYPES: dict[str, type[np.floating] | type[np.signedinteger]] = {
+    "float32": np.float32,
+    "int16": np.int16,
+}
+
 # ── Public aliases (canonical names, matching spec_tables CSVs) ──────────────
 # The C++ binding exports ``AFS_I_CHIP_RATE_HZ`` / ``AFS_Q_CHIP_RATE_HZ``.
 # The public Python API uses the shorter spec names without the ``_HZ`` suffix.
@@ -260,6 +285,7 @@ def write_iq_file(
     sample_rate: float,
     prn_id: int,
     duration_s: float | None = None,
+    sample_format: IqSampleFormat = "float32",
 ) -> None:
     """Write I/Q samples to a binary file with a 128-byte metadata header.
 
@@ -269,47 +295,187 @@ def write_iq_file(
         - Sample rate: ``float64`` LE (8 bytes)
         - Duration:    ``float64`` LE seconds (8 bytes)
         - PRN:         ``uint32`` LE (4 bytes)
-        - Format:      ``"float32"`` (16 bytes, zero-padded)
+        - Format:      ``"float32"`` or ``"int16"`` (16 bytes, zero-padded)
         - Reserved:    80 bytes (zeros)
 
-    Data: interleaved float32 [I0, Q0, I1, Q1, ...].
+    Data: interleaved samples ``[I0, Q0, I1, Q1, ...]`` in the declared
+    format, little-endian.
+
+    ``int16`` stores normalised samples at full scale
+    (:data:`IQ_INT16_FULL_SCALE`), the convention used by SDR capture files
+    and by LANS-AFS-SIM.  Values are rounded half-away-from-zero and clipped,
+    so the representation is symmetric and ``-32768`` is never emitted.
+    Quantisation to int16 costs no measurable decode performance — see the
+    quantisation sweep in ``docs/signal/ldpc_performance.rst``.
 
     Parameters
     ----------
     path : str or os.PathLike
         Output file path.
     iq_data : IqPairFloat
-        I/Q data with shape (N, 2).
+        I/Q data with shape (N, 2), normalised to [-1.0, +1.0].
     sample_rate : float
         Sample rate in Hz.
     prn_id : int
         PRN identifier.
     duration_s : float, optional
         Signal duration in seconds. Computed from data length if not provided.
+    sample_format : {"float32", "int16"}, optional
+        On-disk sample format. Defaults to ``"float32"``.
+
+    Raises
+    ------
+    jaxtyping.TypeCheckError
+        If ``sample_format`` is not one of the supported formats.  The
+        ``Literal`` annotation is enforced at runtime by beartype, so an
+        invalid format is rejected before any file is opened.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> iq = np.array([[1.0, 0.0], [-1.0, 0.0]], dtype=np.float32)
+    >>> write_iq_file("s.iq", iq, 5.115e6, 1)                    # doctest: +SKIP
+    >>> write_iq_file("s.iq", iq, 5.115e6, 1, sample_format="int16")  # doctest: +SKIP
     """
-    import io
-    import struct
+    n_samples = int(iq_data.shape[0])
+    duration = float(duration_s) if duration_s is not None else n_samples / sample_rate
 
-    n_samples = iq_data.shape[0]
-    if duration_s is None:
-        duration_s = n_samples / sample_rate
+    header = _pack_iq_header(sample_rate, duration, prn_id, sample_format)
 
-    # 128-byte header: Magic(8) + Version(4) + SampleRate(8) + Duration(8)
-    #                  + PRN(4) + Format(16) + Reserved(80) = 128
+    flat = iq_data.ravel()
+    if sample_format == "int16":
+        scaled = np.round(flat.astype(np.float64) * IQ_INT16_FULL_SCALE)
+        payload = np.clip(scaled, -IQ_INT16_FULL_SCALE, IQ_INT16_FULL_SCALE).astype(
+            np.int16
+        )
+    else:
+        payload = flat.astype(np.float32)
+
+    with open(path, "wb") as f:
+        f.write(header)
+        f.write(payload.tobytes())
+
+
+def _pack_iq_header(
+    sample_rate: float,
+    duration_s: float,
+    prn_id: int,
+    sample_format: str,
+) -> bytes:
+    """Build the 128-byte ``LSISIQ`` header.
+
+    Magic(8) + Version(4) + SampleRate(8) + Duration(8) + PRN(4)
+    + Format(16) + Reserved(80) = 128.
+    """
     buf = io.BytesIO()
-    buf.write(b"LSISIQ\x00\x00")  # 8
-    buf.write(struct.pack("<I", 1))  # 4
+    buf.write(_IQ_MAGIC)  # 8
+    buf.write(struct.pack("<I", _IQ_VERSION))  # 4
     buf.write(struct.pack("<d", sample_rate))  # 8
     buf.write(struct.pack("<d", duration_s))  # 8
     buf.write(struct.pack("<I", prn_id))  # 4
-    buf.write(b"float32" + b"\x00" * 9)  # 16
-    buf.write(b"\x00" * (128 - buf.tell()))  # pad to 128
-    header = buf.getvalue()
+    buf.write(sample_format.encode("ascii").ljust(16, b"\x00"))  # 16
+    buf.write(b"\x00" * (LSISIQ_HEADER_BYTES - buf.tell()))  # pad to 128
+    return buf.getvalue()
 
-    interleaved = iq_data.astype(np.float32).ravel()
-    with open(path, "wb") as f:
-        f.write(header)
-        f.write(interleaved.tobytes())
+
+@dataclass(frozen=True)
+class IqFile:
+    """An I/Q signal file read back from the ``LSISIQ`` container.
+
+    Returned by :func:`read_iq_file`.  ``iq`` is always normalised float32
+    regardless of how the samples were stored on disk; ``sample_format``
+    records which representation the file declared.
+    """
+
+    iq: IqPairFloat  # float32 (N, 2), normalised to [-1.0, +1.0]
+    sample_rate: float  # Hz, from the header
+    duration_s: float  # seconds, from the header
+    prn_id: int  # PRN identifier, from the header
+    sample_format: str  # "float32" or "int16"
+
+
+def read_iq_file(path: str | os.PathLike[str]) -> IqFile:
+    """Read an ``LSISIQ`` I/Q file, honouring its declared sample format.
+
+    The format is taken from the header rather than guessed from the data, so
+    a file written by :func:`write_iq_file` round-trips in either format.
+    ``int16`` payloads are rescaled by :data:`IQ_INT16_FULL_SCALE` so the
+    returned samples are always normalised float32.
+
+    Parameters
+    ----------
+    path : str or os.PathLike
+        Input file path.
+
+    Returns
+    -------
+    IqFile
+        Samples plus the metadata carried in the header.
+
+    Raises
+    ------
+    ValueError
+        If the magic bytes, version, declared format, or payload length are
+        not valid.
+
+    Examples
+    --------
+    >>> sig = read_iq_file("signal.iq")            # doctest: +SKIP
+    >>> sig.sample_format, sig.iq.shape            # doctest: +SKIP
+    ('int16', (61380, 2))
+    """
+    with open(path, "rb") as f:
+        header = f.read(LSISIQ_HEADER_BYTES)
+        body = f.read()
+
+    if len(header) < LSISIQ_HEADER_BYTES:
+        raise ValueError(
+            f"{os.fspath(path)!r}: truncated header — expected "
+            f"{LSISIQ_HEADER_BYTES} bytes, got {len(header)}"
+        )
+    if header[:8] != _IQ_MAGIC:
+        raise ValueError(
+            f"{os.fspath(path)!r}: not an LSISIQ file (magic {header[:8]!r})"
+        )
+
+    (version,) = struct.unpack_from("<I", header, 8)
+    if version != _IQ_VERSION:
+        raise ValueError(
+            f"{os.fspath(path)!r}: unsupported LSISIQ version {version} "
+            f"(expected {_IQ_VERSION})"
+        )
+
+    (sample_rate,) = struct.unpack_from("<d", header, 12)
+    (duration_s,) = struct.unpack_from("<d", header, 20)
+    (prn_id,) = struct.unpack_from("<I", header, 28)
+    sample_format = header[32:48].rstrip(b"\x00").decode("ascii", errors="replace")
+
+    dtype = _IQ_DTYPES.get(sample_format)
+    if dtype is None:
+        supported = ", ".join(sorted(_IQ_DTYPES))
+        raise ValueError(
+            f"{os.fspath(path)!r}: unsupported sample format "
+            f"{sample_format!r}; expected one of {supported}"
+        )
+
+    raw = np.frombuffer(body, dtype=dtype)
+    if raw.size % 2 != 0:
+        raise ValueError(
+            f"{os.fspath(path)!r}: payload holds {raw.size} values, "
+            "which is not a whole number of I/Q pairs"
+        )
+
+    iq = raw.astype(np.float32).reshape(-1, 2)
+    if sample_format == "int16":
+        iq = (iq / np.float32(IQ_INT16_FULL_SCALE)).astype(np.float32)
+
+    return IqFile(
+        iq=iq,
+        sample_rate=sample_rate,
+        duration_s=duration_s,
+        prn_id=int(prn_id),
+        sample_format=sample_format,
+    )
 
 
 @jaxtyped(typechecker=beartype)

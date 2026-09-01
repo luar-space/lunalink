@@ -85,14 +85,39 @@ Binary symbols with a **64-byte metadata header**:
 3. Baseband Signal (``signal_{prn}_{dur}s.iq``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Binary I/Q samples with a **128-byte metadata header**:
+
 *   **Magic**: ``"LSISIQ\0\0"`` (8 bytes)
 *   **Version**: ``1`` (4 bytes, uint32)
 *   **Sample Rate**: float64 (8 bytes)
 *   **Duration**: float64 seconds (8 bytes)
 *   **PRN**: uint32 (4 bytes)
-*   **Sample Format**: ``"float32"`` (16 bytes)
+*   **Sample Format**: ``"float32"`` or ``"int16"`` (16 bytes, zero-padded
+    ASCII)
 *   **Reserved**: 80 bytes (zero-filled)
-*   **Data**: Interleaved float32 pairs ``[I0, Q0, I1, Q1, ...]``.
+*   **Data**: Interleaved pairs ``[I0, Q0, I1, Q1, ...]`` in the declared
+    format, little-endian.
+
+Both sample formats required by TC-2 are supported.  ``float32`` carries
+normalised samples in [-1.0, +1.0] and is the default.  ``int16`` stores the
+same samples at full scale (±32767 — the value ``-32768`` is never emitted, so
+negation is exact), which halves file size and matches the convention used by
+SDR capture files and by LANS-AFS-SIM.  Quantisation to int16 costs no
+measurable decode performance; see the quantisation sweep in
+:doc:`signal/ldpc_performance`.
+
+Readers should take the format from the header rather than inferring it from
+the payload:
+
+.. code-block:: python
+
+   from lunalink.afs import read_iq_file, write_iq_file
+
+   write_iq_file("signal.iq", iq, 5.115e6, prn_id=1, sample_format="int16")
+
+   sig = read_iq_file("signal.iq")
+   sig.sample_format   # 'int16'
+   sig.iq              # float32 (N, 2), rescaled to [-1.0, +1.0]
+   sig.sample_rate, sig.duration_s, sig.prn_id
 
 4. Parsed Data (``parsed_{id}.json``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

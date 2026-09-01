@@ -3,9 +3,9 @@
   "document_id": "LUNALINK-COMPLIANCE-001",
   "generated_by": "scripts/compliance_report.py",
   "junit_files": [
-    "build/test_results.xml",
-    "build/test_e2e.xml",
-    "build/swifi-ninja/swifi_results.xml"
+    "/Users/marco/code/lunalink-oss/build/test_results.xml",
+    "/Users/marco/code/lunalink-oss/build/test_e2e.xml",
+    "/Users/marco/code/lunalink-oss/build/swifi-ninja/swifi_results.xml"
   ],
   "total_test_cases": 320,
   "requirements": [
@@ -24,8 +24,8 @@
         "[LSIS-AFS-101] gold_prn returns distinct sequences for different PRNs",
         "[LSIS-AFS-101] gold_prn PRN 1 first byte matches reference",
         "[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/Gold-2046: All 210 PRNs",
-        "[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/Weil-10230: Generator produces valid binary output",
-        "[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/Weil-1500: Generator produces valid binary output",
+        "[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/Weil-10230: All 210 PRNs",
+        "[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/Weil-1500: All 210 PRNs",
         "[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/Generator error paths",
         "[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/PRN 38 generates successfully (was zeroed placeholder, now fixed)"
       ],
@@ -48,8 +48,8 @@
         "[LSIS-AFS-102] weil1500_prn returns distinct sequences for different PRNs",
         "[LSIS-AFS-102] weil1500_prn PRN 1 first byte matches reference",
         "[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/Gold-2046: All 210 PRNs",
-        "[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/Weil-10230: Generator produces valid binary output",
-        "[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/Weil-1500: Generator produces valid binary output",
+        "[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/Weil-10230: All 210 PRNs",
+        "[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/Weil-1500: All 210 PRNs",
         "[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/Generator error paths",
         "[LSIS-AFS-101] [LSIS-AFS-102] PRN Generators: Exhaustive validation against Annex 3/PRN 38 generates successfully (was zeroed placeholder, now fixed)"
       ],
@@ -641,6 +641,12 @@
       "evidence": "1 test(s) passed"
     },
     {
+      "id": "NFR-1.4",
+      "description": "Real-time capability: process faster than signal duration",
+      "status": "PASS",
+      "evidence": "Benchmark results in wcet_results.xml"
+    },
+    {
       "id": "NFR-2.1",
       "description": "Spreading codes match Annex3 references exactly",
       "status": "PASS",
@@ -648,7 +654,7 @@
     },
     {
       "id": "NFR-2.2",
-      "description": "BER < 1e-1 at SNR > 0 dB",
+      "description": "BER < 1e-5 at SNR > 0 dB",
       "status": "PASS",
       "evidence": "Benchmark results in ber_results.xml"
     },
@@ -659,16 +665,82 @@
       "evidence": "3 test(s) passed"
     },
     {
+      "id": "NFR-2.4",
+      "description": "Time reconstruction accurate to code phase",
+      "status": "PASS",
+      "evidence": "18 test(s) passed"
+    },
+    {
       "id": "NFR-3.1",
       "description": "Unit tests for all components",
       "status": "PASS",
       "evidence": "320 test cases executed"
     },
     {
+      "id": "NFR-3.2",
+      "description": "Integration tests covering the end-to-end flow",
+      "status": "PASS",
+      "evidence": "13 test(s) passed"
+    },
+    {
       "id": "NFR-3.3",
       "description": "Test coverage > 90%",
-      "status": "NOT_RUN",
-      "evidence": "Validated by coverage CI gate"
+      "status": "PASS",
+      "evidence": "C++ region 93.65% (>= 90%), line 90.27% (>= 85%), MC/DC 40.59% (>= 30%) from coverage_summary.json @ ad1293e; Python 100% (pytest --cov gate)"
+    },
+    {
+      "id": "NFR-3.4",
+      "description": "Test vectors reproducible",
+      "status": "PASS",
+      "evidence": "present: scripts/export_test_vectors_all.py, tests/generate_test_vectors.py, test-vectors/codes, test-vectors/frames, test-vectors/signals, test-vectors/parsed"
+    },
+    {
+      "id": "NFR-4.1",
+      "description": "Clear API documentation: all public APIs documented",
+      "status": "PASS",
+      "evidence": "docs/api.rst + sync_docstrings.py: C++ @param tags and binding docstrings in sync"
+    },
+    {
+      "id": "NFR-4.2",
+      "description": "Working examples for all features",
+      "status": "PASS",
+      "evidence": "present: examples/01_transmit.py, examples/02_decode.py, examples/03_round_trip.py, docs/notebooks/01_spreading_codes.ipynb, docs/notebooks/02_error_correction.ipynb, docs/notebooks/03_navigation_message.ipynb"
+    },
+    {
+      "id": "NFR-4.3",
+      "description": "Error messages provide actionable guidance",
+      "status": "PASS",
+      "evidence": "present: src/lunalink/afs/_errors.py, docs/signal/icd.rst"
+    },
+    {
+      "id": "NFR-4.4",
+      "description": "Runtime configuration support",
+      "status": "PASS",
+      "evidence": "runtime-configurable: ldpc_iterations, raise_on_error, sample_rate, prn_id"
+    },
+    {
+      "id": "NFR-5.1",
+      "description": "Modular architecture with clean component boundaries",
+      "status": "PASS",
+      "evidence": "present: docs/signal/architecture.rst, cpp/codes, cpp/encoding, cpp/messages, cpp/signal, cpp/platform"
+    },
+    {
+      "id": "NFR-5.2",
+      "description": "Separation of concerns: independent modules",
+      "status": "PASS",
+      "evidence": "present: cpp/include/lunalink/codes, cpp/include/lunalink/encoding, cpp/include/lunalink/messages, cpp/include/lunalink/signal, src/lunalink/afs"
+    },
+    {
+      "id": "NFR-5.3",
+      "description": "Consistent coding style enforced via tooling",
+      "status": "PASS",
+      "evidence": "present: .clang-format, .clang-tidy, cppcheck.cfg, pyproject.toml, .github/workflows/lint.yml, .github/workflows/tidy.yml"
+    },
+    {
+      "id": "NFR-5.4",
+      "description": "Version control with meaningful history",
+      "status": "LIMITATION",
+      "evidence": "8 commits in this public export. The development history (branch/PR flow, CI gates on every merge) predates the squashed export and is NOT present in this repository; see README.md 'Provenance'. Reported as a limitation, not a pass."
     }
   ],
   "summary": {
@@ -677,9 +749,10 @@
     "untested": 0,
     "not_run": 0,
     "fail": 0,
-    "total_nfr": 8,
-    "nfr_pass": 7,
-    "nfr_not_run": 1,
-    "nfr_fail": 0
+    "total_nfr": 20,
+    "nfr_pass": 19,
+    "nfr_not_run": 0,
+    "nfr_fail": 0,
+    "nfr_limitation": 1
   }
 }

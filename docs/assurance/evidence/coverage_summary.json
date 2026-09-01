@@ -1,0 +1,1002 @@
+{
+  "schema_version": "1.0.0",
+  "generated": "2026-09-01T14:43:05+00:00",
+  "git_sha": "ad1293e",
+  "git_describe": "ad1293e",
+  "tool": {
+    "llvm_cov_version": "Homebrew LLVM version 22.1.0",
+    "compiler": "Homebrew clang version 22.1.0"
+  },
+  "thresholds": {
+    "region": 90.0,
+    "line": 85.0,
+    "function": 95.0,
+    "branch": 75.0,
+    "mcdc": 30.0,
+    "per_file_line": 80.0
+  },
+  "test_count": 534,
+  "totals": {
+    "regions": {
+      "count": 1763,
+      "covered": 1651,
+      "percent": 93.64719228587634
+    },
+    "lines": {
+      "count": 2879,
+      "covered": 2599,
+      "percent": 90.27440083362278
+    },
+    "functions": {
+      "count": 204,
+      "covered": 202,
+      "percent": 99.01960784313727
+    },
+    "branches": {
+      "count": 1186,
+      "covered": 991,
+      "percent": 83.55817875210792
+    },
+    "mcdc": {
+      "count": 170,
+      "covered": 69,
+      "percent": 40.588235294117645
+    }
+  },
+  "per_file": [
+    {
+      "filename": "codes/gold.cpp",
+      "regions": {
+        "count": 26,
+        "covered": 23,
+        "percent": 88.46153846153845
+      },
+      "lines": {
+        "count": 51,
+        "covered": 45,
+        "percent": 88.23529411764706
+      },
+      "functions": {
+        "count": 2,
+        "covered": 2,
+        "percent": 100
+      },
+      "branches": {
+        "count": 18,
+        "covered": 15,
+        "percent": 83.33333333333334
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "percent": null
+      },
+      "flags": []
+    },
+    {
+      "filename": "codes/legendre.cpp",
+      "regions": {
+        "count": 57,
+        "covered": 50,
+        "percent": 87.71929824561403
+      },
+      "lines": {
+        "count": 96,
+        "covered": 72,
+        "percent": 75
+      },
+      "functions": {
+        "count": 7,
+        "covered": 7,
+        "percent": 100
+      },
+      "branches": {
+        "count": 42,
+        "covered": 30,
+        "percent": 71.42857142857143
+      },
+      "mcdc": {
+        "count": 4,
+        "covered": 0,
+        "percent": 0
+      },
+      "flags": [
+        "BELOW_THRESHOLD",
+        "NO_MCDC"
+      ]
+    },
+    {
+      "filename": "codes/matched_code.cpp",
+      "regions": {
+        "count": 41,
+        "covered": 36,
+        "percent": 87.8048780487805
+      },
+      "lines": {
+        "count": 77,
+        "covered": 68,
+        "percent": 88.31168831168831
+      },
+      "functions": {
+        "count": 3,
+        "covered": 3,
+        "percent": 100
+      },
+      "branches": {
+        "count": 26,
+        "covered": 21,
+        "percent": 80.76923076923077
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "percent": null
+      },
+      "flags": []
+    },
+    {
+      "filename": "codes/prn.cpp",
+      "regions": {
+        "count": 18,
+        "covered": 18,
+        "percent": 100
+      },
+      "lines": {
+        "count": 59,
+        "covered": 59,
+        "percent": 100
+      },
+      "functions": {
+        "count": 5,
+        "covered": 5,
+        "percent": 100
+      },
+      "branches": {
+        "count": 14,
+        "covered": 14,
+        "percent": 100
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "percent": null
+      },
+      "flags": []
+    },
+    {
+      "filename": "codes/weil.cpp",
+      "regions": {
+        "count": 54,
+        "covered": 46,
+        "percent": 85.18518518518519
+      },
+      "lines": {
+        "count": 98,
+        "covered": 74,
+        "percent": 75.51020408163265
+      },
+      "functions": {
+        "count": 4,
+        "covered": 4,
+        "percent": 100
+      },
+      "branches": {
+        "count": 36,
+        "covered": 26,
+        "percent": 72.22222222222221
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "percent": null
+      },
+      "flags": [
+        "BELOW_THRESHOLD"
+      ]
+    },
+    {
+      "filename": "core/sise.cpp",
+      "regions": {
+        "count": 86,
+        "covered": 81,
+        "percent": 94.18604651162791
+      },
+      "lines": {
+        "count": 119,
+        "covered": 112,
+        "percent": 94.11764705882352
+      },
+      "functions": {
+        "count": 7,
+        "covered": 7,
+        "percent": 100
+      },
+      "branches": {
+        "count": 66,
+        "covered": 57,
+        "percent": 86.36363636363636
+      },
+      "mcdc": {
+        "count": 15,
+        "covered": 10,
+        "percent": 66.66666666666666
+      },
+      "flags": []
+    },
+    {
+      "filename": "encoding/bch.cpp",
+      "regions": {
+        "count": 77,
+        "covered": 73,
+        "percent": 94.8051948051948
+      },
+      "lines": {
+        "count": 129,
+        "covered": 122,
+        "percent": 94.57364341085271
+      },
+      "functions": {
+        "count": 7,
+        "covered": 7,
+        "percent": 100
+      },
+      "branches": {
+        "count": 50,
+        "covered": 45,
+        "percent": 90
+      },
+      "mcdc": {
+        "count": 2,
+        "covered": 1,
+        "percent": 50
+      },
+      "flags": []
+    },
+    {
+      "filename": "encoding/crc.cpp",
+      "regions": {
+        "count": 34,
+        "covered": 29,
+        "percent": 85.29411764705883
+      },
+      "lines": {
+        "count": 59,
+        "covered": 48,
+        "percent": 81.35593220338984
+      },
+      "functions": {
+        "count": 2,
+        "covered": 2,
+        "percent": 100
+      },
+      "branches": {
+        "count": 22,
+        "covered": 16,
+        "percent": 72.72727272727273
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "percent": null
+      },
+      "flags": []
+    },
+    {
+      "filename": "encoding/interleaver.cpp",
+      "regions": {
+        "count": 73,
+        "covered": 67,
+        "percent": 91.78082191780823
+      },
+      "lines": {
+        "count": 108,
+        "covered": 87,
+        "percent": 80.55555555555556
+      },
+      "functions": {
+        "count": 5,
+        "covered": 5,
+        "percent": 100
+      },
+      "branches": {
+        "count": 52,
+        "covered": 44,
+        "percent": 84.61538461538461
+      },
+      "mcdc": {
+        "count": 14,
+        "covered": 6,
+        "percent": 42.857142857142854
+      },
+      "flags": []
+    },
+    {
+      "filename": "encoding/ldpc.cpp",
+      "regions": {
+        "count": 504,
+        "covered": 470,
+        "percent": 93.25396825396825
+      },
+      "lines": {
+        "count": 638,
+        "covered": 566,
+        "percent": 88.71473354231975
+      },
+      "functions": {
+        "count": 38,
+        "covered": 38,
+        "percent": 100
+      },
+      "branches": {
+        "count": 336,
+        "covered": 265,
+        "percent": 78.86904761904762
+      },
+      "mcdc": {
+        "count": 68,
+        "covered": 22,
+        "percent": 32.35294117647059
+      },
+      "flags": []
+    },
+    {
+      "filename": "encoding/ldpc_tables.cpp",
+      "regions": {
+        "count": 24,
+        "covered": 21,
+        "percent": 87.5
+      },
+      "lines": {
+        "count": 50,
+        "covered": 44,
+        "percent": 88
+      },
+      "functions": {
+        "count": 2,
+        "covered": 2,
+        "percent": 100
+      },
+      "branches": {
+        "count": 18,
+        "covered": 14,
+        "percent": 77.77777777777779
+      },
+      "mcdc": {
+        "count": 2,
+        "covered": 0,
+        "percent": 0
+      },
+      "flags": [
+        "NO_MCDC"
+      ]
+    },
+    {
+      "filename": "include/lunalink/codes/gold.hpp",
+      "regions": {
+        "count": 1,
+        "covered": 1,
+        "percent": 100
+      },
+      "lines": {
+        "count": 1,
+        "covered": 1,
+        "percent": 100
+      },
+      "functions": {
+        "count": 1,
+        "covered": 1,
+        "percent": 100
+      },
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "percent": null
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "percent": null
+      },
+      "flags": []
+    },
+    {
+      "filename": "include/lunalink/codes/matched_code.hpp",
+      "regions": {
+        "count": 25,
+        "covered": 25,
+        "percent": 100
+      },
+      "lines": {
+        "count": 50,
+        "covered": 50,
+        "percent": 100
+      },
+      "functions": {
+        "count": 7,
+        "covered": 7,
+        "percent": 100
+      },
+      "branches": {
+        "count": 20,
+        "covered": 16,
+        "percent": 80
+      },
+      "mcdc": {
+        "count": 6,
+        "covered": 3,
+        "percent": 50
+      },
+      "flags": []
+    },
+    {
+      "filename": "include/lunalink/codes/prn.hpp",
+      "regions": {
+        "count": 8,
+        "covered": 8,
+        "percent": 100
+      },
+      "lines": {
+        "count": 17,
+        "covered": 17,
+        "percent": 100
+      },
+      "functions": {
+        "count": 3,
+        "covered": 3,
+        "percent": 100
+      },
+      "branches": {
+        "count": 4,
+        "covered": 3,
+        "percent": 75
+      },
+      "mcdc": {
+        "count": 2,
+        "covered": 1,
+        "percent": 50
+      },
+      "flags": []
+    },
+    {
+      "filename": "include/lunalink/core/crc32.hpp",
+      "regions": {
+        "count": 6,
+        "covered": 6,
+        "percent": 100
+      },
+      "lines": {
+        "count": 15,
+        "covered": 15,
+        "percent": 100
+      },
+      "functions": {
+        "count": 2,
+        "covered": 2,
+        "percent": 100
+      },
+      "branches": {
+        "count": 4,
+        "covered": 4,
+        "percent": 100
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "percent": null
+      },
+      "flags": []
+    },
+    {
+      "filename": "include/lunalink/core/safety.hpp",
+      "regions": {
+        "count": 106,
+        "covered": 103,
+        "percent": 97.16981132075472
+      },
+      "lines": {
+        "count": 162,
+        "covered": 150,
+        "percent": 92.5925925925926
+      },
+      "functions": {
+        "count": 35,
+        "covered": 34,
+        "percent": 97.14285714285714
+      },
+      "branches": {
+        "count": 40,
+        "covered": 35,
+        "percent": 87.5
+      },
+      "mcdc": {
+        "count": 12,
+        "covered": 7,
+        "percent": 58.333333333333336
+      },
+      "flags": []
+    },
+    {
+      "filename": "include/lunalink/core/telemetry.hpp",
+      "regions": {
+        "count": 13,
+        "covered": 12,
+        "percent": 92.3076923076923
+      },
+      "lines": {
+        "count": 20,
+        "covered": 19,
+        "percent": 95
+      },
+      "functions": {
+        "count": 6,
+        "covered": 5,
+        "percent": 83.33333333333334
+      },
+      "branches": {
+        "count": 6,
+        "covered": 5,
+        "percent": 83.33333333333334
+      },
+      "mcdc": {
+        "count": 2,
+        "covered": 1,
+        "percent": 50
+      },
+      "flags": []
+    },
+    {
+      "filename": "include/lunalink/encoding/bch.hpp",
+      "regions": {
+        "count": 5,
+        "covered": 5,
+        "percent": 100
+      },
+      "lines": {
+        "count": 15,
+        "covered": 15,
+        "percent": 100
+      },
+      "functions": {
+        "count": 5,
+        "covered": 5,
+        "percent": 100
+      },
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "percent": null
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "percent": null
+      },
+      "flags": []
+    },
+    {
+      "filename": "include/lunalink/messages/frame.hpp",
+      "regions": {
+        "count": 1,
+        "covered": 1,
+        "percent": 100
+      },
+      "lines": {
+        "count": 3,
+        "covered": 3,
+        "percent": 100
+      },
+      "functions": {
+        "count": 1,
+        "covered": 1,
+        "percent": 100
+      },
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "percent": null
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "percent": null
+      },
+      "flags": []
+    },
+    {
+      "filename": "include/lunalink/platform/signal_chain_fsm.hpp",
+      "regions": {
+        "count": 1,
+        "covered": 1,
+        "percent": 100
+      },
+      "lines": {
+        "count": 3,
+        "covered": 3,
+        "percent": 100
+      },
+      "functions": {
+        "count": 1,
+        "covered": 1,
+        "percent": 100
+      },
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "percent": null
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "percent": null
+      },
+      "flags": []
+    },
+    {
+      "filename": "include/lunalink/platform/watchdog.hpp",
+      "regions": {
+        "count": 12,
+        "covered": 12,
+        "percent": 100
+      },
+      "lines": {
+        "count": 28,
+        "covered": 28,
+        "percent": 100
+      },
+      "functions": {
+        "count": 6,
+        "covered": 6,
+        "percent": 100
+      },
+      "branches": {
+        "count": 2,
+        "covered": 2,
+        "percent": 100
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "percent": null
+      },
+      "flags": []
+    },
+    {
+      "filename": "include/lunalink/signal/fft.hpp",
+      "regions": {
+        "count": 11,
+        "covered": 9,
+        "percent": 81.81818181818183
+      },
+      "lines": {
+        "count": 38,
+        "covered": 32,
+        "percent": 84.21052631578947
+      },
+      "functions": {
+        "count": 5,
+        "covered": 5,
+        "percent": 100
+      },
+      "branches": {
+        "count": 4,
+        "covered": 2,
+        "percent": 50
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "percent": null
+      },
+      "flags": []
+    },
+    {
+      "filename": "include/lunalink/signal/iq_mux.hpp",
+      "regions": {
+        "count": 1,
+        "covered": 1,
+        "percent": 100
+      },
+      "lines": {
+        "count": 5,
+        "covered": 5,
+        "percent": 100
+      },
+      "functions": {
+        "count": 1,
+        "covered": 1,
+        "percent": 100
+      },
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "percent": null
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "percent": null
+      },
+      "flags": []
+    },
+    {
+      "filename": "include/lunalink/signal/modulator.hpp",
+      "regions": {
+        "count": 32,
+        "covered": 31,
+        "percent": 96.875
+      },
+      "lines": {
+        "count": 52,
+        "covered": 50,
+        "percent": 96.15384615384616
+      },
+      "functions": {
+        "count": 5,
+        "covered": 5,
+        "percent": 100
+      },
+      "branches": {
+        "count": 20,
+        "covered": 19,
+        "percent": 95
+      },
+      "mcdc": {
+        "count": 4,
+        "covered": 2,
+        "percent": 50
+      },
+      "flags": []
+    },
+    {
+      "filename": "messages/frame.cpp",
+      "regions": {
+        "count": 137,
+        "covered": 129,
+        "percent": 94.16058394160584
+      },
+      "lines": {
+        "count": 262,
+        "covered": 244,
+        "percent": 93.12977099236642
+      },
+      "functions": {
+        "count": 11,
+        "covered": 11,
+        "percent": 100
+      },
+      "branches": {
+        "count": 98,
+        "covered": 79,
+        "percent": 80.61224489795919
+      },
+      "mcdc": {
+        "count": 12,
+        "covered": 4,
+        "percent": 33.33333333333333
+      },
+      "flags": []
+    },
+    {
+      "filename": "messages/frame_decode.cpp",
+      "regions": {
+        "count": 124,
+        "covered": 115,
+        "percent": 92.74193548387096
+      },
+      "lines": {
+        "count": 208,
+        "covered": 190,
+        "percent": 91.34615384615384
+      },
+      "functions": {
+        "count": 10,
+        "covered": 10,
+        "percent": 100
+      },
+      "branches": {
+        "count": 90,
+        "covered": 72,
+        "percent": 80
+      },
+      "mcdc": {
+        "count": 13,
+        "covered": 3,
+        "percent": 23.076923076923077
+      },
+      "flags": []
+    },
+    {
+      "filename": "messages/message_parser.cpp",
+      "regions": {
+        "count": 132,
+        "covered": 128,
+        "percent": 96.96969696969697
+      },
+      "lines": {
+        "count": 243,
+        "covered": 234,
+        "percent": 96.29629629629629
+      },
+      "functions": {
+        "count": 6,
+        "covered": 6,
+        "percent": 100
+      },
+      "branches": {
+        "count": 126,
+        "covered": 121,
+        "percent": 96.03174603174604
+      },
+      "mcdc": {
+        "count": 2,
+        "covered": 1,
+        "percent": 50
+      },
+      "flags": []
+    },
+    {
+      "filename": "messages/time_of_transmission.cpp",
+      "regions": {
+        "count": 31,
+        "covered": 30,
+        "percent": 96.7741935483871
+      },
+      "lines": {
+        "count": 52,
+        "covered": 50,
+        "percent": 96.15384615384616
+      },
+      "functions": {
+        "count": 2,
+        "covered": 2,
+        "percent": 100
+      },
+      "branches": {
+        "count": 20,
+        "covered": 19,
+        "percent": 95
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "percent": null
+      },
+      "flags": []
+    },
+    {
+      "filename": "platform/signal_chain_fsm.cpp",
+      "regions": {
+        "count": 25,
+        "covered": 23,
+        "percent": 92
+      },
+      "lines": {
+        "count": 62,
+        "covered": 40,
+        "percent": 64.51612903225806
+      },
+      "functions": {
+        "count": 4,
+        "covered": 4,
+        "percent": 100
+      },
+      "branches": {
+        "count": 14,
+        "covered": 12,
+        "percent": 85.71428571428571
+      },
+      "mcdc": {
+        "count": 2,
+        "covered": 2,
+        "percent": 100
+      },
+      "flags": [
+        "BELOW_THRESHOLD"
+      ]
+    },
+    {
+      "filename": "platform/watchdog.cpp",
+      "regions": {
+        "count": 6,
+        "covered": 6,
+        "percent": 100
+      },
+      "lines": {
+        "count": 13,
+        "covered": 13,
+        "percent": 100
+      },
+      "functions": {
+        "count": 3,
+        "covered": 3,
+        "percent": 100
+      },
+      "branches": {
+        "count": 2,
+        "covered": 2,
+        "percent": 100
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "percent": null
+      },
+      "flags": []
+    },
+    {
+      "filename": "signal/iq_mux.cpp",
+      "regions": {
+        "count": 38,
+        "covered": 37,
+        "percent": 97.36842105263158
+      },
+      "lines": {
+        "count": 57,
+        "covered": 54,
+        "percent": 94.73684210526315
+      },
+      "functions": {
+        "count": 3,
+        "covered": 3,
+        "percent": 100
+      },
+      "branches": {
+        "count": 26,
+        "covered": 24,
+        "percent": 92.3076923076923
+      },
+      "mcdc": {
+        "count": 6,
+        "covered": 3,
+        "percent": 50
+      },
+      "flags": []
+    },
+    {
+      "filename": "signal/sync_detector.cpp",
+      "regions": {
+        "count": 54,
+        "covered": 54,
+        "percent": 100
+      },
+      "lines": {
+        "count": 89,
+        "covered": 89,
+        "percent": 100
+      },
+      "functions": {
+        "count": 5,
+        "covered": 5,
+        "percent": 100
+      },
+      "branches": {
+        "count": 30,
+        "covered": 29,
+        "percent": 96.66666666666667
+      },
+      "mcdc": {
+        "count": 4,
+        "covered": 3,
+        "percent": 75
+      },
+      "flags": []
+    }
+  ],
+  "python": {
+    "line_percent": 100.0,
+    "test_count": 73
+  },
+  "verdict": {
+    "region_pass": true,
+    "line_pass": true,
+    "function_pass": true,
+    "branch_pass": true,
+    "mcdc_pass": true,
+    "per_file_violations": [
+      "codes/legendre.cpp",
+      "codes/weil.cpp",
+      "platform/signal_chain_fsm.cpp"
+    ],
+    "overall": "PASS_WITH_WAIVERS"
+  }
+}

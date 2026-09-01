@@ -83,9 +83,9 @@ struct MatchedCodeGenResult {
   }
 
   if (byte_count != kWeil10230FullBytes) {
-    return MatchedCodeStatus::kFaultDetected; // FIZ-1 // NOCOVER(DEFENCE_IN_DEPTH): CFI terminal
-                                              // check
-  }
+    // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): CFI terminal check
+    return MatchedCodeStatus::kFaultDetected; // FIZ-1
+  } // NOCOVER_END
 
   const auto last_byte =
       static_cast<uint8_t>(primary_code.data[kWeil10230FullBytes] ^ byte_modifier);

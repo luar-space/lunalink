@@ -7,6 +7,44 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
+_REPO = Path(__file__).parents[1]
+
+
+def _metric_substitutions() -> str:
+    """Build RST substitutions for measured metrics.
+
+    Coverage figures are read from the generated evidence artefact rather than
+    transcribed into prose, so a regenerated ``coverage_summary.json`` updates
+    every page that cites it.  ``scripts/check_doc_metrics.py`` enforces the
+    same rule for ``README.md``, which is Markdown and cannot use
+    substitutions.
+    """
+    import json
+
+    summary = _REPO / "docs" / "assurance" / "evidence" / "coverage_summary.json"
+    try:
+        totals = json.loads(summary.read_text())["totals"]
+    except (OSError, KeyError, ValueError):
+        # Docs must still build in a tree with no coverage run yet.
+        return "".join(
+            f".. |cov-{k}| replace:: *(not measured)*\n"
+            for k in ("line", "region", "branch", "mcdc", "function")
+        )
+
+    def pct(key: str) -> str:
+        return f"{totals[key]['percent']:.2f}%"
+
+    return (
+        f".. |cov-line| replace:: {pct('lines')}\n"
+        f".. |cov-region| replace:: {pct('regions')}\n"
+        f".. |cov-branch| replace:: {pct('branches')}\n"
+        f".. |cov-mcdc| replace:: {pct('mcdc')}\n"
+        f".. |cov-function| replace:: {pct('functions')}\n"
+    )
+
+
+rst_prolog = _metric_substitutions()
+
 project = "lunalink"
 author = "LunaLink"
 
@@ -49,7 +87,8 @@ exclude_patterns = [
     "_build",
     "Thumbs.db",
     ".DS_Store",
-    "assurance/README.rst",
+    # Folder index for people browsing the repo tree; the Sphinx navigation
+    # for these documents is the "Mission Assurance" toctree in index.rst.
     "assurance/README.rst",
 ]
 

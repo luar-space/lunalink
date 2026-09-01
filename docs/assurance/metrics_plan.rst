@@ -45,14 +45,18 @@ Metrics Catalogue
        badge.
      - CI gate blocks merge below the enforced floor; author notified by
        GitHub check failure; 48 hours to resolve
-   * - **Line Coverage (C++)** — percentage of C++ source lines executed by
-       the Catch2 test suite
+   * - **Region / Line Coverage (C++)** — percentage of C++ code regions and
+       source lines executed by the Catch2 test suite
      - LLVM ``llvm-cov`` (source-based instrumentation)
      - Every pull request; every push to ``main``
-     - **≥ 90%** whole-library (``LINE_COVERAGE_MIN`` in
-       ``.github/workflows/coverage-cpp.yml``).  No per-file floor is
-       CI-enforced; files below 80% line coverage are individually justified
-       in ``coverage_exclusions.rst``.
+     - **≥ 90%** region and **≥ 85%** line, whole-library
+       (``REGION_COVERAGE_MIN`` / ``LINE_COVERAGE_MIN`` in
+       ``.github/workflows/coverage-cpp.yml``, mirroring the ``THRESHOLDS``
+       table in ``scripts/coverage_evidence_report.py``).  Region is the
+       ECSS Category B primary structural metric; line is a floor beneath
+       it.  No per-file floor is CI-enforced; files below 80% line coverage
+       are individually justified in ``coverage_exclusions.rst``.  Measured
+       values for this release: :doc:`coverage_evidence`.
      - CI gate blocks merge; author notified; 48 hours to add tests or
        justify exclusion in ``coverage_exclusions.rst``
    * - **SWIFI Detection Rate** — fraction of single-bit fault injections
@@ -124,28 +128,48 @@ threshold:
 Metrics History
 ----------------
 
-.. note::
+A per-commit metrics history table in this document was planned and **was
+not built**; the capability it was meant to provide is delivered by the
+published badges instead, and this section records that decision rather
+than leaving an empty placeholder.
 
-   This section will be populated automatically by CI once the ``metrics``
-   workflow step is activated (planned for Gateway 3 exit).  On every passing
-   build against ``main``, the CI ``metrics`` job will append a row to
-   ``docs/metrics_history.csv`` and publish a rendered HTML dashboard to
-   ``gh-pages``.  The stub table below is a placeholder until that workflow
-   step is active.
+Each metric below is measured on every push to ``main`` and published as a
+live badge on the documentation landing page and the repository README,
+sourced from the workflow named:
 
 .. list-table::
    :header-rows: 1
-   :widths: 20 16 16 16 16 16
+   :widths: 26 30 44
 
-   * - Build Date
-     - MC/DC %
-     - Line Cov %
-     - SWIFI %
-     - clang-tidy
-     - cppcheck
-   * - *(populated by CI)*
-     - *(CI)*
-     - *(CI)*
-     - *(CI)*
-     - *(CI)*
-     - *(CI)*
+   * - Metric
+     - Workflow
+     - Where the current value is published
+   * - Line / region / branch / MC/DC coverage
+     - ``coverage-cpp.yml``
+     - Four badges on :doc:`../index`; full report in
+       :doc:`coverage_evidence`; llvm-cov HTML browser at ``/coverage/``
+       on the docs site
+   * - Python line coverage
+     - ``test-python.yml``
+     - Badge on :doc:`../index` (100%, CI-gated)
+   * - SWIFI detection rate
+     - ``task swifi``
+     - ``docs/assurance/evidence/swifi_results.json``;
+       :doc:`fault_coverage`
+   * - clang-tidy violations
+     - ``tidy.yml``
+     - Badge on :doc:`../index`; zero violations is a blocking gate
+   * - cppcheck violations
+     - ``lint.yml``
+     - ``cppcheck_report.rst``, published to the docs site
+
+Each badge reflects the current ``main``; the badge endpoints are gist-backed
+(``COVERAGE_GIST_ID``), so their revision history is the metrics history.
+For a point-in-time record against any git ref, ``task recertify`` runs every
+gate and emits a signed-off, milestone-tagged recertification record —
+which is the artefact this section originally intended to accumulate.
+
+.. code-block:: bash
+
+   task metrics      # print the current metric set locally
+   task recertify    # full gate re-run + signed-off record for a given ref

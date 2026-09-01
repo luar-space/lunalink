@@ -5,6 +5,7 @@
 import os
 import tempfile
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pytest
@@ -17,6 +18,7 @@ from lunalink.afs import (
     FRAME_DURATION_SEC,
     FRAME_LENGTH,
     INTERIM_ASSIGNMENT_MAX_PRN,
+    IQ_INT16_FULL_SCALE,
     ITOW_BITS,
     ITOW_MAX,
     SB2_DATA_BITS,
@@ -69,6 +71,7 @@ from lunalink.afs import (
     parse_sb3,
     parse_sb4,
     prn_code,
+    read_iq_file,
     subframe_build_sb2,
     subframe_build_sb3,
     subframe_build_sb4,
@@ -661,6 +664,182 @@ class TestWriteIqFile:
         try:
             write_iq_file(path, iq, AFS_Q_CHIP_RATE, 1, duration_s=0.002)
             assert os.path.getsize(path) == 128 + 10230 * 2 * 4
+        finally:
+            os.unlink(path)
+
+
+class TestIqInt16Format:
+    """int16 I/Q container support (TC-2: binary I/Q as int16 and float32)."""
+
+    def test_int16_file_is_half_the_size(self):
+        """int16 payload is 2 bytes per value against float32's 4."""
+        iq = generate_iq_epoch(1, 0)
+        with tempfile.NamedTemporaryFile(suffix=".iq", delete=False) as f:
+            path = f.name
+        try:
+            write_iq_file(path, iq, AFS_Q_CHIP_RATE, 1, sample_format="int16")
+            assert os.path.getsize(path) == 128 + 10230 * 2 * 2
+        finally:
+            os.unlink(path)
+
+    def test_header_declares_int16(self):
+        """The header Format field records the on-disk format."""
+        iq = generate_iq_epoch(1, 0)
+        with tempfile.NamedTemporaryFile(suffix=".iq", delete=False) as f:
+            path = f.name
+        try:
+            write_iq_file(path, iq, AFS_Q_CHIP_RATE, 1, sample_format="int16")
+            with open(path, "rb") as fh:
+                header = fh.read(128)
+            assert header[32:48].rstrip(b"\x00") == b"int16"
+        finally:
+            os.unlink(path)
+
+    @pytest.mark.parametrize("fmt", ["float32", "int16"])
+    def test_roundtrip_metadata(self, fmt):
+        """Header metadata survives a write/read round trip in both formats."""
+        iq = np.array([[1.0, -1.0], [0.5, -0.5], [0.0, 0.25]], dtype=np.float32)
+        with tempfile.NamedTemporaryFile(suffix=".iq", delete=False) as f:
+            path = f.name
+        try:
+            write_iq_file(path, iq, 5.115e6, 7, duration_s=1.5, sample_format=fmt)
+            sig = read_iq_file(path)
+            assert sig.sample_format == fmt
+            assert sig.sample_rate == pytest.approx(5.115e6)
+            assert sig.duration_s == pytest.approx(1.5)
+            assert sig.prn_id == 7
+            assert sig.iq.shape == (3, 2)
+            assert sig.iq.dtype == np.float32
+        finally:
+            os.unlink(path)
+
+    def test_float32_roundtrip_is_exact(self):
+        """float32 storage is lossless."""
+        iq = np.array([[1.0, -1.0], [0.5, -0.25]], dtype=np.float32)
+        with tempfile.NamedTemporaryFile(suffix=".iq", delete=False) as f:
+            path = f.name
+        try:
+            write_iq_file(path, iq, 1e6, 1)
+            np.testing.assert_array_equal(read_iq_file(path).iq, iq)
+        finally:
+            os.unlink(path)
+
+    def test_int16_roundtrip_within_one_quantisation_step(self):
+        """int16 storage round-trips to within one LSB."""
+        rng = np.random.default_rng(42)
+        iq = rng.uniform(-1.0, 1.0, size=(256, 2)).astype(np.float32)
+        with tempfile.NamedTemporaryFile(suffix=".iq", delete=False) as f:
+            path = f.name
+        try:
+            write_iq_file(path, iq, 1e6, 1, sample_format="int16")
+            back = read_iq_file(path).iq
+            assert np.max(np.abs(back - iq)) <= 1.0 / IQ_INT16_FULL_SCALE
+        finally:
+            os.unlink(path)
+
+    def test_int16_full_scale_is_symmetric(self):
+        """+1.0 and -1.0 map to +/-32767, so negation is exact."""
+        iq = np.array([[1.0, -1.0]], dtype=np.float32)
+        with tempfile.NamedTemporaryFile(suffix=".iq", delete=False) as f:
+            path = f.name
+        try:
+            write_iq_file(path, iq, 1e6, 1, sample_format="int16")
+            raw = np.fromfile(path, dtype=np.int16, offset=128)
+            np.testing.assert_array_equal(raw, [32767, -32767])
+            np.testing.assert_allclose(read_iq_file(path).iq, iq, atol=1e-7)
+        finally:
+            os.unlink(path)
+
+    def test_int16_clips_out_of_range_input(self):
+        """Samples beyond [-1, 1] saturate rather than wrap."""
+        iq = np.array([[2.5, -2.5]], dtype=np.float32)
+        with tempfile.NamedTemporaryFile(suffix=".iq", delete=False) as f:
+            path = f.name
+        try:
+            write_iq_file(path, iq, 1e6, 1, sample_format="int16")
+            raw = np.fromfile(path, dtype=np.int16, offset=128)
+            np.testing.assert_array_equal(raw, [32767, -32767])
+        finally:
+            os.unlink(path)
+
+    def test_unknown_write_format_raises(self):
+        """An unsupported sample_format is rejected before any file is written."""
+        from jaxtyping import TypeCheckError
+
+        iq = np.array([[1.0, 0.0]], dtype=np.float32)
+        with tempfile.NamedTemporaryFile(suffix=".iq", delete=False) as f:
+            path = f.name
+        try:
+            bad_format: Any = "int8"
+            with pytest.raises(TypeCheckError, match="sample_format"):
+                write_iq_file(path, iq, 1e6, 1, sample_format=bad_format)
+            # Nothing was written: the guard fires before the file is opened.
+            assert os.path.getsize(path) == 0
+        finally:
+            os.unlink(path)
+
+
+class TestReadIqFileErrors:
+    """read_iq_file rejects malformed containers with actionable messages."""
+
+    def _write(self, payload: bytes) -> str:
+        """Write raw bytes to a temp file and return its path."""
+        with tempfile.NamedTemporaryFile(suffix=".iq", delete=False) as f:
+            f.write(payload)
+            return f.name
+
+    def test_truncated_header(self):
+        """A header shorter than 128 bytes is rejected."""
+        path = self._write(b"LSISIQ\x00\x00short")
+        try:
+            with pytest.raises(ValueError, match="truncated header"):
+                read_iq_file(path)
+        finally:
+            os.unlink(path)
+
+    def test_bad_magic(self):
+        """A file without the LSISIQ magic is rejected."""
+        path = self._write(b"NOTLSIS\x00" + b"\x00" * 120)
+        try:
+            with pytest.raises(ValueError, match="not an LSISIQ file"):
+                read_iq_file(path)
+        finally:
+            os.unlink(path)
+
+    def test_unsupported_version(self):
+        """An unknown container version is rejected."""
+        header = bytearray(b"LSISIQ\x00\x00" + b"\x00" * 120)
+        header[8:12] = (99).to_bytes(4, "little")
+        path = self._write(bytes(header))
+        try:
+            with pytest.raises(ValueError, match="unsupported LSISIQ version 99"):
+                read_iq_file(path)
+        finally:
+            os.unlink(path)
+
+    def test_unsupported_sample_format(self):
+        """A format the reader cannot decode is rejected by name."""
+        header = bytearray(b"LSISIQ\x00\x00" + b"\x00" * 120)
+        header[8:12] = (1).to_bytes(4, "little")
+        header[32:48] = b"complex64".ljust(16, b"\x00")
+        path = self._write(bytes(header))
+        try:
+            with pytest.raises(ValueError, match="unsupported sample format"):
+                read_iq_file(path)
+        finally:
+            os.unlink(path)
+
+    def test_odd_payload_length(self):
+        """A payload that is not a whole number of I/Q pairs is rejected."""
+        iq = np.array([[1.0, 0.0]], dtype=np.float32)
+        with tempfile.NamedTemporaryFile(suffix=".iq", delete=False) as f:
+            path = f.name
+        try:
+            write_iq_file(path, iq, 1e6, 1, sample_format="int16")
+            with open(path, "ab") as fh:
+                fh.write(b"\x01\x00")  # one extra int16 -> 3 values
+            with pytest.raises(ValueError, match="not a whole number of I/Q pairs"):
+                read_iq_file(path)
         finally:
             os.unlink(path)
 

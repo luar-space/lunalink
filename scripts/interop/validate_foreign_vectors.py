@@ -172,21 +172,45 @@ def _check_iq_file(path: Path) -> list[str]:
         errors.append(f"{path.name}: size {size} not aligned to 4-byte I/Q samples")
         return errors
 
-    n_samples_i16 = size // 4
-    n_samples_f32 = size // 8 if size % 8 == 0 else 0
+    # An LSISIQ container declares its sample format in the header; trust that
+    # over any heuristic.  Headerless files (e.g. LANS-AFS-SIM's raw int16
+    # dumps) still fall back to inspecting the payload.
+    fmt = ""
+    n_samples = 0
+    if size >= 128 and raw_bytes[:8] == b"LSISIQ\x00\x00":
+        declared = raw_bytes[32:48].rstrip(b"\x00").decode("ascii", errors="replace")
+        if declared in ("int16", "float32"):
+            fmt = declared
+            payload = size - 128
+            width = 2 if fmt == "int16" else 4
+            n_samples = payload // (width * 2)
+            if payload % (width * 2) != 0:
+                errors.append(
+                    f"{path.name}: {payload} payload bytes is not a whole "
+                    f"number of {fmt} I/Q pairs"
+                )
+        else:
+            errors.append(
+                f"{path.name}: LSISIQ header declares unsupported format {declared!r}"
+            )
+            return errors
 
-    raw = np.frombuffer(raw_bytes[: min(4096, size)], dtype=np.int16)
-    max_val = int(np.max(np.abs(raw)))
+    if not fmt:
+        n_samples_i16 = size // 4
+        n_samples_f32 = size // 8 if size % 8 == 0 else 0
 
-    if max_val > 0 and max_val < 32768:
-        fmt = "int16"
-        n_samples = n_samples_i16
-    elif n_samples_f32 > 0:
-        fmt = "float32"
-        n_samples = n_samples_f32
-    else:
-        fmt = "int16"
-        n_samples = n_samples_i16
+        raw = np.frombuffer(raw_bytes[: min(4096, size)], dtype=np.int16)
+        max_val = int(np.max(np.abs(raw)))
+
+        if max_val > 0 and max_val < 32768:
+            fmt = "int16 (inferred)"
+            n_samples = n_samples_i16
+        elif n_samples_f32 > 0:
+            fmt = "float32 (inferred)"
+            n_samples = n_samples_f32
+        else:
+            fmt = "int16 (inferred)"
+            n_samples = n_samples_i16
 
     print(f"  {path.name}: I/Q {fmt}, {n_samples} samples, {size / 1024 / 1024:.1f} MB")
     return errors

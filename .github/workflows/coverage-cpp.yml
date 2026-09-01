@@ -22,7 +22,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       LLVM_VERSION: "19"
-      LINE_COVERAGE_MIN: "90"
+      # Single source of truth for these floors is the THRESHOLDS table in
+      # scripts/coverage_evidence_report.py (rendered in
+      # docs/assurance/coverage_evidence.rst with the ECSS rationale for each).
+      # Region — not line — is the ECSS Category B primary metric gated at 90%.
+      REGION_COVERAGE_MIN: "90"
+      LINE_COVERAGE_MIN: "85"
       MCDC_COVERAGE_MIN: "30"
     steps:
       - uses: actions/checkout@v5
@@ -113,7 +118,7 @@ jobs:
 
           # Write badge JSON (shields.io endpoint format)
           printf '{"schemaVersion":1,"label":"MC/DC","message":"%s","color":"%s"}\n' \
-            "$MCDC_PCT" "$COLOR" > build/coverage/coverage-badge.json
+            "$MCDC_PCT" "$(badge_color "$MCDC_PCT")" > build/coverage/coverage-badge.json
 
           # Write full summary JSON
           printf '{"regions":"%s","functions":"%s","lines":"%s","branches":"%s","mcdc":"%s"}\n' \
@@ -142,8 +147,15 @@ jobs:
         run: |
           LINE_NUM="${{ steps.coverage.outputs.line_pct }}"
           LINE_NUM="${LINE_NUM%\%}"
+          REGION_NUM="${{ steps.coverage.outputs.region_pct }}"
+          REGION_NUM="${REGION_NUM%\%}"
           MCDC_NUM="${{ steps.coverage.outputs.mcdc_num }}"
           FAIL=0
+
+          if awk "BEGIN{exit !(${REGION_NUM} < ${{ env.REGION_COVERAGE_MIN }})}"; then
+            echo "::error::Region coverage ${REGION_NUM}% is below minimum ${{ env.REGION_COVERAGE_MIN }}%"
+            FAIL=1
+          fi
 
           if awk "BEGIN{exit !(${LINE_NUM} < ${{ env.LINE_COVERAGE_MIN }})}"; then
             echo "::error::Line coverage ${LINE_NUM}% is below minimum ${{ env.LINE_COVERAGE_MIN }}%"

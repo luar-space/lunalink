@@ -228,6 +228,7 @@ if(BUILD_TESTING)
         cpp/tests/tool_validation/test_coverage_canary.cpp
         # performance/
         cpp/tests/performance/test_bch_ber.cpp
+        cpp/tests/performance/test_constant_time.cpp
         cpp/tests/performance/test_ldpc_reference.cpp
         cpp/tests/performance/test_sync_detection_rate.cpp
         cpp/tests/performance/test_wcet.cpp

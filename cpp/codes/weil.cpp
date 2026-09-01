@@ -97,9 +97,14 @@ PrnStatus WeilGenerator::construct_weil(uint16_t prime,
                                         uint16_t insertion_index,
                                         std::span<uint8_t> out) noexcept {
   if (insertion_index == 0U) [[unlikely]] {
+    // NOCOVER_BEGIN(DEFENCE_IN_DEPTH): unreachable via any legitimate call —
+    // every Appendix D row has insertion_index >= 1 (minimum 1 across all 210
+    // PRNs) and the tertiary insertion index is fixed at 1 per Figure E-1.
+    // Retained because a .rodata SEU on the parameter table would otherwise
+    // underflow `insertion_index - 1U` to 65535 at the expansion step below.
     secure_scrub(out);                // P0-4: scrub on error
     return PrnStatus::kFaultDetected; // FIZ-1
-  }
+  } // NOCOVER_END
 
   const auto legendre = get_cached_legendre(prime);
   if (legendre.empty()) [[unlikely]] {

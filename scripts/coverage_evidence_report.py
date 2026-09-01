@@ -269,6 +269,7 @@ def _generate_rst(  # noqa: C901
     w("     - Value")
     w("     - Threshold")
     w("     - Verdict")
+    all_pass = True
     for name, key in [
         ("Region", "regions"),
         ("Line", "lines"),
@@ -286,10 +287,49 @@ def _generate_rst(  # noqa: C901
         }
         thresh = THRESHOLDS.get(key_map[key], 0.0)
         verdict = "PASS" if m.percent >= thresh else "**FAIL**"
+        all_pass = all_pass and m.percent >= thresh
         w(f"   * - {name}")
         w(f"     - {_fmt(m)}")
         w(f"     - >= {thresh:.0f}%")
         w(f"     - {verdict}")
+
+    # -- Overall verdict.  The per-file line threshold is a review trigger, not
+    # a CI gate, so a file below it produces a waiver rather than a failure --
+    # but the waiver is stated here rather than left for a reader to infer from
+    # the flag column of the per-file table below.
+    violations = [f.filename for f in files if "BELOW_THRESHOLD" in f.flags]
+    if all_pass and not violations:
+        overall = "PASS"
+    elif all_pass:
+        overall = "PASS_WITH_WAIVERS"
+    else:
+        overall = "FAIL"
+
+    w("")
+    w("")
+    w("Overall Verdict")
+    w("---------------")
+    w("")
+    w(f"**{overall}**")
+    w("")
+    if overall == "PASS_WITH_WAIVERS":
+        w("Every whole-library threshold is met.  The following files are")
+        w("below the 80% per-file line-coverage *review trigger* (an internal")
+        w("threshold, not a CI gate); each is waived against a categorised,")
+        w("milestone-reviewed justification in")
+        w("``docs/assurance/coverage_exclusions.rst``:")
+        w("")
+        for fn in violations:
+            w(f"- ``{fn}``")
+        w("")
+    elif overall == "PASS":
+        w("Every whole-library threshold is met and no file is below the 80%")
+        w("per-file line-coverage review trigger.")
+        w("")
+    else:
+        w("At least one whole-library threshold is not met.  See the summary")
+        w("table above.")
+        w("")
 
     # -- Trend
     w("")
@@ -323,7 +363,12 @@ def _generate_rst(  # noqa: C901
             w(f"     - {curr:.2f}%")
             w(f"     - {sign}{delta:.2f}pp")
     else:
-        w("No baseline available — first run.")
+        w("No baseline was supplied for this run, so no deltas are shown.")
+        w("Pass ``--baseline <previous coverage_summary.json>`` to render a")
+        w("previous-vs-current comparison; per-commit trend is tracked")
+        w("instead by the coverage badges published from")
+        w("``.github/workflows/coverage-cpp.yml``, which gate every merge")
+        w("against the whole-library thresholds in the table above.")
 
     # -- Per-file
     w("")
@@ -532,12 +577,14 @@ def main() -> None:  # noqa: C901
         .splitlines()[0]
     )
 
-    # Compiler from CMakeCache
+    # Compiler from CMakeCache.  CMake writes CMAKE_CXX_COMPILER with either a
+    # FILEPATH or a STRING type depending on how the toolchain was selected, so
+    # match on the variable name rather than on one type suffix.
     compiler = "unknown"
     cache = build_dir / "CMakeCache.txt"
     if cache.exists():
         for line in cache.read_text().splitlines():
-            if "CMAKE_CXX_COMPILER:FILEPATH=" in line:
+            if line.startswith("CMAKE_CXX_COMPILER:"):
                 cpath = line.split("=", 1)[1]
                 try:
                     compiler = subprocess.run(
@@ -546,9 +593,15 @@ def main() -> None:  # noqa: C901
                         text=True,
                         check=False,
                     ).stdout.splitlines()[0]
-                except (FileNotFoundError, OSError):
+                except (FileNotFoundError, OSError, IndexError):
                     compiler = cpath
                 break
+    if compiler == "unknown":
+        print(
+            f"WARNING: could not determine the compiler from {cache}; "
+            "the evidence report will record it as 'unknown'.",
+            file=sys.stderr,
+        )
 
     # Extract functional coverage (the primary metric)
     print("Extracting functional coverage from test_lunalink...")

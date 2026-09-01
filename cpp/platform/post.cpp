@@ -77,7 +77,7 @@ PostResult run_post() noexcept {
                                             // mismatch requires SEU on .rodata
   }
   // Legendre cache: explicit deterministic initialisation.
-  // Generates all three sequences (p=10223, p=1499, p=10243) and verifies against golden CRCs.
+  // Generates both sequences (p=10223, p=1499) and verifies against golden CRCs.
   // Eliminates hidden __cxa_guard dynamic init (TOCTOU integrity gap closure).
   if (legendre_cache_init() != LegendreStatus::kOk) {
     return {PostStatus::kFaultDetected, 2}; // FIZ-3 // NOCOVER(DEFENCE_IN_DEPTH): Legendre CRC
