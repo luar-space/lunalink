@@ -44,14 +44,12 @@ deliverable for the ESA-CCSDS Protocol Development Competition: standards
 compliance analysis, system architecture, module interfaces, testing strategy,
 development environment, and reference data validation.
 
-During specification study, three specification gaps in LSIS V1.0 were identified and
-formally documented with proposed resolutions.  The system architecture has
-been designed around a deterministic C++ core with no exceptions, no RTTI, and
-no dynamic allocation on the signal path, wrapped by Python bindings for
-prototyping and test-vector generation.  Both specification data annexes
-(Annex 2: LDPC submatrices, Annex 3: PRN spreading codes) have been loaded,
-converted to native data structures, and validated against the reference
-material.
+Studying the specification turned up three gaps in LSIS V1.0, each documented
+here with a proposed resolution.  The architecture centres on a deterministic
+C++ core — no exceptions, no RTTI, no dynamic allocation on the signal path —
+wrapped by Python bindings for prototyping and test-vector generation.  Both
+data annexes (Annex 2: LDPC submatrices, Annex 3: PRN spreading codes) load
+into native data structures and check against the reference material.
 
 ----
 
@@ -60,8 +58,8 @@ material.
 Gateway 0 deliverables
 ----------------------
 
-The rubric lists eight Gateway 0 deliverables.  Each is mapped to the
-section of this document that carries it.
+The rubric lists eight Gateway 0 deliverables.  Each maps to the section
+that carries it.
 
 .. list-table::
    :header-rows: 1
@@ -109,10 +107,9 @@ into blocking CI gates).
 Specification Analysis
 ----------------------
 
-LunaLink identified three specification gaps in LSIS V1.0 that require
-implementation assumptions for deterministic interoperability.  Each finding
-documents the affected section, the interoperability risk, and LunaLink's
-adopted resolution.
+Three gaps in LSIS V1.0 force an implementation assumption before
+interoperability can be deterministic.  Each finding names the affected
+section, the risk it creates, and the resolution LunaLink adopted.
 
 .. list-table:: LSIS V1.0 Specification Findings
    :header-rows: 1
@@ -157,8 +154,8 @@ adopted resolution.
 
 .. |S| unicode:: U+00A7
 
-A full findings report with rationale and standard references is maintained
-in the project documentation.
+The project documentation carries the full findings report, with rationale
+and standard references.
 
 ----
 
@@ -180,9 +177,9 @@ The system is a dual-layer design:
 - **Wrapper layer (Python 3.12+):** nanobind bindings for prototyping,
   test-vector generation, and analysis.
 
-This separation ensures the core can be extracted for embedded or
-flight-software contexts while the Python layer provides accessibility for
-researchers and integrators.
+The split lets the core drop untouched into an embedded or flight-software
+context, while the Python layer keeps it reachable for researchers and
+integrators.
 
 Module Design
 ~~~~~~~~~~~~~
@@ -233,11 +230,10 @@ Module Design
 Signal Chain
 ~~~~~~~~~~~~
 
-The transmitter-side signal chain processes navigation data from message bits
-through FEC encoding, interleaving, spreading, modulation, and IQ
-multiplexing.  The two pipelines below show the message encoding path
-(navigation data to encoded frame) and the spreading/modulation path
-(encoded frame to baseband I/Q output).
+The transmitter carries navigation data from message bits through FEC
+encoding, interleaving, spreading, modulation, and IQ multiplexing.  Two
+pipelines follow: message encoding, from navigation data to encoded frame,
+then spreading and modulation, from encoded frame to baseband I/Q.
 
 .. only:: latex
 
@@ -390,8 +386,7 @@ A formal Interface Control Document (LUNALINK-ICD-001) defines:
 - Wire-level data formats (IQ interleave order, binary frame headers)
 - Thread safety and reentrancy guarantees
 
-Data format specifications for interoperability test vectors follow the
-competition-defined standards:
+Interoperability test vectors follow the competition-defined formats:
 
 .. list-table::
    :header-rows: 1
@@ -520,8 +515,8 @@ Standardised Test Messages
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 LunaLink defines five reference test messages for round-trip and
-interoperability testing.  These are proposed as standardised test content
-for cross-implementation validation during Phase 3:
+interoperability testing, offered as standardised content for
+cross-implementation validation in Phase 3:
 
 .. list-table::
    :header-rows: 1
@@ -553,8 +548,8 @@ for cross-implementation validation during Phase 3:
 Reference Data Validation
 --------------------------
 
-Both specification data annexes have been loaded, converted to native C++
-data structures, and validated against the reference material.
+Both data annexes load into native C++ structures and check against the
+reference material.
 
 Annex 2 — LDPC Submatrices
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -605,16 +600,16 @@ Table generation pipeline:
 Pre-generated Test Vectors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Test vectors in competition-standard formats are committed under ``test-vectors/``
+Competition-standard test vectors live under ``test-vectors/``
 (``codes/``, ``fec/``, ``frames/``, ``signals/``, ``parsed/``, ``decode/``).
 The spreading-code set covers all 210 PRNs for all three families (Gold-2046,
 Weil-10230, Weil-1500), validated bit-for-bit against Annex 3; FEC, frame,
-signal, and decode-direction vectors are committed alongside them.  The full
-set is published at `luar-space/lsis-afs-test-vectors
+signal, and decode-direction vectors are committed alongside them.  All of it
+is published at `luar-space/lsis-afs-test-vectors
 <https://github.com/luar-space/lsis-afs-test-vectors>`__.
 
-Vectors are regenerable from source at any time and validated against the
-live build during CI.
+Any vector regenerates from source on demand, and CI checks the set against
+the live build.
 
 ----
 
@@ -627,8 +622,8 @@ Compliance Matrix
 ~~~~~~~~~~~~~~~~~
 
 A compliance matrix maps every LSIS V1.0 ``shall`` requirement to its
-implementation file, test file, and verification status.  Requirements have
-been extracted and catalogued for all eight gateways:
+implementation file, test file, and verification status.  All eight gateways
+are catalogued:
 
 .. list-table::
    :header-rows: 1
@@ -682,20 +677,20 @@ and linked to the corresponding module and test case.  Example traces:
      - ``interleaver``
      - ``test_interleaver.cpp``
 
-Traceability is maintained as implementation proceeds through each gateway.
+Traceability grows with the implementation, gateway by gateway.
 
 Configuration Management
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Configuration is managed through git with the following controls:
+Git carries configuration management, under four controls:
 
 - **Tagged baselines:** Each gateway exit is marked with an annotated git tag
   (e.g. ``gw1-baseline``), capturing a reproducible snapshot of source, tests,
   and documentation.
 - **Branch protection:** The ``main`` branch requires passing CI and code
   review before merge; force-push is disabled.
-- **Reproducible builds:** ``pyproject.toml`` and CMake version pins ensure
-  deterministic dependency resolution.  ``task ci-checks`` reproduces the
+- **Reproducible builds:** version pins in ``pyproject.toml`` and CMake make
+  dependency resolution deterministic.  ``task ci-checks`` reproduces the
   full CI pipeline locally.
 - **Artefact traceability:** CI workflows publish build artefacts (test results,
   static-analysis reports, documentation) linked to the triggering commit SHA.
@@ -763,8 +758,7 @@ Roadmap
 Appendix A: Build & Verification Instructions
 ----------------------------------------------
 
-All deliverables can be verified by building and running the project from
-source.
+Building and running the project from source verifies every deliverable.
 
 **Prerequisites:** Python 3.12+, CMake 3.15+, a C++20 compiler (GCC 12+ or
 Clang 15+), and `Task <https://taskfile.dev>`_.
@@ -791,8 +785,8 @@ All gates must pass with exit code 0.
 Appendix B: Related Documents
 ------------------------------
 
-The following documents are maintained in the project repository and provide
-supporting detail for the claims in this report:
+These repository documents carry the supporting detail behind the claims
+above:
 
 - **Spec Findings Report** (``docs/signal/spec_findings_report.rst``) — full rationale for each LSIS V1.0 finding
 - **Architecture Description** (``docs/signal/architecture.rst``) — module layout and design rationale

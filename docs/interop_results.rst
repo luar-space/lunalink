@@ -146,10 +146,9 @@ Methodology
 
 **L1 — Spreading code comparison**
 
-LANS-AFS-SIM's ``icodegen()`` and ``qcodegen()`` functions were called via
-a C harness (``dump_lans_codes.c``) to extract Gold-2046 and Weil-10230 codes
-for PRN 1–210.  Each code was compared chip-by-chip against LunaLink's packed
-PRN tables.  Both implementations use independent code generation:
+A C harness (``dump_lans_codes.c``) calls LANS-AFS-SIM's ``icodegen()`` and
+``qcodegen()`` to extract Gold-2046 and Weil-10230 codes for PRN 1–210, then
+compares every chip against LunaLink's packed PRN tables.  Both implementations use independent code generation:
 LANS-AFS-SIM uses an 11-bit LFSR with a delay table; LunaLink uses
 pre-computed tables generated from the LSIS V1.0 Appendix C/D parameters.
 
@@ -159,9 +158,9 @@ A C harness (``dump_lans_frame.c``) invokes LANS-AFS-SIM's encoding pipeline
 (``generate_BCH_AFS_SF1``, ``append_CRC24``, ``encode_LDPC_AFS_SF2/SF3``,
 ``interleave_AFS_SF234``) for five frame cases spanning three fill patterns
 (all-zeros, all-ones, alternating) plus boundary FID/TOI values
-(FID=1/TOI=0 and FID=3/TOI=99; ``tests/test_interop_frames.py``).  The
-resulting 6000-symbol frames
-are compared against LunaLink's ``frame_build()`` output.
+(FID=1/TOI=0 and FID=3/TOI=99; ``tests/test_interop_frames.py``).  Each
+resulting 6000-symbol frame is compared against LunaLink's ``frame_build()``
+output.
 
 **L3 — Cross-implementation signal decode**
 

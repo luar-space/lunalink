@@ -24,8 +24,8 @@ GD4.1 --- BPSK Modulator (AFS-I + AFS-Q)
 Spec reference: LSIS-AFS-201
 
 The modulator maps binary chip sequences {0, 1} to antipodal BPSK samples
-{+1, -1} and optionally multiplies by a data symbol.  Two channel variants
-are provided:
+{+1, -1} and multiplies by a data symbol where one is given.  Two channel
+variants exist:
 
 -  **AFS-I** (``modulate_bpsk_i``): BPSK(1) at 1.023 Mcps, modulated by a
    navigation data symbol d |isin| {-1, +1}

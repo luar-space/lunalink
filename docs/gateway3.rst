@@ -23,9 +23,9 @@ GD3.1 --- Synchronisation Pattern (SP)
 
 Spec references: LSIS-330 (Table 12), LSIS-340
 
-The synchronisation pattern is 68 uncoded binary symbols transmitted at
-the start of every frame.  It enables receiver frame boundary detection
-via its favourable autocorrelation properties.
+The synchronisation pattern is 68 uncoded binary symbols sent at the start of
+every frame.  Its autocorrelation is what lets a receiver find the frame
+boundary.
 
 .. list-table::
    :header-rows: 1

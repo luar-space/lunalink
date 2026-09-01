@@ -551,8 +551,8 @@ Test Summary
      - < 5 s
      - ``task test-py``
 
-All C++ unit tests pass in a few seconds with exit code 0.
-All performance tests pass with the BER/FER bounds stated in this document.
+All C++ unit tests pass in a few seconds with exit code 0.  Performance tests
+pass within the BER/FER bounds stated in this document.
 
 Related documents:
 

@@ -177,9 +177,9 @@ API
 Message Type Coverage
 ~~~~~~~~~~~~~~~~~~~~~
 
-The ``MessageType`` enum enumerates all 23 MSG IDs from Table 21 so that
-the type router never rejects a valid message.  However, the spec
-defines three distinct tiers of completeness:
+The ``MessageType`` enum enumerates all 23 MSG IDs from Table 21, so the type
+router never rejects a valid message.  Completeness, though, comes in three
+tiers:
 
 **Tier 1 --- Fully defined (1 message):**
 

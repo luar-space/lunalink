@@ -515,8 +515,8 @@ performance curves — are all delivered; see :doc:`gateway8` and
 Beyond the rubric
 -----------------
 
-The deliverables above are what the competition asks for.  The submission
-also carries a flight-software assurance case that the rubric does not
+The deliverables above are what the competition asks for.  Beyond them the
+submission carries a flight-software assurance case the rubric does not
 require, which is where the *Innovation & Extras* category is addressed.
 Each claim has a verifying command in the `README's "What makes this
 implementation different"
