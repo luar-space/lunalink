@@ -1,9 +1,8 @@
 LDPC Decoder Performance Characterization
 ==========================================
 
-This document records the empirical BER/FER performance of the LSIS-AFS LDPC
-decoder implementation against the spec requirement (BER < 10\ :sup:`-5` at
-SNR > 0 dB).  Every number on this page is produced by one reproducible
+Empirical BER/FER for the LSIS-AFS LDPC decoder, measured against the spec
+requirement (BER < 10\ :sup:`-5` at SNR > 0 dB).  Every number on this page is produced by one reproducible
 command — ``task ldpc-algo-card`` — which runs the characterisation tool
 (``scripts/ldpc_characterise.cpp``) against the decoder that ships in this
 repository and regenerates the tables and figures included below.  The full

@@ -1,12 +1,12 @@
 Validation Plan
 ===============
 
-This document defines the comprehensive validation strategy for the LunaLink LSIS-AFS reference implementation. It extends beyond basic functional testing to ensure "Reference-Grade" correctness, robustness, and spec-traceability.
+The validation strategy for the LunaLink LSIS-AFS reference implementation.  Functional testing is the floor; reference-grade correctness, resilience under impairment, and spec traceability are the target.
 
 Validation Hierarchy
 --------------------
 
-We follow a five-level validation hierarchy to ensure quality at every stage of the signal chain.
+Five levels cover the signal chain end to end.
 
 *   **Level 1: Unit Tests** — Mathematical correctness of LFSRs, GF(2) operations, and bit-packing.
 *   **Level 2: Component Tests** — Verification of individual Gateways (G1-G6).
@@ -20,7 +20,7 @@ We follow a five-level validation hierarchy to ensure quality at every stage of 
 Reference-Grade Edge Case Validation (G2, G3, G6)
 -------------------------------------------------
 
-To ensure the implementation is robust for flight-like scenarios, we validate the following temporal and numerical edge cases:
+Flight-like scenarios demand these temporal and numerical edge cases:
 
 .. list-table::
    :widths: 25 50 25
@@ -48,7 +48,7 @@ To ensure the implementation is robust for flight-like scenarios, we validate th
 Signal Impairment & Robustness (G4, G5)
 ---------------------------------------
 
-The baseband signal generator (G4) includes a "Reference Channel Model" to test the receiver's (G5) robustness against realistic lunar orbit impairments.
+The baseband signal generator (G4) carries a reference channel model that puts the G5 receiver through realistic lunar-orbit impairments.
 
 1. **Doppler Modeling (CFO — carrier frequency offset):**
    * Sweep carrier frequency offsets from -10 kHz to +10 kHz.
@@ -92,7 +92,7 @@ all-ones, alternating) plus boundary FID/TOI values.
 Performance Benchmarking (GD7.3, GD8.2)
 ---------------------------------------
 
-Final verification includes empirical proof of the following NFRs:
+Final verification measures four NFRs:
 
 *   **Generation Latency (GD1.1):** < 1.0s per PRN.
 *   **Encoding Throughput (GD2.2):** > 10 Frames Per Second (FPS).

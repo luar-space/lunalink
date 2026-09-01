@@ -1,7 +1,7 @@
 Signal Chain (GD1-GD4)
 ======================
 
-The LunaLink signal generation pipeline follows the LSIS V1.0 Augmented Forward Signal (AFS) specification. It is composed of modular, flight-hardened components that transform navigation data into baseband I/Q samples.
+The signal generation pipeline follows the LSIS V1.0 Augmented Forward Signal (AFS) specification: modular, flight-hardened components that turn navigation data into baseband I/Q samples.
 
 Block Diagram
 -------------
@@ -71,20 +71,20 @@ Data Flow
 ---------
 
 1.  **Code Loading (GD1.1)**:
-    Static tables (``prn_table_*.cpp``) are queried to retrieve the full chip sequences for the Primary (Gold-2046, Weil-10230) and Tertiary (Weil-1500) codes. Includes TMR-protected PRN ID validation and packed storage.
+    A lookup into the static tables (``prn_table_*.cpp``) returns the full chip sequences for the Primary (Gold-2046, Weil-10230) and Tertiary (Weil-1500) codes.  PRN ID validation is TMR-protected; storage is packed.
 
 2.  **Matched-Code Combination (GD1.2)**:
     For the AFS-Q pilot channel, three components are XORed together to form the final ranging code:
-    
+
     *   **Primary**: Weil-10230 code (10230 chips, 2 ms epoch).
     *   **Secondary**: 4-bit fixed sequence (S0–S3), repeating every 4 primary epochs.
     *   **Tertiary**: Weil-1500 code, 1 chip per 4 primary epochs (8 ms duration).
-    
+
     The combiner handles phasing logic and enforces ``CheckedRange`` constraints on offsets.
 
 3.  **Modulation (GD4.1)**:
     Binary chips ``{0, 1}`` are mapped to bipolar baseband samples ``{+1, -1}`` using branchless arithmetic.
-    
+
     *   **AFS-I**: Modulated with navigation data symbols.
     *   **AFS-Q**: Pilot channel, no data modulation (data symbol always +1).
 

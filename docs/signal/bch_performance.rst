@@ -1,9 +1,9 @@
 BCH Decoder Performance Characterization
 ==========================================
 
-This document records the empirical FER performance of the LSIS-AFS BCH
-decoder implementation, comparing the hard-decision ML decoder
-(``bch_decode``) against the soft-decision ML decoder (``bch_decode_soft``).
+Empirical FER for the LSIS-AFS BCH decoder: the hard-decision ML decoder
+(``bch_decode``) measured against the soft-decision ML decoder
+(``bch_decode_soft``).
 
 Code Under Test
 ---------------

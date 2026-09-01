@@ -1,14 +1,13 @@
 Signal-In-Space Interface Control Document (SISICD)
 ===================================================
 
-This document (SISICD) proposes bit-level payload layouts for navigation
-message types whose content the LSIS V1.0 specification leaves "To Be
-Written" (TBW) — 11 LunaNet-1.0 message types carry explicit
+The SISICD proposes bit-level payload layouts for the navigation message
+types whose content LSIS V1.0 leaves "To Be Written" (TBW) — 11 LunaNet-1.0 message types carry explicit
 ``{LSIS-TBW-*}`` content markers; see the "Messages with TBW content" list
 in :doc:`shall_inventory` for the authoritative enumeration.
 
-The following message types are currently implemented using these LunaLink-defined 
-field layouts. All fields are packed Big-Endian (MSB-first).
+The message types below use these LunaLink-defined field layouts.  Every field
+packs big-endian, MSB first.
 
 TBW Message Index
 -----------------

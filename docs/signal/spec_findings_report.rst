@@ -3,18 +3,17 @@ Proposed Standards Resolutions
 
 .. rubric:: LUNALINK-SPEC-FINDINGS-001
 
-This document formalizes implementation assumptions and proposed resolutions
-for ambiguities identified in the **LunaNet Signal-In-Space Recommended Standard**
-(LSIS V1.0, 29 January 2025). These resolutions ensure deterministic
-interoperability between independent implementations.
+Implementation assumptions and proposed resolutions for the ambiguities found
+in the **LunaNet Signal-In-Space Recommended Standard** (LSIS V1.0, 29 January
+2025).  Without them, two independent implementations cannot interoperate
+deterministically.
 
 Each finding carries a stable ``SF-NNN`` identifier that the rest of the
 documentation cites.  The register below covers the ambiguities that are
 **interoperability-critical** — those where two conformant implementations
-can make different choices and fail to interoperate.  The complete
-disposition of every ``{LSIS-TBW-*}`` / ``{LSIS-TBC-*}`` / ``{LSIS-TBD-*}``
-marker in LSIS V1.0 (15 TBW, 3 TBC, 1 TBD) is in
-:doc:`shall_inventory`.
+can make different choices and fail to interoperate.  Every ``{LSIS-TBW-*}`` /
+``{LSIS-TBC-*}`` / ``{LSIS-TBD-*}`` marker in LSIS V1.0 (15 TBW, 3 TBC,
+1 TBD) is dispositioned in :doc:`shall_inventory`.
 
 Register
 --------
@@ -60,9 +59,9 @@ SF-001 — Matched-Code Phasing for AFS-Q
 *   **Conflict**: Independent implementations cannot achieve lock without
     synchronized phasing logic.
 *   **Proposed Resolution**: LunaLink implements the **Interim Phasing Model**
-    (Phase=0) for Service Provider Nodes 1-12. We propose that future phasing
-    offsets be integrated into the Matched-Code Identifier (MCID) mapping table
-    to maintain receiver synchronization.
+    (Phase=0) for Service Provider Nodes 1–12.  Future phasing offsets belong
+    in the Matched-Code Identifier (MCID) mapping table, where a receiver can
+    load them without a code change.
 
 .. _sf-002:
 

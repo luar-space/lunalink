@@ -1,9 +1,8 @@
 Compliance Matrix
 =================
 
-This matrix tracks the implementation status of every requirement in the
-LSIS-AFS Specification (LSIS V1.0), organized by the competition's
-8-Gateway structure.
+Implementation status for every requirement in the LSIS-AFS Specification
+(LSIS V1.0), organised by the competition's eight-gateway structure.
 
 .. note::
 

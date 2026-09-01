@@ -5,8 +5,8 @@ LSIS V1.0 Shall-Statement Inventory
 :Spec Reference: LSIS V1.0, 29 January 2025
 :Generated: 2026-03-23
 
-This document maps every normative requirement identifier in LSIS V1.0
-to a disposition for the LunaLink reference implementation.
+Every normative requirement identifier in LSIS V1.0, mapped to a disposition
+for the LunaLink reference implementation.
 
 Disposition Key
 ---------------
