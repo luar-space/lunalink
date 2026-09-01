@@ -3,9 +3,9 @@ Coverage Evidence Report
 
 :Document ID: LUNALINK-COV-001
 :Specification Reference: ECSS-Q-ST-80C Rev.2 §5.5; ECSS-E-ST-40C §5.5.1
-:Revision: ad1293e
+:Revision: b7d8284
 :Date: 2026-09-01
-:Status: Generated — ad1293e
+:Status: Generated — b7d8284
 :Tool: Homebrew LLVM version 22.1.0
 :Compiler: Homebrew clang version 22.1.0
 :Flags: -fprofile-instr-generate -fcoverage-mapping -fcoverage-mcdc

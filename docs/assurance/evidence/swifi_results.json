@@ -1,6 +1,6 @@
 {
-  "generated": "2026-09-01T14:43:47.655170+00:00",
-  "git_sha": "ad1293e0f5f6842cc049616feae1a75681bcdd21",
+  "generated": "2026-09-01T14:47:03.365195+00:00",
+  "git_sha": "b7d8284bc7893df2df9c00126917be6093eca05f",
   "scenarios": [
     {
       "name": "lunalink_swifi_tests.global/[LSIS-SISE] SWIFI: compute_sise NaN injection \u2014 kInvalidInput, output scrubbed",
@@ -130,7 +130,7 @@
     {
       "name": "lunalink_swifi_tests.global/SWIFI: ldpc_encode_forced_return \u2014 fi_force_status returns injected status",
       "status": "PASS",
-      "time_seconds": 0.005
+      "time_seconds": 0.006
     },
     {
       "name": "lunalink_swifi_tests.global/SWIFI: ldpc_decode_phi_mirror_corruption \u2014 TMR detects corrupted phi_sum_mir",
@@ -200,7 +200,7 @@
     {
       "name": "lunalink_swifi_tests.global/SWIFI: frame_decode_forced_sync_fail \u2014 workspace scrubbed on injected sync failure",
       "status": "PASS",
-      "time_seconds": 0.008
+      "time_seconds": 0.007
     },
     {
       "name": "lunalink_swifi_tests.global/SWIFI: frame_decode_forced_ldpc_fail \u2014 workspace scrubbed on injected LDPC failure",
