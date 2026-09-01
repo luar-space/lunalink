@@ -1,6 +1,6 @@
 {
-  "generated": "2026-09-01T14:47:03.365195+00:00",
-  "git_sha": "b7d8284bc7893df2df9c00126917be6093eca05f",
+  "generated": "2026-09-01T20:28:29.365646+00:00",
+  "git_sha": "362c9e39a17d15c9ec3b4579bd27f26866ba7a9f",
   "scenarios": [
     {
       "name": "lunalink_swifi_tests.global/[LSIS-SISE] SWIFI: compute_sise NaN injection \u2014 kInvalidInput, output scrubbed",
@@ -115,12 +115,12 @@
     {
       "name": "lunalink_swifi_tests.global/checksum-golden: print BCH, Weil, and Legendre codebook checksums",
       "status": "PASS",
-      "time_seconds": 0.008
+      "time_seconds": 0.011
     },
     {
       "name": "lunalink_swifi_tests.global/[SW-SAF-04] run_post: nominal system returns kPass",
       "status": "PASS",
-      "time_seconds": 0.01
+      "time_seconds": 0.013
     },
     {
       "name": "lunalink_swifi_tests.global/SWIFI: FI-05 \u2014 lut_bit_flip_ldpc_matrix \u2014 integrity check fails",
@@ -195,7 +195,7 @@
     {
       "name": "lunalink_swifi_tests.global/SWIFI: frame_build_forced_ldpc_fail \u2014 full frame scrubbed on injected failure",
       "status": "PASS",
-      "time_seconds": 0.006
+      "time_seconds": 0.005
     },
     {
       "name": "lunalink_swifi_tests.global/SWIFI: frame_decode_forced_sync_fail \u2014 workspace scrubbed on injected sync failure",

@@ -278,19 +278,21 @@ delivered repository — none is asserted.
      - clang-format, clang-tidy, cppcheck, ruff — all CI-gated
    * - NFR-5.4
      - Version control with meaningful history
-     - **LIMITATION**
-     - This public release is a squashed export; the branch/PR history
-       predates it and is not present here.  See `Stated limits`_
+     - PASS
+     - 160 commits over 182 days, measured by
+       ``scripts/compliance_report.py`` (count, span, mean subject length).
+       See the Provenance section of ``README.md`` for how this history
+       relates to the private tree it was extracted from
 
 .. code-block:: bash
 
    task performance        # produces wcet_results.xml and ber_results.xml
    task compliance-report
-   # 31/31 requirements PASS; NFRs: 19 PASS, 1 LIMITATION
+   # 31/31 requirements PASS; NFRs: 20 PASS
 
 ``task compliance-report`` reads the JUnit evidence present in the working
-tree.  Run on its own from a fresh clone it reports **15 PASS, 4 NOT_RUN, 1
-LIMITATION**: NFR-1.1, NFR-1.2 and NFR-1.4 need ``wcet_results.xml`` and
+tree.  Run on its own from a fresh clone it reports **16 PASS, 4 NOT_RUN**:
+NFR-1.1, NFR-1.2 and NFR-1.4 need ``wcet_results.xml`` and
 NFR-2.2 needs ``ber_results.xml``, both of which ``task performance``
 generates.  The committed
 ``docs/assurance/evidence/compliance_report.json`` is the full run.
@@ -570,10 +572,13 @@ Collected here so they are not left for a reader to discover:
   (:doc:`interop_results` L3).  The reverse — an independent receiver
   decoding a LunaLink signal — is supported by published vectors, oracles
   and a validator, but **has not been run**.
-* **NFR-5.4, version-control history.**  This public release is a squashed
-  export; the branch/PR development history predates it and is not present
-  in this repository.  Reported by ``task compliance-report`` as a
-  limitation rather than a pass.
+* **Development history is filtered, not complete.**  LunaLink was extracted
+  from a larger private tree.  The history here covers the files that have
+  one, with non-public paths removed and 21 commit messages rewritten where
+  they described work outside this repository; each rewritten message says
+  so.  Files authored after the extraction — the assurance documents and
+  generated evidence — start at the extraction commit.  See the Provenance
+  section of ``README.md``.
 * **Coverage waivers.**  C++ line coverage is |cov-line| with three files
   below the 80% per-file review trigger; the overall verdict is
   ``PASS_WITH_WAIVERS``, each waiver categorised in

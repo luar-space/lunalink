@@ -256,12 +256,10 @@ separately; on a fresh clone budget ~40 min, since it includes
 `task docs-build`.
 
 Beyond the gate, all nine gateways (0–8) are delivered with one verification
-guide each, and all **20 rubric NFRs are tracked**: 19 PASS, and NFR-5.4
-(version-control history) reported as a limitation rather than a pass,
-because this public release is a squashed export. `task compliance-report`
-regenerates that record — run `task performance` first, or four timing and
-BER NFRs report NOT_RUN, because their JUnit evidence is what
-`task performance` produces.
+guide each, and all **20 rubric NFRs are tracked**, 20 PASS.
+`task compliance-report` regenerates that record — run `task performance`
+first, or four timing and BER NFRs report NOT_RUN, because their JUnit
+evidence is what `task performance` produces.
 
 The judge-oriented tour — scoring categories, gateway checklists, the full
 NFR table, technical constraints and stated limits — is the
@@ -341,10 +339,36 @@ characterisation is where the 35 minutes goes: once
 
 ## Provenance
 
-This repository is the public release of the LunaLink development tree,
-exported as a single squashed commit; development history (branch/PR flow,
-CI gates on every merge) predates the export. The tag `v1.0-submission`
-marks the competition submission state.
+LunaLink was extracted from a larger private development tree. That tree
+contains work outside the scope of this release — a multi-signal receiver,
+research scripts, unpublished drafts and third-party datasets — none of which
+is published here.
+
+The history in this repository is the real development history of the files
+that have one. It was produced by filtering the private history down to the
+paths that exist here, including their earlier names across the
+`signal/ → codes/, encoding/, messages/` restructure, so `git log` and
+`git blame` reach back through it. Three things follow from that, and are
+worth knowing before reading the log:
+
+- **The commit `LunaLink — LSIS-AFS reference implementation` is the
+  extraction point** (2026-08-31). Commits before it come from the private
+  tree with non-public paths removed; commits after it were made in this
+  repository. The extraction commit is large because it also carries the
+  scrub and re-baseline that made the tree publishable.
+- **21 commit messages were rewritten**, because they described work that is
+  not in this repository. Each says so in a trailer, and each describes the
+  change it actually contains. The other 139 are unedited.
+- **Files with no private ancestry** — the assurance documents and the
+  generated evidence under `docs/assurance/` — were authored here, and their
+  history starts at the extraction point.
+
+Historical versions of build configuration (`CMakeLists.txt`, `Taskfile.yml`,
+`pyproject.toml`, `.gitignore`) reference directories of the private tree by
+name. Nothing from those directories is present in this repository, at any
+commit.
+
+The tag `v1.0-submission` marks the competition submission state.
 
 ## Licence
 

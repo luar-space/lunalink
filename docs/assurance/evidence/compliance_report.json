@@ -739,8 +739,8 @@
     {
       "id": "NFR-5.4",
       "description": "Version control with meaningful history",
-      "status": "LIMITATION",
-      "evidence": "8 commits in this public export. The development history (branch/PR flow, CI gates on every merge) predates the squashed export and is NOT present in this repository; see README.md 'Provenance'. Reported as a limitation, not a pass."
+      "status": "PASS",
+      "evidence": "160 commits over 182 days (2026-03-02 to 2026-09-01), mean subject 61 chars"
     }
   ],
   "summary": {
@@ -750,9 +750,9 @@
     "not_run": 0,
     "fail": 0,
     "total_nfr": 20,
-    "nfr_pass": 19,
+    "nfr_pass": 20,
     "nfr_not_run": 0,
     "nfr_fail": 0,
-    "nfr_limitation": 1
+    "nfr_limitation": 0
   }
 }

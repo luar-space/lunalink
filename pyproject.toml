@@ -119,39 +119,7 @@ select = [
 "docs/notebooks/*.ipynb" = ["E501", "N806", "D103"]
 # Utility scripts: allow complexity, missing docstrings, long lines, ambiguous vars
 "scripts/sync_docstrings.py" = ["C901", "D103"]
-# moon-gnss-ssv scripts (from PR #83): uppercase math vars (IAU/GNSS
-# notation), script-level complexity, sys.path bootstrap after imports,
-# loose docstrings — matches notebook/script style, not library style.
-"moon-gnss-ssv/src/*.py" = [
-    "E402", "E501", "N806", "C901",
-    "D100", "D101", "D102", "D103", "D104", "D105", "D107",
-    "D200", "D205", "D400", "D401", "D415",
-]
-"moon-gnss-ssv/scripts/*.py" = ["E501"]
-# Diagnostic / research scripts (one-off investigation artefacts for
-# S1-2/S1-3/S1-4 + the moon-gnss-ssv calibration): uppercase math vars
-# (IAU/GNSS notation), long lines, loose docstrings, complexity, f-strings-
-# without-placeholders — research-script style, not flight-quality code.
-# Superset of PR #83's relaxations plus C901 from S1-4e (needed for the
-# S1-3h diagnostic helpers).
-"scripts/diagnostics/*.py" = [
-    "C901", "E501", "F541",
-    "N803", "N806", "N815",
-    "D100", "D101", "D102", "D103", "D104", "D105", "D107",
-    "D200", "D205", "D400", "D401", "D415",
-]
-# Campaign driver + code-generator utilities: allow missing docstrings on
-# private helpers and the long inline ICD/ablation comments.
-"scripts/generate_galileo_e5a.py" = ["D103", "E501"]
 "scripts/fuzz_seed_corpus.py" = ["D103", "E501"]
-# Investigation-grade test modules — H0-dump env-var guard and the joint
-# C/N0 convention smoke: inherit the diagnostics relaxation.
-"tests/test_h0_dump_hook_guard.py" = [
-    "D101", "D102", "D103", "D205", "E501", "N806",
-]
-"tests/test_joint_cn0_convention.py" = [
-    "D101", "D102", "D103", "D205", "E501", "N806",
-]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
