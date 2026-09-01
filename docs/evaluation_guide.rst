@@ -279,10 +279,11 @@ delivered repository — none is asserted.
    * - NFR-5.4
      - Version control with meaningful history
      - PASS
-     - 160 commits over 182 days, measured by
-       ``scripts/compliance_report.py`` (count, span, mean subject length).
-       See the Provenance section of ``README.md`` for how this history
-       relates to the private tree it was extracted from
+     - Commit count, span and mean subject length measured against stated
+       thresholds by ``scripts/compliance_report.py``; the figures for this
+       run are in ``compliance_report.json``.  See the Provenance section of
+       ``README.md`` for how this history relates to the tree it was
+       extracted from
 
 .. code-block:: bash
 

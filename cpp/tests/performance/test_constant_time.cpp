@@ -129,6 +129,15 @@ template <typename F> double measure_avg_ns(F&& f, size_t iters) {
 // itself and would masquerade as data-dependence in the primitive.
 template <typename P, typename F>
 void check_constant_time(const std::string& name, P&& prepare, F&& run) {
+#ifndef NDEBUG
+  // Release only.  Unoptimised builds run 3-14x slower and the spread is then
+  // dominated by loop and bounds-check overhead rather than by the data path,
+  // so the gate would measure the build rather than the primitive — the same
+  // reason the `constant-time` task configures Release.  `task
+  // test-acceptance` and acceptance.yml run the whole binary in Debug, so skip
+  // there instead of failing; `task constant-time` is the gate that counts.
+  SKIP(name + ": timing gate is Release-only; run `task constant-time`");
+#endif
   std::array<double, kClasses.size()> means{};
 
   // Priming pass, discarded.  Without it the first class measured absorbs the
