@@ -1,31 +1,28 @@
 Mission Assurance
 =================
 
-LunaLink is engineered to **ECSS Category B** norms (self-assessed; not
-formally certified), deliberately exceeding Category B requirements to satisfy
-the stricter Category A / DO-178C Level A technical controls wherever
-practical.  This
-approach de-risks any future criticality upgrade and demonstrates readiness
-for the most demanding space-software assurance regimes.  The hardening
-patterns draw from NASA (JPL/Goddard), ESA (ESTEC), and JAXA (Tsukuba).
-This document details the engineering rigor applied to ensure deterministic,
-safe, and fault-tolerant operation in the extreme radiation environment of
-the Lunar surface.
+LunaLink is built to **ECSS Category B** norms — self-assessed, not formally
+certified — and reaches past them to the stricter Category A / DO-178C Level A
+technical controls wherever that is practical, so a later criticality upgrade
+costs no new test infrastructure.  The hardening patterns come from NASA
+(JPL/Goddard), ESA (ESTEC) and JAXA (Tsukuba).  This document records what each
+one buys on the lunar surface, where radiation is the standing threat to
+deterministic, fault-tolerant operation.
 
 Core Hardening Philosophy
 -------------------------
 
-Space software faces three critical risks not present in terrestrial applications:
+Space software carries three risks that terrestrial software does not:
 
-1. **Silent Data Corruption (SDC)**: Radiation-induced Single Event Upsets (SEU)
-   can flip bits in registers or memory, potentially causing Undefined
-   Behavior (UB) or state corruption without crashing the system.
-2. **Autonomous Survival**: A lunar payload must be able to detect and
-   mitigate internal faults without ground intervention.
-3. **Timing Jitter**: Non-deterministic execution times in signal processing
-   can lead to phase-lock-loop (PLL) instability in the receiver.
+1. **Silent Data Corruption (SDC)**: a radiation-induced Single Event Upset
+   (SEU) flips a bit in a register or in memory.  Nothing crashes; the state
+   is simply wrong, or the behaviour undefined.
+2. **Autonomous Survival**: a lunar payload detects and mitigates its own
+   faults, with no ground station in the loop.
+3. **Timing Jitter**: execution times that move with the data destabilise the
+   phase-locked loop in the receiver.
 
-The following measures address these risks systematically.
+The measures below answer each in turn.
 
 Assurance Document Index
 ------------------------
@@ -42,14 +39,26 @@ Design Constraints (ECSS-E-ST-40C / JPL Rule 1-10)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 Strictly zero heap usage (``malloc``/``new``) after the initialization phase.
 
-*   **Explanation**: In long-duration space missions, software must operate without human intervention for years. Terrestrial systems often rely on dynamic memory allocation because they can be rebooted if the heap fragments or leaks. On a spacecraft, a ``malloc`` failure resulting from memory fragmentation is a critical, mission-ending event. Furthermore, dynamic allocation is non-deterministic; the time required to find a free block depends on the state of the heap, which can cause timing jitter in real-time Digital Signal Processing (DSP). LunaLink strictly uses static allocation and stack-based storage, ensuring that the total memory footprint is known at link-time and that no allocation-related failures can occur during flight.
+*   **Explanation**: a terrestrial system can lean on the heap, because someone
+    can reboot it when the heap fragments or leaks.  A spacecraft runs unattended
+    for years, and there a ``malloc`` failure ends the mission.  Allocation is
+    also non-deterministic — the hunt for a free block depends on the state of
+    the heap, which puts jitter into real-time Digital Signal Processing (DSP).
+    LunaLink allocates statically or on the stack, so the total memory footprint
+    is fixed at link time and no allocation can fail in flight.
 *   **Benefit**: Eliminates the risk of memory fragmentation and non-deterministic allocation failures.
 
 2. Fixed-Bound Loops & No Recursion
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 All loops must have a fixed, verifiable upper bound. Recursion is forbidden.
 
-*   **Explanation**: Space-rated hardware often lacks the sophisticated memory management units (MMUs) found in consumer electronics. If a program enters an infinite recursion or an unbounded loop, it will eventually overflow the stack, silently corrupting adjacent data segments or causing an immediate system crash. By enforcing strictly bounded loops and forbidding recursion, we enable static analysis tools to calculate the **Worst-Case Stack Depth (WCSD)**. This mathematical proof ensures that under no combination of input data or hardware interrupts will the stack ever collide with the data segment, guaranteeing system stability in the extreme radiation environment of the Lunar surface.
+*   **Explanation**: space-rated hardware rarely carries the memory management
+    unit that consumer parts take for granted.  Runaway recursion or an unbounded
+    loop overflows the stack, and what follows is either an immediate crash or
+    the quieter corruption of an adjacent data segment.  Bounded loops and no
+    recursion let static analysis compute the **Worst-Case Stack Depth (WCSD)**
+    — a proof that no combination of input data and hardware interrupts can
+    drive the stack into the data segment.
 *   **Benefit**: Allows formal calculation of the **Worst-Case Stack Depth**.
 
 3. Cyclomatic Complexity & Single Exit Points
@@ -59,15 +68,21 @@ All loops must have a fixed, verifiable upper bound. Recursion is forbidden.
     return point.  Control-plane functions (FSM transitions, POST, PRN accessors)
     are exempt where a guard-clause ``return`` improves fault containment clarity.
 
-*   **Explanation**: High cyclomatic complexity (the number of independent paths through code) leads to "hidden" execution branches that are exponentially difficult to test with 100% path coverage. In flight software, we enforce a limit of 10 to ensure the code remains human-auditable and that all logical outcomes can be verified through white-box testing. Complementing this, the **Single Exit Point** mandate ensures that functions return from only one location. This is critical for mission assurance because it guarantees that mandatory cleanup logic—such as stack scrubbing (physically erasing sensitive signal data) and reciprocal sanity checks—is always executed and cannot be bypassed by an accidental early ``return`` or ``break`` in the middle of a function.
-*   **Benefit**: Ensures that mandatory **Stack Scrubbing** and **Reciprocal Checks** are never bypassed.
+*   **Explanation**: cyclomatic complexity counts the independent paths through
+    a function, and the cost of covering them all climbs fast.  A limit of 10
+    keeps the code auditable by a human and reachable by white-box tests.  The
+    **Single Exit Point** rule works alongside it: one ``return`` per function
+    means the mandatory cleanup — stack scrubbing, which physically erases
+    sensitive signal data, and reciprocal sanity checks — always runs, and no
+    stray early ``return`` or ``break`` can skip it.
+*   **Benefit**: nothing bypasses the mandatory **stack scrubbing** and **reciprocal checks**.
 
 4. Bidirectional Traceability & Automated Compliance Matrix
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Every mission-critical function in the core source directories is tagged with its
-corresponding LSIS requirement ID (e.g., ``[LSIS-AFS-101]``). Tag
-density is enforced by the ``lint`` CI gate; bidirectional traceability
-is provided through the human-curated ``signal/compliance_matrix.rst``.
+Every mission-critical function in the core source directories carries its
+LSIS requirement ID (e.g., ``[LSIS-AFS-101]``).  The ``lint`` CI gate enforces
+tag density; the human-curated ``signal/compliance_matrix.rst`` carries the
+bidirectional trace.
 
 *   **Explanation**: Every line of code in a flight-certified system must be
     justifiable against an external standard.  Bidirectional traceability links
@@ -94,9 +109,14 @@ Mission-Critical Coding Patterns
 1. SEU-Resistant Enumerations (ESA/NASA)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Standard sequential enums (0, 1, 2...) are vulnerable to single-bit flips.
-LunaLink utilizes **Non-Contiguous Bit Patterns** with high Hamming distance.
+LunaLink uses **non-contiguous bit patterns** held far apart in Hamming distance.
 
-*   **Explanation**: Standard enumerations use sequential bits (e.g., 00, 01, 10). In a Lunar radiation environment, a single high-energy particle strike can flip a bit in a status register, silently turning a "SUCCESS" state into a valid but incorrect "ERROR" state, or vice versa. LunaLink utilizes non-contiguous bit patterns with a high Hamming distance (e.g., ``0x5A`` and ``0xA5``). By ensuring that multiple bits must flip simultaneously to reach another valid state, we make it statistically impossible for a single event upset (SEU) to cause an undetected state transition. Any single-bit flip results in an illegal bit pattern that is immediately identified as a fault.
+*   **Explanation**: sequential enumerations sit one bit apart — 00, 01, 10.
+    One high-energy particle through a status register turns ``SUCCESS`` into a
+    valid, wrong ``ERROR``, and nothing announces it.  Values held far apart in
+    Hamming distance (``0x5A``, ``0xA5``) close that path: reaching another legal
+    value takes several simultaneous flips, so a single upset lands on an illegal
+    pattern and reads as a fault.
 *   **Implementation**: Patterns like ``0x5A`` (01011010) and ``0xA5`` (10100101).
 *   **Benefit**: A register bit-flip transforms a valid status into an identifiable "Invalid" state.
 
@@ -105,7 +125,14 @@ LunaLink utilizes **Non-Contiguous Bit Patterns** with high Hamming distance.
 Critical state variables in performance loops are "mirrored" to detect
 ALU or register file corruption *during* calculation.
 
-*   **Explanation**: While system RAM is often protected by parity or Error Correction Code (ECC) hardware, the internal CPU registers and the Arithmetic Logic Unit (ALU) are typically not. A radiation-induced bit flip can occur *during* a calculation or while a value is stored in a local register, leading to incorrect results that bypass standard memory protections. LunaLink implements "Soft-TMR" by mirroring critical state variables (e.g., the minimum Hamming distance in the BCH decoder) with their bitwise inverse. At every step of the calculation, the system verifies that ``variable == ~mirrored_variable``. This allows the software to detect transient hardware faults occurring inside the processor's own silicon, ensuring the integrity of high-stakes Digital Signal Processing (DSP) blocks.
+*   **Explanation**: parity or ECC hardware usually guards system RAM.  The CPU
+    registers and the ALU generally get nothing.  A flip that lands *during* a
+    calculation, or on a value resting in a local register, produces a wrong
+    answer that memory protection never sees.  Soft-TMR mirrors each critical
+    variable — the minimum Hamming distance in the BCH decoder, say — against its
+    bitwise inverse, and every step checks ``variable == ~mirrored_variable``.
+    Transient faults inside the processor's own silicon then surface as
+    detections.
 *   **Critical Section Requirement**: All writes to a mirrored variable pair (``x`` and ``x_mir``) **must** be performed within a Critical Section (interrupt-masked atomic block). If an RTOS interrupt fires between the write to ``x`` and the write to ``x_mir``, the integrity check will produce a false-positive fault on task resume. See :ref:`isr-safety` for the mandate.
 *   **Implementation**: Variables like ``min_dist`` are paired with a bitwise inverse ``min_dist_mir``.
 *   **Benefit**: Detects transient hardware faults in the middle of DSP blocks.
@@ -115,14 +142,25 @@ ALU or register file corruption *during* calculation.
 Mission-critical parameters (e.g., ``PrnId``, ``Fid``) are stored in
 triplets using the ``TmrValue<T>`` template.
 
-*   **Explanation**: Triple Modular Redundancy (TMR) is the foundation of fault tolerance in deep space missions. By storing three identical copies of a mission-critical parameter (such as a PRN ID or a Subframe ID) in distinct memory locations, we dramatically reduce the probability of system failure due to radiation. A single bit flip can only corrupt one copy; when the software requires that value, it performs a majority vote (2-of-3) to determine the correct result. This ensures that even if a memory cell is permanently damaged by a heavy ion strike, the signal chain continues to operate using the remaining two copies, providing 100% availability without manual ground intervention.
+*   **Explanation**: Triple Modular Redundancy is the oldest tool in deep-space
+    fault tolerance.  Three copies of a mission-critical parameter — a PRN ID, a
+    Subframe ID — sit in distinct memory locations.  One bit flip reaches one
+    copy; a 2-of-3 majority vote at read time returns the right value anyway.  A
+    memory cell that a heavy ion damages permanently costs nothing: the signal
+    chain runs on the surviving two, with no ground command needed.
 *   **Benefit**: If an SEU flips a bit in one copy, the software corrects the value on-the-fly.
 
 4. Active TMR Repair (NASA/ESA)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Passive majority voting is insufficient for long-duration missions.
 
-*   **Explanation**: Passive majority voting masks faults during a read operation, but if the corrupted data remains in memory, faults will accumulate over time. If Copy A is corrupted on Monday and Copy B is corrupted on Tuesday, the system loses its majority and will process incorrect data. Active TMR Repair (also known as fault scrubbing) solves this by immediately overwriting the corrupted copy with the majority-voted correct value as soon as a mismatch is detected. In LunaLink, the ``TmrValue<T>::repair()`` logic ensures that single-bit faults are "healed" in RAM, resetting the clock on radiation damage and preventing Single Event Upsets (SEUs) from escalating into catastrophic Multi-Bit Upsets (MBUs).
+*   **Explanation**: a majority vote masks the fault at read time and leaves it
+    in memory, where the next one joins it.  Corrupt copy A on Monday, copy B on
+    Tuesday, and the majority now votes for the wrong answer.  Active repair —
+    fault scrubbing — overwrites the odd copy with the voted value the moment the
+    mismatch appears.  ``TmrValue<T>::repair()`` heals the bit in RAM, resetting
+    the clock on radiation damage before single upsets accumulate into multi-bit
+    ones.
 *   **Implementation**: Done within the ``TmrValue::repair()`` logic.
 *   **Benefit**: Prevents the accumulation of Single-Event Upsets (SEUs) over time.
 
@@ -131,19 +169,31 @@ Passive majority voting is insufficient for long-duration missions.
 Radiation can cause the Program Counter to jump, leading to skipped
 logic or early loop exits.
 
-*   **Explanation**: In a high-radiation environment, a single "Heavy Ion" strike can flip a bit in the processor's Instruction Pointer (IP) register. When this happens, the CPU does not necessarily crash; instead, it "teleports" to a different location in the code, silently skipping critical safety checks, parity calculations, or sanitization logic. Control-Flow Integrity (CFI) ensures the CPU followed the intended path by maintaining an independent record of the execution flow. LunaLink uses high-entropy "Magic Patterns" (e.g., ``0xA5A5A5A5``) and sentinel counters to track progress. If the CPU jumps out of a loop prematurely or enters a function incorrectly, the final terminal verification will fail, allowing the system to transition to a safe state instead of broadcasting "poisoned" navigation signals.
+*   **Explanation**: a heavy ion through the instruction pointer rarely crashes
+    the CPU.  It teleports execution somewhere else — past a safety check, a
+    parity calculation, a sanitisation step — and the program carries on looking
+    healthy.  Control-Flow Integrity keeps an independent record of the path
+    actually taken: high-entropy magic patterns (``0xA5A5A5A5``) and sentinel
+    counters.  A premature loop exit or a mis-entered function fails the terminal
+    check, and the system reaches a safe state instead of broadcasting a poisoned
+    navigation signal.
 *   **Implementation**:
-    *   **Magic Patterns**: Safety-critical functions utilize high-entropy "Magic Start" and "Magic End" constants (e.g., ``0xA5A5A5A5``).
+    *   **Magic Patterns**: safety-critical functions carry high-entropy "Magic Start" and "Magic End" constants (e.g., ``0xA5A5A5A5``).
     *   **Sentinel Counters**: Loops maintain an independent ``cfi_count`` that starts at the Magic Pattern. All increments to ``cfi_count`` must occur within a Critical Section to prevent interrupt-induced false-positive failures.
     *   **Terminal Verification**: At the function exit, the system verifies that ``cfi_count == (Magic_Start + Expected_Iterations)``.
 *   **Benefit**: Detects radiation-induced "shortcuts" and logic skips before data is released to the transmitter.
 
 6. Value Invariants & Saturating Logic (ESA/NASA)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Value-constrained wrappers (``CheckedRange<T, Min, Max>``) ensure
-corrupted indices remain within safe buffer bounds.
+Value-constrained wrappers (``CheckedRange<T, Min, Max>``) hold a corrupted
+index inside safe buffer bounds.
 
-*   **Explanation**: Standard C++ integer arithmetic follows "wrapping" behavior (e.g., ``MAX + 1 = 0``). In a flight environment, if a radiation strike flips a bit in a loop index or a buffer offset, this wrapping can lead to catastrophic out-of-bounds memory accesses or infinite loops. LunaLink utilizes value-constrained wrappers (``CheckedRange<T, Min, Max>``) and **Saturating Arithmetic**. If a corrupted value exceeds its legal range, it is "clamped" to the nearest safe boundary (Min or Max) rather than wrapping. This ensures that the signal processing logic remains within predictable boundaries, maintaining system stability even when individual data parameters are poisoned by SEUs.
+*   **Explanation**: unsigned C++ arithmetic wraps — ``MAX + 1`` is 0.  Flip a
+    bit in a loop index or a buffer offset and that wrap becomes an out-of-bounds
+    access or a loop that never ends.  ``CheckedRange<T, Min, Max>`` clamps
+    instead: a value driven past its legal range stops at ``Min`` or ``Max``.  The
+    signal path stays inside predictable bounds even while one of its parameters
+    is poisoned.
 *   **Benefit**: Logic uses **Saturating Arithmetic** to prevent catastrophic overflows.
 
 7. Anti-Optimization (Secure Scrubbing)
@@ -151,8 +201,15 @@ corrupted indices remain within safe buffer bounds.
 Standard memory clearing (e.g., ``std::fill``) is vulnerable to
 **Dead Store Elimination (DSE)** by optimizing compilers.
 
-*   **Explanation**: In safety-critical flight software, sensitive signal data and intermediate parity bits must be physically erased from RAM before a function returns to prevent cross-task data leakage or "ghost" data interference. Standard C++ clearing techniques (e.g., ``std::fill`` or ``memset``) are frequently removed by optimizing compilers via **Dead Store Elimination (DSE)**. If the compiler determines that a buffer is "never read again" before it goes out of scope, it may silently delete the zeroing logic to improve performance. In a radiation-prone environment, this leaves uninitialized memory sitting in RAM, which can lead to unpredictable behavior if a bit flip causes an accidental read. LunaLink's ``secure_scrub()`` utility utilizes ``volatile``-qualified pointers to force the compiler to respect the hardware-level mandate to physically overwrite memory, ensuring that data sanitization is bit-for-bit guaranteed in the final flight binary.
-*   **Implementation**: The ``secure_scrub()`` utility utilizes a ``volatile`` pointer.
+*   **Explanation**: sensitive signal data and intermediate parity bits must be
+    physically gone from RAM before a function returns; otherwise a later task
+    reads them, or a bit flip turns stale bytes into live ones.  ``std::fill`` and
+    ``memset`` do not survive the optimiser.  Seeing a buffer that is never read
+    again, the compiler deletes the zeroing as a dead store, and the flight binary
+    quietly keeps the data.  ``secure_scrub()`` writes through
+    ``volatile``-qualified pointers, which the compiler must honour, so the
+    overwrite reaches the final binary bit for bit.
+*   **Implementation**: ``secure_scrub()`` writes through a ``volatile`` pointer.
 *   **Benefit**: Guarantees that sensitive signal data is physically erased from RAM.
 
 8. Memory Section Pinning (JPL/Goddard)
@@ -160,7 +217,13 @@ Standard memory clearing (e.g., ``std::fill``) is vulnerable to
 Mission-critical Look-Up Tables (LUTs) must not be left to the default
 placement of the linker.
 
-*   **Explanation**: Spacecraft on-board computers (OBCs) typically utilize a heterogeneous mix of physical memory, including volatile SRAM, persistent MRAM, and radiation-hardened PROM. Some of these memory banks are significantly more shielded against Single Event Upsets (SEUs) than others. Large static Look-Up Tables (LUTs), such as the BCH codebook and the Weil spreading sequences, are "high-value targets" for radiation because they represent the reference data for all signal generation. If these tables are corrupted, the entire signal chain is compromised. By using the ``LUNALINK_LUT_SECTION`` macro, we explicitly tag these tables for the linker. This allows the mission-specific linker script to "pin" these critical tables to the most radiation-hardened physical memory banks available on the spacecraft, ensuring that our signal "ground truth" remains untainted throughout the mission lifespan.
+*   **Explanation**: an on-board computer mixes volatile SRAM, persistent MRAM
+    and radiation-hardened PROM, and the banks differ sharply in how well they
+    resist upsets.  The large static look-up tables — the BCH codebook, the Weil
+    spreading sequences — are the reference data behind every generated symbol, so
+    corruption there compromises the whole chain.  The ``LUNALINK_LUT_SECTION``
+    macro tags them for the linker, and the mission's linker script pins them to
+    the hardest memory the spacecraft carries.
 *   **Implementation**: Large tables are tagged with the ``LUNALINK_LUT_SECTION`` macro.
 *   **Benefit**: Allows mapping tables to the most radiation-hardened memory banks.
 
@@ -168,7 +231,13 @@ placement of the linker.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Long-running DSP loops must provide "proof of progress" to the system watchdog.
 
-*   **Explanation**: Hardware watchdogs are the last line of defense for autonomous spacecraft. However, a traditional watchdog only detects a total system hang (where the CPU stops responding). In a radiation-heavy environment, it is possible for a bit flip in a jump instruction to trap the CPU in a logical infinite loop that *looks* active to the OS but is not doing useful work. LunaLink implements "proof of progress" by requiring safety-critical loops to call ``wip_tick()``. This increments a volatile **Work-In-Progress** counter that is independently monitored. If the system stops reporting these ticks within a specific temporal window, or if it reports them at an impossible frequency (indicating radiation-induced logic skips), the system triggers a reset. This ensures the spacecraft never remains stuck in a "zombie" state during critical signal transmission.
+*   **Explanation**: a hardware watchdog is the last line of defence, but it
+    catches only a total hang.  Flip a bit in a jump instruction and the CPU can
+    spin in a loop that looks alive to the OS while doing no work at all.
+    Safety-critical loops therefore call ``wip_tick()``, incrementing a volatile
+    Work-In-Progress counter that an independent monitor watches.  Ticks that stop
+    inside the window, or arrive at an impossible rate, trigger a reset — so a
+    zombie never survives a transmission slot.
 *   **Implementation**: Safety-critical loops call ``wip_tick()``.
 *   **Benefit**: Ensures the hardware watchdog can detect if the CPU is stuck.
 
@@ -177,7 +246,14 @@ Long-running DSP loops must provide "proof of progress" to the system watchdog.
 Critical Look-Up Tables (LUTs) and sparse matrices include embedded CRC32
 checksums.
 
-*   **Explanation**: Large data structures, such as the 5G NR LDPC sub-matrices used in LunaLink, are the most statistically likely targets for radiation-induced corruption because they occupy the largest contiguous areas of RAM. A single bit flip in these matrices can silently degrade the Bit Error Rate (BER) of the transmitted signal, leading to subtle navigation errors that are extremely difficult to diagnose from the ground. LunaLink embeds CRC32 checksums directly into its ``LdpcCsrMatrix`` structures. Before any Digital Signal Processing (DSP) begins, the software performs a **Just-In-Time (JIT) Integrity Check**. If the calculated checksum does not match the embedded "ground truth," the system identifies that its reference data has been "poisoned" by cosmic rays. It then halts processing and triggers a fault recovery event, ensuring that corrupted reference data never pollutes the broadcast signal.
+*   **Explanation**: the 5G NR LDPC sub-matrices occupy the largest contiguous
+    stretches of RAM in the system, which makes them the likeliest target for a
+    strike.  One flipped bit there degrades the transmitted Bit Error Rate
+    quietly, and the resulting navigation error is close to undiagnosable from the
+    ground.  Each ``LdpcCsrMatrix`` therefore carries an embedded CRC32, and a
+    just-in-time integrity check runs before any DSP begins.  A checksum that does
+    not match its ground truth halts processing and raises a fault recovery event,
+    so poisoned reference data never reaches the broadcast.
 *   **Implementation**: The ``LdpcCsrMatrix`` structure includes a ``crc32`` field checked by ``verify_integrity()``.
 *   **Benefit**: Detects radiation-induced corruption of large tables in RAM before use.
 
@@ -186,7 +262,11 @@ checksums.
 Mandatory runtime verification that output buffers do not overlap with input
 buffers.
 
-*   **Explanation**: A radiation-induced bit flip in a pointer (Single Event Upset) can cause an output buffer to alias (overlap) with an input buffer. In Digital Signal Processing, this causes the function to overwrite its own source data while processing it, leading to non-deterministic signal corruption that bypasses standard logic checks. While terrestrial code relies on ``assert()`` (which is removed in production builds), Class B FSW mandates **Always-On Logic Gates**.
+*   **Explanation**: a flipped bit in a pointer can make an output buffer overlap
+    its own input.  The function then overwrites its source while reading it, and
+    the resulting corruption is non-deterministic and invisible to the usual logic
+    checks.  Terrestrial code leans on ``assert()``, which production builds strip;
+    Class B FSW demands **always-on logic gates**.
 *   **Implementation**: DSP blocks perform a pointer-range check at the start of the function. If an overlap is detected, the function halts and returns ``kFaultDetected``.
 *   **Benefit**: Prevents catastrophic feedback loops and pointer-based memory corruption that standard CFI cannot catch.
 
@@ -195,13 +275,12 @@ buffers.
 Data structures transferred between major DSP pipeline stages shall carry
 a **Handoff CRC** verified by the consumer before processing begins.
 
-*   **Explanation**: LunaLink's hardening strategy covers three distinct threat
-    surfaces.  *Data-at-Rest* is protected by Memory Section Pinning and JIT
-    Integrity Checks (see §8, §10).  *Data-in-Processing* is protected by Variable
-    Mirroring and TMR (see §2, §3).  The third surface—*Data-in-Transit*—is equally
-    vulnerable: an SEU striking a pointer or a bus latch during a handoff between the
-    LDPC Encoder, the Interleaver, and the Modulator can silently corrupt the payload
-    without triggering any of the in-processing guards.
+*   **Explanation**: the hardening strategy covers three threat surfaces.
+    Memory section pinning and JIT integrity checks hold *data at rest* (§8, §10);
+    variable mirroring and TMR hold *data in processing* (§2, §3).  The third
+    surface, *data in transit*, is no safer: an SEU on a pointer or a bus latch
+    during a handoff between the LDPC encoder, the interleaver and the modulator
+    corrupts the payload without tripping a single in-processing guard.
 *   **Flight requirement**: In the RTOS multi-task deployment every inter-block
     transfer structure shall include a ``DspFrameHeader::handoff_crc`` field
     (CRC-16/CCITT), computed by the producing task immediately before releasing the
@@ -224,7 +303,18 @@ a **Handoff CRC** verified by the consumer before processing begins.
 Mirrored variables, TMR triplets, and CFI sentinel counters are **not
 inherently atomic** and must be protected from preemptive interrupts.
 
-*   **Explanation**: LunaLink targets RTOS environments (RTEMS, VxWorks) with preemptive scheduling and hardware interrupt lines. If an Interrupt Service Routine (ISR) fires between the write to a mirrored variable ``x`` and the write to its inverse ``x_mir``, the integrity check performed after the ISR returns will see a momentarily inconsistent pair and fire a false-positive fault. In a high-radiation environment, a false positive is nearly as dangerous as a missed fault: it can cause unnecessary safe-mode transitions during critical signal transmission windows. LunaLink mandates that all atomic invariants—mirror-pair writes, TMR triple writes, and CFI sentinel increments—are wrapped in **Critical Sections** (``LUNALINK_CRITICAL_ENTER`` / ``LUNALINK_CRITICAL_EXIT``). These macros map to the target RTOS's interrupt-masking primitives (e.g., ``rtems_interrupt_local_disable`` on RTEMS) and to compiler barriers (``asm volatile("" ::: "memory")``) on the host-native build for Digital Twin verification.
+*   **Explanation**: LunaLink targets RTOS environments — RTEMS, VxWorks — with
+    preemptive scheduling and hardware interrupt lines.  Let an ISR fire between
+    the write to ``x`` and the write to ``x_mir``, and the integrity check that
+    runs on resume sees an inconsistent pair and reports a fault that never
+    happened.  A false positive costs nearly as much as a missed one: it can drop
+    the system into safe mode during a transmission window.  Every atomic
+    invariant — mirror-pair writes, TMR triple writes, CFI sentinel increments —
+    is therefore wrapped in a **critical section**
+    (``LUNALINK_CRITICAL_ENTER`` / ``LUNALINK_CRITICAL_EXIT``).  On the target
+    those macros map to the RTOS interrupt-masking primitives
+    (``rtems_interrupt_local_disable``); on the host-native digital-twin build
+    they map to a compiler barrier (``asm volatile("" ::: "memory")``).
 *   **Implementation**: The macros ``LUNALINK_CRITICAL_ENTER`` and
     ``LUNALINK_CRITICAL_EXIT`` are declared in
     ``cpp/include/lunalink/core/safety.hpp``.
@@ -258,15 +348,27 @@ Every state machine in the signal chain is defined by an explicit
 **Legal Transition Matrix** — a compile-time table enumerating every
 permitted ``(current_state, next_state)`` pair.
 
-*   **Explanation**: SEUs do not only corrupt data — they corrupt control. A bit flip in a state register can attempt a transition that is physically dangerous: pushing the signal chain from ``TRANSMITTING`` directly to ``INITIALIZING`` without passing through ``IDLE`` could result in a hardware power amplifier being commanded to a forbidden configuration. Forbidding undefined states (§3, Forbidden State Detection) catches corrupted *values*, but it does not prevent a valid state from transitioning to another valid state via an *illegal edge*. The Legal Transition Matrix enforces that: if ``current_state`` is valid and ``next_state`` is valid but the edge ``(current_state → next_state)`` is not in the matrix, the transition is rejected and logged as a Critical Fault. This converts the state machine from a graph with implicit edges into a formally verified directed graph where every edge is an explicit safety assertion.
+*   **Explanation**: upsets corrupt control as readily as data.  A flipped state
+    register can drive the signal chain from ``TRANSMITTING`` straight to
+    ``INITIALIZING``, skipping ``IDLE`` and commanding the power amplifier into a
+    forbidden configuration.  Forbidding undefined states (§3) catches a corrupted
+    *value*; it says nothing about a valid state reached over an illegal *edge*.
+    The matrix closes that gap: if both ends are valid but
+    ``(current_state → next_state)`` is absent from the table, the transition is
+    rejected and logged as a critical fault.  Every edge in the graph becomes an
+    explicit safety assertion rather than an implicit one.
 *   **Implementation**: Each state machine owns a ``constexpr`` transition table of type ``TransitionMatrix<State, N>``. The ``transition()`` method performs a lookup; any miss returns ``kFaultDetected`` and is reported via fixed-width telemetry before the safe-mode transition.
-*   **Benefit**: Prevents hardware damage from radiation-induced illegal state transitions; provides a complete, auditable map of all legal system behaviors.
+*   **Benefit**: no radiation-induced illegal transition can damage hardware, and every legal system behaviour appears on one auditable map.
 
 3. Forbidden State Detection (NASA/JPL)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Any hit to a ``default`` branch in a state transition is treated as a Critical Fault.
 
-*   **Explanation**: Radiation can corrupt the state machines that control signal generation. If a state variable is flipped into a value that is not defined in our SEU-resistant enumerations, the software must not attempt to "guess" the next logical step. LunaLink treats any hit to a ``default`` case in a state transition as a **Critical Fault Event**. Instead of continuing with unpredictable logic, the system logs a high-priority telemetry packet and transitions to a "Safe Mode," ensuring the constellation's integrity is preserved.
+*   **Explanation**: when a flip drives a state variable to a value no
+    SEU-resistant enumeration defines, guessing the next step is the one
+    unacceptable response.  A hit on a ``default`` case is a **critical fault
+    event**: the system emits a high-priority telemetry packet and enters safe
+    mode rather than continuing on unpredictable logic.
 *   **Benefit**: Prevents the software from entering "impossible" logic states caused by register corruption.
 
 .. _fault-isolation:
@@ -281,10 +383,14 @@ that bound the blast radius of any detected fault.
 1. Fault Isolation Zones
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-*   **Explanation**: Without defined containment boundaries, a fault in the BCH decoder could propagate to the interleaver, which could corrupt the modulator output, which could trigger a watchdog reset of the entire OBC. This cascade is more destructive than any single fault. LunaLink prevents it with a layered containment model, analogous to the watertight bulkheads of a submarine:
+*   **Explanation**: with no containment boundary, a fault in the BCH decoder
+    reaches the interleaver, corrupts the modulator output, and ends in a watchdog
+    reset of the whole OBC.  The cascade does more damage than the fault that
+    started it.  A layered model stops it, on the principle of a submarine's
+    watertight bulkheads:
 
     *   **Zone 1 — Block Level**: A fault detected *within* a single DSP block (e.g., a failed mirror check inside ``gather_row()``) is contained to that function. The function returns ``kFaultDetected``, scrubs its local buffers, and does **not** write to the output buffer. The calling frame-assembly logic sees the error code and acts according to Zone 2 policy.
-    *   **Zone 2 — Frame Level**: A fault that cannot be recovered within a DSP block is contained at the **Frame Boundary**. The in-progress frame is scrubbed from RAM, the frame counter is advanced, and the signal chain resumes assembly of the **next** frame. The timing system, WIP counters, and RTOS task scheduling are explicitly **not** reset. This ensures that a single corrupted frame never disrupts the broadcast cadence.
+    *   **Zone 2 — Frame Level**: A fault that cannot be recovered within a DSP block is contained at the **Frame Boundary**. The in-progress frame is scrubbed from RAM, the frame counter is advanced, and the signal chain resumes assembly of the **next** frame. The timing system, WIP counters, and RTOS task scheduling are explicitly **not** reset. One corrupted frame therefore never disturbs the broadcast cadence.
     *   **Zone 3 — System Level**: A fault that violates a Zone 2 invariant (e.g., two consecutive frame faults, a failed JIT integrity check, or a Legal Transition Matrix miss in the top-level state machine) triggers a **Safe Mode transition**. The signal chain halts transmission, all buffers are scrubbed, and a fixed-width telemetry fault packet is generated. Recovery from Safe Mode requires a commanded restart from the OBC health management system.
 
 *   **Mandate**: All ``kFaultDetected`` return paths in the core source directories must be annotated with their FIZ level (e.g., ``// FIZ-1``). Any fault that escalates beyond Zone 1 must be logged via the fixed-width telemetry interface before the escalation occurs.
@@ -294,7 +400,7 @@ that bound the blast radius of any detected fault.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 No signal frame is "released" to hardware until it has been structurally validated.
 
-*   **Explanation**: Transmitting a corrupted navigation frame is worse than transmitting no frame at all, as it can lead to incorrect position fixes for rovers. LunaLink enforces a "Frame Commitment" pattern: no symbol stream is released to the hardware DMA or SDR layer until the entire 12-second frame has been fully assembled in local RAM and has passed a final structural validation check. This ensures that if a bit flip occurred during the complex interleaving or LDPC encoding process, the error is caught at the "waterline" before the signal ever leaves the spacecraft.
+*   **Explanation**: a corrupted navigation frame is worse than no frame — a rover acts on it and computes the wrong position.  Frame commitment holds the symbol stream back from the DMA or SDR layer until the full 12-second frame is assembled in local RAM and has passed a structural check.  A bit flip during interleaving or LDPC encoding is caught at the waterline, before anything leaves the spacecraft.
 *   **Requirement**: The final bit-stream must pass a **Post-Generation Checksum** before transmission. A failed checksum triggers a Zone 2 fault response (see §1 above).
 
 Time-Deterministic Execution (NASA/JAXA)
@@ -305,7 +411,7 @@ Time-Deterministic Execution (NASA/JAXA)
 LunaLink's signal chain is **branchless by mandate** — no data-dependent
 branches exist in any ``[LSIS-AFS-*]``-tagged DSP function.
 
-*   **Explanation**: Real-time signal processing depends on a stable, predictable execution budget. Terrestrial algorithms often optimize for "average case" performance using data-dependent branching (e.g., ``if (bit == 1) { ... }``). In a flight system, if the execution time varies based on the message content, it causes "timing jitter" that disrupts high-precision Phase-Locked Loops (PLLs) in the receiver or causes the CPU to miss its real-time deadline. LunaLink mandates branchless arithmetic — bitwise masks instead of conditional branches — for all modulation, multiplexing, and LDPC gather operations. The result is that the execution time of ``ldpc_encode()`` with an all-zeros input is **bit-for-bit identical** to its execution time with an all-ones input.
+*   **Explanation**: real-time signal processing runs on a fixed execution budget.  Terrestrial code chases the average case with data-dependent branches — ``if (bit == 1) { ... }`` — and pays for it in timing that moves with the message content.  That jitter disturbs the phase-locked loop in the receiver, or misses a deadline outright.  Modulation, multiplexing and the LDPC gather use bitwise masks in place of branches, so ``ldpc_encode()`` takes the same time on an all-zeros input as on an all-ones one.
 *   **Benefit**: Guarantees zero timing jitter regardless of navigation message content.
 
 2. Formal WCET Profiling (DO-178C / ECSS-E-ST-40C)
@@ -344,7 +450,7 @@ as a formal deliverable, published to the documentation site.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Critical tasks report their completion to a windowed watchdog.
 
-*   **Explanation**: A standard hardware watchdog only detects if the software has "hung." A windowed watchdog is significantly more robust: it requires the software to report progress within a narrow temporal window—not too late, but also **not too early**. If a signal-generation task finishes too early, it indicates a catastrophic logic skip (e.g., a radiation-induced jump over a loop). If it is too late, it indicates an algorithmic bottleneck or hardware delay. LunaLink's signal chain is designed to support windowed watchdogs by ensuring every frame-generation cycle fits within a fixed, deterministic temporal envelope. The WCET profile (see §2) provides the temporal bounds that the windowed watchdog's lower and upper thresholds are derived from.
+*   **Explanation**: a plain watchdog notices only that the software has hung.  A windowed one demands progress inside a narrow band — not too late, and **not too early**.  A signal-generation task that finishes early has skipped logic, most likely a radiation-induced jump over a loop; one that finishes late has hit a bottleneck or a hardware delay.  Every frame-generation cycle fits a fixed temporal envelope, and the WCET profile (§2) supplies both thresholds.
 *   **Benefit**: Detects timing faults caused by oscillator jitter or radiation-induced logic skips; thresholds derived from formally measured WCET data rather than engineering estimates.
 
 Fault Management & Telemetry
@@ -376,15 +482,15 @@ safety-critical data structures.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 LunaLink supports periodic background scrubbing of critical Look-Up Tables.
 
-*   **Explanation**: In a high-stakes Lunar mission, detecting errors only during power-on (POST) is insufficient because cosmic rays strike constantly. Continuous Built-In Test (CBIT) refers to background tasks that periodically validate system integrity while operational. LunaLink implements CBIT through functions like ``bch_codebook_checksum()``. This allows a background task to verify that large reference tables stored in RAM have not been "poisoned" by Single-Event Upsets (SEUs) before they are used to generate the next navigation frame.
+*   **Explanation**: cosmic rays arrive constantly, so checking only at power-on leaves most of the mission unguarded.  Continuous Built-In Test runs the same checks in the background during operations.  ``bch_codebook_checksum()`` and its kin let a background task confirm that the large reference tables in RAM are still clean before the next navigation frame is built from them.
 *   **Benefit**: Detects Single-Bit Upsets in RAM-cached tables before they can pollute signal generation.
 
 3. Fixed-Width Telemetry (NASA)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Error logging utilizes fixed-width binary packets to avoid stack corruption.
+Error logging uses fixed-width binary packets, which cannot corrupt the stack.
 
-*   **Explanation**: Logging errors with variable-length strings (e.g., using ``printf``) is a frequent source of stack corruption and buffer overruns in embedded systems. In a flight environment, we must ensure that the act of reporting an error does not create a second, more catastrophic error. LunaLink utilizes fixed-width binary telemetry packs. This ensures that the memory footprint for error reporting is constant and predictable, allowing for robust fault logging even in the most resource-constrained environments.
-*   **Benefit**: Ensures that fault reporting is deterministic and cannot cause stack overflows.
+*   **Explanation**: variable-length string logging — ``printf`` and its relatives — is a standing source of stack corruption and buffer overruns in embedded code.  Reporting a fault must not manufacture a worse one.  Fixed-width binary packets keep the memory footprint of error reporting constant and known in advance, which holds even on the tightest targets.
+*   **Benefit**: fault reporting stays deterministic and cannot overflow the stack.
 
 Supply Chain Security & Reproducibility (ECSS-Q-ST-80C)
 -------------------------------------------------------
@@ -393,7 +499,7 @@ Supply Chain Security & Reproducibility (ECSS-Q-ST-80C)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 All external dependencies are pinned by **Commit Hash (SHA)**.
 
-*   **Explanation**: Aerospace projects often have decade-long lifespans. Relying on mutable tags (e.g., ``v3.0``) in a package manager is a severe mission risk, as a vendor could maliciously or accidentally overwrite that tag with a breaking change. This could lead to a "silent" behavior shift after a re-build, even if no local code changed. LunaLink pins all external dependencies (such as the Catch2 testing framework) to an exact Git Commit Hash. This ensures that the source code being compiled is bit-for-bit identical to the code that was formally verified, protecting the mission from supply-chain attacks and unexpected library updates.
+*   **Explanation**: aerospace projects run for decades.  A mutable tag such as ``v3.0`` can be moved — by an attacker, or by an ordinary mistake — and the next rebuild then behaves differently with no local change to explain it.  Pinning every external dependency, Catch2 among them, to an exact git commit hash keeps the compiled source identical to the source that was verified.
 *   **Benefit**: Guarantees source-code consistency across the entire mission lifespan.
 
 2. Toolchain Version Pinning
@@ -445,7 +551,7 @@ block containing the binary's complete identity, readable via telemetry.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The build system enforces deterministic compilation.
 
-*   **Explanation**: Reproducibility is the ultimate proof of build system integrity. In flight software, it is vital that the binary generated on a developer's workstation is identical to the one generated on the official flight CI server. LunaLink's build system enforces deterministic compilation by stripping absolute file paths from the binary (using ``-ffile-prefix-map``) and disabling non-deterministic compiler features. This allows for independent verification: any agency can re-build the source code and compare the MD5 hash of the resulting binary to the official flight image, ensuring that no build-environment artifacts or hidden logic were introduced during the release process.
+*   **Explanation**: reproducibility is what turns build integrity from a claim into a check.  The binary a developer builds must match the one the flight CI server builds.  ``-ffile-prefix-map`` strips absolute paths, and the non-deterministic compiler features are off.  Any agency can rebuild the source and compare the MD5 of the result against the official flight image, which leaves no room for build-environment artefacts or inserted logic.
 *   **Verification**: The MD5 hash of the binary must be identical regardless of the build environment.
 
 Verification & Tooling
@@ -456,24 +562,24 @@ Verification & Tooling
 LunaLink mandates **MC/DC** as its primary coverage metric for all
 safety-critical DSP logic. Line coverage is a secondary, supplementary metric.
 
-*   **Explanation**: Line coverage proves that a line of code was *executed*. For a safety-critical DSP block containing compound boolean guards (e.g., ``if (seu_detected || range_exceeded)``), line coverage only verifies that the branch was reached. It says nothing about whether each individual condition independently affects the outcome. **Modified Condition/Decision Coverage (MC/DC)**, mandated by DO-178C for Level A software, requires demonstrating that: (1) every condition in a decision has been shown to independently affect the decision's outcome, and (2) every condition has been evaluated as both ``true`` and ``false``. Category B / DO-178C Level B requires only Decision Coverage (DC); LunaLink deliberately targets MC/DC to satisfy the stricter Level A / Category A threshold so that a future upgrade to Category A requires no additional test infrastructure. For LunaLink's SEU detection logic—where the difference between a missed fault and a correct detection is a single boolean evaluation—line coverage is not sufficient to constitute a robust safety case regardless of criticality category.
+*   **Explanation**: Line coverage proves that a line of code was *executed*. For a safety-critical DSP block containing compound boolean guards (e.g., ``if (seu_detected || range_exceeded)``), line coverage only verifies that the branch was reached. It says nothing about whether each individual condition independently affects the outcome. **Modified Condition/Decision Coverage (MC/DC)**, mandated by DO-178C for Level A software, requires demonstrating that: (1) every condition in a decision has been shown to independently affect the decision's outcome, and (2) every condition has been evaluated as both ``true`` and ``false``. Category B / DO-178C Level B requires only Decision Coverage (DC); LunaLink deliberately targets MC/DC to satisfy the stricter Level A / Category A threshold so that a future upgrade to Category A requires no additional test infrastructure. For LunaLink's SEU detection logic—where the difference between a missed fault and a correct detection is a single boolean evaluation—line coverage cannot carry the safety case at any criticality category.
 *   **Mandate**: The design target is **100% MC/DC** on all functions tagged ``[LSIS-AFS-*]`` in the core source directories, as measured by LLVM's source-based coverage instrumentation (``-fprofile-instr-generate -fcoverage-mapping``). The CI gate currently enforces a **30% whole-library MC/DC floor** (``MCDC_COVERAGE_MIN`` in ``.github/workflows/coverage-cpp.yml``); the measured value at submission is recorded in the coverage evidence and badge. The CI pipeline generates an MC/DC report on every passing build.
 *   **Structural Coverage**: ≥ 90% C++ *region* coverage (the ECSS Category B primary structural metric) is CI-enforced, with a ≥ 85% C++ line-coverage floor beneath it and 100% Python line coverage. All three are secondary to MC/DC and are reported alongside it. The measured values for this release, per metric and per file with waiver justifications, are in :doc:`coverage_evidence` (``docs/assurance/evidence/coverage_summary.json``); the floors themselves are defined once, in the ``THRESHOLDS`` table of ``scripts/coverage_evidence_report.py``, and consumed from there by ``.github/workflows/coverage-cpp.yml``.
-*   **Benefit**: Provides a mathematically rigorous proof that all safety-critical boolean logic has been independently verified. Although Category B only requires Decision Coverage, LunaLink's MC/DC evidence satisfies the stricter DO-178C Level A / Category A threshold, de-risking any future criticality upgrade.
+*   **Benefit**: every safety-critical boolean is shown to affect its decision independently. Although Category B only requires Decision Coverage, LunaLink's MC/DC evidence satisfies the stricter DO-178C Level A / Category A threshold, de-risking any future criticality upgrade.
 
 2. Digital Twin Compatibility (NASA)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The core library is strictly decoupled from hardware registers via a HAL.
 
-*   **Explanation**: Access to physical flight hardware is often a bottleneck in satellite development. Digital Twin Compatibility ensures that the signal processing core can be verified on standard workstations (Linux/macOS) while maintaining bit-for-bit parity with the orbiting hardware (e.g., LEON/SPARC). LunaLink achieves this by strictly decoupling DSP algorithms from hardware-specific registers using a Hardware Abstraction Layer (HAL). This allows the **exact same source code** to be verified through millions of automated test vectors on a "Digital Twin" in the cloud, providing a level of verification depth impossible to achieve on physical hardware alone.
+*   **Explanation**: flight hardware is scarce, and waiting for it sets the pace of verification.  A Hardware Abstraction Layer keeps the DSP algorithms clear of hardware registers, so the core runs on an ordinary Linux or macOS workstation at bit-for-bit parity with LEON/SPARC.  The **same source** then meets millions of automated test vectors on a digital twin — a depth of verification no hardware queue would allow.
 *   **Benefit**: Enables high-volume verification on terrestrial infrastructure.
 
 3. Information Security (NASA)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 **Stack Scrubbing**: All internal temporary signal buffers are explicitly zeroed.
 
-*   **Explanation**: In a multi-tasking satellite environment, RAM is a shared resource. When a DSP function finishes, its temporary buffers may still contain sensitive navigation data or intermediate parity bits. If these buffers are not explicitly zeroed, a subsequent task might accidentally read this "stale" data. LunaLink utilizes the flight-hardened ``secure_scrub()`` utility to physically overwrite temporary buffers before a function returns. This prevents cross-task data leakage and ensures that the spacecraft's internal state remains "clean," satisfying NASA's FSW Information Security mandates.
-*   **Implementation**: Utilizes the ``secure_scrub()`` utility before function exit.
+*   **Explanation**: RAM is shared in a multi-tasking spacecraft.  A finished DSP function leaves navigation data and intermediate parity bits in its temporary buffers, and the next task to receive that memory can read them.  ``secure_scrub()`` overwrites those buffers before the function returns, closing the cross-task leak and meeting NASA's FSW information-security mandate.
+*   **Implementation**: calls ``secure_scrub()`` before function exit.
 
 4. Static & Dynamic Analysis
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -481,7 +587,7 @@ The core library is strictly decoupled from hardware registers via a HAL.
 *   **Cppcheck**: Secondary safety-critical static analyzer.
 *   **ASan/UBSan**: Catch memory safety and undefined behavior at runtime.
 
-*   **Explanation**: Testing alone cannot prove the absence of software bugs. Static analysis tools (Clang-Tidy, Cppcheck) scan the source code for logical errors, memory safety issues, and style violations that may not be triggered by specific test vectors. Dynamic analysis tools (ASan, UBSan) monitor the code at runtime to catch subtle issues like buffer overflows or signed-integer wrapping. By combining these tools with a mandate for MC/DC on safety-critical functions and ≥ 90% C++ region coverage, LunaLink provides empirical proof that the implementation is robust, predictable, and free of the common C++ pitfalls that plague high-reliability systems.
+*   **Explanation**: no test suite proves the absence of bugs.  Clang-Tidy and Cppcheck read the source for logic errors, memory-safety defects and style violations that no particular test vector would reach.  ASan and UBSan watch the running code for buffer overflows and signed-integer wrapping.  Paired with MC/DC on the safety-critical functions and ≥ 90% C++ region coverage, they turn a claim of predictability into measured evidence.
 *   **Coverage**: Targets **100% MC/DC** on ``[LSIS-AFS-*]``-tagged functions (design target; the CI gate enforces a 30% whole-library floor — see §Verification & Tooling), ≥ 90% C++ region coverage and a ≥ 85% C++ line-coverage floor (both CI-enforced), and 100% Python coverage. Measured values: :doc:`coverage_evidence`.
 
 5. Compiler-Level Defenses & Forbidden Optimizations
@@ -489,9 +595,9 @@ The core library is strictly decoupled from hardware registers via a HAL.
 The build system mandates strict hardening flags and explicitly forbids
 compiler optimizations that undermine LunaLink's safety patterns.
 
-*   **Explanation**: Modern compilers provide built-in defenses against security exploits and hardware faults, but they also perform aggressive optimizations that can silently violate the guarantees LunaLink's hardening patterns depend on. Two categories of flags are therefore managed:
+*   **Explanation**: a modern compiler offers defences against exploits and hardware faults with one hand and, with the other, optimisations that quietly void the guarantees these hardening patterns rest on.  Two categories of flag are therefore managed:
 
-    *   **Mandatory Hardening Flags**: ``-fstack-protector-strong`` inserts "canaries" into the stack to detect and halt execution if a radiation-induced bit flip corrupts a function return address. ``-ffp-contract=off`` ensures that floating-point calculations are bit-for-bit identical across different processors, which is vital for maintaining identical signal tracking performance between ground station simulators and the orbiting spacecraft.
+    *   **Mandatory Hardening Flags**: ``-fstack-protector-strong`` inserts "canaries" into the stack to detect and halt execution if a radiation-induced bit flip corrupts a function return address. ``-ffp-contract=off`` keeps floating-point results bit-for-bit identical across processors, which is what holds signal-tracking performance the same between a ground-station simulator and the spacecraft.
 
     *   **Forbidden Optimizations**: The following flags are **explicitly prohibited** in the flight build because they conflict with LunaLink's safety patterns:
 
@@ -602,13 +708,11 @@ constitutes the reference for the entire LSIS ecosystem.
     ``tests/generate_test_vectors.py`` generates the vectors from the
     reference implementation.
 
-*   **Design intent**: A reference implementation has two obligations: it must be
-    correct, and it must enable others to verify their own correctness against it.
-    LunaLink will fulfil the second obligation by publishing a comprehensive,
-    versioned test vector library in JSON format.  The library will be the normative
-    reference: if a hardware receiver or another software implementation disagrees
-    with a LunaLink vector, the vector is authoritative until proven otherwise by a
-    spec errata.
+*   **Design intent**: a reference implementation owes two things — its own
+    correctness, and a way for others to check theirs against it.  The published
+    JSON vector library discharges the second.  It is the normative reference: when
+    a hardware receiver or another software implementation disagrees with a
+    LunaLink vector, the vector stands until a spec erratum overturns it.
 
 *   **Planned vector categories**:
 
@@ -641,10 +745,10 @@ constitutes the reference for the entire LSIS ecosystem.
 ECSS Compliance Status
 ----------------------
 
-LunaLink's assurance infrastructure is natively structured against **ECSS-E-ST-40C Rev.1**
-and **ECSS-Q-ST-80C Rev.2** (Category B — mission-critical).  NASA NPR 7150.2D is
-maintained as a secondary cross-reference; satisfying ECSS automatically covers the
-corresponding NPR requirements.
+The assurance infrastructure is structured against **ECSS-E-ST-40C Rev.1** and
+**ECSS-Q-ST-80C Rev.2** (Category B — mission-critical).  NASA NPR 7150.2D
+serves as a secondary cross-reference; meeting ECSS covers the corresponding NPR
+requirements.
 
 **Satisfied (strong evidence)**:
 
@@ -681,9 +785,9 @@ corresponding NPR requirements.
 
 **Organisational requirements — outside the scope of this reference implementation**:
 
-IV&V (Q-ST-80C §5.5), formal review milestones (E-ST-40C §5.1), formal CM board
-(Q-ST-80C §5.4), and physical configuration audit (Q-ST-80C §5.4) require programme
-office infrastructure and cannot be satisfied by a development team acting alone.
+IV&V (Q-ST-80C §5.5), formal review milestones (E-ST-40C §5.1), a formal CM board
+(Q-ST-80C §5.4) and physical configuration audit (Q-ST-80C §5.4) all need programme
+office infrastructure; no development team can satisfy them alone.
 These items are tailored in the ECSS standards and tailoring record
 (LUNALINK-STDS-001, ``docs/standards/esa/ecss_standards.rst`` §Tailoring
 Record) and the corresponding NPR cross-references are provided in the NASA
