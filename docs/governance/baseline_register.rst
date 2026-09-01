@@ -70,15 +70,16 @@ Baseline Register
 
 .. note::
 
-   **Provenance.**  This repository is a squashed public export of the
-   development tree prepared for the competition submission.  The historic
-   per-gateway commit SHAs recorded for BL-001 and BL-002 refer to the
-   development tree and do not exist in this repository's history; they are
-   retained verbatim as the historical record.  BL-002's SHA reflects the
-   HEAD of the development ``assurance`` branch at the time the row was
-   authored and is final for this register — the "will be updated at
-   gateway exit" provision is resolved by this export.  BL-003 is the
-   first baseline cut directly from this repository.
+   **Provenance.**  This repository was extracted from a larger development
+   tree and carries the filtered history of the files it contains (see the
+   Provenance section of ``README.md``).  Filtering rewrote every commit
+   hash, so the SHAs recorded for BL-001 and BL-002 — which are
+   development-tree hashes — do not resolve here.  They are retained
+   verbatim as the historical record.  BL-002's SHA reflects the HEAD of the
+   development ``assurance`` branch at the time the row was authored and is
+   final for this register — the "will be updated at gateway exit" provision
+   is resolved by the export.  BL-003 is the first baseline cut directly
+   from this repository.
 
 Deviation Register
 -------------------
