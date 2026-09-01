@@ -344,4 +344,4 @@ than editing them here.
 
    task test-cpp          # fast unit + integration suites pass
    task traceability      # 31 requirements, 0 orphans
-   task compliance-report # 31/31 requirements PASS; 19/20 NFRs PASS
+   task compliance-report # 31/31 requirements PASS; 20/20 NFRs PASS

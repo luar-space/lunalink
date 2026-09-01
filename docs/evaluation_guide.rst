@@ -104,8 +104,8 @@ Where to look for each scored category.
    * - **Completeness**
      - 20
      - All nine gateways 0–8 delivered, one guide each (table below).
-       `Non-Functional Requirements`_: 19/20 PASS, 1 reported as a
-       limitation.  :doc:`roadmap` states what is *not* delivered
+       `Non-Functional Requirements`_: 20/20 PASS.  :doc:`roadmap` states
+       what is *not* delivered
    * - **Code Quality**
      - 10
      - :doc:`assurance/c_plus_plus_guidelines` (MISRA C++:2023-traceable

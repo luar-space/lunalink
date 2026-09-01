@@ -165,8 +165,8 @@ task validate-coverage  # proves llvm-cov correctly reports known gaps
 
 ### 7. Evidence that regenerates itself
 
-31/31 requirements passing with **0 orphaned test tags**, 19/20 NFRs passing
-(the twentieth reported as a limitation, not quietly dropped), 76 spec
+31/31 requirements passing with **0 orphaned test tags**, 20/20 NFRs
+passing, 76 spec
 `shall` statements dispositioned, and every artefact — compliance report,
 traceability matrix, coverage evidence, SWIFI report, stack usage, build
 manifest, algorithm cards — produced by script rather than maintained by

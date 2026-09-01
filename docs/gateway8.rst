@@ -177,7 +177,7 @@ Non-functional requirement compliance
 
 All 20 NFRs defined by the competition rubric are tracked in
 ``docs/assurance/evidence/compliance_report.json`` (``nfr`` section):
-**19 PASS, 1 reported as a limitation**.  The performance and correctness
+**20 PASS**.  The performance and correctness
 families (NFR-1.x, NFR-2.x) and the testing family (NFR-3.x) are shown
 below; the usability and maintainability families (NFR-4.x, NFR-5.x) are
 listed in :doc:`evaluation_guide` §*Non-Functional Requirements*.
@@ -255,7 +255,7 @@ listed in :doc:`evaluation_guide` §*Non-Functional Requirements*.
 .. code-block:: bash
 
    task compliance-report   # regenerates compliance_report.json
-   # 31/31 requirements PASS; NFRs: 19 PASS, 1 LIMITATION (NFR-5.4)
+   # 31/31 requirements PASS; NFRs: 20 PASS
 
 Real-time margin
 ~~~~~~~~~~~~~~~~
