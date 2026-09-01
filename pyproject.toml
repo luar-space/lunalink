@@ -55,6 +55,11 @@ dev = [
 [tool.setuptools_scm]
 fallback_version = "0.0.0.dev0"
 git_describe_command = ["git", "describe", "--tags", "--long", "--match", "v*"]
+# The release tag is "v1.0-submission", which is not a PEP 440 version.
+# setuptools-scm >= 9 rejects it outright ("Can't parse version from tag"),
+# breaking any build from a clone that has tags. Take the leading numeric
+# part and ignore the trailing label.
+tag_regex = "^v?(?P<version>\\d+(?:\\.\\d+)*)"
 
 [tool.scikit-build]
 minimum-version = "0.9"

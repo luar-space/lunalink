@@ -36,6 +36,15 @@ if(NOT LUNALINK_VERSION OR LUNALINK_VERSION STREQUAL "")
     set(LUNALINK_VERSION "v0.0.0-unknown")
 endif()
 
+# SciHeader.version is char[24] — 23 characters plus NUL. A describe taken off
+# the tag ("v1.0-submission-7-g9335918") exceeds that and, under -Werror, fails
+# the build in the initializer. Truncate here so the generated header and the
+# CRC-32 below (which already applies [:23]) see the same string.
+string(LENGTH "${LUNALINK_VERSION}" LUNALINK_VERSION_LEN)
+if(LUNALINK_VERSION_LEN GREATER 23)
+    string(SUBSTRING "${LUNALINK_VERSION}" 0 23 LUNALINK_VERSION)
+endif()
+
 string(TIMESTAMP LUNALINK_BUILD_TIMESTAMP_UNIX "%s")
 math(EXPR LUNALINK_BUILD_TIMESTAMP_J2000 "${LUNALINK_BUILD_TIMESTAMP_UNIX} - 946728000")
 
