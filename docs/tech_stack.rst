@@ -1,20 +1,20 @@
 Technical Stack & Compliance
 ============================
 
-LunaLink utilizes a dual-layered technical stack designed to satisfy both the 
-high-performance, deterministic requirements of **Class B Flight Software (FSW)** 
-and the ease-of-use requirements for a **Software Reference Implementation**.
+LunaLink runs a two-layer stack.  One layer meets the deterministic,
+high-performance demands of **Class B Flight Software (FSW)**; the other keeps
+a **Software Reference Implementation** easy to pick up.
 
 Core Philosophy
 ---------------
 
-1.  **C++20 for Flight**: The signal processing core is written in modern, 
-    deterministic C++20, adhering to strict MISRA-aligned safety profiles.
-2.  **Python for Integration**: The primary user interface and validation 
-    suite are built in Python 3.12+, utilizing ``nanobind`` for low-overhead 
-    communication with the C++ core.
-3.  **Auditability**: Every tool in the stack is chosen to provide empirical 
-    evidence of compliance with the LSIS-AFS standard and ESA quality mandates.
+1.  **C++20 for Flight**: the signal-processing core is deterministic modern
+    C++20, held to a MISRA-aligned safety profile.
+2.  **Python for Integration**: Python 3.12+ carries the user interface and
+    the validation suite, reaching the C++ core through ``nanobind`` at low
+    overhead.
+3.  **Auditability**: every tool earns its place by producing evidence of
+    compliance with the LSIS-AFS standard and ESA quality mandates.
 
 Flight Software Stack (C++)
 ---------------------------
@@ -34,7 +34,7 @@ Flight Software Stack (C++)
      - Deterministic build system; enforces hardening flags and remapping.
    * - **Catch2**
      - v3.x
-     - Unit testing; pinned by **Commit SHA** to ensure supply-chain integrity.
+     - Unit testing; pinned by **commit SHA** for supply-chain integrity.
    * - **Clang-Tidy**
      - ≥ 14.0
      - Static analysis; enforces HICPP, CERT, and CppCoreGuidelines.
@@ -66,10 +66,10 @@ Reference Implementation Stack (Python)
      - High-level functional testing and interoperability validation.
    * - **ruff**
      - ≥ 0.9
-     - Extreme performance linting and formatting (replaces Flake8, Black, Isort).
+     - Fast linting and formatting; replaces Flake8, Black and isort.
    * - **pyright**
      - ≥ 1.1
-     - Static type checking for 100% type-safe public interfaces.
+     - Static type checking; every public interface is fully typed.
    * - **radon**
      - ≥ 6.0
      - Quality metrics (Cyclomatic Complexity, Halstead, Maintainability Index).
@@ -87,7 +87,7 @@ Code Style & Naming
 Project Structure
 ~~~~~~~~~~~~~~~~~
 *   **Mandate**: ``src`` layout; explicit ``pyproject.toml``.
-*   **Compliance**: Standardized layout with all source code in ``src/lunalink/``.
+*   **Compliance**: all source code sits in ``src/lunalink/``.
 
 Dependency Management
 ~~~~~~~~~~~~~~~~~~~~~
@@ -102,12 +102,12 @@ Documentation
 Type Safety
 ~~~~~~~~~~~
 *   **Mandate**: Type hints (PEP 484) for public APIs.
-*   **Compliance**: ``pyright`` enforces strict typing; ``.pyi`` stubs are provided for C++ modules.
+*   **Compliance**: ``pyright`` enforces strict typing; ``.pyi`` stubs cover the C++ modules.
 
 Testing & Quality
 ~~~~~~~~~~~~~~~~~
 *   **Mandate**: White-box unit testing; Cyclomatic Complexity ≤ 10.
-*   **Compliance**: 
+*   **Compliance**:
     *   ``pytest-cov`` enforces the 100% line-coverage gate (the build fails below it).
     *   ``ruff (C90)`` and ``radon cc`` enforce complexity limits.
     *   ``radon hal`` and ``radon mi`` generate ESA-required quality metrics.

@@ -1,8 +1,8 @@
 References & Standards
 ========================
 
-This page provides direct access to the official standards, guidelines, and 
-specifications that govern the LunaLink implementation.
+The standards, guidelines and specifications that govern this
+implementation, linked directly.
 
 Primary Specifications
 ----------------------

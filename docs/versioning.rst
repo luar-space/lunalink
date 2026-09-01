@@ -72,8 +72,8 @@ the ``scikit_build_core.metadata.setuptools_scm`` metadata provider::
    [tool.setuptools_scm]
    fallback_version = "0.0.0.dev0"
 
-The ``fallback_version`` is used when building outside of a git repository
-(e.g. from a source tarball without git history).
+``fallback_version`` covers builds made outside a git repository — from a
+source tarball with no history, say.
 
 The Sphinx documentation reads the version from the installed package
 metadata at build time::

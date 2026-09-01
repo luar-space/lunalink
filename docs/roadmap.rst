@@ -1,9 +1,9 @@
 Development Status
 ==================
 
-This document tracks the phased development of LunaLink from first PRN
-codes to the complete, validated AFS-I and AFS-Q Signal-In-Space (SIS)
-reference implementation delivered for the competition.
+LunaLink grew in phases, from the first PRN codes to the validated AFS-I and
+AFS-Q Signal-In-Space (SIS) reference implementation delivered for the
+competition.
 
 Phased Implementation
 ---------------------

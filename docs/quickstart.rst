@@ -1,8 +1,8 @@
 Quickstart
 ==========
 
-This guide walks through the LunaLink Python API — from generating your first
-AFS signal to decoding navigation data and producing interoperability test vectors.
+The LunaLink Python API, from generating your first AFS signal to decoding
+navigation data and producing interoperability test vectors.
 
 Installation
 ------------

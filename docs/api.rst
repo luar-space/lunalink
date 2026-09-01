@@ -6,7 +6,7 @@ For a narrative introduction, see :doc:`quickstart`.
 High-Level API
 --------------
 
-These are the recommended entry points for most users.
+Most users should start here.
 
 .. module:: lunalink.afs._receiver
 

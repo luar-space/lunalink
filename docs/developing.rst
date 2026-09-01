@@ -1,13 +1,13 @@
 Developer Guide
 ===============
 
-This page covers everything needed to work on this repository, from first
-checkout to cutting a release.
+Everything needed to work on this repository, from first checkout to cutting
+a release.
 
 Prerequisites
 -------------
 
-The following tools must be installed before working on the project:
+Install these before starting:
 
 .. list-table::
    :header-rows: 1
@@ -30,7 +30,7 @@ The following tools must be installed before working on the project:
      - Fast C++ build backend (optional but recommended)
    * - A C++20 compiler
      - Ships with Xcode CLT on macOS (``xcode-select --install``) or GCC 11+ / Clang 13+
-     - Required to compile the C++ extension (utilizing ``constinit`` and ``span``)
+     - Compiles the C++ extension (``constinit``, ``span``)
    * - `clang-tidy <https://clang.llvm.org/extra/clang-tidy/>`_
      - ``brew install llvm``
      - Static analysis for MISRA/HICPP compliance (optional for local dev)
@@ -100,8 +100,8 @@ Daily Workflow
 
 **Editing Python code**
 
-No rebuild is needed. Changes to ``src/`` are picked up immediately since
-the package is installed in editable mode::
+No rebuild needed: the package installs in editable mode, so a change under
+``src/`` takes effect at once::
 
     # edit src/lunalink/...
     task test    # runs build (no-op if C++ unchanged), then all tests
@@ -109,21 +109,20 @@ the package is installed in editable mode::
 
 **Editing C++ code**
 
-After editing any file under ``cpp/``, a rebuild is required::
+Any edit under ``cpp/`` needs a rebuild::
 
     # edit cpp/...
     task build   # recompiles the extension and reinstalls into .venv
     task test    # runs both C++ and Python tests against the new build
 
-``task test`` always calls ``task build`` first, so running it directly is
-sufficient.
+``task test`` calls ``task build`` first, so run it directly.
 
 **Running only the C++ tests**::
 
     task test-cpp
 
-This builds the C++ test executable (using Ninja if installed, Make
-otherwise) without touching the Python extension, and runs it under CTest.
+That builds the C++ test executable — Ninja if installed, Make otherwise —
+leaves the Python extension alone, and runs the result under CTest.
 
 **Checking documentation**::
 
@@ -155,8 +154,9 @@ Adding a New C++ Function
 --------------------------
 
 1. Declare the function in an appropriate header under ``cpp/include/lunalink/``.
-2. Implement it in a corresponding source file under the appropriate domain directory (e.g. ``cpp/codes/``, ``cpp/encoding/``, ``cpp/signal/``, or other
-   module directory), and ensure it is included in ``lunalink_core`` sources in
+2. Implement it in the matching source file under the domain directory
+   (``cpp/codes/``, ``cpp/encoding/``, ``cpp/signal/``, or another module
+   directory), then add it to the ``lunalink_core`` sources in
    ``CMakeLists.txt``.
 3. Expose it via nanobind in ``cpp/bindings/afs_module.cpp``.
 4. Add/update the corresponding type stub in ``src/lunalink/afs/_afs.pyi``.
@@ -180,7 +180,7 @@ currently runs:
 7. sanitize
 8. docs-build
 
-The commit is blocked if any step fails. To skip the hook in an emergency
+Any failing step blocks the commit. To skip the hook in an emergency
 (not recommended)::
 
     git commit --no-verify
@@ -194,9 +194,9 @@ To re-run the checks manually without committing::
 CI Pipeline
 -----------
 
-GitHub Actions workflows run on every push to ``main``, on every tag
-matching ``v*``, and on all pull requests.  The pipeline is split into
-independent workflows for granular status reporting.
+GitHub Actions workflows run on every push to ``main``, every tag matching
+``v*``, and every pull request.  Independent workflows keep the status
+reporting granular.
 
 .. list-table::
    :header-rows: 1
@@ -238,17 +238,16 @@ independent workflows for granular status reporting.
      - push to main, manual
      - Assembles assurance artefacts and deploys to GitHub Pages.
 
-Ninja is installed on all CI runners so both the Python extension build
-(via scikit-build-core) and the C++ test build use it automatically.
+Every CI runner has Ninja, so both the Python extension build (via
+scikit-build-core) and the C++ test build pick it up automatically.
 
 Recertification
 ---------------
 
-In addition to the continuous integration workflows above, the project
-provides an **on-demand recertification** facility: a single authorised
-run that exercises every assurance gate against a specified git ref and
-emits a dated, signed-off RST record suitable for attachment to a
-milestone review (PDR, CDR, SAR, flight baseline, etc.).
+Beyond those workflows sits **on-demand recertification**: one authorised
+run that exercises every assurance gate against a chosen git ref and emits a
+dated, signed-off RST record to attach to a milestone review — PDR, CDR, SAR,
+a flight baseline.
 
 **When to use it:**
 
@@ -264,9 +263,10 @@ toolchain):
 
     task recertify MILESTONE=PDR REASON="Pre-PDR baseline" AUTHORITY="Your Name"
 
-Runs all gates sequentially, prints a coloured per-gate summary, and
-writes ``docs/assurance/recertification_record.rst``.  Exit code is non-zero
-if any gate fails.  Per-gate logs are written to ``build/recertify-logs/``.
+Gates run in sequence, a coloured per-gate summary prints, and
+``docs/assurance/recertification_record.rst`` is written.  Any failing gate
+makes the exit code non-zero.  Per-gate logs land in
+``build/recertify-logs/``.
 
 **Running in CI** (all 10 gates in parallel):
 
