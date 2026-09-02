@@ -88,6 +88,10 @@ jobs:
     needs: test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    env:
+      # Skip the badge where no gist is configured (a fork, or the submission
+      # repository) instead of failing the workflow over a cosmetic artefact.
+      GIST_SECRET: ${{ secrets.GIST_SECRET }}
     steps:
       - name: Download coverage data
         uses: actions/download-artifact@v4
@@ -108,6 +112,7 @@ jobs:
           echo "color=${COLOR}" >> "$GITHUB_OUTPUT"
 
       - name: Update Python coverage badge
+        if: env.GIST_SECRET != ''
         uses: schneegans/dynamic-badges-action@v1.7.0
         with:
           auth: ${{ secrets.GIST_SECRET }}
