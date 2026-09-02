@@ -78,6 +78,15 @@ def format_time(ns: float) -> str:
 # sample to be considered stable enough to report.  Exceeding it fails the run.
 CI_SPREAD_LIMIT_PCT = 25.0
 
+# Below this mean, the relative gate measures the scheduler rather than the
+# code: BCH ML decode runs in ~230 ns, where a single preemption moves the mean
+# by tens of percent (observed CV 85% on a loaded machine, 7% idle).  Sub-
+# microsecond samples are gated on an absolute spread instead.  This is a
+# measurement-quality gate, not a performance one — the absolute ceilings live
+# in test_wcet.cpp (BCH ML decode < 3 us) and are unaffected.
+CI_RELATIVE_GATE_FLOOR_NS = 10_000.0
+CI_SPREAD_LIMIT_NS = 1_000.0
+
 
 def evaluate(entries: list[BenchmarkEntry]) -> tuple[list[str], bool]:
     """Evaluate benchmark confidence intervals. Return (verdicts, any_failed)."""
@@ -101,16 +110,26 @@ def evaluate(entries: list[BenchmarkEntry]) -> tuple[list[str], bool]:
         # Benchmarks whose runtime is legitimately data-dependent (ldpc_decode
         # and frame_decode early-terminate on a satisfied syndrome) are bounded
         # by the absolute budgets in test_wcet.cpp, not by spread.
-        if ci_spread_pct > CI_SPREAD_LIMIT_PCT:
+        ci_spread_ns = e.high_mean_ns - e.low_mean_ns
+        if e.mean_ns < CI_RELATIVE_GATE_FLOOR_NS:
+            over = ci_spread_ns > CI_SPREAD_LIMIT_NS
+            detail = (
+                f"95% CI spread {format_time(ci_spread_ns)} "
+                f"(absolute gate below {format_time(CI_RELATIVE_GATE_FLOOR_NS)})"
+            )
+        else:
+            over = ci_spread_pct > CI_SPREAD_LIMIT_PCT
+            detail = f"95% CI spread {ci_spread_pct:.1f}%"
+
+        if over:
             failed = True
             verdicts.append(
-                f"FAIL  {e.name}: 95% CI spread {ci_spread_pct:.1f}% "
-                f"exceeds {CI_SPREAD_LIMIT_PCT:.0f}% "
+                f"FAIL  {e.name}: {detail} exceeds limit "
                 f"(mean={format_time(e.mean_ns)}, CV={cv_pct:.1f}%)"
             )
         else:
             verdicts.append(
-                f"PASS  {e.name}: 95% CI spread {ci_spread_pct:.1f}% "
+                f"PASS  {e.name}: {detail} "
                 f"(mean={format_time(e.mean_ns)}, CV={cv_pct:.1f}%)"
             )
 
