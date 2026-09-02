@@ -717,6 +717,10 @@ tasks:
           echo "                              sudo apt install doxygen (Ubuntu)"
           exit 1
         fi
+        # Doxygen will not create a nested OUTPUT_DIRECTORY: on a clean clone
+        # there is no build/, and it fails with "does not exist and cannot be
+        # created". Make the parent first.
+        mkdir -p build/doxygen
         cd docs && doxygen Doxyfile
       - 'echo "Doxygen XML: build/doxygen/xml ($(ls build/doxygen/xml/*.xml | wc -l | tr -d " ") files)"'
     silent: false

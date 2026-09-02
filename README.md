@@ -229,6 +229,14 @@ implementation and to the exact command that verifies it, rather than
 leaving reviewers to derive that from an architecture diagram. Start at
 [docs/evaluation_guide.rst](docs/evaluation_guide.rst).
 
+Both languages have a **generated** API reference, so the interface a
+reviewer reads is the interface that compiled — not a description of it that
+can drift: **434 C++ entities** rendered from the headers by Doxygen and
+Breathe ([api_cpp.rst](docs/api_cpp.rst)) and **162 Python symbols** by
+autodoc ([api.rst](docs/api.rst)), each Python binding corresponding to one
+C++ call. `sphinx -W` treats an unresolved cross-reference as a build
+failure, so the links between them cannot rot silently.
+
 ### 9. Stated limits
 
 Where something is bounded, it says so: the L3 receiver's decimation and

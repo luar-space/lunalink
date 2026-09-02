@@ -379,14 +379,22 @@ Milestone 1 — Standards Compliance & Architecture (§3.2.1)
        module → gateway map
      - ``task docs-pdf`` builds ``gateway0`` as a standalone PDF
    * - Interface and configuration definition
-     - :doc:`signal/icd` — Interface Control Document: complete C++ API,
-       Python bindings, HAL interfaces, wire formats, error enumeration.
+     - :doc:`signal/icd` — Interface Control Document: the contract behind
+       the C++ API, Python bindings, HAL interfaces, wire formats and error
+       enumeration.  Alongside it, both APIs have a **generated** reference,
+       so what a reviewer reads is what compiled: :doc:`api_cpp` (434
+       entities, Doxygen → Breathe, straight from the headers) and
+       :doc:`api` (162 symbols, autodoc against the built extension), with
+       each Python binding corresponding to one C++ call.
        :doc:`signal/sisicd` — bit-level payload layouts for the message
        types LSIS V1.0 leaves TBW.
        :doc:`assurance/configuration_baseline` — build configuration and
        release baseline
-     - ``task test-cpp`` exercises every interface in the ICD;
-       ``task build-manifest`` emits the configuration record
+     - ``task docs-serve`` renders both references; ``sphinx -W`` fails the
+       build on an unresolved cross-reference, so they cannot drift from the
+       code without CI saying so.  ``task test-cpp`` exercises every
+       interface in the ICD; ``task build-manifest`` emits the configuration
+       record
    * - Clear traceability to the CCSDS specification
      - :doc:`assurance/traceability_matrix`; canonical machine-readable
        matrix at ``docs/assurance/evidence/traceability.json``

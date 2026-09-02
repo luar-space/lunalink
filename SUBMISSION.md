@@ -139,7 +139,7 @@ single PDF instead.
 | Gateway 5 — Frame Sync & Decoding | **Complete** | `docs/gateway5.rst`; bipolar cross-correlation sync detector, full decode chain |
 | Gateway 6 — Message Parsing | **Complete** | `docs/gateway6.rst`; typed parsing of all subframe content |
 | Gateway 7 — Integration & Validation | **Complete** | `docs/gateway7.rst`; end-to-end round trip and cross-implementation validation in **both directions**, L1–L5: LunaLink decodes LANS-AFS-SIM's signal, and PocketSDR-AFS — an independent receiver — decodes LunaLink's |
-| Gateway 8 — Documentation & Examples | **Complete** | `docs/gateway8.rst`; full documentation set, examples, tutorial notebooks, performance report |
+| Gateway 8 — Documentation & Examples | **Complete** | `docs/gateway8.rst`; full documentation set, generated API references for both languages (434 C++ entities via Doxygen/Breathe, 162 Python symbols via autodoc), examples, tutorial notebooks, performance report |
 
 ## Validation Results
 

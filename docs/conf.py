@@ -73,6 +73,23 @@ breathe_default_project = "lunalink"
 breathe_default_members = ("members",)
 breathe_show_include = False
 
+
+def _skip_binary_module(app, modname):
+    """Keep the nanobind extension out of viewcode's module index.
+
+    ``lunalink.afs._afs`` is a compiled extension: viewcode lists it but has no
+    source to render, leaving a dead link on the "Module code" page. Returning
+    an empty source for it makes viewcode skip the module entirely.
+    """
+    if modname.endswith("._afs"):
+        return ("", {})
+    return None
+
+
+def setup(app):  # noqa: D103
+    app.connect("viewcode-find-source", _skip_binary_module)
+
+
 # nbsphinx: notebooks are pre-executed by `task docs-build` so figures render
 # without needing a build-time kernel. Notebooks live in docs/notebooks/.
 nbsphinx_execute = "never"
