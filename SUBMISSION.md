@@ -19,7 +19,7 @@
 | Key Libraries | nanobind (bindings), NumPy, jaxtyping + beartype (runtime shape/type checking). No third-party DSP or FEC library: spreading codes, BCH, LDPC, interleaver, CRC-24Q, BPSK modulation, the FFT and the sync detector are all implemented here |
 | Test Framework | Catch2 v3 (C++), pytest (Python), libFuzzer (fuzzing), custom SWIFI harness (fault injection) |
 | Platform(s) Tested | macOS ARM64 (primary), Linux x86_64 and arm64, and Windows/MSVC in CI, plus **big-endian s390x** under QEMU to catch byte-order defects |
-| Size | ~42 k lines of C++ core (including the generated code tables), 9.4 k lines of C++ tests, 2.4 k lines of Python with 3.6 k lines of Python tests, 16 k lines of documentation source across 53 pages and 3 notebooks; 190 commits over six months (2026-03-02 to 2026-09-02) |
+| Size | ~42 k lines of C++ core (including the generated code tables), 9.4 k lines of C++ tests, 2.4 k lines of Python with 3.6 k lines of Python tests, 16 k lines of documentation source across 53 pages and 3 notebooks; six months of history (190+ commits since 2026-03-02) |
 
 ## Architecture Summary
 
@@ -221,7 +221,7 @@ From the committed `wcet_results.xml` (Release build) and the NFR table in
 |---------------|----------|--------|
 | NFR-1.1 code generation < 1 s per PRN | < 10 ms | > 100× |
 | NFR-1.2 frame encoding < 100 ms per frame | LDPC encode SF2 0.79 ms; whole frame < 5 ms | > 20× |
-| NFR-1.3 / decode < 1 s per frame | LDPC decode SF2 at the forced 50-iteration cap 0.75 ms; `frame_decode` < 20 ms budget | > 50× |
+| NFR-1.3 frame decoding < 1 s per frame | LDPC decode SF2 at the forced 50-iteration cap 0.75 ms; `frame_decode` < 20 ms budget | > 50× |
 | NFR-1.4 real-time | a 12 s frame is processed in < 1 s | > 12× |
 | Sync detection over a 6000-symbol frame | 0.20 ms against a 700 µs budget | 3.5× |
 | BCH exhaustive-ML decode | 1.0 µs against a 3 µs budget | 3× |
@@ -273,7 +273,7 @@ in the rendered site plus the command that regenerates its evidence.
 | **Channel robustness sweeps** — CFO, sample-clock offset, phase noise, quantisation, through the full receiver | `docs/signal/validation_plan.rst` | `task integration` |
 | **Interoperability in both directions** with two independent implementations, plus tooling for other teams (published vectors, foreign-vector validator, Docker workshop image, CLI) | `docs/interop_results.rst`, `docs/test_vectors.rst` | `task interop`, `task interop-receiver` |
 | **Feedback to the standard** — every TBW/TBC/TBD marker in LSIS V1.0 dispositioned; the five interoperability-critical ambiguities written up as SF-001…SF-005 with proposed resolutions and a recommendation to the LNIS working group; proposed bit-level layouts for the 11 message types the spec leaves TBW | `docs/signal/spec_findings_report.rst`, `sisicd.rst`, `shall_inventory.rst` | `task pics-proforma` |
-| **Governance** — Software Development Plan, Configuration Management Plan, baseline register, metrics plan with escalation thresholds; ECSS-E-ST-40C / Q-ST-80C and NASA NPR 7150.2 mapped clause by clause | `docs/governance/`, `docs/standards/` | `task recertify` |
+| **Governance** — Software Development Plan, Configuration Management Plan, baseline register, metrics plan with escalation thresholds; the applicable ECSS-E-ST-40C / Q-ST-80C and NASA NPR 7150.2 requirements catalogued, with a compliance matrix against NPR 7150.2 | `docs/governance/`, `docs/standards/` | `task recertify` |
 | **Recertification on demand** — every assurance gate re-run against any git ref, emitting a milestone-tagged, signed-off record for a review board | `.github/workflows/recertify.yml` | `task recertify` |
 | **Evidence that regenerates itself** — every artefact in `docs/assurance/evidence/` is script-produced, and two gates keep the prose honest: one fails if a documented figure drifts from its artefact, the other builds the *committed* tree rather than the working directory | `docs/evaluation_guide.rst` | `task check-doc-metrics`, `task validate-export` |
 | **Documentation as a deliverable** — 53 pages: an evaluation guide, nine per-gateway verification guides, generated API references in both languages (Doxygen/Breathe and autodoc, cross-linked, `sphinx -W` so a dead link fails CI), three executed tutorial notebooks, a PDF build | `task docs-serve` | `task docs-build` |

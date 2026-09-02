@@ -97,7 +97,7 @@ can enter at (see :doc:`quickstart` §*API Layers*):
      - ``frame_build()``, ``frame_decode()``, ``parse_sb2()``, …
      - :doc:`api` §*Low-Level API*
    * - Layer 0 (C++)
-     - ``liblunalink`` public headers, nanobind extension
+     - ``lunalink_core`` public headers, nanobind extension
      - :doc:`api_cpp` --- every public entity rendered from the headers by
        Doxygen and Breathe; :doc:`signal/icd` --- the Interface Control
        Document with error codes and thread-safety per function

@@ -13,7 +13,7 @@ Purpose
 This Interface Control Document (ICD) defines all externally visible interfaces
 of the LunaLink LSIS-AFS library.  It covers:
 
-* The public C++ API exported from ``liblunalink``.
+* The public C++ API exported from ``lunalink_core``.
 * The Python bindings exposed through the ``_afs`` nanobind extension module.
 * The Hardware Abstraction Layer (HAL) interfaces for telemetry and watchdog.
 * Wire-level data formats (chip values, IQ interleave, ``FaultPacket``).
@@ -218,58 +218,77 @@ parameter tables, and runnable examples are in the API reference
 HAL Interface
 --------------
 
-The Hardware Abstraction Layer decouples the signal chain from platform
-specifics.  Both interfaces are pure-virtual C++ abstract classes; concrete
-implementations are injected at construction time.
-
-**ITelemetryHal** (``cpp/include/lunalink/signal/hal.hpp``)
+The Hardware Abstraction Layer is one pure-virtual interface,
+``ITelemetryHal`` (``cpp/include/lunalink/core/telemetry.hpp``).  The signal
+chain never depends on how a platform delivers telemetry: a reference to the
+interface is injected at construction (``SyncDetector``, ``SignalChainFsm``)
+or passed per call (``frame_decode``, ``WindowedWatchdog::evaluate``).  Two
+implementations ship with it — ``NullTelemetryHal`` discards packets and is
+the default in non-flight stubs; ``CaptureTelemetryHal<N>`` stores up to
+``N`` packets for test assertions.
 
 .. list-table::
    :header-rows: 1
-   :widths: 30 30 40
+   :widths: 20 40 40
 
    * - Method
      - Signature
      - Description
-   * - ``emit_fault``
-     - ``virtual void emit_fault(FaultPacket const&) noexcept = 0``
-     - Called by the signal chain whenever ``kFaultDetected`` is raised.
-       Implementations must not block or allocate.
-   * - ``emit_heartbeat``
-     - ``virtual void emit_heartbeat(uint32_t frame_id) noexcept = 0``
-     - Called once per frame to confirm liveness.  Frame ID wraps at
-       ``UINT32_MAX``.
+   * - ``emit``
+     - ``virtual void emit(const FaultPacket&) noexcept = 0``
+     - Called when a fault escalates beyond the block level — from
+       ``frame_decode`` and the sync detector, on an illegal
+       ``SignalChainFsm`` transition, and when the windowed watchdog's
+       *lower* bound is violated.  Implementations must not block, allocate
+       or throw.
 
-**IWatchdogHal** *(future — Gateway 5 deliverable)*
+**Platform components that report through it**
 
 .. list-table::
    :header-rows: 1
-   :widths: 30 30 40
+   :widths: 26 74
 
-   * - Method
-     - Signature
-     - Description
-   * - ``hw_kick``
-     - ``virtual void hw_kick() noexcept = 0``
-     - Kicks the hardware watchdog peripheral.  Called inside
-       ``WindowedWatchdog::kick()`` after the software window check passes.
-   * - ``hw_reset``
-     - ``virtual void hw_reset() noexcept = 0``
-     - Forces a system reset.  Called when the software watchdog expires
-       and no recovery is possible.
+   * - Component
+     - Interface
+   * - ``WindowedWatchdog``
+       (``platform/watchdog.hpp``)
+     - ``WindowedWatchdog(t_min_ticks, t_max_ticks)``; ``tick()`` once per
+       unit of proven progress; ``evaluate(hal, timestamp_ms)`` at the end
+       of the window emits a ``FaultPacket`` with fault code ``0xCC`` if
+       fewer than ``t_min`` ticks were seen (a jump *over* the loop), and
+       ``upper_bound_exceeded()`` reports the classic hang case;
+       ``reset()`` opens the next window.
+   * - ``SignalChainFsm``
+       (``platform/signal_chain_fsm.hpp``)
+     - ``SignalChainFsm(hal)``; ``transition(next)`` is checked against the
+       legal-transition matrix and emits on refusal; ``on_frame_fault()``
+       moves to ``kFrameFault`` (Zone 2), ``on_frame_ok()`` back to
+       ``kOperational``; ``state()`` reads the SEU-resistant state
+       (``kUninitialized`` 0x11, ``kPostRunning`` 0x22, ``kOperational``
+       0x44, ``kFrameFault`` 0x55, ``kSafeMode`` 0x99).
+   * - POST (``platform/post.hpp``)
+     - Returns ``PostStatus::kPass`` (0x5A) or ``kFaultDetected`` (0x99);
+       step 1 verifies the SCI header of the running binary.
 
-**FaultPacket encoding** (``cpp/include/lunalink/signal/fault_packet.hpp``)
+No hardware watchdog kick or reset line is part of this release's
+interface: the software watchdog reports through ``emit``, and what a
+platform does with a Zone-3 packet is the integrator's decision.
 
-``FaultPacket`` is a 16-byte, POD-compatible structure packed as follows:
+**FaultPacket encoding** (``cpp/include/lunalink/core/telemetry.hpp``)
+
+``FaultPacket`` is an 8-byte POD structure (``static_assert``-ed), emitted
+before a Zone-3 halt [SW-SAF-03]:
 
 .. code-block:: text
 
-   Byte 0–1  : Magic (0xFA, 0xCE)
-   Byte 2    : FIZ level (1–4, per the fault-isolation zones in fault_coverage.rst)
-   Byte 3    : Severity (0x01 = informational … 0xFF = safety-critical halt)
-   Byte 4–7  : Error code (AfsErrorCode, little-endian uint32)
-   Byte 8–11 : Frame ID at time of fault (little-endian uint32)
-   Byte 12–15: Reserved (0x00)
+   Byte 0–3 : timestamp_ms      monotonic millisecond counter, HAL-provided
+                                (native uint32_t)
+   Byte 4   : fault_code        module-specific discriminator — the FSM emits
+                                the destination state (kSafeMode = 0x99), the
+                                watchdog emits 0xCC
+   Byte 5   : fiz_level         Fault Isolation Zone 1, 2 or 3
+   Byte 6   : originating_step  POST step (1–5), FSM state, or 0
+   Byte 7   : reserved          0x00
 
 Data Formats
 -------------
@@ -285,64 +304,117 @@ Data Formats
 
         [I₀, Q₀, I₁, Q₁, I₂, Q₂, …, Iₙ₋₁, Qₙ₋₁]
 
-    Output length is always 2 × input length.  Both I and Q inputs must have
-    identical length; a ``kLengthMismatch`` error is returned otherwise.
+    It works one code epoch at a time: 2046 AFS-I chips and 10230 AFS-Q chips
+    in, 20460 interleaved ``int16`` samples out — each I chip is held for the
+    five Q chips it spans, since the chip rates are 1.023 and 5.115 Mchip/s.
+    A shorter input returns ``IqMuxStatus::kInputTooSmall``, an output that
+    cannot hold 20460 samples returns ``kOutputTooSmall``, and a chip outside
+    {-1, +1} returns ``kInvalidISample`` / ``kInvalidQSample``; nothing is
+    written on any of them.
 
 **FaultPacket byte layout**
-    Described in §HAL Interface above.  The structure is always 16 bytes,
-    zero-padded.  The magic bytes allow receivers to validate packet framing.
+    Described in §HAL Interface above: 8 bytes, native struct layout, the
+    ``reserved`` byte always zero.  Framing and any transport encoding are
+    the telemetry HAL implementation's responsibility.
 
 Error Code Table
 -----------------
 
-All error codes are members of ``enum class AfsErrorCode : uint32_t``
-(``cpp/include/lunalink/signal/error.hpp``).
+Every fallible function returns a subsystem status enumeration rather than
+throwing; the build is ``-fno-exceptions``.  Each enumeration is
+``enum class … : uint8_t`` with **SEU-resistant values** — non-contiguous
+codes of Hamming distance ≥ 4 from one another (``0x5A``, ``0xA5``,
+``0x33``, ``0xCC``, …), so a single bit flip in a stored status yields an
+*illegal* value rather than a different legal one.  Success is ``kOk``
+(``0x5A``) everywhere, and ``kFaultDetected`` is the CFI/TMR/integrity
+failure that also raises a ``FaultPacket`` through the HAL.
 
 .. list-table::
    :header-rows: 1
-   :widths: 28 12 40 20
+   :widths: 24 22 54
 
-   * - Enumerator
-     - Hex Value
-     - Description
-     - FIZ Level
-   * - ``kOk``
-     - ``0x0000``
-     - Operation succeeded; no fault
-     - N/A
-   * - ``kFaultDetected``
-     - ``0x0001``
-     - TMR vote mismatch or CFI guard mismatch detected
-     - FIZ-1 (signal chain halt)
-   * - ``kInvalidPrn``
-     - ``0x0002``
-     - PRN ID outside valid range 1–210
-     - FIZ-2 (function return; caller must handle)
-   * - ``kBoundsViolation``
-     - ``0x0003``
-     - ``CheckedRange`` index out of bounds
-     - FIZ-1 (safety-critical; chain halted)
-   * - ``kLengthMismatch``
-     - ``0x0004``
-     - I and Q chip span lengths differ
-     - FIZ-2 (function return)
-   * - ``kWatchdogExpired``
-     - ``0x0005``
-     - Software windowed watchdog expired without a valid kick
-     - FIZ-1 (signal chain halt)
-   * - ``kInvalidStateTransition``
-     - ``0x0006``
-     - FSM received an event invalid for the current state
-     - FIZ-2 (FSM remains in previous state; caller notified)
-   * - ``kPostFailed``
-     - ``0x0007``
-     - Power-On Self-Test returned failure on one or more checks
-     - FIZ-1 (system must not enter operational mode)
-   * - ``kCrcMismatch``
-     - ``0x0008``
-     - CRC-24Q check failed on received message
-     - FIZ-3 (message discarded; frame processing continues)
-   * - ``kFecUncorrectable``
-     - ``0x0009``
-     - BCH/LDPC decoder encountered uncorrectable error pattern
-     - FIZ-3 (subframe discarded; frame processing continues)
+   * - Enumeration (header)
+     - Enumerators besides ``kOk`` / ``kFaultDetected``
+     - Containment on a non-``kOk`` return
+   * - ``PrnStatus``
+       (``codes/prn_codes.hpp``)
+     - ``kInvalidPrn`` (PRN outside 1–210), ``kNullOutput``,
+       ``kInvalidChipIndex``
+     - Argument error: returned without writing output; caller handles
+   * - ``LegendreStatus`` (``codes/legendre.hpp``)
+     - ``kOutputTooSmall``, ``kInvalidPrime`` (not in {1499, 10223})
+     - Argument error
+   * - ``MatchedCodeStatus`` (``codes/matched_code.hpp``)
+     - ``kInvalidPrn``, ``kInvalidEpoch``, ``kOutputTooSmall``,
+       ``kInvalidAssignment``
+     - Argument error
+   * - ``BchStatus`` (``encoding/bch.hpp``)
+     - ``kOutputTooSmall``, ``kInvalidFid``, ``kInvalidToi``,
+       ``kNullOutput``, ``kInvalidInput``, ``kAmbiguousMatch`` (two
+       codewords at equal Hamming distance)
+     - ``kAmbiguousMatch`` is a decode failure: the frame is discarded at
+       the frame boundary (Zone 2) and the chain resumes with the next one;
+       the rest are argument errors
+   * - ``LdpcStatus`` (``encoding/ldpc.hpp``)
+     - ``kInvalidInput``, ``kOutputTooSmall``, ``kNotConverged``
+       (iteration cap reached without a satisfied syndrome)
+     - ``kNotConverged`` is a decode failure (Zone 2, frame discarded);
+       the rest are argument errors
+   * - ``CrcStatus`` (``encoding/crc.hpp``)
+     - ``kNullInput``, ``kOutputTooSmall``
+     - Argument errors; a CRC *mismatch* is reported as ``false`` from
+       ``crc24_verify`` and as ``FrameDecodeStatus::kCrcFailed``
+   * - ``InterleaverStatus`` (``encoding/interleaver.hpp``)
+     - ``kInputTooSmall``, ``kOutputTooSmall``
+     - Argument error
+   * - ``FrameStatus`` (``messages/frame.hpp``)
+     - ``kOutputTooSmall``, ``kInvalidFid``, ``kInvalidToi``,
+       ``kBchFailed``, ``kLdpcFailed``, ``kCrcFailed``
+     - Argument errors on the input checks; the decode failures discard
+       the frame (Zone 2)
+   * - ``FrameDecodeStatus`` (``messages/frame_decode.hpp``)
+     - ``kSyncNotFound``, ``kBchFailed``, ``kLdpcFailed``, ``kCrcFailed``,
+       ``kInvalidInput``
+     - Zone 2 — the frame is discarded and the next one is processed; the
+       Python layer maps these to ``SyncNotFoundError`` and friends
+   * - ``MessageParseStatus`` (``messages/message_parser.hpp``)
+     - ``kInvalidInput``
+     - Argument error
+   * - ``TotStatus`` (``messages/time_of_transmission.hpp``)
+     - ``kInvalidToi``, ``kInvalidItow``, ``kInvalidWn``, ``kInvalidDelta``
+       (NaN/Inf)
+     - Argument error
+   * - ``ModulationStatus`` (``signal/modulator.hpp``)
+     - ``kInvalidSymbol``, ``kInvalidChipValue``, ``kOutputTooSmall``
+     - Argument error
+   * - ``IqMuxStatus`` (``signal/iq_mux.hpp``)
+     - ``kInputTooSmall``, ``kOutputTooSmall``, ``kInvalidISample``,
+       ``kInvalidQSample``, ``kNullInput``
+     - Argument error, returned before anything is written; ignoring the
+       status would let malformed I/Q reach the RF stage, hence the
+       ``[[nodiscard]]`` message on the function
+   * - ``SignalGenStatus`` (``signal/signal_gen.hpp``)
+     - ``kInvalidPrn``, ``kInvalidInput``, ``kModulationFailed``,
+       ``kMuxFailed``
+     - Argument error, or a propagated failure from the stage named
+   * - ``SyncDetectorStatus`` (``signal/sync_detector.hpp``)
+     - ``kInvalidInput``, ``kNotDetected`` (peak below threshold)
+     - ``kNotDetected`` discards the frame (Zone 2); ``kInvalidInput`` is an
+       argument error
+   * - ``SiseStatus`` (``core/sise.hpp``)
+     - ``kInvalidInput`` (NaN/Inf or null), ``kEmptyData``
+     - Argument error
+   * - ``PostStatus`` (``platform/post.hpp``)
+     - *(none — ``kPass`` 0x5A or ``kFaultDetected``)*
+     - Zone 3 — the system must not enter ``kOperational``
+
+``kFaultDetected`` follows the Fault Isolation Zones of
+:doc:`../assurance/mission_assurance`: at the block where it is detected
+(Zone 1) the function scrubs its buffers and returns without writing
+output; the caller applies frame-level policy (Zone 2), discarding the
+frame and resuming with the next; two consecutive frame faults, a failed
+integrity check or a legal-transition-matrix miss escalate to Zone 3 —
+``SignalChainFsm`` enters ``kSafeMode``, transmission halts and a
+``FaultPacket`` is emitted.  The exact values of every enumerator are in the header
+named, and in :doc:`../api_cpp`; the tests reference them by name, so a
+renumbering is caught at compile time rather than by this table.
