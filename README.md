@@ -191,12 +191,31 @@ task validate-coverage  # proves llvm-cov correctly reports known gaps
 ### 7. Evidence that regenerates itself
 
 31/31 requirements passing with **0 orphaned test tags**, 20/20 NFRs
-passing, 76 spec
-`shall` statements dispositioned, and every artefact — compliance report,
-traceability matrix, coverage evidence, SWIFI report, stack usage, build
-manifest, algorithm cards — produced by script rather than maintained by
-hand. An on-demand recertification workflow runs every gate against any git
-ref and emits a signed-off, milestone-tagged record. `task ci-checks`
+passing, 76 spec `shall` statements dispositioned, and every artefact
+produced by script rather than maintained by hand — each with the command
+that regenerates it, and the committed result under
+`docs/assurance/evidence/`:
+
+| Command | Artefact | What it establishes |
+|:--|:--|:--|
+| `task compliance-report` | `compliance_report.json` | Requirement and NFR verdicts, from this run's JUnit output |
+| `task traceability` | `traceability.json` | Requirement → test tags, and that none is orphaned |
+| `task coverage-cpp` + `task coverage-report` | `coverage_summary.json` | Region, line and MC/DC coverage with per-file waivers |
+| `task swifi` | `swifi_results.json` | 42 fault-injection scenarios across 6 techniques |
+| `task swifi-reconcile` | — | Every `// FI-NN` anchor in the tests matches the FMEA's fault-coverage table |
+| `task pics-proforma` | `pics_proforma.json` | Conformance statement, derived from the shall inventory and failing if the two disagree |
+| `task interop-receiver` | `interop_l4_receiver.json` | A third-party receiver's decode of a LunaLink signal (L4/L5) |
+| `task stack-usage` | stack-usage report | Worst-case stack depth, built with `-fstack-usage` |
+| `task build-manifest` | `build_manifest.json` | Toolchain, flags and dependency SHAs for the binary |
+| `task ldpc-algo-card` | algorithm card | Waterfalls, error floor, convergence, quantisation, Shannon gap |
+| `task check-doc-metrics` | — | Documented coverage figures and the NOCOVER count still match the evidence |
+| `task validate-export` | — | The **committed** tree builds and tests, catching anything present on disk but never committed |
+
+The last two are the ones that keep this section honest: one fails if a
+number in the documentation drifts from the artefact it came from, the other
+builds from `git archive` rather than the working tree. An on-demand
+recertification workflow runs every gate against any git ref and emits a
+signed-off, milestone-tagged record. `task ci-checks`
 reproduces the CI gate locally and offline — build, lint, formatting, Clang
 Static Analyzer, both test suites, SWIFI, traceability, doc metrics,
 clang-tidy and its qualification, sanitisers, docs. The workflows outside it
@@ -370,6 +389,9 @@ not resolve Sphinx cross-references:
 | `task docs-serve` | the site at <http://127.0.0.1:8000>, auto-reloading | ~15 s |
 | `task docs-pdf` | one PDF (`docs/_build/latex/`); needs TeX Live | ~10 s |
 | `task docs-build` | static HTML in `docs/_build/html/` | ~35 min fresh, ~15 s after |
+
+`task --list` prints every task with a one-line description, which is the
+complete inventory of what this repository can verify about itself.
 
 `task docs-serve` is the one to use for reading — it needs no notebook
 execution and emits no Sphinx warnings. `task docs-build` is the CI gate, not

@@ -18,7 +18,7 @@
 | Build System | CMake ≥ 3.15 with Ninja; scikit-build-core for the Python package; [Task](https://taskfile.dev) for every build/test/verify recipe |
 | Key Libraries | nanobind (bindings), NumPy, jaxtyping + beartype (runtime shape/type checking). No third-party DSP or FEC library: spreading codes, BCH, LDPC, interleaver, CRC-24Q, BPSK modulation and the sync detector are all implemented here |
 | Test Framework | Catch2 v3 (C++), pytest (Python), libFuzzer (fuzzing), custom SWIFI harness (fault injection) |
-| Platform(s) Tested | macOS ARM64 (primary), Linux x86_64 and arm64 in CI, plus **big-endian s390x** under QEMU to catch byte-order defects |
+| Platform(s) Tested | macOS ARM64 (primary), Linux x86_64 and arm64, and Windows/MSVC in CI, plus **big-endian s390x** under QEMU to catch byte-order defects |
 
 ## Architecture Summary
 
