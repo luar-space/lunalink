@@ -15,10 +15,11 @@
 | Component | Choice |
 |-----------|--------|
 | Primary Language | C++20 (signal chain), Python 3.12+ (CLI, tooling, tests) |
-| Build System | CMake ≥ 3.15 with Ninja; scikit-build-core for the Python package; [Task](https://taskfile.dev) for every build/test/verify recipe |
-| Key Libraries | nanobind (bindings), NumPy, jaxtyping + beartype (runtime shape/type checking). No third-party DSP or FEC library: spreading codes, BCH, LDPC, interleaver, CRC-24Q, BPSK modulation and the sync detector are all implemented here |
+| Build System | CMake ≥ 3.15 with Ninja; scikit-build-core for the Python package; [Task](https://taskfile.dev) for every build/test/verify recipe (`task --list` is the inventory) |
+| Key Libraries | nanobind (bindings), NumPy, jaxtyping + beartype (runtime shape/type checking). No third-party DSP or FEC library: spreading codes, BCH, LDPC, interleaver, CRC-24Q, BPSK modulation, the FFT and the sync detector are all implemented here |
 | Test Framework | Catch2 v3 (C++), pytest (Python), libFuzzer (fuzzing), custom SWIFI harness (fault injection) |
 | Platform(s) Tested | macOS ARM64 (primary), Linux x86_64 and arm64, and Windows/MSVC in CI, plus **big-endian s390x** under QEMU to catch byte-order defects |
+| Size | ~42 k lines of C++ core (including the generated code tables), 9.4 k lines of C++ tests, 2.4 k lines of Python with 3.6 k lines of Python tests, 16 k lines of documentation source across 53 pages and 3 notebooks; 190 commits over six months (2026-03-02 to 2026-09-02) |
 
 ## Architecture Summary
 
@@ -29,8 +30,8 @@ interleaver), then spreading (Gold-2046 and Weil-10230 codes, PRN 1–210), BPSK
 modulation and I/Q multiplexing into a 12-second, 6000-symbol frame. The
 receive path inverts it: frame synchronisation by bipolar cross-correlation,
 soft-decision LDPC and exhaustive-ML BCH decoding, CRC verification, and
-navigation-message parsing back to typed values. Signal-In-Space Error is
-computed per LSIS §2.2.2.
+navigation-message parsing back to typed values, with Time of Transmission
+recovered to code phase. Signal-In-Space Error is computed per LSIS §2.2.2.
 
 The C++20 core is organised by subsystem — `codes`, `encoding`, `messages`,
 `signal`, `platform`, `core` — each with its own public header tree, and is
@@ -39,7 +40,12 @@ software rather than a simulation: no heap allocation after initialisation, no
 recursion, fixed-bound loops so worst-case stack depth is computable,
 cyclomatic complexity ≤ 10, and single-exit DSP functions so buffer scrubbing
 cannot be skipped by an early return. Compiled with `-fno-exceptions
--fno-rtti`.
+-fno-rtti`. The platform layer carries what a flight build needs around the
+signal chain: a Software Configuration Item header (git SHA, LSIS version,
+J2000 build timestamp, CRC-32) linked into the binary and verified as step 1
+of the power-on self-test, a signal-chain state machine with a legal-transition
+matrix, a windowed watchdog, and a telemetry HAL so the chain can be dropped
+onto an on-board computer without touching the DSP code.
 
 Beyond the protocol, the implementation carries a mission-assurance case: data
 integrity through SEU-resistant enums (non-contiguous, high-Hamming-distance
@@ -53,7 +59,12 @@ navigation frame and never the timing system. Each pattern is attributed to its
 origin in NASA (JPL/Goddard), ESA (ESTEC) or JAXA practice in
 `docs/assurance/mission_assurance.rst`, and each is exercised by fault
 injection rather than asserted — `task swifi` drives 42 scenarios across six
-techniques against the real injection APIs.
+techniques against the real injection APIs. A software FMEA
+(`docs/assurance/fmea.rst`, nine tables from the code generators to the SISE
+calculation) names each failure mode's detection and containment, and
+`docs/assurance/fault_coverage.rst` reconciles every FMEA row with the
+`// FI-NN` anchor of the test that exercises it (`task swifi-reconcile` fails
+on any orphan in either direction).
 
 Those patterns are written in a deliberately restricted dialect, specified in
 `docs/assurance/c_plus_plus_guidelines.rst` (*C++20 Style Guide for ECSS Class
@@ -71,7 +82,7 @@ function, `constinit` for mission data tables, four allowlisted compiler
 extensions, and six forbidden optimisation flags that `task check-flags` fails
 the build over. clang-tidy runs a MISRA-traceable profile against it, and
 `task validate-tidy` proves that profile actually catches the violations it
-claims to, against deliberately defective code.
+claims to, against 47 deliberately defective source files.
 
 ## Build & Run Instructions
 
@@ -81,10 +92,12 @@ claims to, against deliberately defective code.
 - [CMake](https://cmake.org) ≥ 3.15 (Ninja recommended)
 - Python ≥ 3.12 with [uv](https://docs.astral.sh/uv/)
 - [Task](https://taskfile.dev) (`go-task`)
+- [Doxygen](https://www.doxygen.nl), only to build the documentation
 
-On macOS: `brew install cmake ninja uv go-task`. A `Dockerfile` is provided for
-a containerised build. Two commands need network access on their first run
-only: `task test-cpp` fetches Catch2, and `task interop` clones LANS-AFS-SIM.
+On macOS: `brew install cmake ninja uv go-task doxygen`. A `Dockerfile` is
+provided for a containerised build. Three commands need network access on
+their first run only: `task test-cpp` fetches Catch2, `task interop` clones
+LANS-AFS-SIM and `task interop-receiver` clones PocketSDR-AFS.
 
 ### Build
 
@@ -97,12 +110,13 @@ task install         # uv sync --group dev: builds the C++ core + Python package
 
 ```bash
 task test-cpp        # ~1 min   229 C++ test cases
-task test-py         # ~5 s     1237 Python tests (427 skip until `task interop` builds the oracle)
+task test-py         # ~5 s     1242 Python tests (427 skip until `task interop` builds the oracle, 5 until `task interop-receiver` builds the receiver)
 task test-acceptance # ~11 min  full slow suite: Monte Carlo Pd, BER, channel, E2E
 task swifi           # ~50 s    42 fault-injection scenarios
 task interop         # ~10 s    bit-exact cross-check vs an independent implementation
 task interop-receiver # ~2 min  L4/L5: a third-party receiver decodes our signal
 task performance     # ~3 min   WCET budgets, constant-time gate, BER waterfalls
+task compliance-report  # ~3 min  31/31 requirements, 20/20 NFRs, from this run's output
 task ci-checks       # ~40 min  every CI workflow, locally and offline
 ```
 
@@ -111,8 +125,10 @@ task ci-checks       # ~40 min  every CI workflow, locally and offline
 ```bash
 uv run lunalink generate-codes           # 210 Gold spreading codes -> codes.txt
 uv run python examples/01_transmit.py    # 12-second I/Q signal file (~491 MB)
+uv run python examples/02_decode.py      # decode a signal file back to navigation data
 uv run python examples/03_round_trip.py  # transmit -> decode, bit-exact check
-uv run lunalink encode --help            # CLI for frames and I/Q files
+uv run lunalink encode --help            # CLI: frames and I/Q files from FID/TOI/WN/ITOW
+uv run lunalink decode --help            # CLI: I/Q file -> FID/TOI/WN/ITOW + CRC flags
 ```
 
 ### Read the Documentation
@@ -121,11 +137,13 @@ uv run lunalink encode --help            # CLI for frames and I/Q files
 task docs-serve      # ~15 s, serves the full documentation at 127.0.0.1:8000
 ```
 
-Start at `evaluation_guide.html` — it maps every deliverable to the document
-that satisfies it and the command that verifies it.  `api.html` and
-`api_cpp.html` are the Python and C++ API references, the latter generated
-from the headers by Doxygen and Breathe. `task docs-pdf` produces a
-single PDF instead.
+Start at `evaluation_guide.html` — it maps every rubric item and every
+Delivery Outline deliverable to the document that satisfies it and the
+command that verifies it. `api.html` and `api_cpp.html` are the Python and
+C++ API references, the latter generated from the headers by Doxygen and
+Breathe. `task docs-pdf` produces a single PDF instead. The `docs/` sources
+are reStructuredText with Sphinx cross-references, so read them through the
+rendered site rather than GitHub's file viewer.
 
 ## Gateway Status
 
@@ -135,9 +153,9 @@ single PDF instead.
 | Gateway 1 — Spreading Code Generation | **Complete** | `docs/gateway1.rst`; Gold-2046, Weil-10230, Weil-1500, secondary codes, PRN 1–210, bit-exact vs Annex 3 |
 | Gateway 2 — Forward Error Correction | **Complete** | `docs/gateway2.rst`; BCH(51,8) with hard- and soft-decision exhaustive-ML decoders, LDPC SF2/SF3/SF4, 60×98 interleaver, CRC-24Q |
 | Gateway 3 — Navigation Message Framing | **Complete** | `docs/gateway3.rst`; SB1–SB4, 12-second frame, all message types |
-| Gateway 4 — Baseband Signal Generation | **Complete** | `docs/gateway4.rst`; BPSK modulation, I/Q multiplexing, `LSISIQ` file format (float32 and int16) |
+| Gateway 4 — Baseband Signal Generation | **Complete** | `docs/gateway4.rst`; BPSK modulation, I/Q multiplexing, `LSISIQ` file format (float32 and int16), CSV export |
 | Gateway 5 — Frame Sync & Decoding | **Complete** | `docs/gateway5.rst`; bipolar cross-correlation sync detector, full decode chain |
-| Gateway 6 — Message Parsing | **Complete** | `docs/gateway6.rst`; typed parsing of all subframe content |
+| Gateway 6 — Message Parsing | **Complete** | `docs/gateway6.rst`; typed parsing of all subframe content, Time of Transmission |
 | Gateway 7 — Integration & Validation | **Complete** | `docs/gateway7.rst`; end-to-end round trip and cross-implementation validation in **both directions**, L1–L5: LunaLink decodes LANS-AFS-SIM's signal, and PocketSDR-AFS — an independent receiver — decodes LunaLink's |
 | Gateway 8 — Documentation & Examples | **Complete** | `docs/gateway8.rst`; full documentation set, generated API references for both languages (434 C++ entities via Doxygen/Breathe, 162 Python symbols via autodoc), examples, tutorial notebooks, performance report |
 
@@ -160,11 +178,12 @@ as data without running anything.
 
 | Check | Pass/Fail | Evidence |
 |-------|-----------|----------|
-| Spreading codes bit-exact vs Annex 3 | **PASS** | `tests/test_annex3_codes.py`; `uv run lunalink generate-codes` |
+| Spreading codes bit-exact vs Annex 3 | **PASS** 210/210 PRNs, every chip | `tests/test_annex3_codes.py`; `uv run lunalink generate-codes` |
 | C++ unit and integration suites | **PASS** 229 cases, 2,996,283 assertions | `task test-cpp` |
-| Python suite | **PASS** 1237 tests at 100% line coverage | `task test-py`. On a clean checkout 427 of these skip with *"LANS-AFS-SIM not built"* — they are the interop tests, and `task interop` builds the oracle they need, after which all 1237 run |
+| Python suite | **PASS** 1242 tests at 100% line coverage | `task test-py`. On a clean checkout 427 of these skip with *"LANS-AFS-SIM not built"* and 5 with *"PocketSDR-AFS not built"* — they are the interop tests, and `task interop` / `task interop-receiver` build what they need, after which all 1242 run |
 | Acceptance suite (Monte Carlo Pd, BER, channel, E2E) | **PASS** 264 cases, 3,339,112 assertions, 9 skipped (Release-only timing gates) | `task test-acceptance` |
 | Round trip transmit → decode | **PASS** bit-exact | `uv run python examples/03_round_trip.py` |
+| Channel impairments | **PASS** | carrier-frequency offset −10…+10 kHz, sample-clock offset 0–50 ppm (second-order PI DLL), Wiener phase noise to 10⁻³ rad²/sample, float32/int16/int8 quantisation end to end — `task integration` |
 
 ### Gateway 7 — cross-implementation validation
 
@@ -187,18 +206,40 @@ no decoder, so the reverse direction uses PocketSDR-AFS (same authors), the
 receiving counterpart: `task interop-receiver` builds it, feeds it a LunaLink
 signal, and compares what it recovered.
 
+For other teams: the reference vectors are published separately at
+[luar-space/lsis-afs-test-vectors](https://github.com/luar-space/lsis-afs-test-vectors)
+with a zero-dependency validator, `scripts/interop/validate_foreign_vectors.py`
+checks *any* implementation's vectors against the format, and the `Dockerfile`
+ships the `lunalink encode` / `decode` CLI as a workshop image.
+
+### Performance
+
+From the committed `wcet_results.xml` (Release build) and the NFR table in
+`docs/gateway8.rst`; `task performance` regenerates them.
+
+| Rubric target | Measured | Margin |
+|---------------|----------|--------|
+| NFR-1.1 code generation < 1 s per PRN | < 10 ms | > 100× |
+| NFR-1.2 frame encoding < 100 ms per frame | LDPC encode SF2 0.79 ms; whole frame < 5 ms | > 20× |
+| NFR-1.3 / decode < 1 s per frame | LDPC decode SF2 at the forced 50-iteration cap 0.75 ms; `frame_decode` < 20 ms budget | > 50× |
+| NFR-1.4 real-time | a 12 s frame is processed in < 1 s | > 12× |
+| Sync detection over a 6000-symbol frame | 0.20 ms against a 700 µs budget | 3.5× |
+| BCH exhaustive-ML decode | 1.0 µs against a 3 µs budget | 3× |
+
 ### Assurance and verification depth
 
 | Check | Pass/Fail | Evidence |
 |-------|-----------|----------|
-| Fault injection (SWIFI) | **PASS** 42/42 scenarios, 6 techniques | `task swifi` → `swifi_results.json` |
-| C++ coverage | Region 93.65%, line 90.27%, MC/DC 40.59% | `task coverage-cpp`; `coverage_summary.json`. 123 in-source `NOCOVER(DEFENCE_IN_DEPTH)` exclusions, each categorised in `docs/assurance/coverage_exclusions.rst` |
+| Fault injection (SWIFI) | **PASS** 42/42 scenarios, 6 techniques | `task swifi` → `swifi_results.json`; FMEA ↔ test reconciliation by `task swifi-reconcile` |
+| C++ coverage | Region 93.65%, line 90.27%, function 99.02%, branch 83.56%, MC/DC 40.59%; effective coverage 98.24% once the 123 in-source `NOCOVER(DEFENCE_IN_DEPTH)` paths are excluded | `task coverage-cpp`; `coverage_summary.json`; each exclusion categorised in `docs/assurance/coverage_exclusions.rst` |
 | Static analysis | **PASS** | clang-tidy on a MISRA C++:2023-traceable profile, cppcheck, Clang Static Analyzer — `task tidy`, `task cppcheck`, `task clang-sa` |
-| Runtime checkers | **PASS** | ASan, UBSan, libFuzzer with seed corpus — `task sanitize`, `task fuzz` |
-| Tool qualification (ECSS-Q-ST-80C §5.5) | **PASS** 47/47 | `task validate-tidy`, `task validate-coverage` |
-| WCET budgets | **PASS** | `task wcet`; e.g. sync_detect 64 µs against a 700 µs budget, LDPC SF2 decode 367 µs against 4 ms |
-| Timing input-independence | **PASS** | `task constant-time`; class-to-class spread gate on the branchless primitives |
+| Runtime checkers | **PASS** | ASan, UBSan; three libFuzzer harnesses (message parser, frame decoder, FEC) with a committed seed corpus replayed on every pull request and searched nightly — `task sanitize`, `task fuzz` |
+| Tool qualification (ECSS-Q-ST-80C §5.5) | **PASS** 47/47 | `task validate-tidy` (47 deliberately defective files, each caught), `task validate-coverage` (llvm-cov proven to report a known gap) |
+| WCET budgets | **PASS** | `task wcet`; budgets asserted in `test_wcet.cpp` — table above |
+| Timing input-independence | **PASS** | `task constant-time`; the branchless primitives (BPSK, CRC-24, interleaver, BCH ML) timed across adversarial input classes, gated at 14% class-to-class spread |
 | Big-endian correctness | **PASS** | s390x under QEMU, `.github/workflows/cross-arch.yml` |
+| Committed tree builds and tests | **PASS** | `task validate-export` builds from `git archive`, so nothing depends on an uncommitted file |
+| Documentation consistency | **PASS** | `task check-doc-metrics` fails if a coverage figure or the NOCOVER count in the docs drifts from the evidence; `task sync-docstrings` keeps C++ `@param` tags and Python docstrings aligned |
 
 ### FEC characterisation
 
@@ -209,7 +250,34 @@ and a quantisation sweep showing int8 costs no measurable performance — so an
 8-bit ADC front-end suffices. The shipped hardened decoder lands within 0.15 dB
 of an independently written float64 sum-product reference decoder, which
 attributes the ~1.0 dB Shannon gap to the code rather than to the
-implementation. `task ldpc-algo-card`; `docs/signal/ldpc_algo_card.rst`.
+implementation. The BCH layer ships hard- and soft-decision exhaustive-ML
+decoders, the soft one worth ~2 dB of link budget. `task ldpc-algo-card`;
+`docs/signal/ldpc_algo_card.rst`, `docs/signal/bch_performance.rst`.
+
+## Beyond the rubric
+
+The rubric asks for a reference implementation. This one was built as flight
+software with the assurance case a flight programme would need, and that is
+where the *Innovation & Extras* category is addressed. Each row is a document
+in the rendered site plus the command that regenerates its evidence.
+
+| What | Where | Verify |
+|------|-------|--------|
+| **Flight-software hardening catalogue** — 13 patterns (SEU-resistant enums, soft-TMR mirroring, parameter TMR with active repair, CFI, saturating invariants, secure scrubbing, memory-section pinning, watchdog feed, self-validating tables, aliasing protection, handoff CRC, ISR safety), a formally-specified state machine, three Fault Isolation Zones — each attributed to NASA, ESA or JAXA practice | `docs/assurance/mission_assurance.rst` | `task swifi` — 42/42 |
+| **Software FMEA and fault-coverage report**, reconciled with the tests row by row | `docs/assurance/fmea.rst`, `fault_coverage.rst` | `task swifi-reconcile` |
+| **Certifiable C++20 dialect** — MISRA C++:2023 ∪ JPL D-60411 ∪ Power of Ten ∪ NASA GSFC ∪ N7 Space/ESA, strictest rule winning, provenance tagged on every clause | `docs/assurance/c_plus_plus_guidelines.rst` | `task tidy`, `task check-flags` |
+| **Tool qualification** per ECSS-Q-ST-80C §5.5 — the analysers proven against deliberately defective code before their verdicts are trusted | `docs/assurance/tool_confidence.rst` | `task validate-tidy`, `task validate-coverage` |
+| **Build policy and configuration integrity** — three build tiers (flight, CI digital twin, Python library), forbidden-flag gate, SHA-pinned build manifest, reproducible-build procedure, SCI header verified at POST, `-fstack-usage` evidence | `docs/assurance/build_policy.rst`, `configuration_baseline.rst` | `task check-flags`, `task build-manifest`, `task stack-usage` |
+| **MC/DC coverage measured natively** (the DO-178C Level A metric), with every exclusion categorised and milestone-reviewed | `docs/assurance/coverage_evidence.rst`, `coverage_exclusions.rst` | `task coverage-cpp`, `task coverage-effective` |
+| **Decoder quality against theory** — shipped decoder vs an independent reference decoder vs the finite-length sphere-packing bound; Shannon gap split into code gap and implementation gap; error floor, convergence, quantisation, codeword symmetry, bit-error forensics | `docs/signal/ldpc_algo_card.rst`, `bch_decoder_design.rst` | `task ldpc-algo-card` |
+| **Channel robustness sweeps** — CFO, sample-clock offset, phase noise, quantisation, through the full receiver | `docs/signal/validation_plan.rst` | `task integration` |
+| **Interoperability in both directions** with two independent implementations, plus tooling for other teams (published vectors, foreign-vector validator, Docker workshop image, CLI) | `docs/interop_results.rst`, `docs/test_vectors.rst` | `task interop`, `task interop-receiver` |
+| **Feedback to the standard** — every TBW/TBC/TBD marker in LSIS V1.0 dispositioned; the five interoperability-critical ambiguities written up as SF-001…SF-005 with proposed resolutions and a recommendation to the LNIS working group; proposed bit-level layouts for the 11 message types the spec leaves TBW | `docs/signal/spec_findings_report.rst`, `sisicd.rst`, `shall_inventory.rst` | `task pics-proforma` |
+| **Governance** — Software Development Plan, Configuration Management Plan, baseline register, metrics plan with escalation thresholds; ECSS-E-ST-40C / Q-ST-80C and NASA NPR 7150.2 mapped clause by clause | `docs/governance/`, `docs/standards/` | `task recertify` |
+| **Recertification on demand** — every assurance gate re-run against any git ref, emitting a milestone-tagged, signed-off record for a review board | `.github/workflows/recertify.yml` | `task recertify` |
+| **Evidence that regenerates itself** — every artefact in `docs/assurance/evidence/` is script-produced, and two gates keep the prose honest: one fails if a documented figure drifts from its artefact, the other builds the *committed* tree rather than the working directory | `docs/evaluation_guide.rst` | `task check-doc-metrics`, `task validate-export` |
+| **Documentation as a deliverable** — 53 pages: an evaluation guide, nine per-gateway verification guides, generated API references in both languages (Doxygen/Breathe and autodoc, cross-linked, `sphinx -W` so a dead link fails CI), three executed tutorial notebooks, a PDF build | `task docs-serve` | `task docs-build` |
+| **17 CI workflows**, including big-endian s390x, Windows/macOS/Linux matrices, sanitisers, fuzzing, MC/DC coverage, WCET profiling and a `git archive` build — all reproducible offline in one command | `docs/developing.rst` §CI Pipeline | `task ci-checks` |
 
 ## PICS Proforma
 
@@ -252,6 +320,9 @@ Recorded here rather than left for a reviewer to discover:
   aliasing — described in `docs/interop_results.rst`.
 - **The specification's "SNR > 0 dB" is ambiguous**; results are reported under
   both interpretations rather than the more favourable one.
+- **The documentation site is not yet published.** `docs-pages.yml` deploys
+  it to GitHub Pages once the repository is public; until then `task
+  docs-serve` renders the identical build locally in about fifteen seconds.
 - **Development history is filtered.** This repository was extracted from a
   larger private tree; the history of the files that have one is present, with
   non-public paths removed and 21 commit messages rewritten where they

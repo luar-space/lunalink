@@ -18,8 +18,9 @@ Quick Build & Run
    uv run python examples/02_decode.py      # decode a signal file
    uv run python examples/03_round_trip.py  # transmit → decode, bit-exact
 
-The published site is at https://luar-space.github.io/lsis-afs/, redeployed
-by ``.github/workflows/docs-pages.yml`` on every push to ``main``.
+``.github/workflows/docs-pages.yml`` deploys the site to GitHub Pages on
+every push to ``main`` once the repository is public; until then
+``task docs-serve`` renders the same build locally.
 ``task docs-build`` runs with Sphinx ``-W`` (warnings are errors), so a
 broken cross-reference or an orphaned page fails the build; the same build
 runs as a required check in ``docs-check.yml``.
@@ -40,7 +41,8 @@ Scope
    * - GD8.1
      - API reference (Python + C++)
      - Done
-     - :doc:`api` (autodoc over the shipped docstrings), :doc:`signal/icd`
+     - :doc:`api` (autodoc over the shipped docstrings), :doc:`api_cpp`
+       (434 entities, Doxygen → Breathe from the headers), :doc:`signal/icd`
    * - GD8.2
      - Worked examples
      - Done
@@ -62,9 +64,10 @@ Scope
      - :doc:`signal/algorithms`, :doc:`signal/bch_decoder_design`,
        :doc:`signal/ldpc_algo_card`, :doc:`gateway0`
    * - GD8.6
-     - Published documentation site
+     - Publishable documentation site
      - Done
-     - https://luar-space.github.io/lsis-afs/ (``docs-pages.yml``)
+     - ``docs-pages.yml`` deploys to GitHub Pages when the repository is
+       public; ``task docs-serve`` renders the same site locally
 
 ----
 
@@ -95,8 +98,9 @@ can enter at (see :doc:`quickstart` §*API Layers*):
      - :doc:`api` §*Low-Level API*
    * - Layer 0 (C++)
      - ``liblunalink`` public headers, nanobind extension
-     - :doc:`signal/icd` --- full Interface Control Document with
-       signatures, error codes and thread-safety per function
+     - :doc:`api_cpp` --- every public entity rendered from the headers by
+       Doxygen and Breathe; :doc:`signal/icd` --- the Interface Control
+       Document with error codes and thread-safety per function
 
 .. code-block:: bash
 
@@ -233,7 +237,7 @@ listed in :doc:`evaluation_guide` §*Non-Functional Requirements*.
      - ``task test-cpp``
    * - NFR-3.1
      - Unit tests for all components
-     - 320 test cases
+     - 320 JUnit test cases (unit/integration, E2E, SWIFI)
      - Pass
      - ``task test-cpp``
    * - NFR-3.2
@@ -277,12 +281,17 @@ duration, which is the condition for real-time operation:
      - Within the 50-iteration cap
      - Knee at ~15 iterations
 
-Timing determinism is not merely benchmarked but gated: ``task wcet``
-times every ``[LSIS-AFS-*]``-tagged function across adversarial input
-classes (all-zeros, all-ones, pseudo-random) and fails the build if the
-spread exceeds ±2%, which is what makes the branchless mandate a measured
-property rather than a design intent.  See
-:doc:`assurance/mission_assurance` §*WCET*.
+Timing determinism is gated, not merely benchmarked — and scoped
+honestly.  ``task constant-time`` times the input-independent primitives
+(BPSK modulator, CRC-24, interleaver, exhaustive-ML BCH decoder) across
+adversarial input classes (all-zeros, all-ones, pseudo-random) and fails if
+the class-to-class spread exceeds 14%, a ceiling set at twice the worst
+value measured over eight idle runs; that is what makes the branchless
+mandate a measured property rather than a design intent.  The LDPC and
+frame decoders are excluded by design: they early-terminate on a satisfied
+syndrome, so their worst case is bounded by the forced full-iteration
+budgets that ``task wcet`` asserts instead.  See
+:doc:`assurance/mission_assurance` §*Time-Deterministic Execution*.
 
 .. _channel performance:
 
@@ -372,10 +381,11 @@ resolve in GitHub's file viewer.
 
    * - Property
      - Value
-   * - URL
-     - https://luar-space.github.io/lsis-afs/
+   * - Local
+     - ``task docs-serve`` → http://127.0.0.1:8000 (~15 s)
    * - Deploy
-     - ``.github/workflows/docs-pages.yml`` on every push to ``main``
+     - ``.github/workflows/docs-pages.yml`` on every push to ``main``;
+       publishes to GitHub Pages once the repository is public
    * - Build gate
      - Sphinx ``-W`` --- a broken reference or orphaned page fails CI
        (``docs-check.yml``)

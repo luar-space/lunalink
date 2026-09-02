@@ -332,8 +332,9 @@ GD7.5 --- Compliance Validation
   requirements tracked; zero TODOs remaining.
 - **Traceability matrix:** ``docs/assurance/traceability_matrix.rst`` ---
   26 LSIS-AFS + 5 SW-SAF requirements mapped to tests; 100% coverage.
-- **Test coverage:** 320 C++ test cases pass (plus 42 SWIFI
-  fault-injection scenarios, run separately by ``task swifi``).
+- **Test coverage:** 320 JUnit test cases pass across the
+  unit/integration (252), E2E (26) and SWIFI fault-injection (42) suites
+  that ``task compliance-report`` runs.
 
 The counts above are read from the generated evidence in
 ``docs/assurance/evidence/`` (``traceability.json``,

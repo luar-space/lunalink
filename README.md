@@ -34,10 +34,10 @@ commands that exercise the claims we would most want checked:
 ```bash
 task interop      # ~10 s  bit-exact against an independent implementation
 task swifi        # ~50 s  42/42 fault-injection scenarios
-task test-cpp && task test-py   # ~1 min  229 C++ cases, 1237 Python tests
+task test-cpp && task test-py   # ~1 min  229 C++ cases, 1242 Python tests
 ```
 
-The nine sections below expand on that. Every claim in them has a command
+The ten sections below expand on that. Every claim in them has a command
 beside it or in
 [Verifying the implementation](#verifying-the-implementation). Nothing here
 is asserted.
@@ -166,6 +166,17 @@ libFuzzer with seed corpus and nightly deep-fuzz). MC/DC measured natively —
 the DO-178C Level A structural metric. CI runs on **big-endian s390x**
 alongside arm64, catching byte-order defects x86/ARM CI never will.
 
+Robustness is swept, not spot-checked. The receiver is driven through
+carrier-frequency offsets of −10…+10 kHz, sample-clock offsets of 0–50 ppm
+(the DLL is a second-order PI loop, so drift leaves no steady-state error),
+Wiener-process oscillator phase noise up to 10⁻³ rad²/sample, and
+float32/int16/int8 quantisation end to end
+(`test_channel_impairments.cpp`, `test_e2e_impairments.cpp`, via
+`task integration`). The three libFuzzer harnesses target the entry points
+that consume external data — message parser, frame decoder, FEC — with a
+committed seed corpus replayed on every pull request and a nightly
+coverage-guided search.
+
 Determinism is measured, not claimed — and scoped honestly. The
 input-independent primitives (BPSK modulator, CRC-24, interleaver, and the
 exhaustive-ML BCH decoder) are timed across adversarial input classes
@@ -237,7 +248,24 @@ autodoc ([api.rst](docs/api.rst)), each Python binding corresponding to one
 C++ call. `sphinx -W` treats an unresolved cross-reference as a build
 failure, so the links between them cannot rot silently.
 
-### 9. Stated limits
+### 9. Feedback to the standard, not only conformance to it
+
+The Delivery Outline names feedback to the LSIS working group as one of the
+competition's objectives, and the implementation produced some. LSIS V1.0
+carries 15 *To Be Written*, 3 *To Be Confirmed* and 1 *To Be Determined*
+markers; every one is dispositioned in
+[shall_inventory.rst](docs/signal/shall_inventory.rst), and the five that
+are interoperability-critical — where two conformant implementations can
+make different choices and fail to interoperate — are written up as
+findings SF-001…SF-005 in
+[spec_findings_report.rst](docs/signal/spec_findings_report.rst), each with
+the assumption adopted, a proposed formal resolution, and a closing
+recommendation to the LNIS working group. For the 11 message types whose
+payload the spec leaves TBW, [sisicd.rst](docs/signal/sisicd.rst) proposes
+bit-level layouts so that two implementations can agree on something
+concrete rather than on "TBW".
+
+### 10. Stated limits
 
 Where something is bounded, it says so: the L3 receiver's decimation and
 Q-channel aliasing, the spec's ambiguous "SNR > 0 dB" reported under both
@@ -294,7 +322,7 @@ Each pass/fail gate item is one command, run from the repo root after
 | ≥ 12 PRN spreading codes | `uv run lunalink generate-codes` | < 1 s | 210 Gold codes written to `codes.txt` as 210 × 512 hex, bit-exact vs Annex 3 (`tests/test_annex3_codes.py`); full Gold + Weil + secondary sets in `test-vectors/codes/` |
 | Complete 12-second frame | `uv run python examples/01_transmit.py` | ~1 s | 6000-symbol frame, all subframes |
 | I/Q signal files | same command | — | `LSISIQ`-headed file — float32 or int16 (`sample_format=`), read back with `read_iq_file`; short vectors in `test-vectors/signals/` (writes a 491 MB `signal.iq`) |
-| Validation tests | `task test-cpp && task test-py` | ~1 min | full unit/integration suites — 229 C++ cases, 1237 Python tests |
+| Validation tests | `task test-cpp && task test-py` | ~1 min | full unit/integration suites — 229 C++ cases, 1242 Python tests |
 | Setup/build instructions | this file + [docs/quickstart.rst](docs/quickstart.rst) | — | — |
 
 Timings are wall-clock from a clean clone on an Apple M-series laptop, and
@@ -316,7 +344,7 @@ are graded from their JUnit output.
 
 The judge-oriented tour — scoring categories, gateway checklists, the full
 NFR table, technical constraints and stated limits — is the
-[Evaluation Guide](https://luar-space.github.io/lsis-afs/evaluation_guide.html).
+[Evaluation Guide](docs/evaluation_guide.rst), rendered by `task docs-serve`.
 
 ## Verifying the implementation
 
@@ -324,7 +352,7 @@ Every claim below is one command. No manual setup.
 
 ```bash
 task test-cpp      # ~1 min   C++ unit + integration tests (229 cases)
-task test-py       # ~5 s     Python tests (100% coverage gate, 1237 tests)
+task test-py       # ~5 s     Python tests (100% coverage gate, 1242 tests)
 task swifi         # ~50 s    SWIFI fault-injection campaign (42/42)
 task interop       # ~10 s    cross-check against an independent implementation
 task interop-receiver # ~2 min  L4/L5: a third-party receiver decodes our signal
@@ -434,7 +462,7 @@ worth knowing before reading the log:
   scrub and re-baseline that made the tree publishable.
 - **21 commit messages were rewritten**, because they described work that is
   not in this repository. Each says so in a trailer, and each describes the
-  change it actually contains. The other 139 are unedited.
+  change it actually contains. The rest are unedited.
 - **Files with no private ancestry** — the assurance documents and the
   generated evidence under `docs/assurance/` — were authored here, and their
   history starts at the extraction point.

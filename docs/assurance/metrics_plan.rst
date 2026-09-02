@@ -78,18 +78,21 @@ Metrics Catalogue
      - Every pull request; every push to ``main``
      - **0** errors; **0** warnings
      - CI gate blocks merge; same escalation path as clang-tidy
-   * - **WCET input-class spread** — intra-run spread ``(max − min) / min``
-       across adversarial input classes (all-zeros, all-ones, pseudo-random)
-       for ``[LSIS-AFS-*]``-tagged functions; detects data-dependent branches
-       within a single build.  Inter-build baseline regression tracking is a
-       Gateway 3 deliverable.
-     - Catch2 benchmark suite parsed by ``wcet.yml`` CI step
-     - Every pull request; every push to ``main``
-     - **≤ 2%** spread across input classes (functions with a single timing
-       sample emit ``WARN`` only; non-blocking until multi-class variants added)
-     - CI gate blocks merge if spread > 2%; ``WARN`` emitted for single-sample
-       functions (non-blocking); author must add multi-class variants by
-       Gateway 3 exit or raise a PRACA waiver
+   * - **Timing input-independence** — class-to-class spread
+       ``(max − min) / min`` across adversarial input classes (all-zeros,
+       all-ones, pseudo-random) for the branchless primitives (BPSK
+       modulator, CRC-24, interleaver, exhaustive-ML BCH decoder); detects a
+       data-dependent branch within a single build.  Decoders that
+       early-terminate on a satisfied syndrome (LDPC, frame decode) are
+       excluded by design and bounded by absolute WCET budgets instead.
+     - ``cpp/tests/performance/test_constant_time.cpp`` (``task
+       constant-time``, Release only); budgets in ``test_wcet.cpp``
+       (``task wcet``); both run by ``wcet.yml``
+     - Every push to ``main``; nightly; ``task performance`` locally
+     - **≤ 14%** class-to-class spread (twice the worst value measured over
+       eight idle runs); every WCET budget within its absolute ceiling
+     - CI gate blocks merge on either; a wider spread needs a PRACA waiver
+       naming the branch that introduced it
 
 Escalation Procedure
 ---------------------

@@ -194,49 +194,95 @@ To re-run the checks manually without committing::
 CI Pipeline
 -----------
 
-GitHub Actions workflows run on every push to ``main``, every tag matching
-``v*``, and every pull request.  Independent workflows keep the status
-reporting granular.
+GitHub Actions workflows run on every push to ``main``; the fast gates also
+run on every pull request, and the long ones run on ``main`` only, nightly,
+or on demand.  Independent workflows keep the status reporting granular.
+``task ci-checks`` reproduces the gate locally; the long workflows are
+their own tasks.
 
 .. list-table::
    :header-rows: 1
-   :widths: 22 13 65
+   :widths: 22 14 64
 
    * - Workflow
      - Trigger
      - Description
    * - **Lint** (``lint.yml``)
-     - push, PR, tag
-     - ``ruff``, ``pyright``, ``cppcheck``; S10 build-flags gate
-       (``scripts/check_build_flags.py``).  Uploads ``cppcheck_report.rst``.
+     - push, PR
+     - ``task lint-check`` (ruff, pyright, cppcheck, docstring sync),
+       clang-format check, S10 build-flags gate
+       (``scripts/check_build_flags.py``).
    * - **C++ Tests** (``test-cpp.yml``)
-     - push, PR, tag
-     - CMake + Ninja build; Catch2 unit tests via CTest.
+     - push, PR
+     - CMake + Ninja Debug build; Catch2 unit + integration tests
+       (``~[slow]``); the SWIFI binary is built with
+       ``LUNALINK_FAULT_INJECTION=ON`` and run.
    * - **Python Tests** (``test-python.yml``)
-     - push, PR, tag
-     - ``pytest`` on Python 3.12, 3.13, and 3.14 (matrix).
-   * - **Sanitizers** (``sanitize.yml``)
-     - push, PR, tag
-     - C++ tests recompiled with ``-fsanitize=address,undefined``; any
-       sanitizer report is a blocking failure.
-   * - **C++ Coverage — MC/DC** (``coverage-cpp.yml``)
-     - push, PR, tag
-     - LLVM MC/DC instrumentation; ``llvm-cov report --show-mcdc-summary``;
-       100% MC/DC on ``[LSIS-AFS-*]``-tagged functions required.
-   * - **clang-tidy** (``tidy.yml``)
-     - push, PR, tag
-     - Full HICPP clang-tidy analysis on all core C++ sources;
-       zero violations required.  Uploads ``static_analysis_report.rst``.
-   * - **WCET Profile** (``wcet.yml``)
-     - push, PR (main)
-     - Release build; ``[performance]`` benchmarks; ±2% intra-run
-       input-class spread check.  Uploads ``wcet_profile.rst``.
-   * - **Docs Check** (``docs-check.yml``)
-     - push, PR, tag
-     - Sphinx build with ``-W`` (warnings as errors).
-   * - **Docs Deploy** (``docs-pages.yml``)
+     - push, PR
+     - ``pytest`` on Python 3.12, 3.13 and 3.14 (Ubuntu) plus 3.12 on
+       Windows and macOS for pushes to ``main``.  Builds LANS-AFS-SIM so
+       the interop tests run, with a gate (G-15) that fails if they
+       skip; 100% line-coverage gate; coverage badge.
+   * - **Integration Tests** (``integration.yml``)
+     - push, PR
+     - ``[e2e]``-tagged full TX→RX tests, including the channel-impairment
+       sweeps.
+   * - **Acceptance Tests** (``acceptance.yml``)
      - push to main, manual
-     - Assembles assurance artefacts and deploys to GitHub Pages.
+     - The whole Catch2 binary including ``[slow]``: Monte Carlo Pd, BER,
+       channel and E2E suites.
+   * - **Sanitizers** (``sanitize.yml``)
+     - push to main
+     - C++ tests recompiled with ``-fsanitize=address,undefined``; any
+       report is a blocking failure.
+   * - **C++ Coverage — MC/DC** (``coverage-cpp.yml``)
+     - push to main
+     - LLVM source-based coverage with MC/DC; thresholds enforced
+       (region 90%, line 85%, function 95%, branch 75%, MC/DC 30%);
+       coverage badges.
+   * - **Clang Tidy** (``tidy.yml``)
+     - push, PR
+     - clang-tidy on the MISRA-traceable profile, then the Clang Static
+       Analyzer (``scan-build``); zero findings required.
+   * - **WCET Profile** (``wcet.yml``)
+     - push to main, nightly, manual
+     - Release build; ``[wcet]`` benchmarks and budgets, the constant-time
+       gate and the BER simulations; a 25% CI-spread measurement-quality
+       gate; trend history when a ``gh-pages`` branch exists.  Uploads
+       ``wcet_profile.rst``.
+   * - **Traceability** (``traceability.yml``)
+     - push to main
+     - ``scripts/verify_traceability.py``: every requirement mapped to a
+       test, zero orphaned tags.
+   * - **Fuzz Smoke** (``fuzz-smoke.yml``)
+     - push, PR
+     - Builds the three libFuzzer harnesses and replays the committed seed
+       corpus (``-runs=0``).
+   * - **Nightly Fuzzing** (``fuzz.yml``)
+     - nightly, manual
+     - Coverage-guided search per harness, with corpus restore and
+       minimisation.
+   * - **Cross-Architecture** (``cross-arch.yml``)
+     - push to main
+     - Docker buildx + QEMU: ``linux/arm64`` and big-endian
+       ``linux/s390x`` build and test.
+   * - **validate-export** (``validate-export.yml``)
+     - push, PR, manual
+     - Builds and tests a ``git archive`` of the committed tree, catching
+       files present on disk but never committed.
+   * - **Docs Check** (``docs-check.yml``)
+     - push, PR
+     - Doxygen, then the Sphinx build with ``-W`` (warnings as errors).
+   * - **Deploy Docs** (``docs-pages.yml``)
+     - push to main, manual
+     - Assembles the assurance artefacts, embeds the coverage HTML report
+       and deploys to GitHub Pages (needs Pages enabled on a public
+       repository).
+   * - **Recertification** (``recertify.yml``)
+     - manual only
+     - Every assurance gate against a chosen ref; emits a
+       milestone-tagged, signed-off record (:doc:`developing`
+       §*Recertification*).
 
 Every CI runner has Ninja, so both the Python extension build (via
 scikit-build-core) and the C++ test build pick it up automatically.

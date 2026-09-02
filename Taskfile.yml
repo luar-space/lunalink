@@ -112,12 +112,19 @@ tasks:
         {{.BUILD_DIR}}/test_lunalink "[wcet]" \
           --reporter "console::out={{.BUILD_DIR}}/wcet_console.txt" \
           --reporter "xml::out={{.BUILD_DIR}}/wcet_results.xml"
+      # --stability warn: the CI-spread gate is a measurement-quality check
+      # sized for a dedicated runner; on a shared laptop a background process
+      # can widen one sample's CI past the limit without the code changing.
+      # Locally that is reported, not fatal. The budgets in test_wcet.cpp are
+      # Catch2 CHECKs and fail the task regardless; wcet.yml keeps the strict
+      # default.
       - |
         python3 scripts/performance_report.py \
           --xml {{.BUILD_DIR}}/wcet_results.xml \
           --console {{.BUILD_DIR}}/wcet_console.txt \
           --output {{.BUILD_DIR}}/wcet_profile.rst \
-          --bench-json {{.BUILD_DIR}}/bench.json
+          --bench-json {{.BUILD_DIR}}/bench.json \
+          --stability warn
       - 'echo "WCET profile: {{.BUILD_DIR}}/wcet_profile.rst"'
     silent: false
 

@@ -341,6 +341,19 @@ def main() -> None:  # noqa: D103
     parser.add_argument(
         "--history", help="Path to data.js from gh-pages for trend table"
     )
+    parser.add_argument(
+        "--stability",
+        choices=("fail", "warn"),
+        default="fail",
+        help=(
+            "What a noisy sample does to the exit code. The CI spread gate is a "
+            "measurement-quality check that assumes a dedicated runner; on a "
+            "shared laptop a background process can widen sync_detect's CI past "
+            "the limit without the code changing. 'warn' reports the verdict and "
+            "exits 0 so `task wcet` still yields a profile; the absolute budgets "
+            "in test_wcet.cpp are asserted by Catch2 and fail regardless."
+        ),
+    )
     args = parser.parse_args()
 
     entries = parse_xml(args.xml)
@@ -387,9 +400,16 @@ def main() -> None:  # noqa: D103
     for v in verdicts:
         print(f"  {v}")
 
-    if failed:
+    if failed and args.stability == "fail":
         print("ERROR: one or more benchmarks exceeded tolerance", file=sys.stderr)
         sys.exit(1)
+    if failed:
+        print(
+            "WARNING: one or more samples were too noisy to report with confidence "
+            "(see FAIL lines above). Rerun on an idle machine for a clean profile; "
+            "the WCET budgets themselves passed.",
+            file=sys.stderr,
+        )
 
 
 if __name__ == "__main__":

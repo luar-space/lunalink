@@ -64,7 +64,9 @@ All five gate items, one command each.
    * - 4
      - Pass validation tests for implemented features
      - ``task test-cpp && task test-py``
-     - 320 C++ test cases + Python suite; 100% Python line coverage gate
+     - 229 Catch2 test cases in ``task test-cpp`` (320 JUnit cases once
+       the E2E and SWIFI suites are added) and 1242 Python tests; 100%
+       Python line coverage gate
    * - 5
      - Include setup/build instructions
      - ``README.md`` + :doc:`quickstart`
@@ -239,7 +241,7 @@ delivered repository — none is asserted.
      - ``[LSIS-AFS-810]`` tests (18)
    * - NFR-3.1
      - Unit tests for all major components
-     - PASS — 320 test cases
+     - PASS — 320 JUnit test cases (unit/integration, E2E, SWIFI)
      - JUnit totals
    * - NFR-3.2
      - Integration tests: end-to-end flow
@@ -474,9 +476,11 @@ Milestone 3 — Validation and Interoperability Demonstration (§3.2.3)
        build procedure.  All stochastic runs use fixed PRNG seeds
        (documented per page).  Every artefact on this site is script-
        generated, never hand-maintained
-     - ``task ci-checks`` reproduces all 16 CI workflows locally;
-       ``task recertify`` re-runs every gate against any git ref and
-       emits a signed-off record
+     - ``task ci-checks`` reproduces the CI gate locally and offline; the
+       long workflows (``task performance``, ``task test-acceptance``,
+       ``task coverage-cpp``, ``task fuzz``, ``task cross-arch``) are
+       their own tasks.  ``task recertify`` re-runs every gate against
+       any git ref and emits a signed-off record
    * - **Cross-decoding of independently generated signals**
      - :doc:`interop_results` — L1 codes and L2 frames bit-exact against
        LANS-AFS-SIM (Ebinuma, independent C implementation); L3 acquires,
@@ -566,14 +570,46 @@ different* section of ``README.md``:
   shipped decoder measured against an independent reference decoder *and*
   the finite-length sphere-packing bound, splitting the Shannon gap into
   code gap and implementation gap.
+* **Channel robustness** — :doc:`signal/validation_plan` §*Signal
+  Impairment & Robustness*: the receiver swept through carrier-frequency
+  offsets of −10…+10 kHz, sample-clock offsets of 0–50 ppm (second-order
+  PI DLL), Wiener oscillator phase noise and float32/int16/int8
+  quantisation end to end (``task integration``).
+* **Fuzzing** — three libFuzzer harnesses over the entry points that
+  consume external data (message parser, frame decoder, FEC;
+  ``cpp/fuzz/README.md``), with a committed seed corpus replayed on every
+  pull request (``fuzz-smoke.yml``) and a nightly coverage-guided search
+  (``fuzz.yml``).
+* **Configuration integrity** — :doc:`assurance/build_policy` (three build
+  tiers: flight, CI digital twin, Python library) and
+  :doc:`assurance/configuration_baseline`; an SCI header (git SHA, LSIS
+  version, build timestamp, CRC-32) linked into the binary and verified as
+  POST step 1; ``task check-flags``, ``task build-manifest`` and
+  ``task stack-usage`` as the evidence commands.
+* **Recertification** — ``task recertify`` / ``recertify.yml``: every
+  assurance gate re-run against any git ref, producing a milestone-tagged,
+  signed-off record for a review board.
+* **Interoperability tooling** — beyond the two-direction demonstration,
+  ``scripts/interop/validate_foreign_vectors.py`` validates *any* team's
+  vectors against the published format, the vectors themselves are
+  published at `luar-space/lsis-afs-test-vectors
+  <https://github.com/luar-space/lsis-afs-test-vectors>`__, the
+  ``Dockerfile`` ships the CLI as a workshop image, and
+  ``uv run lunalink encode|decode`` produce and consume the workshop
+  artefacts from the command line.
 * **Standards mapping** — :doc:`standards/esa/ecss_standards`,
   :doc:`standards/nasa/npr7150_standards`,
   :doc:`standards/nasa_compliance_addendum`.
 * **Governance** — :doc:`governance/sdp`, :doc:`governance/scmp`,
   :doc:`governance/baseline_register`.
-* **Spec feedback** — :doc:`signal/spec_findings_report`: ambiguities found
-  in LSIS V1.0 with proposed formal resolutions, which the Delivery Outline
-  names as one of the competition's objectives.
+* **Spec feedback** — :doc:`signal/spec_findings_report`: the five
+  interoperability-critical ambiguities in LSIS V1.0 (SF-001…SF-005), each
+  with the assumption adopted, a proposed formal resolution and a
+  recommendation to the LNIS working group — which the Delivery Outline
+  names as one of the competition's objectives.  :doc:`signal/sisicd`
+  proposes bit-level payload layouts for the 11 message types the spec
+  leaves TBW, and :doc:`signal/shall_inventory` dispositions every TBW,
+  TBC and TBD marker.
 
 ----
 
