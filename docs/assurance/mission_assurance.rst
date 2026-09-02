@@ -134,7 +134,7 @@ ALU or register file corruption *during* calculation.
     Transient faults inside the processor's own silicon then surface as
     detections.
 *   **Critical Section Requirement**: All writes to a mirrored variable pair (``x`` and ``x_mir``) **must** be performed within a Critical Section (interrupt-masked atomic block). If an RTOS interrupt fires between the write to ``x`` and the write to ``x_mir``, the integrity check will produce a false-positive fault on task resume. See :ref:`isr-safety` for the mandate.
-*   **Implementation**: Variables like ``min_dist`` are paired with a bitwise inverse ``min_dist_mir``.
+*   **Implementation**: Loop and accumulator variables are paired with a bitwise inverse — ``phi_sum`` / ``phi_sum_mir`` in the LDPC decoder, ``i`` / ``i_mir`` on the hardened loops — and the pair is checked before the value is used.
 *   **Benefit**: Detects transient hardware faults in the middle of DSP blocks.
 
 3. Parameter Majority Voting (TMR) (ESA/NASA)

@@ -609,9 +609,9 @@ All C++ types and functions are exposed via nanobind:
 
 Type stubs: ``src/lunalink/afs/_afs.pyi``
 
-Python tests: ``tests/test_afs.py`` --- classes ``TestParseSb2`` (5 tests),
-``TestParseSb3`` (3 tests), ``TestParseSb4`` (2 tests), ``TestComputeTot``
-(9 tests including full E2E round-trip)
+Python tests: ``tests/test_afs.py`` --- classes ``TestParseSb2`` (7 tests),
+``TestParseSb3`` (4 tests), ``TestParseSb4`` (3 tests), ``TestComputeTot``
+(11 tests including full E2E round-trip)
 
 Run: ``task test-py`` (the full Python suite, 100% Python coverage)
 
@@ -703,16 +703,16 @@ Compliance Cross-Reference
      - Evidence
    * - LSIS-AFS-801
      - Parse SB2: extract WN (13b) and ITOW (9b)
-     - ``message_parser.cpp`` + ``test_message_parser.cpp`` (4 tests)
+     - ``message_parser.cpp`` + ``test_message_parser.cpp`` (17 tests)
    * - LSIS-AFS-802
      - Parse SB3: extract 6-bit type field, map to Table 21
-     - ``message_parser.cpp`` + ``test_message_parser.cpp`` (4 tests)
+     - ``message_parser.cpp`` + ``test_message_parser.cpp`` (6 tests)
    * - LSIS-AFS-803
      - Parse SB4: extract 6-bit type field, map to Table 21
-     - ``message_parser.cpp`` + ``test_message_parser.cpp`` (2 tests)
+     - ``message_parser.cpp`` + ``test_message_parser.cpp`` (3 tests)
    * - LSIS-AFS-810
      - Compute ToT per LSIS-720 formula
-     - ``time_of_transmission.cpp`` + ``test_time_of_transmission.cpp`` (12 tests)
+     - ``time_of_transmission.cpp`` + ``test_time_of_transmission.cpp`` (16 tests)
    * - LSIS-300
      - Spare bits: alternating 0/1 starting with 0
      - ``validate_spare_bits()`` + 3 tests

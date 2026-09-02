@@ -49,7 +49,8 @@ compliance across all prior gateways (G1--G6).
    * - GD7.4
      - Performance Benchmark Validation
      - Done
-     - 5 benchmark files in ``cpp/tests/performance/``
+     - ``cpp/tests/performance/``: WCET budgets, constant-time gate, BCH
+       and LDPC BER, sync detection rate, FFT microbenchmark
    * - GD7.5
      - Compliance Validation Report
      - Done
