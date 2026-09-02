@@ -77,7 +77,7 @@ task install         # uv sync --group dev: builds the C++ core + Python package
 
 ```bash
 task test-cpp        # ~1 min   229 C++ test cases
-task test-py         # ~5 s     1237 Python tests, 100% coverage gate
+task test-py         # ~5 s     1237 Python tests (427 skip until `task interop` builds the oracle)
 task test-acceptance # ~11 min  full slow suite: Monte Carlo Pd, BER, channel, E2E
 task swifi           # ~50 s    42 fault-injection scenarios
 task interop         # ~10 s    bit-exact cross-check vs an independent implementation
@@ -139,7 +139,7 @@ as data without running anything.
 |-------|-----------|----------|
 | Spreading codes bit-exact vs Annex 3 | **PASS** | `tests/test_annex3_codes.py`; `uv run lunalink generate-codes` |
 | C++ unit and integration suites | **PASS** 229 cases, 2,996,283 assertions | `task test-cpp` |
-| Python suite | **PASS** 1237 tests at 100% line coverage | `task test-py` |
+| Python suite | **PASS** 1237 tests at 100% line coverage | `task test-py`. On a clean checkout 427 of these skip with *"LANS-AFS-SIM not built"* — they are the interop tests, and `task interop` builds the oracle they need, after which all 1237 run |
 | Acceptance suite (Monte Carlo Pd, BER, channel, E2E) | **PASS** 264 cases, 3,339,112 assertions, 9 skipped (Release-only timing gates) | `task test-acceptance` |
 | Round trip transmit → decode | **PASS** bit-exact | `uv run python examples/03_round_trip.py` |
 
