@@ -68,7 +68,11 @@ extensions = [
 nbsphinx_execute = "never"
 
 # Suppress warnings for forward-references to notebooks not yet written
-suppress_warnings = ["nbsphinx.localfile", "ref.python"]
+# ref.python is deliberately NOT suppressed: it was hiding six ambiguous
+# cross-references (the top-level re-exports documented a second time), which
+# meant a reader clicking DecodeResult could land on either page. Leaving it on
+# makes the next such ambiguity a build failure rather than a silent coin flip.
+suppress_warnings = ["nbsphinx.localfile"]
 
 napoleon_numpy_docstring = True
 napoleon_google_docstring = False

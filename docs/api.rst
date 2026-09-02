@@ -60,6 +60,7 @@ lunalink
 
 .. automodule:: lunalink
    :members:
+   :exclude-members: AfsError, DecodeError, DecodeResult, SubframeResult, SyncNotFoundError, TimeOfTransmission, TransmitFrame, make_test_payload, receive_frame, transmit_frame
    :show-inheritance:
 
 lunalink.afs
