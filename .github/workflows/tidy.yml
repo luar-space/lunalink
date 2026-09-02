@@ -29,6 +29,10 @@ jobs:
         with:
           key: tidy
       - uses: arduino/setup-task@v2
+        with:
+          # Authenticated: the action downloads Task from GitHub releases,
+          # and shared runner IPs exhaust the anonymous rate limit.
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - run: clang-tidy --version
       - name: Run clang-tidy
         run: CC=clang CXX=clang++ task tidy 2>&1 | tee /tmp/clang_tidy_output.txt
@@ -76,6 +80,10 @@ jobs:
         with:
           key: clang-sa
       - uses: arduino/setup-task@v2
+        with:
+          # Authenticated: the action downloads Task from GitHub releases,
+          # and shared runner IPs exhaust the anonymous rate limit.
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run Clang Static Analyzer
         run: task clang-sa
         env:

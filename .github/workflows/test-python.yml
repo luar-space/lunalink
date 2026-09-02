@@ -41,6 +41,10 @@ jobs:
         with:
           key: python-${{ matrix.python-version }}-${{ matrix.os }}
       - uses: arduino/setup-task@v2
+        with:
+          # Authenticated: the action downloads Task from GitHub releases,
+          # and shared runner IPs exhaust the anonymous rate limit.
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: ${{ matrix.python-version }}

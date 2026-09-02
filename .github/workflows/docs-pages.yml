@@ -20,6 +20,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: arduino/setup-task@v2
+        with:
+          # Authenticated: the action downloads Task from GitHub releases,
+          # and shared runner IPs exhaust the anonymous rate limit.
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"

@@ -30,6 +30,10 @@ jobs:
         with:
           key: sanitize
       - uses: arduino/setup-task@v2
+        with:
+          # Authenticated: the action downloads Task from GitHub releases,
+          # and shared runner IPs exhaust the anonymous rate limit.
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - run: task sanitize
         env:
           CMAKE_C_COMPILER_LAUNCHER: ccache

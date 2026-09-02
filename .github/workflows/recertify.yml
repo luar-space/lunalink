@@ -51,6 +51,10 @@ jobs:
           ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
       - uses: arduino/setup-task@v2
+        with:
+          # Authenticated: the action downloads Task from GitHub releases,
+          # and shared runner IPs exhaust the anonymous rate limit.
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
@@ -83,6 +87,10 @@ jobs:
       - name: Install ninja
         run: sudo apt-get install -y ninja-build
       - uses: arduino/setup-task@v2
+        with:
+          # Authenticated: the action downloads Task from GitHub releases,
+          # and shared runner IPs exhaust the anonymous rate limit.
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - run: task test-cpp
 
   # --------------------------------------------------------------------------
@@ -99,6 +107,10 @@ jobs:
       - name: Install ninja
         run: sudo apt-get install -y ninja-build
       - uses: arduino/setup-task@v2
+        with:
+          # Authenticated: the action downloads Task from GitHub releases,
+          # and shared runner IPs exhaust the anonymous rate limit.
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
@@ -119,6 +131,10 @@ jobs:
       - name: Install ninja
         run: sudo apt-get install -y ninja-build
       - uses: arduino/setup-task@v2
+        with:
+          # Authenticated: the action downloads Task from GitHub releases,
+          # and shared runner IPs exhaust the anonymous rate limit.
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - run: task sanitize
 
   # --------------------------------------------------------------------------
@@ -135,6 +151,10 @@ jobs:
       - name: Install ninja
         run: sudo apt-get install -y ninja-build
       - uses: arduino/setup-task@v2
+        with:
+          # Authenticated: the action downloads Task from GitHub releases,
+          # and shared runner IPs exhaust the anonymous rate limit.
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
@@ -164,6 +184,10 @@ jobs:
           sudo apt-get install -y ninja-build \
             clang-${LLVM_VERSION} llvm-${LLVM_VERSION} lld-${LLVM_VERSION}
       - uses: arduino/setup-task@v2
+        with:
+          # Authenticated: the action downloads Task from GitHub releases,
+          # and shared runner IPs exhaust the anonymous rate limit.
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
@@ -212,6 +236,10 @@ jobs:
       - name: Install clang + clang-tidy + ninja
         run: sudo apt-get install -y ninja-build clang clang-tidy
       - uses: arduino/setup-task@v2
+        with:
+          # Authenticated: the action downloads Task from GitHub releases,
+          # and shared runner IPs exhaust the anonymous rate limit.
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
@@ -233,6 +261,10 @@ jobs:
       - name: Install ninja
         run: sudo apt-get install -y ninja-build
       - uses: arduino/setup-task@v2
+        with:
+          # Authenticated: the action downloads Task from GitHub releases,
+          # and shared runner IPs exhaust the anonymous rate limit.
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
@@ -302,6 +334,10 @@ jobs:
           ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
       - uses: arduino/setup-task@v2
+        with:
+          # Authenticated: the action downloads Task from GitHub releases,
+          # and shared runner IPs exhaust the anonymous rate limit.
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
@@ -320,6 +356,10 @@ jobs:
           ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
       - uses: arduino/setup-task@v2
+        with:
+          # Authenticated: the action downloads Task from GitHub releases,
+          # and shared runner IPs exhaust the anonymous rate limit.
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
