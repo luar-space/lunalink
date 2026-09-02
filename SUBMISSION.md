@@ -183,7 +183,7 @@ as data without running anything.
 | Python suite | **PASS** 1242 tests at 100% line coverage | `task test-py`. On a clean checkout 427 of these skip with *"LANS-AFS-SIM not built"* and 5 with *"PocketSDR-AFS not built"* — they are the interop tests, and `task interop` / `task interop-receiver` build what they need, after which all 1242 run |
 | Acceptance suite (Monte Carlo Pd, BER, channel, E2E) | **PASS** 264 cases, 3,339,112 assertions, 9 skipped (Release-only timing gates) | `task test-acceptance` |
 | Round trip transmit → decode | **PASS** bit-exact | `uv run python examples/03_round_trip.py` |
-| Channel impairments | **PASS** | carrier-frequency offset −10…+10 kHz, sample-clock offset 0–50 ppm (second-order PI DLL), Wiener phase noise to 10⁻³ rad²/sample, float32/int16/int8 quantisation end to end — `task integration` |
+| Impairments end to end | **PASS** | int16 and int8 round trips, FER sweep at int8, measured int8-vs-float32 implementation loss, burst errors through the interleaver — `test_e2e_impairments.cpp`, `task integration`. Doppler is exercised by the L3 decode of a 7-SV LANS-AFS-SIM signal |
 
 ### Gateway 7 — cross-implementation validation
 
@@ -270,7 +270,7 @@ in the rendered site plus the command that regenerates its evidence.
 | **Build policy and configuration integrity** — three build tiers (flight, CI digital twin, Python library), forbidden-flag gate, SHA-pinned build manifest, reproducible-build procedure, SCI header verified at POST, `-fstack-usage` evidence | `docs/assurance/build_policy.rst`, `configuration_baseline.rst` | `task check-flags`, `task build-manifest`, `task stack-usage` |
 | **MC/DC coverage measured natively** (the DO-178C Level A metric), with every exclusion categorised and milestone-reviewed | `docs/assurance/coverage_evidence.rst`, `coverage_exclusions.rst` | `task coverage-cpp`, `task coverage-effective` |
 | **Decoder quality against theory** — shipped decoder vs an independent reference decoder vs the finite-length sphere-packing bound; Shannon gap split into code gap and implementation gap; error floor, convergence, quantisation, codeword symmetry, bit-error forensics | `docs/signal/ldpc_algo_card.rst`, `bch_decoder_design.rst` | `task ldpc-algo-card` |
-| **Channel robustness sweeps** — CFO, sample-clock offset, phase noise, quantisation, through the full receiver | `docs/signal/validation_plan.rst` | `task integration` |
+| **Quantisation and burst-error testing through the full chain**, and the measured int8 implementation loss that sizes the ADC front-end | `docs/signal/validation_plan.rst`, `ldpc_algo_card.rst` | `task integration` |
 | **Interoperability in both directions** with two independent implementations, plus tooling for other teams (published vectors, foreign-vector validator, Docker workshop image, CLI) | `docs/interop_results.rst`, `docs/test_vectors.rst` | `task interop`, `task interop-receiver` |
 | **Feedback to the standard** — every TBW/TBC/TBD marker in LSIS V1.0 dispositioned; the five interoperability-critical ambiguities written up as SF-001…SF-005 with proposed resolutions and a recommendation to the LNIS working group; proposed bit-level layouts for the 11 message types the spec leaves TBW | `docs/signal/spec_findings_report.rst`, `sisicd.rst`, `shall_inventory.rst` | `task pics-proforma` |
 | **Governance** — Software Development Plan, Configuration Management Plan, baseline register, metrics plan with escalation thresholds; the applicable ECSS-E-ST-40C / Q-ST-80C and NASA NPR 7150.2 requirements catalogued, with a compliance matrix against NPR 7150.2 | `docs/governance/`, `docs/standards/` | `task recertify` |
@@ -318,6 +318,10 @@ Recorded here rather than left for a reviewer to discover:
   categorised and milestone-reviewed in `docs/assurance/coverage_exclusions.rst`.
 - **The L3 receiver has documented bounds** — decimation and Q-channel
   aliasing — described in `docs/interop_results.rst`.
+- **Sample-clock-offset and phase-noise sweeps are not implemented.** The
+  validation plan lists them as future work; what is tested is quantisation
+  and burst errors end to end, and Doppler through the L3 cross-decode of a
+  foreign signal.
 - **The specification's "SNR > 0 dB" is ambiguous**; results are reported under
   both interpretations rather than the more favourable one.
 - **The documentation site is not yet published.** `docs-pages.yml` deploys

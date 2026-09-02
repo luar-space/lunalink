@@ -56,7 +56,7 @@ Injection Technique Coverage
    * - 6
      - **Macro-based injection** (clean enable/disable for CI)
      - FULL
-     - ``#ifdef LUNALINK_FAULT_INJECTION``; all injection APIs gated; CI via ``task test-swifi``
+     - ``#ifdef LUNALINK_FAULT_INJECTION``; all injection APIs gated; CI via ``task swifi``
    * - 7
      - **Checksum validation** (fault detection mechanisms)
      - FULL
@@ -467,7 +467,7 @@ Run all SWIFI tests:
 
 .. code-block:: bash
 
-   task test-swifi
+   task swifi
 
 Or directly:
 

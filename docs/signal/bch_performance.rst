@@ -83,7 +83,7 @@ substantially more Eb/N0 at the same physical channel SNR:
    * - LDPC SF2/SF3
      - 1/2
      - 3.0 dB
-     - Validated in ``test_ldpc_ber.cpp``
+     - Validated in ``test_ldpc_reference.cpp``
    * - **BCH SB1**
      - **9/52 ≈ 0.173**
      - **7.6 dB**
@@ -195,6 +195,6 @@ Test Methodology
   waterfall sweep (characterizes the hard/soft gap), operating point
   (proves zero errors at spec SNR)
 - **Seeds are fixed** (42, 77, 99, 137) for full reproducibility
-- **Test file:** ``cpp/tests/signal/test_bch_ber.cpp``
+- **Test file:** ``cpp/tests/performance/test_bch_ber.cpp``
 - **All tests tagged** ``[performance]`` — excluded from default CTest runs;
   run explicitly with ``task performance``

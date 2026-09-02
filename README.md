@@ -166,13 +166,14 @@ libFuzzer with seed corpus and nightly deep-fuzz). MC/DC measured natively —
 the DO-178C Level A structural metric. CI runs on **big-endian s390x**
 alongside arm64, catching byte-order defects x86/ARM CI never will.
 
-Robustness is swept, not spot-checked. The receiver is driven through
-carrier-frequency offsets of −10…+10 kHz, sample-clock offsets of 0–50 ppm
-(the DLL is a second-order PI loop, so drift leaves no steady-state error),
-Wiener-process oscillator phase noise up to 10⁻³ rad²/sample, and
-float32/int16/int8 quantisation end to end
-(`test_channel_impairments.cpp`, `test_e2e_impairments.cpp`, via
-`task integration`). The three libFuzzer harnesses target the entry points
+Robustness beyond the AWGN waterfalls is tested where it was implemented
+and named where it was not. End to end, `test_e2e_impairments.cpp` (via
+`task integration`) round-trips at int16 and int8, sweeps FER at int8,
+measures the int8-versus-float32 implementation loss, and pushes burst
+errors through the interleaver; the L3 cross-decode acquires and tracks a
+Doppler-bearing seven-satellite LANS-AFS-SIM signal with a PCPS search and
+a PLL. Sample-clock-offset and phase-noise sweeps are in the validation
+plan as future work, not claimed. The three libFuzzer harnesses target the entry points
 that consume external data — message parser, frame decoder, FEC — with a
 committed seed corpus replayed on every pull request and a nightly
 coverage-guided search.

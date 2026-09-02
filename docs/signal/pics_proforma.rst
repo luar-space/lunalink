@@ -316,7 +316,7 @@ either RF hardware or specification content marked To Be Written.
      - Code lengths per Table 9 (I: 2046, Q: 10230/4/1500)
      - M
      - Yes
-     - ``gold.hpp``, ``weil.hpp``, ``prn.hpp`` [LSIS-AFS-101/102]
+     - ``gold.hpp``, ``weil.hpp``, ``prn_codes.hpp`` [LSIS-AFS-101/102]
    * - LSIS-210
      - 2.3.5.1
      - Data/pilot code synchronicity (Figure 3)
@@ -604,19 +604,19 @@ Appendices
      - Gold code initializations for PRN 1--210
      - M
      - Yes
-     - ``gold_code_lut.cpp`` all 210 PRNs validated
+     - ``prn_table.cpp`` all 210 PRNs validated
    * - Appendix D
      - App. D
      - Weil code index k and insertion index p for PRN 1--210
      - M
      - Yes
-     - ``weil_lut.cpp`` all 210 PRNs validated
+     - ``prn_table_weil10230.cpp`` all 210 PRNs validated
    * - Appendix E
      - App. E
      - Tertiary Weil code index k for PRN 1--210
      - M
      - Yes
-     - ``weil_lut.cpp`` all 210 PRNs validated
+     - ``prn_table_weil1500.cpp`` all 210 PRNs validated
    * - Appendix F
      - App. F
      - Code assignments per LNSP node

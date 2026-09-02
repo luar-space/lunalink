@@ -50,25 +50,37 @@ Signal Impairment & Robustness (G4, G5)
 
 The baseband signal generator (G4) carries a reference channel model that puts the G5 receiver through realistic lunar-orbit impairments.
 
-1. **Doppler Modeling (CFO — carrier frequency offset):**
-   * Sweep carrier frequency offsets from -10 kHz to +10 kHz.
-   * Requirement: Acquisition and tracking must remain stable (G5 success metric).
+1. **Doppler (CFO — carrier frequency offset):** — *Exercised on a foreign signal*
 
-2. **Clock Drift (SCO — sample clock offset):** — *Implemented*
-   * Simulate sample clock offsets up to 50 ppm.
-   * Requirement: Code phase tracking (DLL) must compensate for timing drift.
-   * Test: ``test_channel_impairments.cpp`` — parametric sweep 0–50 ppm, 200 epochs each.
-   * DLL upgraded to second-order PI filter for zero steady-state error.
+   * The L3 cross-decode acquires (PCPS) and tracks (PLL) a 7-SV LANS-AFS-SIM
+     composite with lunar NRHO ephemeris, so carrier offset is handled on a
+     real third-party signal (``tests/test_interop_decode.py``,
+     :doc:`../interop_results`).
+   * Not yet done: a parametric −10…+10 kHz sweep on the LunaLink-generated
+     signal.
+
+2. **Clock Drift (SCO — sample clock offset):** — *Planned, not implemented*
+
+   * Intent: sample clock offsets up to 50 ppm; code-phase tracking must
+     compensate.
+   * No test exists in this release and the receiver has no delay-locked
+     loop; recorded in :doc:`../roadmap`.
 
 3. **Quantization Loss:** — *Implemented*
-   * Compare decoding success rates between ``float32``, ``int16``, and ``int8`` I/Q formats.
-   * Document implementation loss (Target: < 0.2 dB).
-   * Test: ``test_channel_impairments.cpp`` — acquisition metric comparison + tracking stability.
-   * E2E test: ``test_e2e_impairments.cpp`` — full TX→RX pipeline at int16/int8.
 
-4. **Phase Noise:** — *Implemented*
-   * Inject oscillator phase noise per standard PNT models to test Costas loop (PLL) jitter.
-   * Test: ``test_channel_impairments.cpp`` — Wiener process model, parametric sweep 0–1e-3 rad²/sample.
+   * ``cpp/tests/integration/test_e2e_impairments.cpp``
+     (``task integration``): full TX→RX round trips at int16 and int8, an
+     FER sweep at int8, the int8-vs-float32 implementation loss measured
+     directly, and burst-error resilience through the interleaver.
+   * Result: int8 costs no measurable performance
+     (:doc:`ldpc_performance` §*Quantization Resilience*), so an 8-bit
+     front-end suffices.
+
+4. **Phase Noise:** — *Planned, not implemented*
+
+   * Intent: oscillator phase noise per standard PNT models (Wiener process)
+     to test PLL jitter tolerance.
+   * No test exists in this release; recorded in :doc:`../roadmap`.
 
 Standardized Test Scenarios (G7)
 --------------------------------

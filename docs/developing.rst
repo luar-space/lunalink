@@ -225,8 +225,8 @@ their own tasks.
        skip; 100% line-coverage gate; coverage badge.
    * - **Integration Tests** (``integration.yml``)
      - push, PR
-     - ``[e2e]``-tagged full TX→RX tests, including the channel-impairment
-       sweeps.
+     - ``[e2e]``-tagged full TX→RX tests, including the quantisation and
+       burst-error impairment tests.
    * - **Acceptance Tests** (``acceptance.yml``)
      - push to main, manual
      - The whole Catch2 binary including ``[slow]``: Monte Carlo Pd, BER,

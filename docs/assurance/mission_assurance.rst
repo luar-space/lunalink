@@ -419,32 +419,13 @@ branches exist in any ``[LSIS-AFS-*]``-tagged DSP function.
 The branchless mandate is not asserted — it is **measured and reported**
 as a formal deliverable, published to the documentation site.
 
-*   **Explanation**: Claiming a function is branchless is a design intent; proving it requires measurement. LunaLink's CI pipeline runs the Catch2 benchmark suite and produces a **WCET Profile Report** (``docs/assurance/wcet_profile.rst``) for every ``[LSIS-AFS-*]``-tagged function. Where benchmark variants exist for multiple adversarial input classes (all-zeros, all-ones, pseudo-random), the CI step computes the spread ``(max − min) / min × 100`` across those samples. A correctly branchless function shows near-zero spread; a data-dependent branch widens the spread beyond the **±2% tolerance band**.
+*   **Explanation**: Claiming a function is branchless is a design intent; proving it requires measurement. Two Release-only gates do so, both run by ``wcet.yml`` and by ``task performance``:
 
-    .. code-block:: text
+    *   ``task constant-time`` (``cpp/tests/performance/test_constant_time.cpp``) times the input-independent primitives — the BPSK modulator, CRC-24, the block interleaver and the exhaustive-ML BCH decoder — across adversarial input classes (all-zeros, all-ones, pseudo-random) and fails if the class-to-class spread ``(max − min) / min`` exceeds **14%**, a ceiling set at twice the worst value measured over eight idle runs. A data-dependent branch widens the spread by an order of magnitude, which is what the gate rejects. The LDPC and frame decoders are deliberately excluded: they early-terminate on a satisfied syndrome, so an all-zeros payload genuinely decodes faster, and forbidding that would forbid a correct optimisation.
+    *   ``task wcet`` (``test_wcet.cpp``) asserts absolute budgets for the early-terminating stages with the iteration cap forced — ``LDPC decode SF2 (50 iter) < 4 ms``, ``sync_detect < 700 µs``, ``BCH ML decode < 3 µs``, ``frame_decode < 20 ms`` — and produces the **WCET Profile Report** (``wcet_profile.rst``, uploaded as a CI artefact; the raw results are committed as ``docs/assurance/evidence/wcet_results.xml``) with mean, standard deviation and 95% confidence interval per benchmark. A sample whose confidence interval is too wide to support a claim (over 25% of the mean) fails the CI run rather than being reported.
 
-        WCET Profile — ldpc_encode() — build 4a9f2c1
-        ┌─────────────────────┬──────────┬──────────┬──────────┬──────────┐
-        │ Input Class         │ Min (cy) │ Max (cy) │ Mean(cy) │ Δ vs Min │
-        ├─────────────────────┼──────────┼──────────┼──────────┼──────────┤
-        │ All-zeros           │   14,201 │   14,209 │   14,204 │    +0.06%│
-        │ All-ones            │   14,198 │   14,211 │   14,203 │    +0.09%│
-        │ Pseudo-random       │   14,199 │   14,214 │   14,205 │    +0.10%│
-        └─────────────────────┴──────────┴──────────┴──────────┴──────────┘
-        VERDICT: PASS — all classes within ±2% tolerance band.
-
-    .. note::
-
-       The ±2% check is an **intra-run input-sensitivity check**: it detects data-dependent
-       branches within a single CI run by comparing timing across adversarial input classes.
-       It is **not** a build-to-build regression check against a stored baseline.
-       Full inter-build baseline comparison (WCET regression tracking) is scoped to
-       Gateway 3, when multi-class benchmark variants are added for all tagged functions.
-       Functions with only a single timing sample receive a ``WARN`` verdict; the build
-       is not blocked, but adding a multi-class variant is mandatory before Gateway 3 exit.
-
-*   **Mandate**: Any function where multiple input-class variants exist and the spread exceeds ±2% is a **blocking CI failure**, indicating a data-dependent branch. The WCET profile report is published to the **documentation site** (``gh-pages``) on every passing build.
-*   **Benefit**: Converts the branchless mandate from a code-review assertion into a measurement-backed CI check — escalating to full inter-build baseline tracking at Gateway 3.
+*   **Mandate**: A class-to-class spread above 14% on a branchless primitive, or any budget exceeded, is a **blocking CI failure**. The measured budgets set the windowed watchdog's thresholds (§3 below).
+*   **Benefit**: Converts the branchless mandate from a code-review assertion into a measurement-backed CI check, and bounds the data-dependent stages by budget where a spread gate would be wrong.
 
 3. Temporal Windowed Watchdogs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

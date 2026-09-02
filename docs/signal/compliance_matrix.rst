@@ -130,11 +130,11 @@ Gateway 4: Baseband Signal Generation
    * - CM-101
      - AFS-I BPSK(1) modulation at 1.023 Mcps
      - ✅
-     - Implemented [Hardened] in ``modulator.cpp``
+     - Implemented [Hardened] in ``modulator.hpp``
    * - CM-102
      - AFS-Q BPSK(5) modulation at 5.115 Mcps
      - ✅
-     - Implemented [Hardened] in ``modulator.cpp``
+     - Implemented [Hardened] in ``modulator.hpp``
    * - CM-103
      - 50/50 Power Sharing between I and Q
      - ✅
@@ -142,7 +142,7 @@ Gateway 4: Baseband Signal Generation
    * - CM-160
      - Align data symbols with primary code boundaries
      - ✅
-     - Implemented in ``modulator.cpp``
+     - Implemented in ``modulator.hpp``
    * - CM-171
      - Align tertiary code with secondary code boundaries
      - ✅

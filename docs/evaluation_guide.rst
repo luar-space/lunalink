@@ -462,15 +462,18 @@ Milestone 3 — Validation and Interoperability Demonstration (§3.2.3)
      - ``task compliance-report`` → ``compliance_report.json``
    * - Parameter sensitivity testing
      - :doc:`signal/validation_plan` §*Signal Impairment & Robustness* —
-       Doppler/CFO sweep (−10…+10 kHz), sample-clock offset (0–50 ppm),
-       oscillator phase noise (Wiener, 0–1e-3 rad²/sample), and I/Q
-       quantisation (float32 / int16 / int8).
+       I/Q quantisation (float32 / int16 / int8) end to end, an FER sweep
+       at int8, the measured int8-vs-float32 implementation loss, and
+       burst-error resilience through the interleaver.
        :doc:`signal/ldpc_performance` §*Convergence Speed* (iteration
-       sweep, knee at ~15 against a cap of 50) and §*Quantization
+       sweep, knee at ~15 against a cap of 50), §*Quantization
        Resilience* (input-LLR sweep; int8 costs no measurable
-       performance)
-     - ``task integration`` runs ``test_channel_impairments.cpp`` and
-       ``test_e2e_impairments.cpp``; ``task ber`` reruns the sweeps
+       performance) and §*Channel LLR Scaling*.  Doppler is exercised by
+       the L3 cross-decode of a 7-SV LANS-AFS-SIM signal
+       (:doc:`interop_results`).  Sample-clock-offset and phase-noise
+       sweeps are stated in the validation plan as not yet implemented
+     - ``task integration`` runs ``test_e2e_impairments.cpp``;
+       ``task ber`` reruns the sweeps
    * - Reproducibility of results
      - :doc:`assurance/configuration_baseline` — bit-for-bit reproducible
        build procedure.  All stochastic runs use fixed PRNG seeds
@@ -570,11 +573,13 @@ different* section of ``README.md``:
   shipped decoder measured against an independent reference decoder *and*
   the finite-length sphere-packing bound, splitting the Shannon gap into
   code gap and implementation gap.
-* **Channel robustness** — :doc:`signal/validation_plan` §*Signal
-  Impairment & Robustness*: the receiver swept through carrier-frequency
-  offsets of −10…+10 kHz, sample-clock offsets of 0–50 ppm (second-order
-  PI DLL), Wiener oscillator phase noise and float32/int16/int8
-  quantisation end to end (``task integration``).
+* **Impairment testing** — :doc:`signal/validation_plan` §*Signal
+  Impairment & Robustness*: int16 and int8 round trips, an FER sweep at
+  int8, the measured int8-vs-float32 implementation loss and burst-error
+  resilience through the interleaver (``test_e2e_impairments.cpp``, via
+  ``task integration``); Doppler exercised on a real foreign signal by the
+  L3 cross-decode.  Sample-clock-offset and phase-noise sweeps are listed
+  there as not yet implemented.
 * **Fuzzing** — three libFuzzer harnesses over the entry points that
   consume external data (message parser, frame decoder, FEC;
   ``cpp/fuzz/README.md``), with a committed seed corpus replayed on every

@@ -54,6 +54,11 @@ Named here so the boundary of what has been demonstrated is explicit:
    zero unmarked lines (:doc:`gateway1`).
 4. **PNT pipeline (V5).**  Constellation simulation and position fix, as
    above.
+5. **Sample-clock-offset and phase-noise sweeps.**  The validation plan
+   names them; neither is implemented, and the receiver has no delay-locked
+   loop to compensate clock drift.  Quantisation and burst-error impairments
+   are tested end to end (``test_e2e_impairments.cpp``); Doppler is
+   exercised only through the L3 cross-decode of a foreign signal.
 
 Component Traceability
 ----------------------
