@@ -205,14 +205,30 @@ def generate_rst(
 
 
 def parse_history(path: str) -> list[dict]:
-    """Parse benchmark-action data.js and return list of runs (newest first)."""
-    with open(path) as f:
-        text = f.read()
+    """Parse benchmark-action data.js and return list of runs (newest first).
+
+    Returns an empty history when the file is missing, empty or unparseable.
+    The workflow fetches it with ``git show origin/gh-pages:... || true``, so a
+    repository with no gh-pages branch yet — a fork, or a fresh clone of this
+    one — hands us an empty file. A trend table is a nicety; failing the WCET
+    job over its absence reports a missing history as a performance regression.
+    """
+    try:
+        with open(path) as f:
+            text = f.read()
+    except OSError:
+        return []
     # Strip JS wrapper: "window.BENCHMARK_DATA = {...}"
     prefix = "window.BENCHMARK_DATA = "
     if text.startswith(prefix):
         text = text[len(prefix) :]
-    data = json.loads(text)
+    if not text.strip():
+        return []
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        print(f"warning: {path} is not benchmark history; no trend table")
+        return []
     runs = data.get("entries", {}).get("Benchmark", [])
     return list(reversed(runs))
 

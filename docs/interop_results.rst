@@ -128,20 +128,65 @@ LunaLink-generated signals — PocketSDR-AFS, Ebinuma's software-defined
 receiver) and 5 (navigation-data parsing cross-checks) are the reverse
 direction.
 
-.. important::
+**Both are now demonstrated.**  ``task interop-receiver`` builds
+`PocketSDR-AFS <https://github.com/osqzss/PocketSDR-AFS>`__ — Sobukawa and
+Ebinuma's software-defined LANS AFS receiver, the receiving counterpart to
+LANS-AFS-SIM — and has it decode a signal LunaLink generated.
 
-   **Status of levels 4–5.**  LunaLink publishes the vectors, the expected
-   outputs and a validator for both levels, and ``task interop`` exercises
-   them against LunaLink's own decoder.  **A completed decode of a LunaLink
-   signal by PocketSDR-AFS — or by any third-party receiver — is not
-   claimed.**  Nothing on this page depends on it: the demonstrated
-   cross-implementation decode is L3 above, in which LunaLink decodes
-   LANS-AFS-SIM's signal.
+.. list-table::
+   :header-rows: 1
+   :widths: 8 32 12 48
 
-   Closing the reverse direction is the first item of post-submission work
-   (:doc:`roadmap`).  Any team wishing to close it needs only the published
-   vectors below; the validator reports per-field agreement without
-   requiring LunaLink to be installed.
+   * - Level
+     - Test
+     - Result
+     - Evidence
+   * - **L4**
+     - PocketSDR-AFS acquires, tracks, frame-synchronises, LDPC-decodes and
+       CRC-verifies a LunaLink signal
+     - **PASS**
+     - AFSD and AFSP both acquired at ~40 dB-Hz; ``$SB2`` logged, which
+       ``sdr_nav.c`` emits only when its LDPC decode returns and its own
+       CRC-24 test passes
+   * - **L5**
+     - The navigation payload recovered equals the payload transmitted
+     - **PASS**
+     - Decoded SB2 and CRC-24 identical to LunaLink's own frame
+
+Method
+~~~~~~
+
+LunaLink generates three consecutive 12-second frames (PRN 3, pseudo-random
+payload, seed ``0x12345678``) at 12 MHz, adds AWGN at 45 dB-Hz and quantises to
+the four-level ``{-3,-1,+1,+3}`` int8 I/Q that LANS-AFS-SIM's ``-b 2`` mode
+writes and ``pocket_trk`` reads.  Three frames rather than one because
+acquisition consumes part of the first, so a complete frame must follow it.
+The receiver runs with upstream's own invocation from ``pocket_trk.sh``.
+
+``sdr_nav.c`` logs the first 80 hex characters of the 1200 decoded bits and,
+separately, characters 294–299 — the CRC-24.  Both are compared against
+LunaLink's own frame::
+
+   transmitted SB2: 4850D19D04E4308D820462770927D9CA…  crc=A939B3
+   decoded     SB2: 4850D19D04E4308D820462770927D9CA…  crc=A939B3
+
+Reproduce with ``task interop-receiver``; the result is committed as
+``docs/assurance/evidence/interop_l4_receiver.json`` and asserted by
+``tests/test_interop_receiver.py``.
+
+Stated limits of this demonstration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*  **One upstream patch is applied to build the receiver.**
+   ``src/sdr_pvt_afs.c`` declares a file-static ``satpos()`` that collides
+   with RTKLIB's public ``satpos()``, which Clang rejects.
+   ``build_pocketsdr_afs.py`` renames it to ``afs_satpos``.  The patch changes
+   no arithmetic and no decision logic; without it the receiver does not
+   compile here.
+*  **SB2 is the subframe compared.**  It is the one the receiver logs in
+   decoded form.
+*  The signal is generated at baseband and quantised as above rather than
+   captured over the air; no RF hardware is in the loop.
 
 The vectors are maintained in the public test-vector repository, which
 ships all five levels with bundled oracles and a zero-dependency validator:

@@ -112,15 +112,25 @@ methods** — an 11-bit LFSR with delay table versus tables precomputed from
 Appendix C/D — so bit-exact agreement is independent confirmation, not two
 programs reading one table.
 
-Levels 4–5 are the reverse direction — an independent receiver decoding
-*LunaLink's* signals, and parsed-message cross-checks. Vectors and bundled
-oracles for both are published in
+Levels 4–5 run the same comparison in reverse, and `task interop-receiver`
+demonstrates them: **PocketSDR-AFS** — Sobukawa and Ebinuma's independent
+software-defined LANS AFS receiver — acquires, tracks, LDPC-decodes and
+CRC-verifies a signal *LunaLink* generated, and the navigation payload it
+recovers is compared against what LunaLink transmitted:
+
+```
+transmitted SB2: 4850D19D04E4308D820462770927D9CA…  crc=A939B3
+decoded     SB2: 4850D19D04E4308D820462770927D9CA…  crc=A939B3
+```
+
+Two independent implementations, both directions, bit-exact. Method, the one
+upstream patch needed to build the receiver, and the bounds of the
+demonstration are in
+[interop_results.rst](docs/interop_results.rst); the result is committed as
+`docs/assurance/evidence/interop_l4_receiver.json`. Reference vectors and a
+zero-dependency validator remain published in
 [lsis-afs-test-vectors](https://github.com/luar-space/lsis-afs-test-vectors)
-with a zero-dependency validator, targeting PocketSDR-AFS. **A completed
-third-party decode of a LunaLink signal is not claimed here** — the
-demonstrated cross-decode is L3, in the direction above. See
-[interop_results.rst](docs/interop_results.rst) for exactly what has and has
-not been run.
+for anyone wanting to repeat it against a different receiver.
 
 ### 3. Decoder quality measured against theory, not just "it works"
 
@@ -288,6 +298,7 @@ task test-cpp      # ~1 min   C++ unit + integration tests (229 cases)
 task test-py       # ~5 s     Python tests (100% coverage gate, 1237 tests)
 task swifi         # ~50 s    SWIFI fault-injection campaign (42/42)
 task interop       # ~10 s    cross-check against an independent implementation
+task interop-receiver # ~2 min  L4/L5: a third-party receiver decodes our signal
 task compliance-report  # ~3 min  requirement → test traceability, 31/31 and 20/20
 task performance   # ~3 min   WCET + constant-time + BER channel simulations
 task ci-checks     # ~40 min  the CI gate in one command, offline

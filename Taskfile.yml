@@ -592,6 +592,16 @@ tasks:
     cmd: uv run python scripts/pics_proforma.py
     silent: false
 
+  interop-receiver:
+    desc: >-
+      L4/L5 — build PocketSDR-AFS (a third-party LANS AFS receiver) and have it
+      decode a LunaLink-generated signal, then compare the payload it recovered
+      against the one transmitted. Needs libfftw3 and libusb.
+    cmds:
+      - uv run python scripts/interop/build_pocketsdr_afs.py
+      - uv run python scripts/interop/pocketsdr_afs_decode.py
+    silent: false
+
   traceability:
     desc: Verify requirement-to-test traceability (LSIS-AFS / SW-SAF tags).
     cmd: python3 scripts/verify_traceability.py

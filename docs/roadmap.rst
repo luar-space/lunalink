@@ -37,12 +37,12 @@ Post-submission work
 
 Named here so the boundary of what has been demonstrated is explicit:
 
-1. **Reverse-direction interoperability (interop L4/L5).**  LunaLink
-   decodes an independent implementation's signal (:doc:`interop_results`
-   L3, demonstrated).  The reverse — an independent receiver, e.g.
-   PocketSDR-AFS, decoding a LunaLink signal — is supported by published
-   vectors, oracles and a zero-dependency validator, but has **not** been
-   run.  This is the first item of post-submission work.
+1. **Interoperability beyond SB2 and beyond baseband.**  Both directions are
+   now demonstrated (:doc:`interop_results` L1-L5): LunaLink decodes
+   LANS-AFS-SIM's signal, and PocketSDR-AFS decodes LunaLink's.  What remains
+   is breadth — comparing SB3 and SB4 as well as SB2, which needs a receiver
+   that logs them in decoded form, and running the reverse direction against
+   a captured RF signal rather than a generated baseband one.
 2. **Hardware-in-the-loop verification.**  The HAL_STUB coverage waivers in
    :doc:`assurance/coverage_exclusions` resolve at TRL-5 on target
    hardware (PolarFire SoC).

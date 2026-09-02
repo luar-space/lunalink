@@ -1,0 +1,40 @@
+{
+  "title": "L4/L5 \u2014 third-party receiver decode of a LunaLink signal",
+  "receiver": "PocketSDR-AFS (osqzss), pocket_trk",
+  "generated_by": "scripts/interop/pocketsdr_afs_decode.py",
+  "parameters": {
+    "prn": 3,
+    "frames": 3,
+    "sample_rate_hz": 12000000.0,
+    "cn0_dbhz": 45.0,
+    "payload": "random(seed=0x12345678)",
+    "format": "headerless int8 I/Q, four-level {-3,-1,+1,+3} (afs_sim -b 2)"
+  },
+  "transmitted": {
+    "sb2_hex80": "4850D19D04E4308D820462770927D9CAD13D20B7EC45028324785E798C2A35D5861B4D3D08C31F15",
+    "sb2_crc24": "A939B3"
+  },
+  "received": {
+    "acquired": [
+      {
+        "signal": "AFSD",
+        "prn": 3
+      },
+      {
+        "signal": "AFSP",
+        "prn": 3
+      }
+    ],
+    "decoded": [
+      {
+        "time_s": 24.132,
+        "signal": "AFSD",
+        "prn": 3,
+        "sb2_hex80": "4850D19D04E4308D820462770927D9CAD13D20B7EC45028324785E798C2A35D5861B4D3D08C31F15",
+        "sb2_crc24": "A939B3"
+      }
+    ]
+  },
+  "l4_decoded": true,
+  "l5_payload_match": true
+}

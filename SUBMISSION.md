@@ -101,6 +101,7 @@ task test-py         # ~5 s     1237 Python tests (427 skip until `task interop`
 task test-acceptance # ~11 min  full slow suite: Monte Carlo Pd, BER, channel, E2E
 task swifi           # ~50 s    42 fault-injection scenarios
 task interop         # ~10 s    bit-exact cross-check vs an independent implementation
+task interop-receiver # ~2 min  L4/L5: a third-party receiver decodes our signal
 task performance     # ~3 min   WCET budgets, constant-time gate, BER waterfalls
 task ci-checks       # ~40 min  every CI workflow, locally and offline
 ```
@@ -135,7 +136,7 @@ single PDF instead.
 | Gateway 4 — Baseband Signal Generation | **Complete** | `docs/gateway4.rst`; BPSK modulation, I/Q multiplexing, `LSISIQ` file format (float32 and int16) |
 | Gateway 5 — Frame Sync & Decoding | **Complete** | `docs/gateway5.rst`; bipolar cross-correlation sync detector, full decode chain |
 | Gateway 6 — Message Parsing | **Complete** | `docs/gateway6.rst`; typed parsing of all subframe content |
-| Gateway 7 — Integration & Validation | **Complete** | `docs/gateway7.rst`; end-to-end round trip and cross-implementation validation at levels L1–L3. Levels 4–5 (an independent *receiver* decoding LunaLink's signal) are published as vectors, oracles and a validator but **have not been executed** — see Validation Results below |
+| Gateway 7 — Integration & Validation | **Complete** | `docs/gateway7.rst`; end-to-end round trip and cross-implementation validation in **both directions**, L1–L5: LunaLink decodes LANS-AFS-SIM's signal, and PocketSDR-AFS — an independent receiver — decodes LunaLink's |
 | Gateway 8 — Documentation & Examples | **Complete** | `docs/gateway8.rst`; full documentation set, examples, tutorial notebooks, performance report |
 
 ## Validation Results
@@ -173,14 +174,16 @@ BSD-2-Clause), cloned and built by `task interop`:
 | L1 | Gold-2046 and Weil-10230 codes, PRN 1–210 | **PASS** | 0 chip mismatches |
 | L2 | Frame encoding — BCH, CRC-24, LDPC, interleaver, 5 cases | **PASS** | 0/6000 symbol mismatches |
 | L3 | PCPS acquisition, PLL tracking and full decode of a 25 s, 7-SV composite signal with lunar NRHO ephemeris | **PASS** | all 3 subframes CRC-24 verified |
-| L4–L5 | Independent receiver decoding a LunaLink signal; parsed-message cross-checks | **NOT RUN** | Vectors, oracles and a zero-dependency validator are published; no third-party decode is claimed. `docs/interop_results.rst` |
+| L4 | PocketSDR-AFS acquires, tracks, LDPC-decodes and CRC-verifies a **LunaLink** signal | **PASS** | AFSD and AFSP acquired at ~40 dB-Hz; `$SB2` logged, which the receiver emits only on a successful LDPC decode and its own CRC-24 check |
+| L5 | Parsed-message cross-check: recovered payload vs transmitted | **PASS** | SB2 and CRC-24 identical — `4850D19D…` / `A939B3`. `task interop-receiver`; evidence in `docs/assurance/evidence/interop_l4_receiver.json` |
 
 The two implementations derive spreading codes by structurally different
 methods — an 11-bit LFSR with delay table versus tables precomputed from
 Appendix C/D — so bit-exact agreement is independent confirmation rather than
 two programs reading one table. LANS-AFS-SIM is a transmit-side simulator with
-no decoder, which is why closing L4–L5 requires a different tool
-(PocketSDR-AFS).
+no decoder, so the reverse direction uses PocketSDR-AFS (same authors), the
+receiving counterpart: `task interop-receiver` builds it, feeds it a LunaLink
+signal, and compares what it recovered.
 
 ### Assurance and verification depth
 
@@ -234,9 +237,11 @@ Confirmed; these are implemented against documented assumptions recorded in
 
 Recorded here rather than left for a reviewer to discover:
 
-- **Reverse-direction interoperability (L4–L5) has not been run.** LunaLink
-  decodes an independent implementation's signal; the reverse is supported by
-  published vectors and a validator but no third-party decode is claimed.
+- **The reverse-direction demonstration is bounded.** It compares SB2, the
+  subframe PocketSDR-AFS logs in decoded form; the signal is generated at
+  baseband and quantised rather than captured over the air; and building the
+  receiver applies one upstream patch, renaming a file-static `satpos()` that
+  collides with RTKLIB's. The patch changes no arithmetic.
 - **ECSS Category B conformance is self-assessed**, not certified.
 - **Coverage carries waivers.** The overall verdict is `PASS_WITH_WAIVERS`,
   with three files below the 80% per-file review trigger; each waiver is

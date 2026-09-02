@@ -573,11 +573,13 @@ Stated limits
 
 Collected here so they are not left for a reader to discover:
 
-* **Reverse-direction interoperability (L4/L5) is not demonstrated.**
-  LunaLink decodes an independent implementation's signal
-  (:doc:`interop_results` L3).  The reverse — an independent receiver
-  decoding a LunaLink signal — is supported by published vectors, oracles
-  and a validator, but **has not been run**.
+* **The reverse-direction demonstration carries one upstream patch.**
+  Interoperability now runs in both directions (:doc:`interop_results` L1-L5),
+  but building PocketSDR-AFS requires renaming a file-static ``satpos()``
+  that collides with RTKLIB's; the patch changes no arithmetic and is applied
+  by ``scripts/interop/build_pocketsdr_afs.py``.  The comparison is of SB2,
+  the subframe the receiver logs in decoded form, and the signal is generated
+  at baseband rather than captured over the air.
 * **Development history is filtered, not complete.**  LunaLink was extracted
   from a larger private tree.  The history here covers the files that have
   one, with non-public paths removed and 21 commit messages rewritten where
