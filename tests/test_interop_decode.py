@@ -170,14 +170,16 @@ class TestInteropDecode:
     """L3 interop: decode a LANS-AFS-SIM signal with LunaLink."""
 
     @pytest.fixture(scope="class")
-    def lans_iq(self, tmp_path_factory: pytest.TempPathFactory) -> np.ndarray:
+    @classmethod
+    def lans_iq(cls, tmp_path_factory: pytest.TempPathFactory) -> np.ndarray:
         """Generate LANS-AFS-SIM signal and return decimated I/Q at 1.023 MSPS."""
         tmpdir = tmp_path_factory.mktemp("lans_iq")
         path = _generate_lans_iq(FRAME_DURATION_S, tmpdir)
         return _load_and_decimate(path)
 
     @pytest.fixture(scope="class")
-    def acquired(self, lans_iq: np.ndarray) -> tuple[int, float]:
+    @classmethod
+    def acquired(cls, lans_iq: np.ndarray) -> tuple[int, float]:
         """PCPS acquisition on PRN 3 (highest elevation, Doppler ~ 0 Hz)."""
         delay, doppler = _pcps_acquire(lans_iq, 3)
         return delay, doppler

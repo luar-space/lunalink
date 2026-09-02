@@ -36,7 +36,8 @@ pytestmark = pytest.mark.skipif(
 
 def _read_json(path: Path) -> dict:
     if path.suffix == ".gz":
-        return json.loads(gzip.open(path, "rb").read())
+        with gzip.open(path, "rb") as fh:
+            return json.loads(fh.read())
     return json.loads(path.read_text())
 
 
@@ -44,7 +45,8 @@ class TestSelfFrames:
     """Verify published frame vectors decode correctly."""
 
     @pytest.fixture(scope="class")
-    def frame_files(self) -> list[Path]:
+    @classmethod
+    def frame_files(cls) -> list[Path]:
         return sorted((VECTORS_DIR / "frames").glob("*.bin"))
 
     def test_all_frames_decode(self, frame_files: list[Path]) -> None:
@@ -68,7 +70,8 @@ class TestSelfDecodeVectors:
     """Verify published decode-direction vectors match live decode."""
 
     @pytest.fixture(scope="class")
-    def decode_files(self) -> list[Path]:
+    @classmethod
+    def decode_files(cls) -> list[Path]:
         return sorted((VECTORS_DIR / "decode").glob("*.json*"))
 
     def test_all_decode_vectors(self, decode_files: list[Path]) -> None:
@@ -148,7 +151,8 @@ class TestSelfSignals:
         import gzip
 
         path = VECTORS_DIR / "signals" / f"signal_prn{prn_id}_5115ksps.iq.gz"
-        raw = gzip.open(path, "rb").read()
+        with gzip.open(path, "rb") as fh:
+            raw = fh.read()
 
         # Skip 128-byte LSISIQ header
         header = raw[:128]

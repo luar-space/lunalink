@@ -267,7 +267,8 @@ class TestVectors:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = export_code_vectors(1, tmpdir)
             assert os.path.exists(path)
-            content = open(path).read()
+            with open(path, encoding="utf-8") as fh:
+                content = fh.read()
             assert "[GOLD_CODE]" in content
             assert "[WEIL_PRIMARY]" in content
             assert "[WEIL_TERTIARY]" in content
@@ -302,7 +303,8 @@ class TestVectors:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = os.path.join(tmpdir, "parsed.json")
             export_parsed_json(result, path, frame_id="test_zeros")
-            doc = json.loads(open(path).read())
+            with open(path, encoding="utf-8") as fh:
+                doc = json.load(fh)
             assert doc["subframe1"]["fid"] == 0
             assert doc["subframe1"]["toi"] == 42
             assert doc["subframe2"]["crc_ok"] is True
