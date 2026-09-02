@@ -44,10 +44,25 @@ is asserted.
 
 ### 1. Defence in depth — a layered architecture, not a hardening checklist
 
-Each pattern is attributed to its origin in NASA (JPL/Goddard), ESA (ESTEC)
-and JAXA flight practice in
-[mission_assurance.rst](docs/assurance/mission_assurance.rst):
+The assurance case is written down, not implied. Two documents carry it:
+[mission_assurance.rst](docs/assurance/mission_assurance.rst) (the pattern
+catalogue, each pattern attributed to its origin in NASA (JPL/Goddard), ESA
+(ESTEC) or JAXA flight practice) and
+[c_plus_plus_guidelines.rst](docs/assurance/c_plus_plus_guidelines.rst) (the
+dialect those patterns are written in).
 
+- **Dialect** — flight code is a restricted C++20 that unions MISRA C++:2023
+  (179 guidelines: 4 Directives + 175 Rules), the JPL Institutional Coding
+  Standard (D-60411), Holzmann's Power of Ten, the NASA GSFC C++ standards and
+  the ESA-commissioned N7 Space C++20 study (N7S-CG-001), **taking the
+  strictest rule wherever two overlap**, under ECSS-E-ST-40C §5.5.1 and
+  ECSS-Q-ST-80C §5.5. Every rule carries its provenance inline — the
+  `[[nodiscard]]` mandate reads `[MISRA 0.1.2; JPL Rule 14; P10 Rule 7]` — so
+  a reviewer can trace any restriction back to the standard that imposes it.
+  No exceptions, no RTTI, no heap after init, four allowlisted compiler
+  extensions, and six *forbidden* optimisation flags (`-ffast-math`,
+  `-fstrict-aliasing` and `-fomit-frame-pointer` among them) that
+  `task check-flags` fails the build over
 - **Construction** — zero heap after init, no recursion, fixed-bound loops
   (enabling formal worst-case stack depth), cyclomatic complexity ≤ 10, and
   single-exit DSP functions so buffer scrubbing can never be skipped by an
@@ -133,7 +148,9 @@ runs the BCH and channel simulations.
 
 ### 5. Verification depth
 
-Three static analysers (clang-tidy on a MISRA C++:2023-traceable profile,
+Three static analysers (clang-tidy on a MISRA C++:2023-traceable profile
+whose per-rule compliance record is
+[c_plus_plus_guidelines.rst](docs/assurance/c_plus_plus_guidelines.rst),
 cppcheck, Clang Static Analyzer) and three runtime checkers (ASan, UBSan,
 libFuzzer with seed corpus and nightly deep-fuzz). MC/DC measured natively —
 the DO-178C Level A structural metric. CI runs on **big-endian s390x**
@@ -304,15 +321,29 @@ separately at
 - [`examples/`](examples/) — minimal scripts: transmit, decode, round-trip
 - [`docs/notebooks/`](docs/notebooks/) — tutorial notebooks: spreading codes,
   error correction, navigation message anatomy
-- [`demo/`](demo/) — signal-chain visualisation
 
 ## Documentation
 
-The documentation set covers quickstart, API reference, per-gateway
-deliverable verification, compliance matrix, PICS proforma, assurance evidence
-(FMEA, fault coverage, MC/DC), and interoperability results.
-`.github/workflows/docs-pages.yml` publishes it as a GitHub Pages site when the
-repository is public; until then, read it locally.
+The documentation is a deliverable in its own right, not a description of
+one. Where to start, by what you want to know:
+
+| Document | What it answers |
+|:--|:--|
+| [evaluation_guide.rst](docs/evaluation_guide.rst) | *How do I assess this?* Every deliverable → the document that satisfies it → the command that verifies it |
+| [mission_assurance.rst](docs/assurance/mission_assurance.rst) | *What space-grade patterns are used, and on whose authority?* The catalogue: SEU-resistant enums, TMR with active repair, variable mirroring, CFI sentinels, the windowed watchdog, Fault Isolation Zones, secure scrub, LUT pinning — each attributed to NASA, ESA or JAXA practice, with the failure it defends against |
+| [c_plus_plus_guidelines.rst](docs/assurance/c_plus_plus_guidelines.rst) | *What dialect is the flight code written in?* The C++20 restriction: MISRA C++:2023 unioned with JPL D-60411, Power of Ten, NASA GSFC and N7 Space/ESA, strictest rule winning, every clause tagged with the standards that impose it |
+| [pics_proforma.rst](docs/signal/pics_proforma.rst) | *Which protocol features are supported?* 76 items, generated from the shall inventory |
+| [shall_inventory.rst](docs/signal/shall_inventory.rst) | *What does the spec require, and what did you do about each one?* All 76 normative identifiers with dispositions |
+| [interop_results.rst](docs/interop_results.rst) | *Does it agree with anyone else's implementation?* L1–L3 results, methodology, and what has **not** been run |
+| [ldpc_algo_card.rst](docs/signal/ldpc_algo_card.rst) | *How good is the decoder?* Waterfalls, error floor, convergence, quantisation, Shannon-gap decomposition |
+| [fmea.rst](docs/assurance/fmea.rst) | *What can fail, and what happens then?* Failure modes with detection and containment |
+| [coverage_exclusions.rst](docs/assurance/coverage_exclusions.rst) | *Why isn't coverage higher?* Every exclusion categorised and milestone-reviewed |
+
+Alongside these: quickstart, API reference, per-gateway verification guides
+(0–8), the compliance matrix, governance plans (SCMP, SDP, safety plan,
+baseline register) and the tutorial notebooks.
+`.github/workflows/docs-pages.yml` publishes the set as a GitHub Pages site
+when the repository is public; until then, read it locally.
 
 Three ways to read it locally — the `docs/` sources are reStructuredText, so
 read them through one of these rather than GitHub's file viewer, which does

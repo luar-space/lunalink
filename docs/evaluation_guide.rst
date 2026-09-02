@@ -108,11 +108,17 @@ Where to look for each scored category.
        what is *not* delivered
    * - **Code Quality**
      - 10
-     - :doc:`assurance/c_plus_plus_guidelines` (MISRA C++:2023-traceable
-       profile), :doc:`assurance/coverage_evidence` (|cov-region| region,
-       |cov-line| line, MC/DC measured natively).  Three static analysers and
-       three runtime checkers; ``task lint-check``, ``task tidy``,
-       ``task sanitize``
+     - :doc:`assurance/c_plus_plus_guidelines` — the flight dialect: MISRA
+       C++:2023 (179 guidelines) unioned with JPL D-60411, Power of Ten,
+       NASA GSFC and N7 Space/ESA C++20, strictest rule winning, every
+       clause tagged with the standards that impose it, satisfying
+       ECSS-E-ST-40C §5.5.1.  :doc:`assurance/mission_assurance` — the
+       hardening patterns those rules are applied to, each attributed to
+       NASA, ESA or JAXA practice.  :doc:`assurance/coverage_evidence`
+       (|cov-region| region, |cov-line| line, MC/DC measured natively).
+       Three static analysers and three runtime checkers; ``task
+       lint-check``, ``task tidy``, ``task sanitize``, and
+       ``task validate-tidy`` to prove the profile catches what it claims
    * - **Innovation & Extras**
      - 10
      - `Beyond the rubric`_ below — flight-software assurance case

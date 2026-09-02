@@ -46,12 +46,32 @@ integrity through SEU-resistant enums (non-contiguous, high-Hamming-distance
 encodings, so a bit flip yields an illegal rather than a plausible value), TMR
 with active repair, mirrored loop variables and CRC-32-self-validating lookup
 tables; control-flow integrity through sentinels, a legal-transition matrix and
-a windowed watchdog; and containment through three nested Fault Isolation
-Zones, with the guarantee that a single radiation event can corrupt at most one
-12-second navigation frame and never the timing system. Each pattern is
-attributed to its origin in NASA (JPL/Goddard), ESA (ESTEC) or JAXA practice in
+a windowed watchdog whose *lower* bound catches a radiation-induced jump over a
+loop; and containment through three nested Fault Isolation Zones, with the
+guarantee that a single radiation event can corrupt at most one 12-second
+navigation frame and never the timing system. Each pattern is attributed to its
+origin in NASA (JPL/Goddard), ESA (ESTEC) or JAXA practice in
 `docs/assurance/mission_assurance.rst`, and each is exercised by fault
-injection rather than asserted.
+injection rather than asserted — `task swifi` drives 42 scenarios across six
+techniques against the real injection APIs.
+
+Those patterns are written in a deliberately restricted dialect, specified in
+`docs/assurance/c_plus_plus_guidelines.rst` (*C++20 Style Guide for ECSS Class
+B Certifiable Software*). It unions **MISRA C++:2023** — 179 guidelines, 4
+Directives and 175 Rules — with the JPL Institutional Coding Standard
+(D-60411), Holzmann's Power of Ten, the NASA GSFC C++ standards and the
+ESA-commissioned N7 Space C++20 study (N7S-CG-001), **taking the strictest rule
+wherever two overlap**, and satisfies the coding-standard requirements of
+ECSS-E-ST-40C §5.5.1 and ECSS-Q-ST-80C §5.5. Every clause carries the standards
+that impose it inline — the `[[nodiscard]]` mandate is tagged `[MISRA 0.1.2;
+JPL Rule 14; P10 Rule 7]` — so a reviewer can trace any restriction to its
+source rather than take the dialect on trust. In practice: no exceptions, no
+RTTI, no heap after initialisation, `noexcept` on every safety-critical
+function, `constinit` for mission data tables, four allowlisted compiler
+extensions, and six forbidden optimisation flags that `task check-flags` fails
+the build over. clang-tidy runs a MISRA-traceable profile against it, and
+`task validate-tidy` proves that profile actually catches the violations it
+claims to, against deliberately defective code.
 
 ## Build & Run Instructions
 
