@@ -88,7 +88,21 @@ jobs:
         with:
           name: wcet-profile
           path: /tmp/wcet_profile.rst
+      - name: Check for a benchmark history branch
+        id: ghpages
+        # The action clones gh-pages and dies with "couldn't find remote ref
+        # gh-pages" where the branch does not exist yet — a fork, or this
+        # repository. The WCET measurement above has already passed at that
+        # point; trend tracking is an extra, not a gate.
+        run: |
+          if git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No gh-pages branch: skipping benchmark trend tracking."
+          fi
       - name: Track benchmark history
+        if: steps.ghpages.outputs.present == 'true'
         uses: benchmark-action/github-action-benchmark@v1
         with:
           tool: customSmallerIsBetter
