@@ -28,10 +28,11 @@ jobs:
         with:
           python-version: "3.12"
       - run: uv sync --group dev
-      - name: Install doxygen
+      - name: Install doxygen and pandoc
         # Breathe renders the C++ API from Doxygen XML; task docs-build
-        # generates it before Sphinx runs.
-        run: sudo apt-get install -y doxygen
+        # generates it before Sphinx runs. nbsphinx needs pandoc to render
+        # the notebooks' Markdown cells.
+        run: sudo apt-get install -y doxygen pandoc
       - name: Download static-analysis artifact
         uses: actions/download-artifact@v4
         with:

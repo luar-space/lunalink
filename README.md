@@ -334,8 +334,7 @@ LANS-AFS-SIM); everything else is offline.
 `task ci-checks` runs the whole CI gate in one command. It excludes the long
 workflows — `task performance`, `task test-acceptance`, `task coverage-cpp`,
 `task fuzz`, `task cross-arch` — and the interop cross-check, so run those
-separately; on a fresh clone budget ~40 min, since it includes
-`task docs-build`.
+separately; on a fresh clone budget ~40 min.
 
 Beyond the gate, all nine gateways (0–8) are delivered with one verification
 guide each, and all **20 rubric NFRs are tracked**, 20 PASS.
@@ -428,19 +427,20 @@ not resolve Sphinx cross-references:
 |:--|:--|:--|
 | `task docs-serve` | the site at <http://127.0.0.1:8000>, auto-reloading | ~15 s |
 | `task docs-pdf` | one PDF (`docs/_build/latex/`); needs TeX Live | ~10 s |
-| `task docs-build` | static HTML in `docs/_build/html/` | ~35 min fresh, ~15 s after |
+| `task docs-build` | static HTML in `docs/_build/html/` | ~20 s (re-executes the notebooks) |
 
 `task --list` prints every task with a one-line description, which is the
 complete inventory of what this repository can verify about itself.
 
 `task docs-serve` is the one to use for reading — it needs no notebook
 execution and emits no Sphinx warnings. `task docs-build` is the CI gate, not
-the reading path: on a fresh clone it first runs the LDPC characterisation
-(`task ldpc-algo-card` — a Monte-Carlo campaign whose error-floor points are
-60,000 frames each) to produce the algorithm-card figures, then re-executes
-every tutorial notebook and builds with `-W` (warnings-as-errors). The
-characterisation is where the 35 minutes goes: once
-`build/algo_card/sp_results.json` exists, the same command takes ~15 s.
+the reading path: it generates the Doxygen XML, re-executes every tutorial
+notebook and builds with `-W` (warnings-as-errors). The LDPC algorithm card's
+figures and the Monte-Carlo results behind them are committed
+(`docs/_static/algo_card/`, `docs/assurance/evidence/ldpc_algo_card.json`),
+so the build does not repeat the characterisation; `task ldpc-algo-card`
+regenerates both from scratch when you want to (~35 min on a laptop —
+its error-floor points are 60,000 frames each).
 
 ## Provenance
 

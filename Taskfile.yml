@@ -240,7 +240,10 @@ tasks:
       - mkdir -p docs/_static/algo_card
       - ./build/algo_card/ldpc_characterise > build/algo_card/sp_results.json
       - uv run python scripts/plot_algo_card.py build/algo_card/sp_results.json docs/_static/algo_card/
-      - echo "Algorithm card generated. Figures in docs/_static/algo_card/"
+      # The committed copy is what `task docs-build` seeds from on a fresh
+      # clone; keep it in step with the figures.
+      - cp build/algo_card/sp_results.json docs/assurance/evidence/ldpc_algo_card.json
+      - echo "Algorithm card generated. Figures in docs/_static/algo_card/, results in docs/assurance/evidence/ldpc_algo_card.json"
     silent: false
 
   sync-docstrings:
@@ -737,14 +740,23 @@ tasks:
     cmds:
       - task: docs-doxygen
       # Notebook 02_error_correction.ipynb reads
-      # build/algo_card/sp_results.json — produced by `task ldpc-algo-card`.
-      # If the file is missing or zero-length (interrupted prior run, fresh
-      # clone), regenerate it before notebook execution rather than failing
-      # mid-nbconvert with an opaque JSONDecodeError.
+      # build/algo_card/sp_results.json — produced by `task ldpc-algo-card`,
+      # a Monte-Carlo campaign that takes ~35 min on a laptop and ~3 h on a
+      # CI runner. The submission run's results are committed as evidence
+      # (docs/assurance/evidence/ldpc_algo_card.json, alongside the figures
+      # under docs/_static/algo_card), so a fresh clone seeds the build from
+      # them; the characterisation is only run when neither copy exists.
+      # `task ldpc-algo-card` regenerates both from scratch.
       - |
         if [ ! -s build/algo_card/sp_results.json ]; then
-          echo "sp_results.json missing or empty → running task ldpc-algo-card"
-          task ldpc-algo-card
+          if [ -s docs/assurance/evidence/ldpc_algo_card.json ]; then
+            echo "seeding build/algo_card/sp_results.json from the committed evidence"
+            mkdir -p build/algo_card
+            cp docs/assurance/evidence/ldpc_algo_card.json build/algo_card/sp_results.json
+          else
+            echo "no characterisation results anywhere → running task ldpc-algo-card"
+            task ldpc-algo-card
+          fi
         fi
       - uv run jupyter nbconvert --to notebook --execute --inplace docs/notebooks/*.ipynb
       - uv run python -m sphinx -b html docs/ docs/_build/html -W

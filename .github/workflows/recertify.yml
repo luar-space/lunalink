@@ -364,6 +364,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: uv sync --group dev
+      - name: Install doxygen and pandoc
+        run: sudo apt-get install -y doxygen pandoc
       - run: task docs-build
 
   # --------------------------------------------------------------------------

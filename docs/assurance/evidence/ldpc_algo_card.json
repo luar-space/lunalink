@@ -1,0 +1,84 @@
+{
+  "decoder": "sum-product",
+  "algorithm": "Layered Sum-Product BP (phi-transform)",
+  "arithmetic": "float64",
+  "max_iterations": 50,
+  "early_termination": "syndrome check every iteration",
+  "threads": 10,
+  "elapsed_seconds": 1139.6,
+  "waterfall_sf2": [
+    {"eb_n0_db": 0.20, "fer": 0.95913333, "ber": 0.4797091111, "ci_fer": 0.00317013, "frames": 15000, "frame_errors": 14387, "bit_errors": 8634764, "total_bits": 18000000, "not_converged": 14386},
+    {"eb_n0_db": 0.40, "fer": 0.81273333, "ber": 0.4065032778, "ci_fer": 0.00624302, "frames": 15000, "frame_errors": 12191, "bit_errors": 7317059, "total_bits": 18000000, "not_converged": 12191},
+    {"eb_n0_db": 0.60, "fer": 0.52666667, "ber": 0.2633318889, "ci_fer": 0.00798926, "frames": 15000, "frame_errors": 7900, "bit_errors": 4739974, "total_bits": 18000000, "not_converged": 7900},
+    {"eb_n0_db": 0.80, "fer": 0.22660000, "ber": 0.1132539444, "ci_fer": 0.00669901, "frames": 15000, "frame_errors": 3399, "bit_errors": 2038571, "total_bits": 18000000, "not_converged": 3398},
+    {"eb_n0_db": 1.00, "fer": 0.05493333, "ber": 0.0274883333, "ci_fer": 0.00364767, "frames": 15000, "frame_errors": 824, "bit_errors": 494790, "total_bits": 18000000, "not_converged": 824},
+    {"eb_n0_db": 1.10, "fer": 0.02260000, "ber": 0.0112672778, "ci_fer": 0.00238132, "frames": 15000, "frame_errors": 339, "bit_errors": 202811, "total_bits": 18000000, "not_converged": 338},
+    {"eb_n0_db": 1.20, "fer": 0.00880000, "ber": 0.0043825000, "ci_fer": 0.00149972, "frames": 15000, "frame_errors": 132, "bit_errors": 78885, "total_bits": 18000000, "not_converged": 131},
+    {"eb_n0_db": 1.30, "fer": 0.00286667, "ber": 0.0014373333, "ci_fer": 0.00086492, "frames": 15000, "frame_errors": 43, "bit_errors": 25872, "total_bits": 18000000, "not_converged": 43},
+    {"eb_n0_db": 1.40, "fer": 0.00100000, "ber": 0.0005005000, "ci_fer": 0.00052164, "frames": 15000, "frame_errors": 15, "bit_errors": 9009, "total_bits": 18000000, "not_converged": 15},
+    {"eb_n0_db": 1.60, "fer": 0.00013333, "ber": 0.0000656667, "ci_fer": 0.00022475, "frames": 15000, "frame_errors": 2, "bit_errors": 1182, "total_bits": 18000000, "not_converged": 2},
+    {"eb_n0_db": 2.00, "fer": 0.00000000, "ber": 0.0000000000, "ci_fer": 0.00012802, "frames": 15000, "frame_errors": 0, "bit_errors": 0, "total_bits": 18000000, "not_converged": 0},
+    {"eb_n0_db": 3.00, "fer": 0.00000000, "ber": 0.0000000000, "ci_fer": 0.00012802, "frames": 15000, "frame_errors": 0, "bit_errors": 0, "total_bits": 18000000, "not_converged": 0}
+  ],
+  "waterfall_sf3": [
+    {"eb_n0_db": 0.20, "fer": 0.94826667, "ber": 0.4741505747, "ci_fer": 0.00354595, "frames": 15000, "frame_errors": 14224, "bit_errors": 6187665, "total_bits": 13050000, "not_converged": 14224},
+    {"eb_n0_db": 0.40, "fer": 0.80713333, "ber": 0.4035511877, "ci_fer": 0.00631378, "frames": 15000, "frame_errors": 12107, "bit_errors": 5266343, "total_bits": 13050000, "not_converged": 12107},
+    {"eb_n0_db": 0.60, "fer": 0.55726667, "ber": 0.2785757854, "ci_fer": 0.00794801, "frames": 15000, "frame_errors": 8359, "bit_errors": 3635414, "total_bits": 13050000, "not_converged": 8359},
+    {"eb_n0_db": 0.80, "fer": 0.28480000, "ber": 0.1423577011, "ci_fer": 0.00722190, "frames": 15000, "frame_errors": 4272, "bit_errors": 1857768, "total_bits": 13050000, "not_converged": 4272},
+    {"eb_n0_db": 1.00, "fer": 0.10013333, "ber": 0.0500186207, "ci_fer": 0.00480432, "frames": 15000, "frame_errors": 1502, "bit_errors": 652743, "total_bits": 13050000, "not_converged": 1502},
+    {"eb_n0_db": 1.10, "fer": 0.05080000, "ber": 0.0254173180, "ci_fer": 0.00351559, "frames": 15000, "frame_errors": 762, "bit_errors": 331696, "total_bits": 13050000, "not_converged": 762},
+    {"eb_n0_db": 1.20, "fer": 0.02453333, "ber": 0.0122667433, "ci_fer": 0.00247836, "frames": 15000, "frame_errors": 368, "bit_errors": 160081, "total_bits": 13050000, "not_converged": 368},
+    {"eb_n0_db": 1.30, "fer": 0.00993333, "ber": 0.0049601533, "ci_fer": 0.00159180, "frames": 15000, "frame_errors": 149, "bit_errors": 64730, "total_bits": 13050000, "not_converged": 149},
+    {"eb_n0_db": 1.40, "fer": 0.00373333, "ber": 0.0018622222, "ci_fer": 0.00098411, "frames": 15000, "frame_errors": 56, "bit_errors": 24302, "total_bits": 13050000, "not_converged": 56},
+    {"eb_n0_db": 1.60, "fer": 0.00040000, "ber": 0.0002027586, "ci_fer": 0.00034458, "frames": 15000, "frame_errors": 6, "bit_errors": 2646, "total_bits": 13050000, "not_converged": 6},
+    {"eb_n0_db": 2.00, "fer": 0.00000000, "ber": 0.0000000000, "ci_fer": 0.00012802, "frames": 15000, "frame_errors": 0, "bit_errors": 0, "total_bits": 13050000, "not_converged": 0},
+    {"eb_n0_db": 3.00, "fer": 0.00000000, "ber": 0.0000000000, "ci_fer": 0.00012802, "frames": 15000, "frame_errors": 0, "bit_errors": 0, "total_bits": 13050000, "not_converged": 0}
+  ],
+  "error_floor": {
+    "floor_sf2_2.5": {"fer": 0.0000000000, "ber": 0.000000000000, "ci_fer": 0.0000320113, "frames": 60000, "frame_errors": 0, "total_bits": 72000000, "ci_fer_upper": 0.0000640226},
+    "floor_sf2_3.0": {"fer": 0.0000000000, "ber": 0.000000000000, "ci_fer": 0.0000320113, "frames": 60000, "frame_errors": 0, "total_bits": 72000000, "ci_fer_upper": 0.0000640226},
+    "floor_sf3_2.5": {"fer": 0.0000000000, "ber": 0.000000000000, "ci_fer": 0.0000320113, "frames": 60000, "frame_errors": 0, "total_bits": 52200000, "ci_fer_upper": 0.0000640226},
+    "floor_sf3_3.0": {"fer": 0.0000000000, "ber": 0.000000000000, "ci_fer": 0.0000320113, "frames": 60000, "frame_errors": 0, "total_bits": 52200000, "ci_fer_upper": 0.0000640226}
+  },
+  "convergence_cdf": [
+    {"max_iters": 1, "fer": 1.00000000, "ci_fer": 0.00031993, "not_converged": 6000, "frames": 6000},
+    {"max_iters": 2, "fer": 1.00000000, "ci_fer": 0.00031993, "not_converged": 6000, "frames": 6000},
+    {"max_iters": 3, "fer": 1.00000000, "ci_fer": 0.00031993, "not_converged": 6000, "frames": 6000},
+    {"max_iters": 5, "fer": 0.96350000, "ci_fer": 0.00475292, "not_converged": 5781, "frames": 6000},
+    {"max_iters": 7, "fer": 0.37083333, "ci_fer": 0.01221866, "not_converged": 2225, "frames": 6000},
+    {"max_iters": 10, "fer": 0.03166667, "ci_fer": 0.00443963, "not_converged": 190, "frames": 6000},
+    {"max_iters": 15, "fer": 0.00300000, "ci_fer": 0.00141949, "not_converged": 18, "frames": 6000},
+    {"max_iters": 20, "fer": 0.00116667, "ci_fer": 0.00092060, "not_converged": 7, "frames": 6000},
+    {"max_iters": 25, "fer": 0.00100000, "ci_fer": 0.00086091, "not_converged": 6, "frames": 6000},
+    {"max_iters": 30, "fer": 0.00050000, "ci_fer": 0.00064955, "not_converged": 3, "frames": 6000},
+    {"max_iters": 40, "fer": 0.00016667, "ci_fer": 0.00045707, "not_converged": 1, "frames": 6000},
+    {"max_iters": 50, "fer": 0.00016667, "ci_fer": 0.00045707, "not_converged": 1, "frames": 6000}
+  ],
+  "loss_budget": {
+    "loss_baseline": {"fer": 0.00933333, "ber": 0.0046795370, "ci_fer": 0.00199721, "frames": 9000, "frame_errors": 84},
+    "loss_int8": {"fer": 0.00933333, "ber": 0.0046708333, "ci_fer": 0.00199721, "frames": 9000, "frame_errors": 84},
+    "loss_int4": {"fer": 0.05588889, "ber": 0.0279463889, "ci_fer": 0.00474857, "frames": 9000, "frame_errors": 503},
+    "loss_15iter": {"fer": 0.04688889, "ber": 0.0234674074, "ci_fer": 0.00437093, "frames": 9000, "frame_errors": 422}
+  },
+  "symmetry": {
+    "random": {"fer": 0.00880000, "ci_fer": 0.00149972, "frames": 15000},
+    "allzero": {"fer": 0.00000000, "ci_fer": 0.00012802, "frames": 15000}
+  },
+  "quantisation": [
+    {"config": "3bit", "fer": 0.97511111, "ber": 0.4876939815, "ci_fer": 0.00322427, "frames": 9000},
+    {"config": "4bit", "fer": 0.05588889, "ber": 0.0279463889, "ci_fer": 0.00474857, "frames": 9000},
+    {"config": "5bit", "fer": 0.01377778, "ber": 0.0068660185, "ci_fer": 0.00241671, "frames": 9000},
+    {"config": "6bit", "fer": 0.01088889, "ber": 0.0054441667, "ci_fer": 0.00215380, "frames": 9000},
+    {"config": "8bit", "fer": 0.00933333, "ber": 0.0046708333, "ci_fer": 0.00199721, "frames": 9000},
+    {"config": "float", "fer": 0.00933333, "ber": 0.0046795370, "ci_fer": 0.00199721, "frames": 9000}
+  ],
+  "error_patterns": [
+    {"eb_n0_db": 1.0, "total_frames": 5000, "frame_errors": 264, "max_bit_errors": 641, "k_nominal": 1200, "histogram": [{"range": "1-5", "count": 0}, {"range": "6-20", "count": 0}, {"range": "21-100", "count": 0}, {"range": "101-300", "count": 0}, {"range": "301+", "count": 264}], "raw_errors": [618, 608, 586, 591, 564, 605, 578, 597, 615, 566, 586, 611, 594, 581, 608, 580, 597, 602, 589, 605, 596, 592, 582, 604, 594, 587, 612, 615, 626, 607, 588, 586, 575, 628, 597, 608, 603, 599, 616, 577, 602, 577, 586, 589, 618, 611, 590, 623, 616, 613, 615, 621, 611, 576, 574, 617, 616, 615, 579, 587, 630, 570, 603, 612, 587, 599, 578, 600, 596, 599, 634, 590, 613, 619, 596, 614, 608, 596, 577, 618, 598, 611, 593, 565, 612, 613, 599, 615, 590, 596, 594, 563, 619, 575, 591, 621, 610, 579, 601, 641, 581, 601, 583, 608, 584, 639, 569, 593, 586, 563, 618, 585, 597, 624, 568, 578, 594, 585, 596, 589, 583, 605, 622, 615, 601, 584, 620, 595, 618, 602, 633, 630, 620, 570, 602, 560, 602, 608, 599, 601, 612, 573, 599, 624, 606, 592, 596, 609, 581, 588, 609, 616, 629, 588, 615, 591, 610, 597, 578, 603, 611, 604, 599, 588, 601, 584, 610, 578, 563, 577, 621, 592, 623, 614, 613, 586, 617, 576, 619, 585, 595, 602, 566, 569, 597, 598, 601, 612, 577, 590, 602, 591, 571, 618, 590, 604, 614, 613, 607, 610, 602, 590, 568, 600, 616, 590, 571, 591, 625, 580, 603, 603, 621, 595, 585, 596, 641, 612, 589, 591, 600, 602, 615, 613, 566, 595, 608, 598, 585, 599, 595, 596, 620, 586, 615, 599, 597, 633, 591, 619, 602, 594, 600, 592, 624, 605, 597, 577, 593, 620, 611, 586, 585, 589, 609, 622, 618, 582, 577, 605, 589, 576, 593, 610]},
+    {"eb_n0_db": 1.2, "total_frames": 10000, "frame_errors": 70, "max_bit_errors": 630, "k_nominal": 1200, "histogram": [{"range": "1-5", "count": 0}, {"range": "6-20", "count": 0}, {"range": "21-100", "count": 0}, {"range": "101-300", "count": 0}, {"range": "301+", "count": 70}], "raw_errors": [591, 602, 589, 582, 608, 589, 616, 613, 621, 616, 587, 596, 590, 608, 599, 596, 563, 621, 605, 584, 630, 570, 601, 615, 591, 577, 617, 595, 569, 598, 612, 604, 613, 595, 615, 566, 599, 620, 619, 594, 589, 582, 601, 614, 604, 596, 593, 601, 608, 612, 585, 616, 576, 607, 613, 592, 593, 612, 607, 595, 616, 587, 589, 629, 573, 608, 604, 614, 577, 601]},
+    {"eb_n0_db": 1.4, "total_frames": 20000, "frame_errors": 14, "max_bit_errors": 621, "k_nominal": 1200, "histogram": [{"range": "1-5", "count": 0}, {"range": "6-20", "count": 0}, {"range": "21-100", "count": 0}, {"range": "101-300", "count": 0}, {"range": "301+", "count": 14}], "raw_errors": [613, 621, 616, 570, 591, 601, 607, 616, 577, 602, 580, 594, 578, 569]}
+  ],
+  "saturation_stress": {
+    "low_snr": {"eb_n0_db": 0.1, "fer": 0.98500000, "ber": 0.4926983333, "frames": 3000, "not_converged": 2955},
+    "high_snr": {"eb_n0_db": 10.0, "fer": 0.00000000, "ber": 0.0000000000, "frames": 3000, "not_converged": 0}
+  }
+}

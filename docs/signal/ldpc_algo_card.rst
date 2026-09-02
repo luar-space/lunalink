@@ -329,8 +329,11 @@ This runs the full pipeline:
 
 1. Builds ``ldpc_characterise`` (parallel C++ runner, Release mode)
 2. Runs ~80 work items across all CPU cores (≈25 minutes on 10 threads)
-3. Outputs ``build/algo_card/sp_results.json``
+3. Outputs ``build/algo_card/sp_results.json`` and copies it to
+   ``docs/assurance/evidence/ldpc_algo_card.json``
 4. Generates figures to ``docs/_static/algo_card/``
 
-All results are deterministic (fixed seeds). Figures are committed alongside
-the document for offline viewing.
+All results are deterministic (fixed seeds).  The figures and the results
+JSON are committed, so ``task docs-build`` renders this page from the
+submission run without repeating the campaign; run ``task ldpc-algo-card``
+to regenerate both.
