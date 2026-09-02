@@ -48,8 +48,8 @@ Code parameters
 
 Implementation files:
 
--  ``cpp/include/lunalink/codes/prn.hpp`` --- public API (loaders, unpack, checksums)
--  ``cpp/codes/prn.cpp`` --- loader implementation
+-  ``cpp/include/lunalink/codes/prn_codes.hpp`` --- public API (loaders, unpack, checksums)
+-  ``cpp/codes/prn_codes.cpp`` --- loader implementation
 -  ``cpp/include/lunalink/codes/gold.hpp`` --- Gold generator class
 -  ``cpp/include/lunalink/codes/weil.hpp`` --- Weil generator class
 -  ``cpp/include/lunalink/codes/legendre.hpp`` --- Legendre symbol calculator
@@ -528,7 +528,7 @@ region**, so an untested line cannot hide behind a percentage.
      - 88.31%
      - 9
      - **100.0%**
-   * - ``codes/prn.cpp``
+   * - ``codes/prn_codes.cpp``
      - 100.00%
      - 0
      - **100.0%**

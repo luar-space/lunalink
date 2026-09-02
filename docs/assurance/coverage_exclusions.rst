@@ -57,7 +57,7 @@ Every file in ``cpp/codes/`` — the spreading-code generators — is at
      - 88.31%
      - 9
      - 100.0%
-   * - ``codes/prn.cpp``
+   * - ``codes/prn_codes.cpp``
      - 100.00%
      - 0
      - 100.0%

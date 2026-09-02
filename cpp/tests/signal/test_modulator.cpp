@@ -1,6 +1,6 @@
 // Copyright 2025-2026 Marco Fiscato
 // SPDX-License-Identifier: Apache-2.0
-#include "lunalink/codes/prn.hpp"
+#include "lunalink/codes/prn_codes.hpp"
 #include "lunalink/signal/modulator.hpp"
 
 #include <catch2/catch_test_macros.hpp>

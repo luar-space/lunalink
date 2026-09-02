@@ -1,7 +1,7 @@
 // Copyright 2025-2026 Marco Fiscato
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
-#include "lunalink/codes/prn.hpp"
+#include "lunalink/codes/prn_codes.hpp"
 #include "lunalink/core/safety.hpp"
 
 #include <algorithm> // for std::fill

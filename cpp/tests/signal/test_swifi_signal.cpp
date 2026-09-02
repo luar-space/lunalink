@@ -8,7 +8,7 @@
  * Compiled with LUNALINK_FAULT_INJECTION=1.
  */
 #include "lunalink/codes/gold.hpp"
-#include "lunalink/codes/prn.hpp"
+#include "lunalink/codes/prn_codes.hpp"
 #include "lunalink/core/safety.hpp"
 #include "lunalink/core/telemetry.hpp"
 #include "lunalink/messages/frame.hpp"

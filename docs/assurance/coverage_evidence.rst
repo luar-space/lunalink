@@ -151,7 +151,7 @@ Per-File Breakdown
      - 80.77%
      - --
      - 
-   * - ``codes/prn.cpp``
+   * - ``codes/prn_codes.cpp``
      - 100.00%
      - 100.00%
      - 100.00%
@@ -221,7 +221,7 @@ Per-File Breakdown
      - 80.00%
      - 50.00%
      - 
-   * - ``include/lunalink/codes/prn.hpp``
+   * - ``include/lunalink/codes/prn_codes.hpp``
      - 100.00%
      - 100.00%
      - 100.00%

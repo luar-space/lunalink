@@ -1,12 +1,12 @@
 {
-  "generated": "2026-09-01T20:28:29.465716+00:00",
-  "git_sha": "362c9e39a17d15c9ec3b4579bd27f26866ba7a9f",
+  "generated": "2026-09-02T14:40:13.289140+00:00",
+  "git_sha": "e83e398bf3ae5540909bd1b22648c5c45d913b3b",
   "requirements": {
     "LSIS-AFS-101": {
       "code_files": [
         "cpp/bindings/afs_module.cpp",
         "cpp/include/lunalink/codes/gold.hpp",
-        "cpp/include/lunalink/codes/prn.hpp"
+        "cpp/include/lunalink/codes/prn_codes.hpp"
       ],
       "test_files": [
         "cpp/tests/codes/test_prn.cpp",
@@ -17,7 +17,7 @@
     "LSIS-AFS-102": {
       "code_files": [
         "cpp/bindings/afs_module.cpp",
-        "cpp/include/lunalink/codes/prn.hpp",
+        "cpp/include/lunalink/codes/prn_codes.hpp",
         "cpp/include/lunalink/codes/weil.hpp"
       ],
       "test_files": [

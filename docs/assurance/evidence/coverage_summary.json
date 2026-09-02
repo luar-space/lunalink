@@ -135,7 +135,7 @@
       "flags": []
     },
     {
-      "filename": "codes/prn.cpp",
+      "filename": "codes/prn_codes.cpp",
       "regions": {
         "count": 18,
         "covered": 18,
@@ -429,7 +429,7 @@
       "flags": []
     },
     {
-      "filename": "include/lunalink/codes/prn.hpp",
+      "filename": "include/lunalink/codes/prn_codes.hpp",
       "regions": {
         "count": 8,
         "covered": 8,

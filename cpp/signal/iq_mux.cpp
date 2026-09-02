@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "lunalink/signal/iq_mux.hpp"
 
-#include "lunalink/codes/prn.hpp"
+#include "lunalink/codes/prn_codes.hpp"
 #include "lunalink/core/safety.hpp"
 
 namespace lunalink::signal {

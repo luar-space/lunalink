@@ -18,7 +18,7 @@
       "code_files": [
         "cpp/bindings/afs_module.cpp",
         "cpp/include/lunalink/codes/gold.hpp",
-        "cpp/include/lunalink/codes/prn.hpp"
+        "cpp/include/lunalink/codes/prn_codes.hpp"
       ],
       "matched_tests": [
         "[LSIS-AFS-101] gold_prn returns distinct sequences for different PRNs",
@@ -39,7 +39,7 @@
       ],
       "code_files": [
         "cpp/bindings/afs_module.cpp",
-        "cpp/include/lunalink/codes/prn.hpp",
+        "cpp/include/lunalink/codes/prn_codes.hpp",
         "cpp/include/lunalink/codes/weil.hpp"
       ],
       "matched_tests": [

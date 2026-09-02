@@ -117,7 +117,7 @@ add_library(lunalink_core
     cpp/codes/prn_table.cpp
     cpp/codes/prn_table_weil10230.cpp
     cpp/codes/prn_table_weil1500.cpp
-    cpp/codes/prn.cpp
+    cpp/codes/prn_codes.cpp
     cpp/codes/matched_code.cpp
     cpp/codes/gold.cpp
     cpp/codes/legendre.cpp

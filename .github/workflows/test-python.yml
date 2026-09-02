@@ -56,13 +56,11 @@ jobs:
         if: runner.os == 'Linux'
         run: uv run python scripts/interop/build_lans_afs_sim.py
 
-      # G-04: minimal PocketSDR extraction for non-AFS code generator interop.
-      # Clones upstream and compiles only sdr_code.c + sdr_code_gal.c against
-      # our stubs in scripts/interop/pocketsdr_stubs/ — no system packages,
-      # no fftw/rtklib/libfec/libldpc/libusb.
-      - name: Build PocketSDR (non-AFS interop oracle)
-        if: runner.os == 'Linux'
-        run: uv run python scripts/interop/build_pocketsdr.py
+      # A PocketSDR oracle step used to live here. It built non-AFS code
+      # generators (GPS/Galileo) for the multi-constellation work that is not
+      # part of this repository, and referenced a script this repository does
+      # not contain. The AFS interop oracle above is the one the tests need;
+      # scripts/check_interop_tests.py requires only the LANS-AFS-SIM binaries.
 
       - name: Verify interop tests are not silently skipped (G-15 gate)
         if: runner.os == 'Linux'

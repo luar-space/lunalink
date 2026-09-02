@@ -9,7 +9,7 @@
  */
 #include "lunalink/codes/codebook_checksums.hpp"
 #include "lunalink/codes/legendre.hpp"
-#include "lunalink/codes/prn.hpp"
+#include "lunalink/codes/prn_codes.hpp"
 #include "lunalink/core/safety.hpp"
 #include "lunalink/core/telemetry.hpp"
 #include "lunalink/encoding/bch.hpp"
