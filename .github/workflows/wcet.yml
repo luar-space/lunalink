@@ -51,8 +51,23 @@ jobs:
       - name: Show benchmark output
         # Both reporters write to files, so a failure above otherwise reports
         # only "exit code 1" with no indication of which budget was missed.
+        # Catch2 prints failures before the benchmark tables, so tailing the
+        # file hides exactly the part that matters: grep the failure block
+        # first, then show the tail for context.
         if: always()
-        run: tail -60 /tmp/wcet_console.txt || true
+        run: |
+          grep -B4 -A12 -E "FAILED|with expansion" /tmp/wcet_console.txt || true
+          echo "--- tail ---"
+          tail -30 /tmp/wcet_console.txt || true
+      - name: Upload WCET console and XML
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: wcet-raw-output
+          path: |
+            /tmp/wcet_console.txt
+            /tmp/wcet_results.xml
+          retention-days: 7
       - name: Run BER simulations
         run: |
           build/performance/test_lunalink "[channel]" \
