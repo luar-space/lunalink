@@ -58,8 +58,11 @@ BchSimResult run_bch_sim(double eb_no_db, int frames, uint32_t seed) {
   const double sigma_sq = sigma * sigma;
 
   std::mt19937 gen(seed);
-  std::uniform_int_distribution<uint8_t> fid_dist(0U, 3U);
-  std::uniform_int_distribution<uint8_t> toi_dist(0U, 99U);
+  // [rand.req.genl]/1.5 permits only short/int/long/long long and their
+  // unsigned forms as the distribution's result type; uint8_t is ill-formed,
+  // which libstdc++ and libc++ accept as an extension and MSVC rejects.
+  std::uniform_int_distribution<unsigned int> fid_dist(0U, 3U);
+  std::uniform_int_distribution<unsigned int> toi_dist(0U, 99U);
   std::normal_distribution<double> noise(0.0, sigma);
 
   std::array<uint8_t, kBchCodewordLength> codeword{};
@@ -70,8 +73,8 @@ BchSimResult run_bch_sim(double eb_no_db, int frames, uint32_t seed) {
   size_t soft_errors = 0;
 
   for (int f = 0; f < frames; ++f) {
-    const uint8_t fid = fid_dist(gen);
-    const uint8_t toi = toi_dist(gen);
+    const auto fid = static_cast<uint8_t>(fid_dist(gen));
+    const auto toi = static_cast<uint8_t>(toi_dist(gen));
 
     REQUIRE(bch_encode(Fid(fid), Toi(toi), codeword) == BchStatus::kOk);
 

@@ -27,6 +27,7 @@
 #include <cmath>
 #include <iostream>
 #include <mutex>
+#include <numbers>
 #include <random>
 #include <thread>
 #include <vector>
@@ -342,7 +343,7 @@ double bi_awgn_capacity(double snr_linear) {
     double term = std::log2(1.0 + std::exp(-llr));
     sum += weights[i] * term;
   }
-  return 1.0 - sum / std::sqrt(M_PI);
+  return 1.0 - sum / std::sqrt(std::numbers::pi);
 }
 
 // BI-AWGN channel dispersion via numerical differentiation of mutual info.
@@ -398,7 +399,7 @@ double bi_awgn_dispersion(double snr_linear) {
     double info = 1.0 - std::log2(1.0 + std::exp(-llr));
     E_i2 += weights[i] * info * info;
   }
-  E_i2 /= std::sqrt(M_PI);
+  E_i2 /= std::sqrt(std::numbers::pi);
   return E_i2 - C * C;
 }
 
