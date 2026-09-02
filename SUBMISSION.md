@@ -6,7 +6,7 @@
 |-------|---------|
 | Team Name | Luar Space |
 | Members | Marco Fiscato |
-| Institution / Affiliation | Independent |
+| Institution / Affiliation | Luar Space |
 | Contact Email | marco.fiscato@gmail.com |
 | Specification | LSIS-AFS (LunaNet Signal-In-Space Recommended Standard — Augmented Forward Signal, LSIS V1.0, 29 January 2025) |
 
