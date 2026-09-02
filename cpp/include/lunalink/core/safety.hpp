@@ -1,6 +1,7 @@
 // Copyright 2025-2026 Marco Fiscato
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
+#include <array>
 #include <cstdint>
 #include <span>
 #include <type_traits>

@@ -3,6 +3,7 @@
 #pragma once
 #include "lunalink/core/safety.hpp"
 
+#include <array>
 #include <cstdint>
 
 namespace lunalink::signal {

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "lunalink/codes/weil_parameters.hpp"
 
+#include <array>
+
 namespace lunalink::signal {
 
 /**

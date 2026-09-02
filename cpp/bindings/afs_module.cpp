@@ -24,6 +24,7 @@
 #include <nanobind/stl/tuple.h>
 #include <nanobind/stl/unique_ptr.h>
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstring>

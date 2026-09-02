@@ -4,6 +4,7 @@
 #include "lunalink/encoding/crc.hpp"
 
 #include <algorithm>
+#include <array>
 #include <limits>
 
 namespace lunalink::signal {
