@@ -473,10 +473,13 @@ Milestone 3 — Validation and Interoperability Demonstration (§3.2.3)
      - :doc:`interop_results` — L1 codes and L2 frames bit-exact against
        LANS-AFS-SIM (Ebinuma, independent C implementation); L3 acquires,
        tracks and fully decodes a 25 s, 7-SV LANS-AFS-SIM signal with all
-       three subframes CRC-24 verified
+       three subframes CRC-24 verified; L4–L5 reverse the direction —
+       PocketSDR-AFS, an independent receiver, decodes a LunaLink signal
+       and recovers the transmitted payload and CRC-24 exactly
      - ``task interop`` — clones and builds LANS-AFS-SIM, then runs
-       L1–L3.  Pass criterion for codes and frames is bit-exact
-       equality, not statistical agreement
+       L1–L3.  ``task interop-receiver`` builds PocketSDR-AFS and runs
+       L4–L5.  Pass criterion for codes, frames and the recovered payload
+       is bit-exact equality, not statistical agreement
    * - Independent verification of standards compliance
      - :doc:`interop_results` (agreement with an implementation that
        derives codes by a structurally different method);

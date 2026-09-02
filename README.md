@@ -316,6 +316,11 @@ summarised [above](#2-cross-implementation-validation-in-both-directions).
 For codes and frames the pass criterion is bit-exact equality, not
 statistical agreement.
 
+`task interop-receiver` runs the other direction, L4–L5: it builds
+**PocketSDR-AFS** (<https://github.com/osqzss/PocketSDR-AFS>), the receiving
+counterpart, and has it decode a LunaLink-generated signal. Takes ~2 minutes,
+of which most is generating three 12-second frames.
+
 No third-party source is vendored into this repository. The first run needs
 network access to clone LANS-AFS-SIM; every later run is offline, and takes
 a few seconds once built. Full methodology, per-level results and stated
@@ -345,7 +350,7 @@ one. Where to start, by what you want to know:
 | [c_plus_plus_guidelines.rst](docs/assurance/c_plus_plus_guidelines.rst) | *What dialect is the flight code written in?* The C++20 restriction: MISRA C++:2023 unioned with JPL D-60411, Power of Ten, NASA GSFC and N7 Space/ESA, strictest rule winning, every clause tagged with the standards that impose it |
 | [pics_proforma.rst](docs/signal/pics_proforma.rst) | *Which protocol features are supported?* 76 items, generated from the shall inventory |
 | [shall_inventory.rst](docs/signal/shall_inventory.rst) | *What does the spec require, and what did you do about each one?* All 76 normative identifiers with dispositions |
-| [interop_results.rst](docs/interop_results.rst) | *Does it agree with anyone else's implementation?* L1–L3 results, methodology, and what has **not** been run |
+| [interop_results.rst](docs/interop_results.rst) | *Does it agree with anyone else's implementation?* L1–L5 in both directions, the method behind each, and the bounds of what was demonstrated |
 | [ldpc_algo_card.rst](docs/signal/ldpc_algo_card.rst) | *How good is the decoder?* Waterfalls, error floor, convergence, quantisation, Shannon-gap decomposition |
 | [fmea.rst](docs/assurance/fmea.rst) | *What can fail, and what happens then?* Failure modes with detection and containment |
 | [coverage_exclusions.rst](docs/assurance/coverage_exclusions.rst) | *Why isn't coverage higher?* Every exclusion categorised and milestone-reviewed |
