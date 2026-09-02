@@ -69,7 +69,9 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install tools
-        run: sudo apt-get install -y ninja-build clang
+        # clang-tools provides scan-build, which `task clang-sa` requires;
+        # without it the job failed with "scan-build not found".
+        run: sudo apt-get install -y ninja-build clang clang-tools
       - uses: hendrikmuhs/ccache-action@v1
         with:
           key: clang-sa

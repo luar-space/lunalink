@@ -44,6 +44,11 @@ jobs:
           build/performance/test_lunalink "[wcet]" \
             --reporter console::out=/tmp/wcet_console.txt \
             --reporter xml::out=/tmp/wcet_results.xml
+      - name: Show benchmark output
+        # Both reporters write to files, so a failure above otherwise reports
+        # only "exit code 1" with no indication of which budget was missed.
+        if: always()
+        run: tail -60 /tmp/wcet_console.txt || true
       - name: Run BER simulations
         run: |
           build/performance/test_lunalink "[channel]" \

@@ -337,6 +337,31 @@ wheels = [
 ]
 
 [[package]]
+name = "clang-format"
+version = "22.1.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/52/75/b30cbd2460c92013664c4f4461d40788ae205e6981912b440adb37f3329d/clang_format-22.1.2.tar.gz", hash = "sha256:4bb3b70d5b7b0e4dc69ed4cddf7ba69b83b5f4f8467aad09236cf07d7c695ffe", size = 11509, upload-time = "2026-03-27T01:20:31.859Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/47/bd/00073b951dce1409e9bdfbdb7d32de8200bd392dd0018597a569251e7d2e/clang_format-22.1.2-py2.py3-none-macosx_10_9_x86_64.whl", hash = "sha256:fda2f44db357e183d9fd6f9f6649de6fbe446ff36fc63cc939663e4a4d9cdc6d", size = 1492616, upload-time = "2026-03-27T01:20:04.97Z" },
+    { url = "https://files.pythonhosted.org/packages/b5/a7/dd8ba271c4f7409fa6074a6777c0f1f22e184071d669ba77a20d2346cf07/clang_format-22.1.2-py2.py3-none-macosx_11_0_arm64.whl", hash = "sha256:e990d3e90d6116d59e6a4c745424895ddf97e915f7dac23489fbae6db6fc2ae4", size = 1478873, upload-time = "2026-03-27T01:20:06.614Z" },
+    { url = "https://files.pythonhosted.org/packages/7d/2f/e05f28b20a5c59f560e0f8898ee25b9ef19d2e314f400a321b37a9169ea1/clang_format-22.1.2-py2.py3-none-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:14b43f6283e57194f8ae804db27059072f09e6ccf77213a7a50e8eaf0babe2ca", size = 1757488, upload-time = "2026-03-27T01:20:08.302Z" },
+    { url = "https://files.pythonhosted.org/packages/80/e6/928340e10bfac56c8557665f24e979feb87862584bf91bd92551e2c68ffc/clang_format-22.1.2-py2.py3-none-manylinux_2_26_i686.manylinux_2_28_i686.whl", hash = "sha256:722f999d945463269bb54d573762d1d9318a32aee560ec3a4b4163f8ac68a256", size = 1888411, upload-time = "2026-03-27T01:20:09.71Z" },
+    { url = "https://files.pythonhosted.org/packages/44/7d/e43248709c206fcd3d4ca4a358e3d57bdd246afd79bb4dd4e4279d3f24b6/clang_format-22.1.2-py2.py3-none-manylinux_2_26_ppc64le.manylinux_2_28_ppc64le.whl", hash = "sha256:bf29dec5ea1306506864289cc18b32799ab8961214477c47d2f1f89f7c8b1277", size = 2070428, upload-time = "2026-03-27T01:20:11.531Z" },
+    { url = "https://files.pythonhosted.org/packages/83/c4/ff3bc97704e2eb00f97a37f6432f9bfed2cd5d24b7096d13c8c065cc71e0/clang_format-22.1.2-py2.py3-none-manylinux_2_26_s390x.manylinux_2_28_s390x.whl", hash = "sha256:929ac463fe146e00d5100e18abbd9354f13c8022f927ecfbdde764ebd4689a48", size = 2101299, upload-time = "2026-03-27T01:20:12.905Z" },
+    { url = "https://files.pythonhosted.org/packages/eb/ef/5aa864ee4db30f8743e906577028d147c1fbc969dd018e801c94da0112b3/clang_format-22.1.2-py2.py3-none-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:9b5cad2606cf5abb3de77141cdbd9d5e65aeccebcb71a06e7ef812092374e5f3", size = 1840897, upload-time = "2026-03-27T01:20:14.305Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/21/765f54517bcbe962787db8d68e9520c6eb5a6d1a340e5d95eb352234be00/clang_format-22.1.2-py2.py3-none-manylinux_2_31_armv7l.whl", hash = "sha256:3ccc0c69fa6cb063f8dcd8bd90853fa0318327593825166d14af01abd9927321", size = 1684837, upload-time = "2026-03-27T01:20:15.747Z" },
+    { url = "https://files.pythonhosted.org/packages/ff/7e/1c9a2d2ad40100815d681e5f0d56e87246d7e8abd23ce45aa88df4a16e85/clang_format-22.1.2-py2.py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:73ae6b9353bf6ab5bdf84f5520bcf50520c28b33f71d5f814a3eee97ad6fc33e", size = 2735168, upload-time = "2026-03-27T01:20:17.151Z" },
+    { url = "https://files.pythonhosted.org/packages/7a/b8/20f08e3ce40a8f75eb716a7fbdec078bdc11c4d39ba4e3647cca69cd6c2b/clang_format-22.1.2-py2.py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:5867948a93b70dd506f17d9a05b11ac3468a9052791663ef9793437649a2af31", size = 2514689, upload-time = "2026-03-27T01:20:18.878Z" },
+    { url = "https://files.pythonhosted.org/packages/03/6f/dcc28e461cdf755da2011974dd3a0af3394ad4f93a0699b9d147208bd5a7/clang_format-22.1.2-py2.py3-none-musllinux_1_2_i686.whl", hash = "sha256:0c8d85d3bc2f92f6cd1f1cfd229d7110e3af8415b70f763730d0f9baeb622698", size = 2985511, upload-time = "2026-03-27T01:20:20.807Z" },
+    { url = "https://files.pythonhosted.org/packages/71/d4/dd6839ea05786f36392a711e01fa8aae60d6409552b7d967369a3d7a90fc/clang_format-22.1.2-py2.py3-none-musllinux_1_2_ppc64le.whl", hash = "sha256:0380c06a5e61dd5f4c9a89fb3e9af1905ac98e45090a4733b11b9ec6e20d420c", size = 3119129, upload-time = "2026-03-27T01:20:22.388Z" },
+    { url = "https://files.pythonhosted.org/packages/01/7a/c39827920ed7a69d833c7a3c8a2258377375056283bdcea6e664106e3ed4/clang_format-22.1.2-py2.py3-none-musllinux_1_2_s390x.whl", hash = "sha256:6e67739024ec3134c9f5e0445492326e6f462ad7211b0892420c84898d5efa36", size = 3217196, upload-time = "2026-03-27T01:20:24.44Z" },
+    { url = "https://files.pythonhosted.org/packages/f0/96/8a197f2f4ec5df79516c525cdccacaf7f8df3e4150fdfa982a2ee99a8550/clang_format-22.1.2-py2.py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:da5c5852ecc81d99394532beaaecac1d4ef929efeafda9552d47fa2ea9abef2e", size = 2848061, upload-time = "2026-03-27T01:20:25.904Z" },
+    { url = "https://files.pythonhosted.org/packages/51/86/0f90cc5f0c96cbe26d339584d9be42567c58e54886cae22e1c2bd73d201d/clang_format-22.1.2-py2.py3-none-win32.whl", hash = "sha256:ae530c63a118d399538751d9c870714c5ca285568894f99185d08e35840ca6e7", size = 1299258, upload-time = "2026-03-27T01:20:27.362Z" },
+    { url = "https://files.pythonhosted.org/packages/41/df/3de9ed5301d8ace58b62cb1f60ca1707b2279aa0433b84e2363bbf8dd83b/clang_format-22.1.2-py2.py3-none-win_amd64.whl", hash = "sha256:5c45968483fc0ccfdf986dee45f79179ffb55396c0bb979d0b0e2a8ec7f91fac", size = 1460299, upload-time = "2026-03-27T01:20:29.064Z" },
+    { url = "https://files.pythonhosted.org/packages/93/8e/b890b4509bf4a5dcdb9286431b7a98bc8783e6314c45856e4bd13e164441/clang_format-22.1.2-py2.py3-none-win_arm64.whl", hash = "sha256:26a68d071a1a52530f10402d94c651c52cfda2e66b67c41bb06352392684360f", size = 1344967, upload-time = "2026-03-27T01:20:30.609Z" },
+]
+
+[[package]]
 name = "click"
 version = "8.5.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1011,6 +1036,7 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "beartype" },
+    { name = "clang-format" },
     { name = "furo" },
     { name = "gcovr" },
     { name = "ipykernel" },
@@ -1047,6 +1073,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "beartype", specifier = ">=0.18" },
+    { name = "clang-format", specifier = "==22.1.2" },
     { name = "furo", specifier = ">=2024.1.29" },
     { name = "gcovr", specifier = ">=7.0" },
     { name = "ipykernel", specifier = ">=6.0" },

@@ -35,6 +35,10 @@ test = [
 ]
 dev = [
     {include-group = "test"},
+    # Pinned exactly: clang-format's output changes between major versions, so
+    # an unpinned CI (Ubuntu ships 18) disagrees with a developer's Homebrew
+    # LLVM about files neither has touched. One binary, one result.
+    "clang-format==22.1.2",
     "numpy>=1.24",
     "matplotlib>=3.7",
     "radon>=6.0",

@@ -25,7 +25,10 @@ jobs:
         # PRs: single fast job. Main: full matrix.
         python-version: ${{ github.event_name == 'pull_request' && fromJSON('["3.13"]') || fromJSON('["3.12", "3.13", "3.14"]') }}
         os: [ubuntu-latest]
-        include: ${{ github.event_name != 'pull_request' && fromJSON('[{"python-version": "3.12", "os": "windows-latest"}, {"python-version": "3.12", "os": "macos-14"}]') || fromJSON('[]') }}
+        # Folded scalar: the inline JSON contains colons, which YAML cannot
+        # parse in a plain scalar — the workflow failed to load without it.
+        include: >-
+          ${{ github.event_name != 'pull_request' && fromJSON('[{"python-version": "3.12", "os": "windows-latest"}, {"python-version": "3.12", "os": "macos-14"}]') || fromJSON('[]') }}
     steps:
       - uses: actions/checkout@v5
         with:

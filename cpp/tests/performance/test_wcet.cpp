@@ -53,7 +53,7 @@ namespace {
 #ifdef NDEBUG
 #define LUNALINK_SKIP_UNLESS_RELEASE() ((void)0)
 #else
-#define LUNALINK_SKIP_UNLESS_RELEASE()                                                             \
+#define LUNALINK_SKIP_UNLESS_RELEASE() \
   SKIP("WCET budgets are Release-only; run `task wcet` or `task performance`")
 #endif
 

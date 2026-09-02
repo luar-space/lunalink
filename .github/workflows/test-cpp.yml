@@ -30,13 +30,22 @@ jobs:
           key: test-cpp
       - name: Configure & Build
         run: |
+          # LUNALINK_FAULT_INJECTION=ON is what builds lunalink_swifi_tests
+          # (CMakeLists.txt:266); without it the swifi job downloads an
+          # artifact that never contained the binary and fails at chmod.
+          # Mirrors `task swifi`.
           cmake -B build -S . -G Ninja \
             -DBUILD_PYTHON_BINDINGS=OFF \
             -DBUILD_TESTING=ON \
             -DCMAKE_BUILD_TYPE=Debug \
+            -DLUNALINK_FAULT_INJECTION=ON \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build build --parallel
+      - name: Verify both binaries exist
+        run: |
+          test -x build/test_lunalink || { echo "missing test_lunalink"; exit 1; }
+          test -x build/lunalink_swifi_tests || { echo "missing lunalink_swifi_tests"; exit 1; }
       - name: Upload build
         uses: actions/upload-artifact@v5
         with:

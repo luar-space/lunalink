@@ -7,9 +7,15 @@ shopt: [globstar]
 # (debug, tidy, sanitize, swifi, oss-export…) has its own cmake flags, but
 # ~90% of translation units are shared, so the cache is highly effective
 # across the five cmake invocations inside `task ci-checks`.
+#
+# Resolved, not assumed: setting these unconditionally made every cmake
+# configure fail with "ccache: not found" wherever ccache is absent — which
+# is any machine that has not installed it, and the Deploy Docs runner.
 env:
-  CMAKE_C_COMPILER_LAUNCHER: ccache
-  CMAKE_CXX_COMPILER_LAUNCHER: ccache
+  CMAKE_C_COMPILER_LAUNCHER:
+    sh: command -v ccache >/dev/null 2>&1 && echo ccache || true
+  CMAKE_CXX_COMPILER_LAUNCHER:
+    sh: command -v ccache >/dev/null 2>&1 && echo ccache || true
 
 vars:
   # Resolved once at parse time — subtasks inherit these without re-evaluating.
@@ -831,7 +837,9 @@ tasks:
     vars:
       CLANG_FORMAT:
         sh: |
-          if command -v clang-format >/dev/null 2>&1; then
+          if [ -x .venv/bin/clang-format ]; then
+            echo .venv/bin/clang-format
+          elif command -v clang-format >/dev/null 2>&1; then
             command -v clang-format
           elif [ -x /opt/homebrew/opt/llvm/bin/clang-format ]; then
             echo /opt/homebrew/opt/llvm/bin/clang-format
@@ -857,7 +865,9 @@ tasks:
     vars:
       CLANG_FORMAT:
         sh: |
-          if command -v clang-format >/dev/null 2>&1; then
+          if [ -x .venv/bin/clang-format ]; then
+            echo .venv/bin/clang-format
+          elif command -v clang-format >/dev/null 2>&1; then
             command -v clang-format
           elif [ -x /opt/homebrew/opt/llvm/bin/clang-format ]; then
             echo /opt/homebrew/opt/llvm/bin/clang-format

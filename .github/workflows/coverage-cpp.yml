@@ -22,6 +22,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       LLVM_VERSION: "19"
+      # Exposed so the badge steps can skip themselves where no gist is
+      # configured (a fork, or this submission repository) instead of failing.
+      GIST_SECRET: ${{ secrets.GIST_SECRET }}
       # Single source of truth for these floors is the THRESHOLDS table in
       # scripts/coverage_evidence_report.py (rendered in
       # docs/assurance/coverage_evidence.rst with the ECSS rationale for each).
@@ -180,7 +183,7 @@ jobs:
             build/coverage/html/
 
       - name: Update region coverage badge
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && env.GIST_SECRET != ''
         uses: schneegans/dynamic-badges-action@v1.7.0
         with:
           auth: ${{ secrets.GIST_SECRET }}
@@ -191,7 +194,7 @@ jobs:
           color: ${{ steps.coverage.outputs.region_color }}
 
       - name: Update line coverage badge
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && env.GIST_SECRET != ''
         uses: schneegans/dynamic-badges-action@v1.7.0
         with:
           auth: ${{ secrets.GIST_SECRET }}
@@ -202,7 +205,7 @@ jobs:
           color: ${{ steps.coverage.outputs.line_color }}
 
       - name: Update branch coverage badge
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && env.GIST_SECRET != ''
         uses: schneegans/dynamic-badges-action@v1.7.0
         with:
           auth: ${{ secrets.GIST_SECRET }}
@@ -213,7 +216,7 @@ jobs:
           color: ${{ steps.coverage.outputs.branch_color }}
 
       - name: Update MC/DC coverage badge
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && env.GIST_SECRET != ''
         uses: schneegans/dynamic-badges-action@v1.7.0
         with:
           auth: ${{ secrets.GIST_SECRET }}

@@ -33,8 +33,8 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1
         with:
           key: lint
-      - name: Install clang-format
-        run: sudo apt-get install -y clang-format
+      # clang-format comes from the pinned dev dependency (pyproject.toml), not
+      # from apt: Ubuntu's is a different major version and formats differently.
       - name: Run lint checks
         run: task lint-check
       - name: Check C++ formatting
