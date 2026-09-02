@@ -6,18 +6,16 @@ Augmented Forward Signal (LSIS-AFS)** protocol, as specified in LSIS V1.0
 
 Built as part of the **ESA-CCSDS Protocol Development Outreach Competition**.
 
-> **📖 Full documentation: <https://luar-space.github.io/lsis-afs/>**
+> **Judging this submission? Start here.** After `task install`, run
+> `task docs-serve` (~15 s) and open
+> <http://127.0.0.1:8000/evaluation_guide.html> — the Evaluation Guide maps
+> every Delivery Outline deliverable to the document that satisfies it and the
+> command that verifies it.
 >
-> Judging this submission? Go straight to the
-> [Evaluation Guide](https://luar-space.github.io/lsis-afs/evaluation_guide.html)
-> — it maps every Delivery Outline deliverable to the document that satisfies
-> it and the command that verifies it. The rendered site is the intended
-> reading surface: the `docs/` sources are reStructuredText, and their
-> cross-references do not resolve in GitHub's file viewer.
->
-> **Reading offline?** After `task install`, `task docs-serve` builds the same
-> site in ~15 s and serves it at <http://127.0.0.1:8000> with auto-reload —
-> nothing to deploy. `task docs-pdf` produces a single PDF instead.
+> The `docs/` sources are reStructuredText: read them through that local site
+> rather than GitHub's file viewer, which does not resolve Sphinx
+> cross-references. `task docs-pdf` produces a single PDF instead, and
+> `docs/evaluation_guide.rst` is legible as plain text at a pinch.
 
 ## Features
 
@@ -208,8 +206,7 @@ for a containerised build if you prefer not to install toolchains.
 ## Quick Start
 
 ```bash
-git clone https://github.com/luar-space/lsis-afs.git
-cd lsis-afs
+cd lsis-afs         # a clone of this repository
 task install        # uv sync --group dev: builds the C++ core + Python package
 ```
 
@@ -311,12 +308,11 @@ separately at
 
 ## Documentation
 
-The full documentation site is published at
-**<https://luar-space.github.io/lsis-afs/>** (rebuilt and deployed by
-`.github/workflows/docs-pages.yml` on every push to `main`): quickstart,
-API reference, per-gateway deliverable verification, compliance matrix,
-assurance evidence (FMEA, fault coverage, MC/DC), and interoperability
-results.
+The documentation set covers quickstart, API reference, per-gateway
+deliverable verification, compliance matrix, PICS proforma, assurance evidence
+(FMEA, fault coverage, MC/DC), and interoperability results.
+`.github/workflows/docs-pages.yml` publishes it as a GitHub Pages site when the
+repository is public; until then, read it locally.
 
 Three ways to read it locally — the `docs/` sources are reStructuredText, so
 read them through one of these rather than GitHub's file viewer, which does

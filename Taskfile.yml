@@ -579,6 +579,13 @@ tasks:
         echo "PASS: LunaLink is bit-exact with an independent implementation."
     silent: false
 
+  pics-proforma:
+    desc: >-
+      Regenerate the PICS proforma from the shall-statement inventory; fails
+      if the two disagree on counts or dispositions.
+    cmd: uv run python scripts/pics_proforma.py
+    silent: false
+
   traceability:
     desc: Verify requirement-to-test traceability (LSIS-AFS / SW-SAF tags).
     cmd: python3 scripts/verify_traceability.py

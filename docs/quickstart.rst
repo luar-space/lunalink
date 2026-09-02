@@ -9,7 +9,7 @@ Installation
 
 .. code-block:: bash
 
-   git clone https://github.com/luar-space/lsis-afs && cd lsis-afs
+   cd lsis-afs      # a clone of this repository
    task install   # uv sync --group dev — builds the C++ core + Python package
 
    # library-only alternative (no dev tooling):

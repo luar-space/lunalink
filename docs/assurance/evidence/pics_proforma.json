@@ -1,0 +1,774 @@
+{
+  "title": "LSIS-AFS PICS Proforma",
+  "document_id": "LUNALINK-PICS-001",
+  "generated_by": "scripts/pics_proforma.py",
+  "source": "docs/signal/shall_inventory.rst",
+  "items": [
+    {
+      "section": "Section 2.2 --- Signal-In-Space Error",
+      "item": "LSIS-001",
+      "clause": "2.2.3",
+      "feature": "SISE pos |le| 40 m (95th percentile, 24 h)",
+      "disposition": "Implemented",
+      "evidence": "``sise.cpp``, ``test_sise.cpp`` [LSIS-SISE]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.2 --- Signal-In-Space Error",
+      "item": "LSIS-002",
+      "clause": "2.2.3",
+      "feature": "SISE vel |le| 0.01 m/s (95th percentile, 24 h)",
+      "disposition": "Implemented",
+      "evidence": "``sise.cpp``, ``test_sise.cpp`` [LSIS-SISE]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.2 --- Signal-In-Space Error",
+      "item": "LSIS-005",
+      "clause": "2.2.3",
+      "feature": "Predicted SISE in MSG-G4 (SISEpos + SISEvel)",
+      "disposition": "TBW in Spec",
+      "evidence": "MSG-G4 content is {LSIS-TBW-2006}",
+      "status": "M",
+      "support": "N/A"
+    },
+    {
+      "section": "Section 2.2 --- Signal-In-Space Error",
+      "item": "LSIS-006",
+      "clause": "2.2.3",
+      "feature": "Accuracy of predicted SISE position",
+      "disposition": "TBW in Spec",
+      "evidence": "{LSIS-TBW-2001}",
+      "status": "M",
+      "support": "N/A"
+    },
+    {
+      "section": "Section 2.2 --- Signal-In-Space Error",
+      "item": "LSIS-007",
+      "clause": "2.2.3",
+      "feature": "Accuracy of predicted SISE velocity",
+      "disposition": "TBW in Spec",
+      "evidence": "{LSIS-TBW-2002}",
+      "status": "M",
+      "support": "N/A"
+    },
+    {
+      "section": "Section 2.3.1 --- Composite Signal",
+      "item": "LSIS-010",
+      "clause": "2.3.1.1",
+      "feature": "Frequency band S-band 2483.5--2500 MHz",
+      "disposition": "RF / Out of Scope",
+      "evidence": "Baseband only; no carrier generation",
+      "status": "M",
+      "support": "N/A"
+    },
+    {
+      "section": "Section 2.3.1 --- Composite Signal",
+      "item": "LSIS-020",
+      "clause": "2.3.1.1",
+      "feature": "Carrier frequency 2492.028 MHz",
+      "disposition": "RF / Out of Scope",
+      "evidence": "Baseband only",
+      "status": "M",
+      "support": "N/A"
+    },
+    {
+      "section": "Section 2.3.1 --- Composite Signal",
+      "item": "LSIS-030",
+      "clause": "2.3.1.1",
+      "feature": "Carrier frequency max offset < 10 Hz",
+      "disposition": "RF / Out of Scope",
+      "evidence": "Baseband only",
+      "status": "M",
+      "support": "N/A"
+    },
+    {
+      "section": "Section 2.3.1 --- Composite Signal",
+      "item": "LSIS-040",
+      "clause": "2.3.1.2",
+      "feature": "Signal polarization RHCP",
+      "disposition": "RF / Out of Scope",
+      "evidence": "Antenna design excluded",
+      "status": "M",
+      "support": "N/A"
+    },
+    {
+      "section": "Section 2.3.1 --- Composite Signal",
+      "item": "LSIS-050",
+      "clause": "2.3.1.2",
+      "feature": "RHCP axial ratio < 3 dB {LSIS-TBC-2005}",
+      "disposition": "RF / Out of Scope",
+      "evidence": "Antenna design excluded",
+      "status": "M",
+      "support": "N/A"
+    },
+    {
+      "section": "Section 2.3.1 --- Composite Signal",
+      "item": "LSIS-060",
+      "clause": "2.3.1.3",
+      "feature": "Phase noise spectral density (PLL tracking)",
+      "disposition": "RF / Out of Scope",
+      "evidence": "Transmitter hardware excluded",
+      "status": "M",
+      "support": "N/A"
+    },
+    {
+      "section": "Section 2.3.1 --- Composite Signal",
+      "item": "LSIS-070",
+      "clause": "2.3.1.4",
+      "feature": "Max in-band spurious emissions |le| -35 dB",
+      "disposition": "RF / Out of Scope",
+      "evidence": "Transmitter hardware excluded",
+      "status": "M",
+      "support": "N/A"
+    },
+    {
+      "section": "Section 2.3.1 --- Composite Signal",
+      "item": "LSIS-080",
+      "clause": "2.3.1.4",
+      "feature": "Max out-of-band emissions",
+      "disposition": "TBW in Spec",
+      "evidence": "{LSIS-TBW-2003}",
+      "status": "M",
+      "support": "N/A"
+    },
+    {
+      "section": "Section 2.3.1 --- Composite Signal",
+      "item": "LSIS-090",
+      "clause": "2.3.1.5",
+      "feature": "Receiver reference bandwidth 15.944 MHz",
+      "disposition": "RF / Out of Scope",
+      "evidence": "Receiver front-end excluded",
+      "status": "M",
+      "support": "N/A"
+    },
+    {
+      "section": "Section 2.3.1 --- Composite Signal",
+      "item": "LSIS-100",
+      "clause": "2.3.1.5",
+      "feature": "Correlation loss < 0.6 dB {LSIS-TBC-2009}",
+      "disposition": "RF / Out of Scope",
+      "evidence": "Transmitter hardware excluded",
+      "status": "M",
+      "support": "N/A"
+    },
+    {
+      "section": "Section 2.3.1 --- Composite Signal",
+      "item": "LSIS-103",
+      "clause": "2.3.1.6",
+      "feature": "Power ratio AFS-I/AFS-Q = 50/50 (Table 3)",
+      "disposition": "Implemented",
+      "evidence": "``iq_mux.cpp`` equal power split [LSIS-AFS-301]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.3.1 --- Composite Signal",
+      "item": "LSIS-105",
+      "clause": "2.3.1.8",
+      "feature": "LNSP-defined service volume (FLEX)",
+      "disposition": "FLEX",
+      "evidence": "LNSP implementation flexibility; documented",
+      "status": "O",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.3.1 --- Composite Signal",
+      "item": "LSIS-110",
+      "clause": "2.3.1.7",
+      "feature": "Min/max received power on lunar surface (Table 4)",
+      "disposition": "RF / Out of Scope",
+      "evidence": "Link budget; no transmitter",
+      "status": "M",
+      "support": "N/A"
+    },
+    {
+      "section": "Section 2.3.1 --- Composite Signal",
+      "item": "LSIS-120",
+      "clause": "2.3.1.8",
+      "feature": "Max power outside service volume (Table 5)",
+      "disposition": "RF / Out of Scope",
+      "evidence": "Link budget; no transmitter",
+      "status": "M",
+      "support": "N/A"
+    },
+    {
+      "section": "Section 2.3.1 --- Composite Signal",
+      "item": "LSIS-125",
+      "clause": "2.3.2",
+      "feature": "Signal components linearly multiplexed (Figure 2)",
+      "disposition": "Implemented",
+      "evidence": "``iq_mux.cpp`` [LSIS-AFS-301]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.3.2 --- Modulation",
+      "item": "LSIS-130",
+      "clause": "2.3.2",
+      "feature": "Signal generation formula S_AFS(t) = I cos - Q sin",
+      "disposition": "Implemented",
+      "evidence": "``modulator.hpp`` [LSIS-AFS-201]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.3.2 --- Modulation",
+      "item": "LSIS-140",
+      "clause": "2.3.2",
+      "feature": "Chip rates I=1.023, Q=5.115 Mchip/s; symbol rate 500 sps",
+      "disposition": "Implemented",
+      "evidence": "``modulator.hpp``, ``iq_mux.cpp``",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.3.2 --- Modulation",
+      "item": "LSIS-150",
+      "clause": "2.3.3",
+      "feature": "Logic levels: 1 |rarr| -1.0, 0 |rarr| +1.0 (Table 8)",
+      "disposition": "Implemented",
+      "evidence": "``modulator.hpp`` branchless BPSK [LSIS-AFS-201]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.3.4 --- Transmitted Signals Coherency",
+      "item": "LSIS-160",
+      "clause": "2.3.4",
+      "feature": "Primary code / data coherency (|le| 0.5 ns)",
+      "disposition": "Implemented",
+      "evidence": "``modulator.hpp`` chip-aligned modulation",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.3.4 --- Transmitted Signals Coherency",
+      "item": "LSIS-170",
+      "clause": "2.3.4",
+      "feature": "Secondary code / primary code coherency (|le| 0.5 ns)",
+      "disposition": "Implemented",
+      "evidence": "``matched_code.cpp`` [LSIS-AFS-401]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.3.4 --- Transmitted Signals Coherency",
+      "item": "LSIS-171",
+      "clause": "2.3.4",
+      "feature": "Tertiary code / secondary code coherency (|le| 0.5 ns)",
+      "disposition": "Implemented",
+      "evidence": "``matched_code.cpp`` [LSIS-AFS-401]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.3.4 --- Transmitted Signals Coherency",
+      "item": "LSIS-172",
+      "clause": "2.3.4",
+      "feature": "Tiered code coherent generation (no chip slips)",
+      "disposition": "Implemented",
+      "evidence": "``matched_code.cpp`` [LSIS-AFS-401]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.3.4 --- Transmitted Signals Coherency",
+      "item": "LSIS-180",
+      "clause": "2.3.4",
+      "feature": "Code-code (data/pilot) coherency < 0.5 ns",
+      "disposition": "Implemented",
+      "evidence": "``iq_mux.cpp`` synchronized generation",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.3.4 --- Transmitted Signals Coherency",
+      "item": "LSIS-190",
+      "clause": "2.3.4",
+      "feature": "Code/carrier phase coherency < 0.13 ns (1-sigma, 8 h)",
+      "disposition": "RF / Out of Scope",
+      "evidence": "Transmitter phase center; no hardware",
+      "status": "M",
+      "support": "N/A"
+    },
+    {
+      "section": "Section 2.3.5 --- Spreading Codes",
+      "item": "LSIS-200",
+      "clause": "2.3.5.1",
+      "feature": "Code lengths per Table 9 (I: 2046, Q: 10230/4/1500)",
+      "disposition": "Implemented",
+      "evidence": "``gold.hpp``, ``weil.hpp``, ``prn.hpp`` [LSIS-AFS-101/102]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.3.5 --- Spreading Codes",
+      "item": "LSIS-210",
+      "clause": "2.3.5.1",
+      "feature": "Data/pilot code synchronicity (Figure 3)",
+      "disposition": "Implemented",
+      "evidence": "``iq_mux.cpp`` synchronized epochs",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.3.5 --- Spreading Codes",
+      "item": "LSIS-220",
+      "clause": "2.3.5.1",
+      "feature": "Tertiary code synchronized with frame start",
+      "disposition": "Implemented",
+      "evidence": "``matched_code.cpp`` frame-aligned tertiary",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.3.5 --- Spreading Codes",
+      "item": "LSIS-221",
+      "clause": "2.3.5.3",
+      "feature": "AFS-I primary code: 2047 Gold, short-cycled to 2046 (Appendix C)",
+      "disposition": "Implemented",
+      "evidence": "``gold.hpp`` [LSIS-AFS-101]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.3.5 --- Spreading Codes",
+      "item": "LSIS-222",
+      "clause": "2.3.5.3",
+      "feature": "AFS-Q primary code: Weil length 10230 (Appendix D)",
+      "disposition": "Implemented",
+      "evidence": "``weil.hpp`` [LSIS-AFS-102]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.3.5 --- Spreading Codes",
+      "item": "LSIS-223",
+      "clause": "2.3.5.3",
+      "feature": "AFS-Q secondary code: 4 sequences per Table 10",
+      "disposition": "Implemented",
+      "evidence": "``matched_code.cpp`` [LSIS-AFS-401]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.3.5 --- Spreading Codes",
+      "item": "LSIS-224",
+      "clause": "2.3.5.3",
+      "feature": "AFS-Q tertiary code: Weil length 1500 (Appendix E)",
+      "disposition": "Implemented",
+      "evidence": "``weil.hpp`` [LSIS-AFS-102]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.3.5 --- Spreading Codes",
+      "item": "LSIS-260",
+      "clause": "2.3.5.4",
+      "feature": "Matched-code assignment per LNSP node (Table F-1)",
+      "disposition": "TBC in Spec",
+      "evidence": "{LSIS-TBD-2001}; interim Table 11 codes implemented",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-300",
+      "clause": "2.4.1",
+      "feature": "Spare bits: alternating 0/1 starting with 0 on MSB",
+      "disposition": "Implemented",
+      "evidence": "``frame.cpp`` [LSIS-AFS-300]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-310",
+      "clause": "2.4.1",
+      "feature": "Frame structure: SP + SB1 + other subframes",
+      "disposition": "Implemented",
+      "evidence": "``frame.cpp`` [LSIS-AFS-601]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-320",
+      "clause": "2.4.1",
+      "feature": "Bit/byte ordering: MSB first (Figure 6)",
+      "disposition": "Implemented",
+      "evidence": "``message_parser.cpp`` [LSIS-AFS-320]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-330",
+      "clause": "2.4.1",
+      "feature": "Sync pattern: 68 symbols, 0xCC63F74536F49E04A",
+      "disposition": "Implemented",
+      "evidence": "``frame.hpp`` [LSIS-AFS-601]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-340",
+      "clause": "2.4.1",
+      "feature": "SP shall not be encoded",
+      "disposition": "Implemented",
+      "evidence": "``frame.cpp`` SP prepended after encoding",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-410",
+      "clause": "2.4.2",
+      "feature": "SB1 data per Table 13 (FID 2 bits, TOI 7 bits)",
+      "disposition": "Implemented",
+      "evidence": "``frame.cpp`` [LSIS-AFS-601]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-415",
+      "clause": "2.4.2",
+      "feature": "SB1 bit assignment: FID=2 MSBs, TOI=7 LSBs",
+      "disposition": "Implemented",
+      "evidence": "``frame.cpp`` [LSIS-AFS-602]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-420",
+      "clause": "2.4.3",
+      "feature": "Frame structure identification via FID (Table 15)",
+      "disposition": "Implemented",
+      "evidence": "``frame.cpp`` [LSIS-AFS-603]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-FID0-430",
+      "clause": "2.4.3.1",
+      "feature": "FID=0 structure per Figure 9",
+      "disposition": "Implemented",
+      "evidence": "``frame.cpp`` [LSIS-AFS-604]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-FID0-440",
+      "clause": "2.4.3.1",
+      "feature": "SB2 encoding: 1200 bits, LDPC rate 1/2",
+      "disposition": "Implemented",
+      "evidence": "``ldpc.hpp`` [LSIS-AFS-320]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-FID0-450",
+      "clause": "2.4.3.1",
+      "feature": "SB3 encoding: 870 bits, LDPC rate 1/2",
+      "disposition": "Implemented",
+      "evidence": "``ldpc.hpp`` [LSIS-AFS-320]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-FID0-460",
+      "clause": "2.4.3.1",
+      "feature": "SB4 encoding: 870 bits, LDPC rate 1/2",
+      "disposition": "Implemented",
+      "evidence": "``ldpc.hpp`` [LSIS-AFS-320]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-FID0-465",
+      "clause": "2.4.3.1",
+      "feature": "CRC guards all info in SB2/SB3/SB4 incl. spare bits",
+      "disposition": "Implemented",
+      "evidence": "``crc.hpp`` [LSIS-AFS-467]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-FID0-467",
+      "clause": "2.4.3.1",
+      "feature": "CRC-24 generator polynomial G(X) = (1+X)*P(X)",
+      "disposition": "Implemented",
+      "evidence": "``crc.hpp`` CRC-24Q [LSIS-AFS-467]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-FID0-469",
+      "clause": "2.4.3.1",
+      "feature": "CRC computation: 24 parity bits p_i",
+      "disposition": "Implemented",
+      "evidence": "``crc.hpp`` [LSIS-AFS-467]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-FID0-470",
+      "clause": "2.4.3.1",
+      "feature": "Interleaving: 60 |times| 98, 5880 symbols (Table 17)",
+      "disposition": "Implemented",
+      "evidence": "``interleaver.hpp`` [LSIS-AFS-470/471]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-FID0-500",
+      "clause": "2.4.3.1",
+      "feature": "SB2 broadcast in every frame",
+      "disposition": "Implemented",
+      "evidence": "``frame.cpp`` [LSIS-AFS-605]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-FID0-510",
+      "clause": "2.4.3.1",
+      "feature": "SB2 structure identical in every frame",
+      "disposition": "Implemented",
+      "evidence": "``frame.cpp`` [LSIS-AFS-605]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-FID0-520",
+      "clause": "2.4.3.1",
+      "feature": "SB2 contains CED, ToT (WN/ITOW), Health, TimeConv, CRC",
+      "disposition": "Implemented",
+      "evidence": "``message_parser.cpp`` WN/ITOW extraction; payload TBW",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-FID0-530",
+      "clause": "2.4.3.1",
+      "feature": "SB2 layout per Table 18 (1176 data + 24 CRC = 1200)",
+      "disposition": "Implemented",
+      "evidence": "``frame.cpp`` [LSIS-AFS-605]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-FID0-540",
+      "clause": "2.4.3.1",
+      "feature": "SB2 LNSP-specific data (FLEX)",
+      "disposition": "FLEX",
+      "evidence": "LNSP implementation flexibility",
+      "status": "O",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-FID0-550",
+      "clause": "2.4.3.1",
+      "feature": "SB2 mandatory spare bits {LSIS-TBC-2022}",
+      "disposition": "TBC in Spec",
+      "evidence": "Implemented with alternating pattern per LSIS-300",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-FID0-560",
+      "clause": "2.4.3.1",
+      "feature": "SB3 layout per Table 19 (type + data + CRC = 870)",
+      "disposition": "Implemented",
+      "evidence": "``frame.cpp`` [LSIS-AFS-606]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-FID0-570",
+      "clause": "2.4.3.1",
+      "feature": "SB3 content identified by type field",
+      "disposition": "Implemented",
+      "evidence": "``message_parser.cpp`` [LSIS-AFS-801]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-FID0-580",
+      "clause": "2.4.3.1",
+      "feature": "SB3 fundamental data: MOrbit Almanac (MSG-G5)",
+      "disposition": "TBW in Spec",
+      "evidence": "MSG-G5 content is {LSIS-TBW-2007}",
+      "status": "M",
+      "support": "N/A"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-FID0-590",
+      "clause": "2.4.3.1",
+      "feature": "SB3 optional data: MSG-G3/G10/G11/G23/G24/G31/G32",
+      "disposition": "TBW in Spec",
+      "evidence": "Most message contents are TBW",
+      "status": "M",
+      "support": "N/A"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-FID0-600",
+      "clause": "2.4.3.1",
+      "feature": "SB4 layout per Table 20 (type + data + CRC = 870)",
+      "disposition": "Implemented",
+      "evidence": "``frame.cpp`` [LSIS-AFS-606]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-FID0-610",
+      "clause": "2.4.3.1",
+      "feature": "SB4 content identified by type field",
+      "disposition": "Implemented",
+      "evidence": "``message_parser.cpp`` [LSIS-AFS-610]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-FID0-620",
+      "clause": "2.4.3.1",
+      "feature": "SB4 fundamental data: MSG-G1",
+      "disposition": "TBW in Spec",
+      "evidence": "MSG-G1 content is {LSIS-TBW-2004}",
+      "status": "M",
+      "support": "N/A"
+    },
+    {
+      "section": "Section 2.4 --- Navigation Message Format",
+      "item": "LSIS-FID0-630",
+      "clause": "2.4.3.1",
+      "feature": "SB4 optional data: MSG-G3/G5/G10/G11/G17/G23/G28/G31/G32",
+      "disposition": "TBW in Spec",
+      "evidence": "Most message contents are TBW",
+      "status": "M",
+      "support": "N/A"
+    },
+    {
+      "section": "Section 2.5 --- Messages and Data Content",
+      "item": "LSIS-720",
+      "clause": "2.5.5",
+      "feature": "ToT fields definition (WN, ITOW, TOI per Table 22)",
+      "disposition": "Implemented",
+      "evidence": "``time_of_transmission.cpp`` [LSIS-AFS-810]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Section 2.5 --- Messages and Data Content",
+      "item": "LSIS-730",
+      "clause": "2.5.5",
+      "feature": "ToT binary representation per Table 22",
+      "disposition": "Implemented",
+      "evidence": "``time_of_transmission.cpp`` [LSIS-AFS-810]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Appendices",
+      "item": "Appendix C",
+      "clause": "App. C",
+      "feature": "Gold code initializations for PRN 1--210",
+      "disposition": "Implemented",
+      "evidence": "``gold_code_lut.cpp`` all 210 PRNs validated",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Appendices",
+      "item": "Appendix D",
+      "clause": "App. D",
+      "feature": "Weil code index k and insertion index p for PRN 1--210",
+      "disposition": "Implemented",
+      "evidence": "``weil_lut.cpp`` all 210 PRNs validated",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Appendices",
+      "item": "Appendix E",
+      "clause": "App. E",
+      "feature": "Tertiary Weil code index k for PRN 1--210",
+      "disposition": "Implemented",
+      "evidence": "``weil_lut.cpp`` all 210 PRNs validated",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Appendices",
+      "item": "Appendix F",
+      "clause": "App. F",
+      "feature": "Code assignments per LNSP node",
+      "disposition": "TBC in Spec",
+      "evidence": "{LSIS-TBD-2001}; interim Table 11 used",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Appendices",
+      "item": "Appendix G",
+      "clause": "App. G",
+      "feature": "List of algorithms",
+      "disposition": "TBW in Spec",
+      "evidence": "{LSIS-TBW-2015}",
+      "status": "M",
+      "support": "N/A"
+    },
+    {
+      "section": "Appendices",
+      "item": "Appendix H",
+      "clause": "App. H",
+      "feature": "CRC-24 definition (CRC-24Q polynomial)",
+      "disposition": "Implemented",
+      "evidence": "``crc.hpp`` [LSIS-AFS-467]",
+      "status": "M",
+      "support": "Yes"
+    },
+    {
+      "section": "Appendices",
+      "item": "Appendix I",
+      "clause": "App. I",
+      "feature": "Reference AFS link budget",
+      "disposition": "TBW in Spec",
+      "evidence": "{LSIS-TBW-2016}",
+      "status": "M",
+      "support": "N/A"
+    }
+  ],
+  "summary": {
+    "items": 76,
+    "supported": 54,
+    "not_applicable": 22,
+    "optional": 2
+  }
+}

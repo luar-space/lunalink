@@ -43,7 +43,7 @@ Getting Started
 
 Clone the repository and run the one-time setup::
 
-    git clone https://github.com/luar-space/lsis-afs.git
+    # from a clone of this repository
     cd lsis-afs
     task install        # create .venv and install all dependencies
     task install-hooks  # register the pre-commit hook

@@ -4,16 +4,12 @@ LunaLink — LSIS-AFS Reference Implementation
 .. raw:: html
 
    <p>
-     <a href="https://github.com/luar-space/lsis-afs/actions/workflows/test-cpp.yml"><img src="https://github.com/luar-space/lsis-afs/actions/workflows/test-cpp.yml/badge.svg?branch=main" alt="C++ Tests"></a>
-     <a href="https://github.com/luar-space/lsis-afs/actions/workflows/test-python.yml"><img src="https://github.com/luar-space/lsis-afs/actions/workflows/test-python.yml/badge.svg?branch=main" alt="Python Tests"></a>
-     <a href="https://github.com/luar-space/lsis-afs/actions/workflows/test-python.yml"><img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/139670230055e3018c1d8fbcac0d4eea/raw/lunalink-python-coverage.json" alt="Python Coverage"></a>
-     <a href="https://github.com/luar-space/lsis-afs/actions/workflows/coverage-cpp.yml"><img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/139670230055e3018c1d8fbcac0d4eea/raw/lunalink-region-coverage.json" alt="Region Coverage"></a>
-     <a href="https://github.com/luar-space/lsis-afs/actions/workflows/coverage-cpp.yml"><img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/139670230055e3018c1d8fbcac0d4eea/raw/lunalink-line-coverage.json" alt="Line Coverage"></a>
-     <a href="https://github.com/luar-space/lsis-afs/actions/workflows/coverage-cpp.yml"><img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/139670230055e3018c1d8fbcac0d4eea/raw/lunalink-branch-coverage.json" alt="Branch Coverage"></a>
-     <a href="https://github.com/luar-space/lsis-afs/actions/workflows/coverage-cpp.yml"><img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/139670230055e3018c1d8fbcac0d4eea/raw/lunalink-mcdc-coverage.json" alt="MC/DC Coverage"></a>
-     <a href="https://github.com/luar-space/lsis-afs/actions/workflows/sanitize.yml"><img src="https://github.com/luar-space/lsis-afs/actions/workflows/sanitize.yml/badge.svg?branch=main" alt="Sanitizers"></a>
-     <a href="https://github.com/luar-space/lsis-afs/actions/workflows/tidy.yml"><img src="https://github.com/luar-space/lsis-afs/actions/workflows/tidy.yml/badge.svg?branch=main" alt="clang-tidy"></a>
-     <a href="https://github.com/luar-space/lsis-afs/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-green.svg" alt="License: Apache 2.0"></a>
+     <img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/139670230055e3018c1d8fbcac0d4eea/raw/lunalink-python-coverage.json" alt="Python Coverage">
+     <img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/139670230055e3018c1d8fbcac0d4eea/raw/lunalink-region-coverage.json" alt="Region Coverage">
+     <img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/139670230055e3018c1d8fbcac0d4eea/raw/lunalink-line-coverage.json" alt="Line Coverage">
+     <img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/139670230055e3018c1d8fbcac0d4eea/raw/lunalink-branch-coverage.json" alt="Branch Coverage">
+     <img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/fiskio/139670230055e3018c1d8fbcac0d4eea/raw/lunalink-mcdc-coverage.json" alt="MC/DC Coverage">
+     <img src="https://img.shields.io/badge/license-Apache%202.0-green.svg" alt="License: Apache 2.0">
    </p>
 
 Open-source reference implementation of the LunaNet Signal-In-Space
@@ -68,6 +64,7 @@ submission?  Start with the :doc:`evaluation_guide`.
    assurance/coverage_exclusions
    signal/compliance_matrix
    signal/shall_inventory
+   signal/pics_proforma
    signal/spec_findings_report
    signal/validation_plan
 

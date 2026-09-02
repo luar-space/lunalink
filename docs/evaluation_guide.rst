@@ -15,7 +15,7 @@ Setup, once
 
 .. code-block:: bash
 
-   git clone https://github.com/luar-space/lsis-afs && cd lsis-afs
+   cd lsis-afs      # a clone of this repository
    task install     # uv sync --group dev: builds the C++ core + Python package
 
 Full prerequisites are in :doc:`quickstart`.  Every command on this page is
@@ -530,10 +530,8 @@ Beyond the rubric
 The deliverables above are what the competition asks for.  Beyond them the
 submission carries a flight-software assurance case the rubric does not
 require, which is where the *Innovation & Extras* category is addressed.
-Each claim has a verifying command in the `README's "What makes this
-implementation different"
-<https://github.com/luar-space/lsis-afs#what-makes-this-implementation-different>`__
-section:
+Each claim has a verifying command in the *What makes this implementation
+different* section of ``README.md``:
 
 * **Defence in depth** — :doc:`assurance/mission_assurance`: NASA/ESA/JAXA
   hardening patterns (SEU-resistant enums, TMR with active repair, CFI
