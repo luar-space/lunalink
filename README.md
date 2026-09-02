@@ -245,8 +245,10 @@ Building from source needs:
 - [CMake](https://cmake.org) ≥ 3.15 (Ninja recommended)
 - Python ≥ 3.12 with [uv](https://docs.astral.sh/uv/)
 - [Task](https://taskfile.dev) (`go-task`) — runs every build/test/verify recipe
+- [Doxygen](https://www.doxygen.nl) — only to build the docs; it generates the
+  XML that Breathe renders into the C++ API reference
 
-On macOS: `brew install cmake ninja uv go-task`. A `Dockerfile` is provided
+On macOS: `brew install cmake ninja uv go-task doxygen`. A `Dockerfile` is provided
 for a containerised build if you prefer not to install toolchains.
 
 ## Quick Start
@@ -367,6 +369,7 @@ one. Where to start, by what you want to know:
 | [evaluation_guide.rst](docs/evaluation_guide.rst) | *How do I assess this?* Every deliverable → the document that satisfies it → the command that verifies it |
 | [mission_assurance.rst](docs/assurance/mission_assurance.rst) | *What space-grade patterns are used, and on whose authority?* The catalogue: SEU-resistant enums, TMR with active repair, variable mirroring, CFI sentinels, the windowed watchdog, Fault Isolation Zones, secure scrub, LUT pinning — each attributed to NASA, ESA or JAXA practice, with the failure it defends against |
 | [c_plus_plus_guidelines.rst](docs/assurance/c_plus_plus_guidelines.rst) | *What dialect is the flight code written in?* The C++20 restriction: MISRA C++:2023 unioned with JPL D-60411, Power of Ten, NASA GSFC and N7 Space/ESA, strictest rule winning, every clause tagged with the standards that impose it |
+| [api_cpp.rst](docs/api_cpp.rst) | *What is the C++ interface?* 434 entities rendered from the headers by Doxygen and Breathe, with a subsystem index; [api.rst](docs/api.rst) is its Python counterpart |
 | [pics_proforma.rst](docs/signal/pics_proforma.rst) | *Which protocol features are supported?* 76 items, generated from the shall inventory |
 | [shall_inventory.rst](docs/signal/shall_inventory.rst) | *What does the spec require, and what did you do about each one?* All 76 normative identifiers with dispositions |
 | [interop_results.rst](docs/interop_results.rst) | *Does it agree with anyone else's implementation?* L1–L5 in both directions, the method behind each, and the bounds of what was demonstrated |

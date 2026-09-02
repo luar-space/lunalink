@@ -1,0 +1,59 @@
+# Doxygen configuration for the LunaLink C++ API reference.
+#
+# Doxygen is used only to produce XML for Breathe; Sphinx renders the pages.
+# Run via `task docs-doxygen` (or as part of `task docs-build`).
+
+PROJECT_NAME           = "LunaLink"
+PROJECT_BRIEF          = "LSIS-AFS reference implementation"
+OUTPUT_DIRECTORY       = ../build/doxygen
+CREATE_SUBDIRS         = NO
+
+# Public headers only: the .cpp files hold implementation detail that the
+# interface reference should not surface.
+INPUT                  = ../cpp/include/lunalink
+FILE_PATTERNS          = *.hpp
+RECURSIVE              = YES
+STRIP_FROM_PATH        = ../cpp/include
+
+# Breathe consumes XML; nothing else is needed.
+GENERATE_XML           = YES
+XML_OUTPUT             = xml
+XML_PROGRAMLISTING     = NO
+GENERATE_HTML          = NO
+GENERATE_LATEX         = NO
+
+# Document the whole public surface, not only entities carrying a comment —
+# the ICD claims a complete C++ API, so an undocumented function should appear
+# with its signature rather than vanish.
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = NO
+EXTRACT_PRIVATE        = NO
+HIDE_UNDOC_MEMBERS     = NO
+HIDE_UNDOC_CLASSES     = NO
+
+# The hardening attributes are compiler plumbing, not interface: expanding them
+# to nothing keeps them out of every rendered signature.
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+PREDEFINED             = LUNALINK_PACKED_BEGIN= \
+                         LUNALINK_PACKED_END= \
+                         LUNALINK_PACKED_ATTR= \
+                         LUNALINK_LUT_SECTION= \
+                         LUNALINK_FLIGHT_SECTION= \
+                         "NOCOVER(x)=" \
+                         "LUNALINK_NODISCARD(x)=[[nodiscard]]"
+
+# Quiet by default; warnings still surface, and the docs build treats
+# Sphinx-side problems as errors.
+QUIET                  = YES
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = NO
+
+JAVADOC_AUTOBRIEF      = YES
+QT_AUTOBRIEF           = YES
+MARKDOWN_SUPPORT       = YES
+AUTOLINK_SUPPORT       = YES
+SORT_MEMBER_DOCS       = NO

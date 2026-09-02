@@ -122,7 +122,9 @@ task docs-serve      # ~15 s, serves the full documentation at 127.0.0.1:8000
 ```
 
 Start at `evaluation_guide.html` — it maps every deliverable to the document
-that satisfies it and the command that verifies it. `task docs-pdf` produces a
+that satisfies it and the command that verifies it.  `api.html` and
+`api_cpp.html` are the Python and C++ API references, the latter generated
+from the headers by Doxygen and Breathe. `task docs-pdf` produces a
 single PDF instead.
 
 ## Gateway Status

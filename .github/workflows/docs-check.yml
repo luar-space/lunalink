@@ -34,4 +34,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: uv sync --group dev
+      - name: Install doxygen
+        # Breathe renders the C++ API from Doxygen XML; task docs-build
+        # generates it before Sphinx runs.
+        run: sudo apt-get install -y doxygen
       - run: task docs-build

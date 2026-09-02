@@ -115,3 +115,4 @@ submission?  Start with the :doc:`evaluation_guide`.
    test_vectors
    versioning
    api
+   api_cpp

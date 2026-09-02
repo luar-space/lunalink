@@ -706,9 +706,25 @@ tasks:
       - uv run python scripts/check_build_flags.py {{.BUILD_DIR}}/compile_commands.json
     silent: false
 
+  docs-doxygen:
+    desc: >-
+      Generate the Doxygen XML that Breathe renders into the C++ API
+      reference. Requires doxygen (brew install doxygen / apt install doxygen).
+    cmds:
+      - |
+        if ! command -v doxygen >/dev/null 2>&1; then
+          echo "doxygen not found. Install it: brew install doxygen (macOS)"
+          echo "                              sudo apt install doxygen (Ubuntu)"
+          exit 1
+        fi
+        cd docs && doxygen Doxyfile
+      - 'echo "Doxygen XML: build/doxygen/xml ($(ls build/doxygen/xml/*.xml | wc -l | tr -d " ") files)"'
+    silent: false
+
   docs-build:
     desc: Execute notebooks and build the HTML documentation with Sphinx.
     cmds:
+      - task: docs-doxygen
       # Notebook 02_error_correction.ipynb reads
       # build/algo_card/sp_results.json — produced by `task ldpc-algo-card`.
       # If the file is missing or zero-length (interrupted prior run, fresh
@@ -753,6 +769,8 @@ tasks:
   docs-serve:
     desc: Serve the documentation locally with auto-reload.
     cmds:
+      # The C++ pages come from Doxygen XML; without it they render empty.
+      - task: docs-doxygen
       - uv run sphinx-autobuild docs/ docs/_build/html
     silent: false
 
