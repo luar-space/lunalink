@@ -17,8 +17,24 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      pages_enabled: ${{ steps.pages.outputs.enabled }}
     steps:
       - uses: actions/checkout@v5
+      - name: Check whether GitHub Pages is enabled
+        # Pages cannot be enabled on a private repository of this plan, and
+        # deploy-pages fails with a 404 when it is not. The build still runs
+        # as a check on the site; only the deploy is skipped.
+        id: pages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh api "repos/${{ github.repository }}/pages" >/dev/null 2>&1; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::GitHub Pages is not enabled on this repository; the site was built but not deployed."
+          fi
       - uses: arduino/setup-task@v2
         with:
           # Authenticated: the action downloads Task from GitHub releases,
@@ -72,6 +88,7 @@ jobs:
           path: docs/_build/html
 
   deploy:
+    if: needs.build.outputs.pages_enabled == 'true'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
