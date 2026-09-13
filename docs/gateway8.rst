@@ -184,7 +184,7 @@ All 20 NFRs defined by the competition rubric are tracked in
 **20 PASS**.  The performance and correctness
 families (NFR-1.x, NFR-2.x) and the testing family (NFR-3.x) are shown
 below; the usability and maintainability families (NFR-4.x, NFR-5.x) are
-listed in :doc:`evaluation_guide` §*Non-Functional Requirements*.
+listed in :doc:`/history/evaluation_guide` §*Non-Functional Requirements*.
 
 .. list-table::
    :widths: 12 34 22 16 16

@@ -704,7 +704,7 @@ Roadmap
 
 *Statuses below are the planning snapshot as of 31 March 2026 — see*
 :doc:`roadmap` *for the delivered status; G8 was delivered as* :doc:`api`
-*and* :doc:`evaluation_guide`\ *.*
+*and* :doc:`/history/evaluation_guide`\ *.*
 
 .. list-table::
    :header-rows: 1

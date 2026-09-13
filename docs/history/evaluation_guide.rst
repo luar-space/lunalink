@@ -1,6 +1,18 @@
 Evaluation Guide
 ================
 
+.. note::
+
+   **Historical document.**  This was written for the judges of the ESA-CCSDS
+   Protocol Development Outreach Competition, which LunaLink won in September
+   2026.  It is preserved unchanged as a record of what was claimed and how
+   each claim could be checked at the time of submission.
+
+   It remains the densest index into the evidence base, so it is still worth
+   reading, but it is not the place to start.  New readers want
+   :doc:`/quickstart`, and the current state of the project is on the
+   :doc:`/roadmap`.
+
 This is the entry point for judging the LunaLink submission to the
 **ESA-CCSDS Protocol Development Outreach Competition** (LSIS-AFS track).
 
@@ -18,7 +30,7 @@ Setup, once
    cd lsis-afs      # a clone of this repository
    task install     # uv sync --group dev: builds the C++ core + Python package
 
-Full prerequisites are in :doc:`quickstart`.  Every command on this page is
+Full prerequisites are in :doc:`/quickstart`.  Every command on this page is
 run from the repository root after ``task install``.
 
 If you would rather not run anything, ``docs/assurance/evidence/`` ships the
@@ -49,7 +61,7 @@ All five gate items, one command each.
      - **210** Gold codes (not 12) plus Weil primary/tertiary and
        secondary sets in ``test-vectors/codes/``; bit-exact vs Annex 3
        (``tests/test_annex3_codes.py``).  All 12 interim Table 11 codes
-       round-trip (:doc:`gateway7`)
+       round-trip (:doc:`/gateway7`)
    * - 2
      - Encode a complete 12-second navigation frame
      - ``uv run python examples/01_transmit.py``
@@ -69,7 +81,7 @@ All five gate items, one command each.
        Python line coverage gate
    * - 5
      - Include setup/build instructions
-     - ``README.md`` + :doc:`quickstart`
+     - ``README.md`` + :doc:`/quickstart`
      - Plus ``Dockerfile`` for a containerised build
 
 ----
@@ -88,35 +100,35 @@ Where to look for each scored category.
      - Primary evidence
    * - **Correctness**
      - 40
-     - Per-gateway verification guides :doc:`gateway0`–:doc:`gateway8`,
+     - Per-gateway verification guides :doc:`/gateway0`–:doc:`/gateway8`,
        each mapping deliverable → implementation → verifying command.
-       :doc:`signal/compliance_matrix` and :doc:`signal/shall_inventory`
+       :doc:`/signal/compliance_matrix` and :doc:`/signal/shall_inventory`
        (76 normative identifiers dispositioned).
        ``task compliance-report`` → **31/31 requirements PASS**.
-       Independent corroboration: :doc:`interop_results` — bit-exact
+       Independent corroboration: :doc:`/interop_results` — bit-exact
        agreement with LANS-AFS-SIM on codes and frames, and a full
        cross-decode of its signal
    * - **Performance**
      - 20
-     - :doc:`gateway8` §*Performance report* — the consolidated NFR
-       table, all 20 NFRs.  :doc:`signal/ldpc_performance` and
-       :doc:`signal/bch_performance` (BER/FER waterfalls with 95% Wilson
+     - :doc:`/gateway8` §*Performance report* — the consolidated NFR
+       table, all 20 NFRs.  :doc:`/signal/ldpc_performance` and
+       :doc:`/signal/bch_performance` (BER/FER waterfalls with 95% Wilson
        CIs, error-floor search, convergence knee, quantisation sweep).
        ``task performance``
    * - **Completeness**
      - 20
      - All nine gateways 0–8 delivered, one guide each (table below).
-       `Non-Functional Requirements`_: 20/20 PASS.  :doc:`roadmap` states
+       `Non-Functional Requirements`_: 20/20 PASS.  :doc:`/roadmap` states
        what is *not* delivered
    * - **Code Quality**
      - 10
-     - :doc:`assurance/c_plus_plus_guidelines` — the flight dialect: MISRA
+     - :doc:`/assurance/c_plus_plus_guidelines` — the flight dialect: MISRA
        C++:2023 (179 guidelines) unioned with JPL D-60411, Power of Ten,
        NASA GSFC and N7 Space/ESA C++20, strictest rule winning, every
        clause tagged with the standards that impose it, satisfying
-       ECSS-E-ST-40C §5.5.1.  :doc:`assurance/mission_assurance` — the
+       ECSS-E-ST-40C §5.5.1.  :doc:`/assurance/mission_assurance` — the
        hardening patterns those rules are applied to, each attributed to
-       NASA, ESA or JAXA practice.  :doc:`assurance/coverage_evidence`
+       NASA, ESA or JAXA practice.  :doc:`/assurance/coverage_evidence`
        (|cov-region| region, |cov-line| line, MC/DC measured natively).
        Three static analysers and three runtime checkers; ``task
        lint-check``, ``task tidy``, ``task sanitize``, and
@@ -149,44 +161,44 @@ verify each item.
      - Design & Architecture
      - Clear architecture with defined components; dev environment ready;
        testing framework established
-     - :doc:`gateway0`
+     - :doc:`/gateway0`
    * - 1
      - Spreading code generation
      - All codes match Annex 3 hex; < 1 s per PRN; all 12 interim
        Table 11 codes working
-     - :doc:`gateway1`
+     - :doc:`/gateway1`
    * - 2
      - Forward error correction
      - Encode < 100 ms/frame; decode < 1 s/frame;
        BER < 10\ :sup:`-5` at SNR > 0 dB
-     - :doc:`gateway2`
+     - :doc:`/gateway2`
    * - 3
      - Navigation message framing
      - Valid frames, all subframes; 68 + 52 + 5880 = 6000 symbols;
        12-second frame timing
-     - :doc:`gateway3`
+     - :doc:`/gateway3`
    * - 4
      - Baseband signal generation
      - 12-second I/Q files; correct chip and symbol rates
-     - :doc:`gateway4`
+     - :doc:`/gateway4`
    * - 5
      - Frame synchronization & decoding
      - Decode < 1 s; frame sync > 99% at SNR > 0 dB
-     - :doc:`gateway5`
+     - :doc:`/gateway5`
    * - 6
      - Message parsing
      - All subframe types parse; ToT accurate; all message types handled
-     - :doc:`gateway6`
+     - :doc:`/gateway6`
    * - 7
      - Integration & validation
      - Round-trip 100% accuracy; all compliance checks pass; successful
        interoperability testing
-     - :doc:`gateway7`
+     - :doc:`/gateway7`
    * - 8
      - Documentation & examples
      - Anyone can build and run; all features documented; reproducible
        results
-     - :doc:`gateway8`
+     - :doc:`/gateway8`
 
 .. _non-functional requirements:
 
@@ -258,7 +270,7 @@ delivered repository — none is asserted.
    * - NFR-4.1
      - Clear API documentation: all public APIs documented
      - PASS
-     - :doc:`api` + ``sync_docstrings.py`` executed as the check
+     - :doc:`/api` + ``sync_docstrings.py`` executed as the check
    * - NFR-4.2
      - Working examples for all features
      - PASS
@@ -266,7 +278,7 @@ delivered repository — none is asserted.
    * - NFR-4.3
      - Error messages give actionable guidance
      - PASS
-     - Typed error enumeration (:doc:`signal/icd`)
+     - Typed error enumeration (:doc:`/signal/icd`)
    * - NFR-4.4
      - Runtime configuration support
      - PASS
@@ -275,7 +287,7 @@ delivered repository — none is asserted.
    * - NFR-5.1
      - Modular architecture, clean component boundaries
      - PASS
-     - :doc:`signal/architecture` + module tree
+     - :doc:`/signal/architecture` + module tree
    * - NFR-5.2
      - Separation of concerns: independent modules
      - PASS
@@ -324,14 +336,14 @@ Technical constraints
        equivalent for core algorithms
      - Met.  C++20 core with no third-party DSP dependency; runtime
        Python deps are NumPy plus two typing libraries.  No proprietary
-       libraries.  See :doc:`tech_stack`
+       libraries.  See :doc:`/tech_stack`
    * - TC-2
      - Data formats: binary I/Q (int16, float32), CSV, JSON
      - Met.  The ``LSISIQ`` container carries **both** int16 and float32,
        declared in its header and selected with
        ``write_iq_file(..., sample_format=...)``;
        :func:`~lunalink.afs.read_iq_file` reads either back
-       (:doc:`test_vectors`).  CSV via ``write_iq_csv``; JSON for parsed
+       (:doc:`/test_vectors`).  CSV via ``write_iq_csv``; JSON for parsed
        vectors and every evidence artefact
    * - TC-3
      - Annex 1 LDPC matrices, Annex 3 reference codes, LSIS spec
@@ -365,32 +377,32 @@ Milestone 1 — Standards Compliance & Architecture (§3.2.1)
      - How to verify
    * - LSIS-AFS compliance matrix
        (mandatory vs optional elements)
-     - :doc:`signal/compliance_matrix` — every requirement by gateway;
-       :doc:`signal/shall_inventory` — all 76 normative identifiers in
+     - :doc:`/signal/compliance_matrix` — every requirement by gateway;
+       :doc:`/signal/shall_inventory` — all 76 normative identifiers in
        LSIS V1.0 with disposition (49 implemented, 12 RF/out-of-scope,
        10 TBW, 3 TBC, 2 FLEX)
      - ``task compliance-report`` → 31/31 requirements PASS
    * - Signal chain block diagram
-     - :doc:`signal/signal_chain` — full TX block diagram (GD1.1 → GD4.2)
+     - :doc:`/signal/signal_chain` — full TX block diagram (GD1.1 → GD4.2)
        with rates, types and per-stage data flow
      - ``uv run python demo/v1_plot.py`` renders the chain;
-       :doc:`notebooks/01_spreading_codes` walks it stage by stage
+       :doc:`/notebooks/01_spreading_codes` walks it stage by stage
    * - Implementation architecture description
-     - :doc:`gateway0` is the Gateway 0 deliverable document;
-       :doc:`signal/architecture` records the design decisions and the
+     - :doc:`/gateway0` is the Gateway 0 deliverable document;
+       :doc:`/signal/architecture` records the design decisions and the
        module → gateway map
      - ``task docs-pdf`` builds ``gateway0`` as a standalone PDF
    * - Interface and configuration definition
-     - :doc:`signal/icd` — Interface Control Document: the contract behind
+     - :doc:`/signal/icd` — Interface Control Document: the contract behind
        the C++ API, Python bindings, HAL interfaces, wire formats and error
        enumeration.  Alongside it, both APIs have a **generated** reference,
-       so what a reviewer reads is what compiled: :doc:`api_cpp` (434
+       so what a reviewer reads is what compiled: :doc:`/api_cpp` (434
        entities, Doxygen → Breathe, straight from the headers) and
-       :doc:`api` (162 symbols, autodoc against the built extension), with
+       :doc:`/api` (162 symbols, autodoc against the built extension), with
        each Python binding corresponding to one C++ call.
-       :doc:`signal/sisicd` — bit-level payload layouts for the message
+       :doc:`/signal/sisicd` — bit-level payload layouts for the message
        types LSIS V1.0 leaves TBW.
-       :doc:`assurance/configuration_baseline` — build configuration and
+       :doc:`/assurance/configuration_baseline` — build configuration and
        release baseline
      - ``task docs-serve`` renders both references; ``sphinx -W`` fails the
        build on an unresolved cross-reference, so they cannot drift from the
@@ -398,7 +410,7 @@ Milestone 1 — Standards Compliance & Architecture (§3.2.1)
        interface in the ICD; ``task build-manifest`` emits the configuration
        record
    * - Clear traceability to the CCSDS specification
-     - :doc:`assurance/traceability_matrix`; canonical machine-readable
+     - :doc:`/assurance/traceability_matrix`; canonical machine-readable
        matrix at ``docs/assurance/evidence/traceability.json``
      - ``task traceability`` → 31 requirements, 100% covered,
        **0 orphaned test tags** (CI-gated by ``traceability.yml``)
@@ -414,27 +426,27 @@ Milestone 2 — Reference Implementation (§3.2.2)
      - Where it is
      - How to verify
    * - Software implementation of LSIS-AFS signal framing
-     - :doc:`gateway3` (framing), :doc:`gateway5` (sync + decode),
-       :doc:`gateway6` (message parsing).  Source: ``cpp/messages/``
+     - :doc:`/gateway3` (framing), :doc:`/gateway5` (sync + decode),
+       :doc:`/gateway6` (message parsing).  Source: ``cpp/messages/``
      - ``uv run python examples/01_transmit.py`` — 6000-symbol,
        12-second frame; ``task test-cpp``
    * - Modulation and coding per specification
-     - :doc:`gateway1` (spreading codes), :doc:`gateway2` (BCH + LDPC +
-       CRC-24 + interleaver), :doc:`gateway4` (BPSK, I/Q multiplexing).
-       Algorithm records: :doc:`signal/algorithms`,
-       :doc:`signal/bch_decoder_design`, :doc:`signal/ldpc_algo_card`
+     - :doc:`/gateway1` (spreading codes), :doc:`/gateway2` (BCH + LDPC +
+       CRC-24 + interleaver), :doc:`/gateway4` (BPSK, I/Q multiplexing).
+       Algorithm records: :doc:`/signal/algorithms`,
+       :doc:`/signal/bch_decoder_design`, :doc:`/signal/ldpc_algo_card`
      - ``uv run lunalink generate-codes`` — 210 PRN codes, bit-exact vs
        Annex 3 (``tests/test_annex3_codes.py``); ``task test-cpp``
    * - Configuration documentation
-     - :doc:`assurance/configuration_baseline` (baseline + reproducible
-       build procedure), :doc:`assurance/build_policy` (flight vs
-       non-flight build configurations), :doc:`tech_stack` (toolchain and
-       dependency pins), :doc:`governance/baseline_register`
+     - :doc:`/assurance/configuration_baseline` (baseline + reproducible
+       build procedure), :doc:`/assurance/build_policy` (flight vs
+       non-flight build configurations), :doc:`/tech_stack` (toolchain and
+       dependency pins), :doc:`/governance/baseline_register`
      - ``task build-manifest`` → SHA-pinned build manifest;
        ``task check-flags`` asserts the compiled flag set
    * - Test vectors and validation methodology
-     - :doc:`signal/validation_plan` — the five-level validation hierarchy
-       and edge-case register.  :doc:`test_vectors` — the binary
+     - :doc:`/signal/validation_plan` — the five-level validation hierarchy
+       and edge-case register.  :doc:`/test_vectors` — the binary
        interchange format.  Vectors themselves in ``test-vectors/``
      - ``uv run python tests/generate_test_vectors.py`` regenerates all
        five levels; ``task test-py``
@@ -450,32 +462,32 @@ Milestone 3 — Validation and Interoperability Demonstration (§3.2.3)
      - Where it is
      - How to verify
    * - Bit error rate (BER) performance
-     - :doc:`signal/ldpc_performance` — SF2 and SF3/SF4 waterfalls with
+     - :doc:`/signal/ldpc_performance` — SF2 and SF3/SF4 waterfalls with
        95% Wilson confidence intervals, Shannon-gap decomposition, error
        floor search (zero errors in 60,000 frames/point).
-       :doc:`signal/bch_performance` — hard- vs soft-decision FER
+       :doc:`/signal/bch_performance` — hard- vs soft-decision FER
        waterfalls (~2 dB soft gain)
      - ``task ber`` (BER/FER sweeps); ``task performance`` (full run)
    * - Compliance with signal structure requirements
-     - :doc:`signal/compliance_matrix`, :doc:`signal/shall_inventory`,
-       and the per-gateway guides :doc:`gateway1`–:doc:`gateway7`
+     - :doc:`/signal/compliance_matrix`, :doc:`/signal/shall_inventory`,
+       and the per-gateway guides :doc:`/gateway1`–:doc:`/gateway7`
      - ``task compliance-report`` → ``compliance_report.json``
    * - Parameter sensitivity testing
-     - :doc:`signal/validation_plan` §*Signal Impairment & Robustness* —
+     - :doc:`/signal/validation_plan` §*Signal Impairment & Robustness* —
        I/Q quantisation (float32 / int16 / int8) end to end, an FER sweep
        at int8, the measured int8-vs-float32 implementation loss, and
        burst-error resilience through the interleaver.
-       :doc:`signal/ldpc_performance` §*Convergence Speed* (iteration
+       :doc:`/signal/ldpc_performance` §*Convergence Speed* (iteration
        sweep, knee at ~15 against a cap of 50), §*Quantization
        Resilience* (input-LLR sweep; int8 costs no measurable
        performance) and §*Channel LLR Scaling*.  Doppler is exercised by
        the L3 cross-decode of a 7-SV LANS-AFS-SIM signal
-       (:doc:`interop_results`).  Sample-clock-offset and phase-noise
+       (:doc:`/interop_results`).  Sample-clock-offset and phase-noise
        sweeps are stated in the validation plan as not yet implemented
      - ``task integration`` runs ``test_e2e_impairments.cpp``;
        ``task ber`` reruns the sweeps
    * - Reproducibility of results
-     - :doc:`assurance/configuration_baseline` — bit-for-bit reproducible
+     - :doc:`/assurance/configuration_baseline` — bit-for-bit reproducible
        build procedure.  All stochastic runs use fixed PRNG seeds
        (documented per page).  Every artefact on this site is script-
        generated, never hand-maintained
@@ -485,7 +497,7 @@ Milestone 3 — Validation and Interoperability Demonstration (§3.2.3)
        their own tasks.  ``task recertify`` re-runs every gate against
        any git ref and emits a signed-off record
    * - **Cross-decoding of independently generated signals**
-     - :doc:`interop_results` — L1 codes and L2 frames bit-exact against
+     - :doc:`/interop_results` — L1 codes and L2 frames bit-exact against
        LANS-AFS-SIM (Ebinuma, independent C implementation); L3 acquires,
        tracks and fully decodes a 25 s, 7-SV LANS-AFS-SIM signal with all
        three subframes CRC-24 verified; L4–L5 reverse the direction —
@@ -496,13 +508,13 @@ Milestone 3 — Validation and Interoperability Demonstration (§3.2.3)
        L4–L5.  Pass criterion for codes, frames and the recovered payload
        is bit-exact equality, not statistical agreement
    * - Independent verification of standards compliance
-     - :doc:`interop_results` (agreement with an implementation that
+     - :doc:`/interop_results` (agreement with an implementation that
        derives codes by a structurally different method);
-       :doc:`assurance/tool_confidence` (analysers qualified against
+       :doc:`/assurance/tool_confidence` (analysers qualified against
        deliberately defective code per ECSS-Q-ST-80C §5.5)
      - ``task validate-tidy``, ``task validate-coverage``
    * - Documented interoperability outcomes
-     - :doc:`interop_results` — full methodology, per-level results,
+     - :doc:`/interop_results` — full methodology, per-level results,
        the interoperability report template instance, and stated
        limitations
      - ``task interop``; vectors for other teams published at
@@ -523,26 +535,26 @@ Final Submission Package
    * - Complete source code
      - ``cpp/`` (C++20 core), ``src/lunalink/`` (Python package),
        ``tests/``, ``scripts/``.  Layout described in
-       :doc:`signal/architecture` and :doc:`developing`
+       :doc:`/signal/architecture` and :doc:`/developing`
    * - Build/setup instructions
-     - ``README.md`` and :doc:`quickstart`; ``Dockerfile`` for a
+     - ``README.md`` and :doc:`/quickstart`; ``Dockerfile`` for a
        containerised build
    * - Test suite with results
      - ``task test-cpp && task test-py``; committed JUnit XML and
        summaries in ``docs/assurance/evidence/``
    * - Documentation (setup, usage, API)
-     - This site — :doc:`quickstart`, :doc:`api`, :doc:`signal/icd`
+     - This site — :doc:`/quickstart`, :doc:`/api`, :doc:`/signal/icd`
    * - Examples demonstrating functionality
      - ``examples/`` (transmit, decode, round-trip), ``demo/``, and the
-       three tutorial notebooks (:doc:`gateway8`)
+       three tutorial notebooks (:doc:`/gateway8`)
    * - Validation report showing compliance
-     - :doc:`gateway7` (GD7.5) and ``compliance_report.json``;
-       performance analysis in :doc:`gateway8`
+     - :doc:`/gateway7` (GD7.5) and ``compliance_report.json``;
+       performance analysis in :doc:`/gateway8`
 
 Optional-but-recommended items — performance analysis, design
 documentation, additional test vectors, visualization tools, BER
-performance curves — are all delivered; see :doc:`gateway8` and
-:doc:`signal/ldpc_performance`.
+performance curves — are all delivered; see :doc:`/gateway8` and
+:doc:`/signal/ldpc_performance`.
 
 ----
 
@@ -557,23 +569,23 @@ require, which is where the *Innovation & Extras* category is addressed.
 Each claim has a verifying command in the *What makes this implementation
 different* section of ``README.md``:
 
-* **Defence in depth** — :doc:`assurance/mission_assurance`: NASA/ESA/JAXA
+* **Defence in depth** — :doc:`/assurance/mission_assurance`: NASA/ESA/JAXA
   hardening patterns (SEU-resistant enums, TMR with active repair, CFI
   sentinels, windowed watchdog, Fault Isolation Zones), each attributed to
   its origin in flight practice.  Proven by ``task swifi`` — 42/42
   fault-injection scenarios across 6 techniques.
-* **Fault analysis** — :doc:`assurance/fmea`, :doc:`assurance/fault_coverage`.
-* **Verification depth** — :doc:`assurance/coverage_evidence` (line, branch
+* **Fault analysis** — :doc:`/assurance/fmea`, :doc:`/assurance/fault_coverage`.
+* **Verification depth** — :doc:`/assurance/coverage_evidence` (line, branch
   and MC/DC, the DO-178C Level A structural metric),
-  :doc:`assurance/coverage_exclusions`, :doc:`assurance/metrics_plan`.
-* **Tool qualification** — :doc:`assurance/tool_confidence`: analysers made
+  :doc:`/assurance/coverage_exclusions`, :doc:`/assurance/metrics_plan`.
+* **Tool qualification** — :doc:`/assurance/tool_confidence`: analysers made
   to prove themselves against deliberately defective code, per
   ECSS-Q-ST-80C §5.5.
-* **Decoder quality against theory** — :doc:`signal/ldpc_algo_card`: the
+* **Decoder quality against theory** — :doc:`/signal/ldpc_algo_card`: the
   shipped decoder measured against an independent reference decoder *and*
   the finite-length sphere-packing bound, splitting the Shannon gap into
   code gap and implementation gap.
-* **Impairment testing** — :doc:`signal/validation_plan` §*Signal
+* **Impairment testing** — :doc:`/signal/validation_plan` §*Signal
   Impairment & Robustness*: int16 and int8 round trips, an FER sweep at
   int8, the measured int8-vs-float32 implementation loss and burst-error
   resilience through the interleaver (``test_e2e_impairments.cpp``, via
@@ -585,9 +597,9 @@ different* section of ``README.md``:
   ``cpp/fuzz/README.md``), with a committed seed corpus replayed on every
   pull request (``fuzz-smoke.yml``) and a nightly coverage-guided search
   (``fuzz.yml``).
-* **Configuration integrity** — :doc:`assurance/build_policy` (three build
+* **Configuration integrity** — :doc:`/assurance/build_policy` (three build
   tiers: flight, CI digital twin, Python library) and
-  :doc:`assurance/configuration_baseline`; an SCI header (git SHA, LSIS
+  :doc:`/assurance/configuration_baseline`; an SCI header (git SHA, LSIS
   version, build timestamp, CRC-32) linked into the binary and verified as
   POST step 1; ``task check-flags``, ``task build-manifest`` and
   ``task stack-usage`` as the evidence commands.
@@ -602,18 +614,18 @@ different* section of ``README.md``:
   ``Dockerfile`` ships the CLI as a workshop image, and
   ``uv run lunalink encode|decode`` produce and consume the workshop
   artefacts from the command line.
-* **Standards mapping** — :doc:`standards/esa/ecss_standards`,
-  :doc:`standards/nasa/npr7150_standards`,
-  :doc:`standards/nasa_compliance_addendum`.
-* **Governance** — :doc:`governance/sdp`, :doc:`governance/scmp`,
-  :doc:`governance/baseline_register`.
-* **Spec feedback** — :doc:`signal/spec_findings_report`: the five
+* **Standards mapping** — :doc:`/standards/esa/ecss_standards`,
+  :doc:`/standards/nasa/npr7150_standards`,
+  :doc:`/standards/nasa_compliance_addendum`.
+* **Governance** — :doc:`/governance/sdp`, :doc:`/governance/scmp`,
+  :doc:`/governance/baseline_register`.
+* **Spec feedback** — :doc:`/signal/spec_findings_report`: the five
   interoperability-critical ambiguities in LSIS V1.0 (SF-001…SF-005), each
   with the assumption adopted, a proposed formal resolution and a
   recommendation to the LNIS working group — which the Delivery Outline
-  names as one of the competition's objectives.  :doc:`signal/sisicd`
+  names as one of the competition's objectives.  :doc:`/signal/sisicd`
   proposes bit-level payload layouts for the 11 message types the spec
-  leaves TBW, and :doc:`signal/shall_inventory` dispositions every TBW,
+  leaves TBW, and :doc:`/signal/shall_inventory` dispositions every TBW,
   TBC and TBD marker.
 
 ----
@@ -626,7 +638,7 @@ Stated limits
 Collected here so they are not left for a reader to discover:
 
 * **The reverse-direction demonstration carries one upstream patch.**
-  Interoperability now runs in both directions (:doc:`interop_results` L1-L5),
+  Interoperability now runs in both directions (:doc:`/interop_results` L1-L5),
   but building PocketSDR-AFS requires renaming a file-static ``satpos()``
   that collides with RTKLIB's; the patch changes no arithmetic and is applied
   by ``scripts/interop/build_pocketsdr_afs.py``.  The comparison is of SB2,
@@ -642,16 +654,16 @@ Collected here so they are not left for a reader to discover:
 * **Coverage waivers.**  C++ line coverage is |cov-line| with three files
   below the 80% per-file review trigger; the overall verdict is
   ``PASS_WITH_WAIVERS``, each waiver categorised in
-  :doc:`assurance/coverage_exclusions`.  123 in-source
+  :doc:`/assurance/coverage_exclusions`.  123 in-source
   ``NOCOVER(DEFENCE_IN_DEPTH)`` annotations mark paths that execute only
   under radiation-induced bit flips.
 * **L3 receiver scope.**  The demodulation chain runs at 1 sample/chip,
   which aliases the AFS-Q pilot onto the I channel; sufficient for the
   cross-decode, not a flight-credible receiver design
-  (:doc:`interop_results` §*Known limitations*).
+  (:doc:`/interop_results` §*Known limitations*).
 * **Spec ambiguity.**  "SNR > 0 dB" is ambiguous; both interpretations are
   reported and the requirement is met under each
-  (:doc:`signal/ldpc_performance`).
+  (:doc:`/signal/ldpc_performance`).
 * **ECSS Category B conformance is self-assessed, not certified.**
 
 ----
@@ -666,6 +678,6 @@ deliverable document for the ESA-CCSDS Delivery Outline.
 
 Three requirement-ID families appear across the project — compliance-matrix
 row IDs (``CM-nnn``), specification shall IDs (``LSIS-nnn``), and
-implementation tags (``[LSIS-AFS-nnn]``).  :doc:`signal/compliance_matrix`
+implementation tags (``[LSIS-AFS-nnn]``).  :doc:`/signal/compliance_matrix`
 opens with a note explaining how they relate; they are not
 interchangeable.
