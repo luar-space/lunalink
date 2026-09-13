@@ -56,3 +56,4 @@ default.profraw
 
 # Generated I/Q output from examples/demo scripts
 *.iq
+.private/
