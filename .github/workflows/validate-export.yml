@@ -17,6 +17,11 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Least privilege: every token use in this workflow is a read
+# (arduino/setup-task fetching Task from GitHub releases).
+permissions:
+  contents: read
+
 jobs:
   validate-export:
     runs-on: ubuntu-latest

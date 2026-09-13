@@ -10,6 +10,11 @@ on:
       - 'Dockerfile.cross-arch'
       - '.github/workflows/cross-arch.yml'
 
+# Least privilege: every token use in this workflow is a read
+# (arduino/setup-task fetching Task from GitHub releases).
+permissions:
+  contents: read
+
 jobs:
   cross-arch:
     name: Test (${{ matrix.platform }})

@@ -9,6 +9,11 @@ on:
   workflow_dispatch:
 
 
+# Least privilege: every token use in this workflow is a read
+# (arduino/setup-task fetching Task from GitHub releases).
+permissions:
+  contents: read
+
 jobs:
   acceptance:
     name: Acceptance (BER, E2E, channel, WCET)

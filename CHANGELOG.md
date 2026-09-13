@@ -23,7 +23,7 @@ follows [Semantic Versioning](https://semver.org/) as described in
 ### Removed
 - Competition organiser documents, which were never LunaLink's to redistribute.
 
-## [1.0.0] - 2026-09-02
+## [1.0.0] - 2026-09-04
 
 First complete implementation, submitted to and winner of the ESA-CCSDS
 Protocol Development Outreach Competition.

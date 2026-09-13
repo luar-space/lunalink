@@ -8,13 +8,17 @@ on:
       - 'docs/**'
       - '*.md'
       - '*.rst'
-  # TODO: re-enable pull_request trigger after restructure PR is merged
-  #   pull_request:
-  #     paths-ignore:
-  #       - 'docs/**'
-  #       - '*.md'
-  #       - '*.rst'
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '*.rst'
 
+
+# Least privilege: every token use in this workflow is a read
+# (arduino/setup-task fetching Task from GitHub releases).
+permissions:
+  contents: read
 
 jobs:
   coverage-mcdc:

@@ -5,22 +5,52 @@ build-backend = "scikit_build_core.build"
 [project]
 name = "lunalink"
 dynamic = ["version"]
-description = "LunaLink — AFS reference implementation for lunar navigation"
+description = "Reference implementation of the LunaNet Augmented Forward Signal (LSIS V1.0)"
 readme = "README.md"
 requires-python = ">=3.12"
 license = {text = "Apache-2.0"}
 authors = [{name = "Marco Fiscato", email = "marco.fiscato@gmail.com"}]
+maintainers = [{name = "Luar Space", email = "marco.fiscato@gmail.com"}]
+keywords = [
+    "lunanet",
+    "afs",
+    "lunar-navigation",
+    "gnss",
+    "ccsds",
+    "sdr",
+    "ldpc",
+    "bch",
+    "flight-software",
+    "reference-implementation",
+]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
+    "Intended Audience :: Telecommunications Industry",
     "License :: OSI Approved :: Apache Software License",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: C++",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
-    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Communications :: Ham Radio",
+    "Typing :: Typed",
 ]
 dependencies = ["numpy>=1.24", "jaxtyping>=0.2.28", "beartype>=0.18"]
+
+[project.urls]
+Homepage = "https://github.com/luar-space/lunalink"
+Documentation = "https://luar-space.github.io/lunalink/"
+Repository = "https://github.com/luar-space/lunalink"
+Issues = "https://github.com/luar-space/lunalink/issues"
+Changelog = "https://github.com/luar-space/lunalink/blob/main/CHANGELOG.md"
+"Test vectors" = "https://github.com/luar-space/lsis-afs-test-vectors"
+"The standard" = "https://www.nasa.gov/directorates/somd/space-communications-navigation-program/lunanet-interoperability-specification/"
 
 [project.scripts]
 lunalink = "lunalink.cli:main"
@@ -59,12 +89,10 @@ dev = [
 
 [tool.setuptools_scm]
 fallback_version = "0.0.0.dev0"
-git_describe_command = ["git", "describe", "--tags", "--long", "--match", "v*"]
-# The release tag is "v1.0-submission", which is not a PEP 440 version.
-# setuptools-scm >= 9 rejects it outright ("Can't parse version from tag"),
-# breaking any build from a clone that has tags. Take the leading numeric
-# part and ignore the trailing label.
-tag_regex = "^v?(?P<version>\\d+(?:\\.\\d+)*)"
+# Match only PEP 440 release tags. The competition-era tag "v1.0-submission"
+# is not one, and is deliberately excluded rather than parsed around: the
+# release it marks is also tagged v1.0.0, which setuptools-scm reads directly.
+git_describe_command = ["git", "describe", "--tags", "--long", "--match", "v[0-9]*"]
 
 [tool.scikit-build]
 minimum-version = "0.9"

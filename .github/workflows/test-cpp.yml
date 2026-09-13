@@ -15,6 +15,11 @@ on:
       - '*.rst'
 
 
+# Least privilege: every token use in this workflow is a read
+# (arduino/setup-task fetching Task from GitHub releases).
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build (Debug)

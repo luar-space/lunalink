@@ -37,6 +37,11 @@ on:
 # reads every gate's outcome via `needs.<job>.result` with `if: always()`.
 # ---------------------------------------------------------------------------
 
+# Least privilege: every token use in this workflow is a read
+# (arduino/setup-task fetching Task from GitHub releases).
+permissions:
+  contents: read
+
 jobs:
 
   # --------------------------------------------------------------------------

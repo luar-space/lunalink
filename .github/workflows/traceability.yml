@@ -9,14 +9,18 @@ on:
       - 'docs/**'
       - 'scripts/verify_traceability.py'
       - '.github/workflows/traceability.yml'
-  # TODO: re-enable pull_request trigger after restructure PR is merged
-  #   pull_request:
-  #     paths:
-  #       - 'cpp/**'
-  #       - 'docs/**'
-  #       - 'scripts/verify_traceability.py'
-  #       - '.github/workflows/traceability.yml'
+  pull_request:
+    paths:
+      - 'cpp/**'
+      - 'docs/**'
+      - 'scripts/verify_traceability.py'
+      - '.github/workflows/traceability.yml'
 
+
+# Least privilege: every token use in this workflow is a read
+# (arduino/setup-task fetching Task from GitHub releases).
+permissions:
+  contents: read
 
 jobs:
   traceability:

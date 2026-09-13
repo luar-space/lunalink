@@ -17,6 +17,11 @@ on:
       - '.github/workflows/docs-check.yml'
 
 
+# Least privilege: every token use in this workflow is a read
+# (arduino/setup-task fetching Task from GitHub releases).
+permissions:
+  contents: read
+
 jobs:
   docs:
     name: Docs

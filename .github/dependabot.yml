@@ -1,0 +1,31 @@
+version: 2
+updates:
+  # GitHub Actions are pinned by major tag; this keeps them current and, more
+  # importantly, surfaces advisories against actions that run with a token.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+
+  # Python dependencies. Grouped so that routine tooling bumps arrive as one
+  # pull request rather than a dozen; the runtime dependencies are few and
+  # deliberate, so those come individually.
+  - package-ecosystem: uv
+    directory: "/"
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "build"
+    groups:
+      dev-tooling:
+        dependency-type: development
+        patterns: ["*"]
+    ignore:
+      # Pinned exactly on purpose: clang-format's output changes between major
+      # versions, and an unpinned bump makes CI disagree with developers about
+      # files neither has touched. Bump it deliberately, not automatically.
+      - dependency-name: clang-format
