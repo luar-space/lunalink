@@ -76,7 +76,10 @@ def check() -> list[str]:
 
     # 2. README NOCOVER count must match the source tree.
     measured_nocover = nocover_count()
-    match = re.search(r"\*\*([0-9]+) in-source\s*\n?`?NOCOVER", readme)
+    # Emphasis around the figure is presentation, not data: match the claim
+    # whether or not it is bold, so rewording the README does not fail a gate
+    # that exists to catch the *number* drifting from the source tree.
+    match = re.search(r"(?:\*\*)?([0-9]+) in-source\s*\n?`?(?:\*\*)?`?NOCOVER", readme)
     if match is None:
         errors.append(
             "README.md: could not find the 'N in-source NOCOVER' claim; "

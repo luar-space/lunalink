@@ -3,9 +3,9 @@
   "document_id": "LUNALINK-COMPLIANCE-001",
   "generated_by": "scripts/compliance_report.py",
   "junit_files": [
-    "/Users/marco/code/lunalink-oss/build/test_results.xml",
-    "/Users/marco/code/lunalink-oss/build/test_e2e.xml",
-    "/Users/marco/code/lunalink-oss/build/swifi-ninja/swifi_results.xml"
+    "build/test_results.xml",
+    "build/test_e2e.xml",
+    "build/swifi-ninja/swifi_results.xml"
   ],
   "total_test_cases": 320,
   "requirements": [

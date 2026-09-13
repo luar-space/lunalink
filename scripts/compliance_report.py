@@ -544,7 +544,13 @@ def generate_report() -> dict:
         "title": "LSIS-AFS Compliance Report",
         "document_id": "LUNALINK-COMPLIANCE-001",
         "generated_by": "scripts/compliance_report.py",
-        "junit_files": [str(p) for p in found_xmls],
+        # Repo-relative: an absolute path records the home directory of
+        # whoever generated the evidence, which is noise in a published
+        # artefact and differs on every machine that regenerates it.
+        "junit_files": [
+            str(p.relative_to(REPO_ROOT)) if p.is_relative_to(REPO_ROOT) else str(p)
+            for p in found_xmls
+        ],
         "total_test_cases": len(test_results),
         "requirements": requirements,
         "nfr": nfr_entries,
