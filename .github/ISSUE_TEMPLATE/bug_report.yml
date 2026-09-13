@@ -1,40 +1,62 @@
-name: Bug / Problem Report
-description: Report a defect or anomaly (PRACA)
+name: Bug / problem report
+description: Report a defect or anomaly in LunaLink
 title: "[BUG] "
-labels: ["status::new"]
+labels: ["status::new", "type::defect"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        If LunaLink decodes something differently from how you read the
+        standard, that may be a **specification finding** rather than a bug.
+        Either template is fine; we will reclassify if needed.
+
+        For anything with a security consequence, do not file here. See
+        [SECURITY.md](https://github.com/luar-space/lunalink/blob/main/SECURITY.md).
   - type: dropdown
     id: severity
     attributes:
       label: Severity
-      description: Per LUNALINK-PRACA-001 §2
+      description: >-
+        LunaLink tracks defects under a problem reporting, analysis and
+        corrective action scheme. Your best guess is fine; the maintainers
+        confirm the classification.
       options:
-        - "S1 — Critical / Safety (blocks submission)"
-        - "S2 — Major (must fix before gateway exit)"
-        - "S3 — Moderate (fix within 2 sprints)"
-        - "S4 — Minor (backlog)"
+        - "S1 — Critical: produces or accepts an incorrect signal, or breaks a safety property"
+        - "S2 — Major: a documented capability does not work"
+        - "S3 — Moderate: incorrect behaviour with a workaround"
+        - "S4 — Minor: cosmetic, documentation, or developer experience"
     validations:
       required: true
   - type: textarea
     id: description
     attributes:
-      label: Problem Description
-      description: What happened? What was expected?
+      label: What happened, and what did you expect?
     validations:
       required: true
   - type: textarea
     id: steps
     attributes:
-      label: Steps to Reproduce
+      label: Steps to reproduce
+      description: A failing command or a short script is ideal.
+      render: shell
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: "Output of: python -c 'import lunalink; print(lunalink.__version__)'"
+  - type: input
+    id: platform
+    attributes:
+      label: Platform and compiler
+      placeholder: "macOS 15 arm64, Apple Clang 16"
   - type: textarea
     id: root_cause
     attributes:
-      label: Root Cause (if known)
+      label: Root cause, if you know it
   - type: checkboxes
-    id: fix_verification
+    id: checks
     attributes:
-      label: Fix Verification (S1/S2 required)
+      label: Before submitting
       options:
-        - label: Regression test added
-        - label: Full CI including SWIFI suite passes
-        - label: Independent reviewer sign-off obtained
+        - label: I searched existing issues
+        - label: I am on a recent `main` or a tagged release

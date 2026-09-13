@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+title: "LunaLink: an open reference implementation of the LunaNet Augmented Forward Signal"
+message: "If you use LunaLink in academic work, please cite it as below."
+type: software
+authors:
+  - given-names: Marco
+    family-names: Fiscato
+    email: marco.fiscato@gmail.com
+    affiliation: Luar Space
+repository-code: "https://github.com/luar-space/lunalink"
+url: "https://luar-space.github.io/lunalink/"
+abstract: >-
+  LunaLink is an open-source reference implementation of the LunaNet
+  Signal-In-Space Recommended Standard for the Augmented Forward Signal
+  (LSIS V1.0). It implements the complete transmit chain (Gold-2046 and
+  Weil-10230 spreading codes, CRC-24Q, BCH(51,8), LDPC, block interleaving,
+  BPSK modulation and I/Q multiplexing) and the inverse receive chain
+  (frame synchronisation by cross-correlation, soft-decision decoding, and
+  navigation message parsing), together with Signal-In-Space Error
+  computation. The C++20 core is written to a flight-software dialect
+  unioning MISRA C++:2023, the JPL Institutional Coding Standard and
+  NASA and ESA coding practice, and carries a mission assurance case
+  including a software FMEA and fault-injection evidence. Python bindings
+  are provided via nanobind.
+keywords:
+  - LunaNet
+  - Augmented Forward Signal
+  - lunar navigation
+  - satellite navigation
+  - GNSS
+  - CCSDS
+  - software-defined radio
+  - LDPC
+  - flight software
+  - reference implementation
+license: Apache-2.0

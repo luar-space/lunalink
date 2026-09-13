@@ -1,0 +1,52 @@
+name: Feature request
+description: Propose new capability
+title: "[FEAT] "
+labels: ["status::new", "type::enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        LunaLink implements a standard. Capability that the standard does not
+        describe needs a clear reason to live here rather than in a project
+        built on top of LunaLink.
+
+        Known gaps are listed on
+        [the roadmap](https://luar-space.github.io/lunalink/roadmap.html).
+        Check there first: the positioning pipeline, hardware-in-the-loop
+        verification and clock-drift compensation are already known to be
+        missing.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What can you not do today?
+      description: Describe the problem, not the solution you have in mind.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed capability
+    validations:
+      required: true
+  - type: input
+    id: basis
+    attributes:
+      label: Specification basis, if any
+      placeholder: "LSIS V1.0 §3.2, or: not specified, this is tooling"
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - "Signal chain (C++ core)"
+        - "Python bindings or CLI"
+        - "Test vectors or validation"
+        - "Assurance, traceability or documentation"
+        - "Build, packaging or CI"
+        - "Target port or hardware support"
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Participation
+      options:
+        - label: I would be willing to implement this

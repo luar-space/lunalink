@@ -1,0 +1,62 @@
+name: Specification finding
+description: Report an ambiguity, defect, or disputed reading of LSIS V1.0
+title: "[SPEC] "
+labels: ["status::new", "type::spec-finding"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        These are the most valuable issues this project receives.
+
+        LunaLink implements a standard that still carries open items. Where the
+        text was ambiguous, LunaLink had to choose, and every choice is recorded
+        with its reasoning in
+        [the specification findings report](https://luar-space.github.io/lunalink/signal/spec_findings_report.html).
+
+        If you read a clause differently, say so. Confirmed findings are raised
+        with the specification's authors, with attribution to whoever found them.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of finding
+      options:
+        - "Ambiguity — the text supports more than one reading"
+        - "Contradiction — two parts of the standard disagree"
+        - "Omission — something necessary is not specified"
+        - "Disputed implementation — LunaLink's reading looks wrong to me"
+        - "Marked open — a TBC or TBD item that needs resolving"
+    validations:
+      required: true
+  - type: input
+    id: clause
+    attributes:
+      label: Clause, table or figure
+      placeholder: "LSIS V1.0 §2.4.3, Table 19"
+    validations:
+      required: true
+  - type: textarea
+    id: finding
+    attributes:
+      label: The finding
+      description: What does the text say, and why is it a problem?
+    validations:
+      required: true
+  - type: textarea
+    id: readings
+    attributes:
+      label: Candidate readings
+      description: Set out the interpretations you think the text permits.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence for your preferred reading
+      description: >-
+        Other clauses, annex data, another implementation's behaviour, or a
+        decode that only works one way.
+  - type: textarea
+    id: impact
+    attributes:
+      label: Interoperability impact
+      description: >-
+        What breaks if two providers read this differently? A finding that
+        costs a lock is more urgent than one that costs a field width.

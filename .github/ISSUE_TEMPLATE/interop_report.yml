@@ -1,0 +1,81 @@
+name: Interoperability report
+description: Report the result of cross-checking LunaLink against another implementation
+title: "[INTEROP] "
+labels: ["status::new", "type::interop"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A standard is only real once independent implementations interoperate.
+        Please file these whether they pass or fail. Failures are more useful,
+        and a passing report from a third party is worth more than any claim
+        this project makes about itself.
+
+        Published results live in
+        [the interoperability report](https://luar-space.github.io/lunalink/interop_results.html).
+  - type: input
+    id: counterpart
+    attributes:
+      label: The other implementation
+      description: Name, and a link or version if it is public.
+    validations:
+      required: true
+  - type: dropdown
+    id: direction
+    attributes:
+      label: Direction tested
+      options:
+        - "LunaLink transmits, the other implementation receives"
+        - "The other implementation transmits, LunaLink receives"
+        - "Both directions"
+        - "Artefact comparison only, no signal exchanged"
+    validations:
+      required: true
+  - type: dropdown
+    id: layer
+    attributes:
+      label: Deepest layer reached
+      options:
+        - "Spreading code agreement"
+        - "Modulated baseband agreement"
+        - "Frame synchronisation achieved"
+        - "Forward error correction decoded"
+        - "Navigation message parsed correctly"
+    validations:
+      required: true
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: Outcome
+      options:
+        - "Pass — bit-exact"
+        - "Pass — within stated tolerance"
+        - "Partial — some subframes or PRNs only"
+        - "Fail"
+    validations:
+      required: true
+  - type: textarea
+    id: setup
+    attributes:
+      label: Setup
+      description: >-
+        PRN, subframes, sample rate, front end if any, and the commands you ran.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Result
+      description: >-
+        Where the two agreed and where they diverged. First diverging sample or
+        bit index if you have it.
+    validations:
+      required: true
+  - type: checkboxes
+    id: sharing
+    attributes:
+      label: Artefacts
+      options:
+        - label: I can share the signal or intermediate files that reproduce this
+        - label: I am willing to be credited in the published interoperability report

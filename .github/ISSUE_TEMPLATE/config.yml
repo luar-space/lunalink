@@ -1,0 +1,14 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://luar-space.github.io/lunalink/
+    about: Architecture, assurance case, compliance matrix and specification findings.
+  - name: Test vectors
+    url: https://github.com/luar-space/lsis-afs-test-vectors
+    about: Shared AFS test vectors. File vector disagreements there.
+  - name: Report a security issue
+    url: https://github.com/luar-space/lunalink/security/advisories/new
+    about: Private vulnerability reporting. Do not open a public issue.
+  - name: The standard itself
+    url: https://www.nasa.gov/directorates/somd/space-communications-navigation-program/lunanet-interoperability-specification/
+    about: NASA's LunaNet Interoperability Specification, which LunaLink implements.
