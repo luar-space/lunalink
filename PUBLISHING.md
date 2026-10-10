@@ -1,10 +1,25 @@
 # Publication runbook
 
-How to take this repository public as `luar-space/lunalink`. Everything up to
-the push is done; this file is the part that needs a human.
+How to take this repository public as `luar-space/lunalink`.
 
 Delete this file once the repository is published. It is scaffolding, not
 documentation.
+
+## Status — 10 October 2026
+
+| | |
+|:--|:--|
+| Repository | **Created, private**, at `luar-space/lunalink` |
+| `main` | Pushed |
+| Tags pushed | `v1.0.0`, `v1.0-submission` (by name) |
+| Tags deliberately withheld | `pre-graft-backup`, `pre-graft-v1.0-submission` |
+| Name | **Settled.** All 48 baked-in URLs already point at `luar-space/lunalink` |
+| Patent grant | **Open.** Publication is held pending this review |
+| Remaining | Flip to public, then configure |
+
+The repository being private is not publication: nobody receives the code, so
+the Apache-2.0 §3 patent grant has not activated and no public disclosure has
+occurred. The work is backed up and CI runs. Nothing is committed to yet.
 
 ---
 
@@ -21,6 +36,9 @@ push. Not deciding is itself a decision to grant.
 implementation is of a civil navigation signal, so this is very likely
 unproblematic. It is still worth a recorded assessment before a European
 entity publishes flight-grade signal-processing code, rather than after.
+
+**Settled: the name.** `luar-space/lunalink`, which is what every baked-in
+URL already points at. No rewrite pending.
 
 **3. Contribution terms.** `CONTRIBUTING.md` currently specifies the Developer
 Certificate of Origin and no contributor licence agreement, so contributors
@@ -49,21 +67,22 @@ tags stay on this machine, which is where they are useful.
 
 ## Publish
 
+The repository exists and `main` is pushed. Publication is now one command,
+and it is the irreversible one.
+
 ```bash
-# 1. Create the repository. Public from the start: creating it private and
-#    flipping it later leaves the private-era forks and clones behind.
-gh repo create luar-space/lunalink \
-  --public \
-  --description "Open reference implementation of the LunaNet Augmented Forward Signal (LSIS V1.0)" \
+# Flip to public. Nobody has had access while it was private, so there are no
+# private-era forks or clones to worry about.
+gh repo edit luar-space/lunalink \
+  --visibility public --accept-visibility-change-consequences \
   --homepage "https://luar-space.github.io/lunalink/"
-
-# 2. Point this clone at it. The existing "submission" remote stays as it is.
-git remote add origin git@github.com:luar-space/lunalink.git
-
-# 3. Push main, and only the two release tags.
-git push -u origin main
-git push origin v1.0.0 v1.0-submission
 ```
+
+Do not run this until the patent question in *Decide first* is settled. After
+it, the Apache-2.0 patent grant is live and cannot be withdrawn.
+
+If further commits are needed first, push them normally — `origin` is wired
+and tracking. Keep using explicit tag names; never `git push --tags`.
 
 ## Configure, in this order
 
