@@ -170,11 +170,12 @@ Only **MSG-G8 (Time of Transmission)** has complete field definitions
 with bit widths, value ranges, and formulas (Table 22, LSIS-720).
 This is the only message whose content LunaLink can fully parse.
 
-**Tier 2 --- LunaNet 1.0, content TBW (13 messages):**
+**Tier 2 --- LunaNet 1.0, content not defined (13 messages):**
 
-These are part of LNIS V1.0 but their field layouts are marked
-``{LSIS-TBW-*}`` (To Be Written).  LunaLink can route them by type
-field but cannot parse their payload until the spec defines it.
+These are part of LNIS V1.0 but their field layouts are open: eleven are
+marked ``{LSIS-TBW-*}`` (To Be Written), and MSG-G3 and MSG-S20 carry
+``{LSIS-TBD-*}`` items.  LunaLink can route them by type field but cannot
+parse their payload until the spec defines it.
 
 .. list-table::
    :header-rows: 1
@@ -655,7 +656,8 @@ Spec Findings SF-002, SF-004 and SF-005
 
 **Description:** Of the 23 message types in Table 21, only **1** (MSG-G8)
 has fully defined field layouts.  13 messages are part of LunaNet 1.0
-but have content marked ``{LSIS-TBW-*}``.  9 messages are future
+but have open content: eleven marked ``{LSIS-TBW-*}`` and two carrying
+``{LSIS-TBD-*}`` items.  9 messages are future
 placeholders not included in LunaNet 1.0.  This means the parser
 can only fully parse Time of Transmission data; all
 other message payloads are opaque until the spec defines them.

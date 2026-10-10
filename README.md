@@ -239,15 +239,14 @@ forty minutes.
 
 ### It feeds back to the standard
 
-LSIS V1.0 carries 15 *To Be Written*, 3 *To Be Confirmed* and 1 *To Be
-Determined* markers. Every one is dispositioned in the
-[shall inventory](https://luar-space.github.io/lunalink/signal/shall_inventory.html),
-and the five that are **interoperability-critical** — where two conformant
-implementations can make different choices and fail to interoperate — are
-written up as findings SF-001 to SF-005 in the
-[specification findings report](https://luar-space.github.io/lunalink/signal/spec_findings_report.html),
-each with the assumption adopted, a proposed resolution, and a recommendation
-to the working group.
+LSIS V1.0 lists 46 open items in its own Table ZZ-1: 16 *To Be Written*, 25
+*To Be Confirmed* and 5 *To Be Determined*. Every one is dispositioned in the
+[specification findings report](https://luar-space.github.io/lunalink/signal/spec_findings_report.html#open-items).
+Most are tolerances on radio-frequency hardware. The five that are
+**interoperability-critical**, where two conformant implementations can make
+different choices and fail to interoperate, are written up there as findings
+SF-001 to SF-005, each with the assumption adopted, a proposed resolution,
+and a recommendation to the working group.
 
 For the 11 message types whose payload the specification leaves open, LunaLink
 proposes concrete bit-level layouts, so that two implementations can agree on
