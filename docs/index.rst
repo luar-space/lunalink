@@ -29,8 +29,10 @@ in a restricted C++ dialect with an assurance case behind it. And it
 interoperates with independent implementations in both directions, which is
 checked on every run rather than asserted.
 
-Start here
-----------
+Where to start
+--------------
+
+To use LunaLink, build it and run the tests:
 
 .. code-block:: bash
 
@@ -38,15 +40,23 @@ Start here
    task test        # C++ and Python test suites
    task interop     # cross-check against an independent implementation
 
-:doc:`quickstart` walks through generating and decoding a frame.
+:doc:`quickstart` then walks through generating and decoding a frame, and
 :doc:`signal/architecture` explains how the chain fits together.
-:doc:`roadmap` says honestly what is not done.
+
+To check your own LSIS-AFS implementation against LunaLink, start at
+:doc:`interoperate`.  The shared test vectors and their validator are
+published at `luar-space/lsis-afs-test-vectors
+<https://github.com/luar-space/lsis-afs-test-vectors>`__, and comparing
+against them does not require installing LunaLink.
+
+:doc:`roadmap` lists what is not done.
 
 .. toctree::
    :maxdepth: 2
    :caption: Getting Started:
 
    quickstart
+   interoperate
    developing
    tech_stack
    roadmap

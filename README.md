@@ -64,6 +64,29 @@ walks through it properly, and the
 cover spreading codes, error correction and the anatomy of a navigation
 message.
 
+## Check your implementation against it
+
+If you have an AFS implementation, we want to cross-check against it. There
+are three ways to do that.
+
+1. Compare against the shared vectors, without installing LunaLink. The
+   vectors for all five interoperability levels are published at
+   [lsis-afs-test-vectors](https://github.com/luar-space/lsis-afs-test-vectors),
+   with the reference data they were checked against. Its `validate.py` uses
+   only the Python standard library and compares your codes, frames, signals,
+   decoded bits and parsed data against the set:
+   `python validate.py diff-frames /path/to/your/frames/`.
+2. Run the cross-checks from LunaLink. `task interop` and
+   `task interop-receiver` run it against two independent implementations, and
+   `scripts/interop/validate_foreign_vectors.py` runs its decoder over a
+   directory of your vectors.
+3. Tell us the result. Open an
+   [interoperability report](https://github.com/luar-space/lunalink/issues/new?template=interop_report.yml),
+   passing or failing.
+
+The [interoperability guide](https://luar-space.github.io/lunalink/interoperate.html)
+has the commands for each level.
+
 ## Why this implementation
 
 If you have fifteen minutes, this is the tour:
@@ -108,10 +131,6 @@ decoded     SB2: 4850D19D04E4308D820462770927D9CA…  crc=A939B3
 No third-party source is vendored here; the interop tasks clone and build the
 counterparts. Method, limits and per-level results are in the
 [interoperability report](https://luar-space.github.io/lunalink/interop_results.html).
-
-**If you have an AFS implementation, we want to cross-check against it.**
-Open an [interoperability report](https://github.com/luar-space/lunalink/issues/new?template=interop_report.yml),
-passing or failing.
 
 ### It is written as flight software, not as a simulation
 

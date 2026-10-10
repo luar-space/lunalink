@@ -324,6 +324,16 @@ For fine-grained control, use the individual export functions:
    # Level 5: Parsed JSON
    export_parsed_json(result, "vectors/parsed/msg1.json", frame_id="msg1_zeros")
 
+Comparing with another implementation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A full set of vectors for every level is published at
+`luar-space/lsis-afs-test-vectors
+<https://github.com/luar-space/lsis-afs-test-vectors>`__, together with a
+validator that compares another implementation's output against them.
+:doc:`interoperate` describes how to use it, and how to run LunaLink against
+your own vectors.
+
 Using the Low-Level API
 -----------------------
 

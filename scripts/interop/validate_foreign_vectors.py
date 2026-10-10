@@ -3,9 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """I6 — Validate test vectors from any LSIS-AFS implementation.
 
-Checks format, dimensions, and optionally decodes foreign test vectors
-against LunaLink's signal chain. Designed for cross-team interoperability
-at the ESA-CCSDS competition.
+Checks the format and dimensions of another implementation's test vectors,
+and runs LunaLink's decoder over each encoded frame it finds.
 
 Usage:
     python scripts/interop/validate_foreign_vectors.py <vector_dir>

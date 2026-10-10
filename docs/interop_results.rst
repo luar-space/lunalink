@@ -260,12 +260,22 @@ Reproduction
 
 .. code-block:: bash
 
+   task interop            # levels 1 to 3, against LANS-AFS-SIM
+   task interop-receiver   # levels 4 and 5, against PocketSDR-AFS
+
+``task interop`` runs these two steps, which can also be run by hand:
+
+.. code-block:: bash
+
    # 1. Build LANS-AFS-SIM and interop harnesses
-   python scripts/interop/build_lans_afs_sim.py
+   uv run python scripts/interop/build_lans_afs_sim.py
 
    # 2. Run all interop tests
-   pytest tests/test_interop_codes.py tests/test_interop_frames.py \
+   uv run pytest --no-cov tests/test_interop_codes.py tests/test_interop_frames.py \
           tests/test_interop_decode.py tests/test_interop_self.py -v
+
+To run the same comparison against your own implementation, see
+:doc:`interoperate`.
 
 Known limitations
 -----------------
