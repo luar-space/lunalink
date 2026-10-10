@@ -1,9 +1,12 @@
-Gateway 5: Frame Sync & Decoding --- Verification Guide
-========================================================
+Frame synchronisation and decoding
+==================================
 
-This document maps each Gateway 5 deliverable to its implementation,
-tests, and evidence.  A judge can verify compliance by reading this
-document top-to-bottom and running the commands in each section.
+The receive block finds the synchronisation pattern in a stream of soft
+symbols and decodes the frame that follows it: BCH for subframe 1, then
+de-interleaving, LDPC and CRC-24 for subframes 2 to 4.
+
+This page lists the parameters, source files, interface, hardening and tests
+of each part, with the command that runs the tests.
 
 Quick Build & Run
 -----------------
@@ -18,8 +21,10 @@ All tests must pass with exit code 0.
 
 ----
 
-GD5.2 --- Sync Pattern Detector
---------------------------------
+Sync Pattern Detector
+---------------------
+
+Competition deliverable: GD5.2.
 
 Spec reference: LSIS-AFS-710
 
@@ -150,8 +155,10 @@ SWIFI scenarios (``cpp/tests/signal/test_swifi_signal.cpp``):
 
 ----
 
-GD5.3 --- RX Pipeline: Symbol Extraction & Frame Decode
---------------------------------------------------------
+RX Pipeline: Symbol Extraction & Frame Decode
+---------------------------------------------
+
+Competition deliverable: GD5.3.
 
 Spec reference: LSIS V1.0 |sec|\ 2.4 (frame structure), |sec|\ 2.4.2
 (BCH), |sec|\ 2.4.3 (LDPC), |sec|\ 2.4.4 (interleaving), |sec|\ 2.4.5
@@ -383,7 +390,7 @@ WCET profiling (``cpp/tests/performance/test_wcet.cpp``):
 Python Bindings
 ---------------
 
-All Gateway 5 C++ components are accessible from Python via nanobind.
+All the C++ components on this page are accessible from Python via nanobind.
 
 Binding source: ``cpp/bindings/afs_module.cpp``
 
@@ -391,8 +398,8 @@ Python wrapper: ``src/lunalink/afs/signal.py``
 
 Type stubs: ``src/lunalink/afs/_afs.pyi``
 
-GD5.2 --- Sync detector bindings
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sync detector bindings
+~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -403,8 +410,8 @@ GD5.2 --- Sync detector bindings
 
    result, status = sync_detect(rx_symbols, threshold=50.0)
 
-GD5.3 --- Frame decode bindings
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Frame decode bindings
+~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -454,51 +461,42 @@ Test Summary
 
 .. list-table::
    :header-rows: 1
-   :widths: 30 10 15 20
+   :widths: 33 33 33
 
    * - Suite
-     - Tests
      - Tags
      - How to run
-   * - GD5.2 Sync detector unit tests
-     - 14
+   * - Sync detector unit tests
      - ``[sync_detector]``
      - ``task test-cpp``
-   * - GD5.3 E2E round-trip tests
-     - 6
+   * - E2E round-trip tests
      - ``[e2e]``
      - ``task integration``
-   * - GD5.3 Sync Pd characterisation
-     - 1
+   * - Sync Pd characterisation
      - ``[channel][pd]``
      - ``task ber``
-   * - GD5.3 Frame-level FER sweep
-     - 1
+   * - Frame-level FER sweep
      - ``[channel][fer][e2e]``
      - ``task ber``
    * - LDPC decoder quality (gap decomposition)
-     - 1
      - ``[channel][ber][reference]``
      - ``task ber``
    * - WCET benchmarks (sync, frame_decode)
-     - 2
      - ``[wcet]``
      - ``task wcet``
-   * - SWIFI (GD5 scenarios: FI-19 to FI-23)
-     - 5
+   * - Fault-injection scenarios FI-19 to FI-23
      - ``[swifi]``
      - ``task swifi``
 
-All tests pass with exit code 0.
 
 Related documents:
 
--  :doc:`signal/compliance_matrix` --- LSIS-AFS-710
--  :doc:`signal/architecture` --- module-to-gateway mapping
--  :doc:`signal/icd` --- formal interface control document
--  :doc:`assurance/mission_assurance` --- CFI, TMR, scrubbing patterns
--  :doc:`assurance/fmea` --- FM-055 to FM-066 (sync, frame decode)
--  :doc:`assurance/fault_coverage` --- FI-19 to FI-23 SWIFI catalogue
+-  :doc:`/signal/compliance_matrix` --- LSIS-AFS-710
+-  :doc:`/signal/architecture` --- module map
+-  :doc:`/signal/icd` --- formal interface control document
+-  :doc:`/assurance/mission_assurance` --- CFI, TMR, scrubbing patterns
+-  :doc:`/assurance/fmea` --- FM-055 to FM-066 (sync, frame decode)
+-  :doc:`/assurance/fault_coverage` --- FI-19 to FI-23 SWIFI catalogue
 
 .. |rarr| unicode:: U+2192
 .. |x| unicode:: U+00D7

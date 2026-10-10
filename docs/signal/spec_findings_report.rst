@@ -106,7 +106,7 @@ SF-004 — SB3/SB4 Type Field Width (TBC)
     defines MSG IDs up to 32 and 6 bits is the only width that can encode
     them. We propose the next LSIS revision resolve ``LSIS-TBC-2023`` and
     ``LSIS-TBC-2024`` to 6 bits for consistency with Table 21.
-*   **Verification**: :doc:`/gateway6` (§Interoperability Risks) documents the
+*   **Verification**: :doc:`/verification/message_parsing` (§Interoperability Risks) documents the
     failure mode; ``tests/test_interop_frames.py`` pins the LunaLink choice.
 
 .. _sf-005:
@@ -126,7 +126,7 @@ SF-005 — SB2 Field Layout (TBW)
     bit offset 13**, MSB-first per LSIS-320. This is a reasonable default but
     is **not normative**. We propose the next LSIS revision fix the MSG-G4,
     MSG-G2 and MSG-G8 field ordering and offsets explicitly.
-*   **Verification**: :doc:`/gateway6` (§Interoperability Risks and
+*   **Verification**: :doc:`/verification/message_parsing` (§Interoperability Risks and
     §Spec Finding SF-005) documents the assumption; the generated Gateway 6
     interop vectors carry it in a per-file ``interop_notes`` block so a
     consuming implementation cannot adopt the layout unknowingly.

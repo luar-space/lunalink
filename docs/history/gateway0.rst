@@ -5,6 +5,14 @@
 Gateway 0: Design & Architecture --- Standards Compliance & Architecture
 =================================================================================
 
+.. note::
+
+   **Historical document.**  This was written for the ESA-CCSDS Protocol
+   Development Outreach Competition, which LunaLink won in September 2026.
+   It is kept as a record and is no longer maintained, so its figures,
+   counts and open items describe the project at that time.  For the current design, see :doc:`/signal/architecture` and
+   :doc:`/verifying`.
+
 This document serves two deliverables at once: **Gateway 0 (Design &
 Architecture)** of the competition rubric, and the **Milestone 1** standards
 compliance and architecture deliverable of the ESA-CCSDS Delivery Outline.
@@ -70,33 +78,33 @@ that carries it.
      - Also see
    * - System architecture document
      - `System Architecture & Code Structure`_
-     - :doc:`signal/architecture`
+     - :doc:`/signal/architecture`
    * - Component interaction diagrams
      - `Signal Chain`_ (encode and decode pipelines)
-     - :doc:`signal/signal_chain`
+     - :doc:`/signal/signal_chain`
    * - Technology stack selection
      - `Technology Stack`_
-     - :doc:`tech_stack`
+     - :doc:`/tech_stack`
    * - Development environment setup
      - `Technology Stack & Development Environment`_,
        `Continuous Integration`_
-     - :doc:`quickstart`, :doc:`developing`
+     - :doc:`/quickstart`, :doc:`/developing`
    * - Testing strategy and framework
      - `Testing Strategy & Validation Framework`_
-     - :doc:`signal/validation_plan`
+     - :doc:`/signal/validation_plan`
    * - Code structure and module design
      - `Module Design`_
-     - :doc:`signal/architecture`
+     - :doc:`/signal/architecture`
    * - Interface definitions
      - `Interface Definitions & Data Formats`_
-     - :doc:`signal/icd`
+     - :doc:`/signal/icd`
    * - Data format specifications
      - `Interface Definitions & Data Formats`_
-     - :doc:`test_vectors`, :doc:`signal/sisicd`
+     - :doc:`/test_vectors`, :doc:`/signal/sisicd`
 
 **Success criteria.**  Architecture defined with clear components
 (`Module Design`_); development environment ready and reproducible
-(``task install``, :doc:`quickstart`); testing framework established
+(``task install``, :doc:`/quickstart`); testing framework established
 (`Test Infrastructure`_ — Catch2 for C++, pytest for Python, both wired
 into blocking CI gates).
 
@@ -150,7 +158,7 @@ section, the risk it creates, and the resolution LunaLink adopted.
        workshop: headerless interleaved ``float32`` little-endian
        ``[I0, Q0, I1, Q1, ...]`` (``lunalink encode --format iq32``), plus a
        self-describing ``LSISIQ``-headed variant for archival use.  Both are
-       documented in :doc:`test_vectors`.
+       documented in :doc:`/test_vectors`.
 
 .. |S| unicode:: U+00A7
 
@@ -703,7 +711,7 @@ Roadmap
 -------
 
 *Statuses below are the planning snapshot as of 31 March 2026 — see*
-:doc:`roadmap` *for the delivered status; G8 was delivered as* :doc:`api`
+:doc:`/roadmap` *for the delivered status; G8 was delivered as* :doc:`/api`
 *and* :doc:`/history/evaluation_guide`\ *.*
 
 .. list-table::

@@ -1,6 +1,14 @@
 Gateway 7: Integration & Validation --- Verification Guide
 ===========================================================
 
+.. note::
+
+   **Historical document.**  This was written for the ESA-CCSDS Protocol
+   Development Outreach Competition, which LunaLink won in September 2026.
+   It is kept as a record and is no longer maintained, so its figures,
+   counts and open items describe the project at that time.  The current pages are :doc:`/verification/integration`,
+   :doc:`/interop_results` and :doc:`/verification/performance`.
+
 This document maps each Gateway 7 deliverable to its implementation,
 tests, and evidence.  A judge can verify compliance by reading this
 document top-to-bottom and running the commands in each section.
@@ -262,7 +270,7 @@ BSD-2-Clause), an independent LSIS-AFS implementation.
      - **PASS**
      - PCPS acquisition, PLL despread, CRC-verified nav data
 
-Full results: :doc:`interop_results`
+Full results: :doc:`/interop_results`
 
 .. code-block:: bash
 

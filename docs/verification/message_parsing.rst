@@ -1,9 +1,12 @@
-Gateway 6: Message Parsing --- Verification Guide
-==================================================
+Message parsing and time
+========================
 
-This document maps each Gateway 6 deliverable to its implementation,
-tests, and evidence.  A judge can verify compliance by reading this
-document top-to-bottom and running the commands in each section.
+The parsing block turns decoded subframe bits into typed fields (frame ID,
+time of interval, week number, interval time of week) and computes the time of
+transmission (LSIS V1.0 §2.4 and §2.5).
+
+This page lists the parameters, source files, interface, hardening and tests
+of each part, with the command that runs the tests.
 
 Quick Build & Run
 -----------------
@@ -24,16 +27,16 @@ All tests must pass with exit code 0.
 Data Flow
 ---------
 
-Gateway 6 sits at the top of the receiver pipeline, consuming the raw
-bit arrays produced by ``frame_decode()`` (Gateway 5) and producing
-structured navigation data:
+This block sits at the top of the receiver pipeline.  It consumes the raw
+bit arrays produced by ``frame_decode()`` (:doc:`/verification/sync_decoding`)
+and produces structured navigation data:
 
 .. code-block:: text
 
    I/Q samples
      |
      v
-   frame_decode() [Gateway 5]
+   frame_decode()
      |
      +---> bch.fid, bch.toi           (SB1: FID + TOI)
      +---> sb2_data[0..1176)          (SB2: raw bits)
@@ -41,7 +44,7 @@ structured navigation data:
      +---> sb4_data[0..846)           (SB4: raw bits)
      |
      v
-   parse_sb2(sb2_data) [Gateway 6]   ---> wn (13 bits), itow (9 bits)
+   parse_sb2(sb2_data)               ---> wn (13 bits), itow (9 bits)
    parse_sb3(sb3_data)               ---> message type + payload offset
    parse_sb4(sb4_data)               ---> message type + payload offset
      |
@@ -55,44 +58,24 @@ structured navigation data:
 Interoperability Risks
 ----------------------
 
-.. warning::
+Two choices made here are not fixed by LSIS V1.0, and another implementation
+that chooses differently will not interoperate at this layer:
 
-   **Type Field Width (TBC)**
+- the width of the SB3 and SB4 type field, which the standard gives as
+  "4 or 6" bits.  LunaLink uses 6.  See :ref:`SF-004 <sf-004>`.
+- the bit positions of WN and ITOW within SB2, for which the standard gives
+  widths but no offsets.  LunaLink places WN at offset 0 and ITOW at offset
+  13, MSB first.  See :ref:`SF-005 <sf-005>`.
 
-   The SB3/SB4 type field width is marked ``{LSIS-TBC-2023}`` /
-   ``{LSIS-TBC-2024}`` in LSIS V1.0: Tables 19 and 20 say "4 or 6" bits.
-
-   LunaLink uses **6 bits** because Table 21 defines MSG IDs up to 32
-   (requires 6 bits to encode).
-
-   **Impact if another implementation uses 4 bits:** message types > 15
-   will be unrepresentable, and all subsequent field offsets will differ
-   by 2 bits --- interoperability breaks at the type field boundary.
-
-   Teams **must** agree on type field width before cross-decoding.
-
-.. warning::
-
-   **SB2 Field Layout (TBW)**
-
-   The exact bit positions of WN and ITOW within SB2 are **not specified**
-   in LSIS V1.0.  Table 22 defines the field widths (13 and 9 bits) but not
-   their offsets.
-
-   LunaLink places WN at bit offset 0 and ITOW at bit offset 13, MSB-first
-   per LSIS-320.  This is a reasonable default but **not normative**.
-
-   Interoperability requires agreement on SB2 field layout once the spec
-   committee defines it.
-
-Both issues are in the spec findings register: the type field width is
-:ref:`SF-004 <sf-004>` and the SB2 field layout is :ref:`SF-005 <sf-005>`
-(:doc:`signal/spec_findings_report`).
+Both are written up, with a proposed resolution, in
+:doc:`/signal/spec_findings_report`.
 
 ----
 
-GD6.1 --- Message Parsers
---------------------------
+Message Parsers
+---------------
+
+Competition deliverable: GD6.1.
 
 Spec reference: LSIS V1.0 |sec|\ 2.4, |sec|\ 2.5, Tables 13--22
 
@@ -382,7 +365,7 @@ Run: ``task test-cpp`` (file: ``cpp/tests/messages/test_message_parser.cpp``,
      - Values 0, 6, 7, 9, 255 all return ``kUnknown``
 
 SWIFI parser scenarios (documented and descoped for this release --- see
-:doc:`assurance/fault_coverage`):
+:doc:`/assurance/fault_coverage`):
 
 -  CFI skip injection in ``extract_bits()``, bit-value injection in
    ``parse_sb2()``, and CFI skip injection in ``parse_sb3()`` /
@@ -394,8 +377,10 @@ SWIFI parser scenarios (documented and descoped for this release --- see
 
 ----
 
-GD6.2 --- Time of Transmission Calculator
-------------------------------------------
+Time of Transmission Calculator
+-------------------------------
+
+Competition deliverable: GD6.2.
 
 Spec reference: LSIS-720, Table 22, Figure 11
 
@@ -666,13 +651,13 @@ Spec Findings SF-002, SF-004 and SF-005
 
 **Register entries:** :ref:`SF-002 <sf-002>` (message content TBW),
 :ref:`SF-004 <sf-004>` (type field width TBC), :ref:`SF-005 <sf-005>`
-(SB2 field layout TBW) in :doc:`signal/spec_findings_report`.
+(SB2 field layout TBW) in :doc:`/signal/spec_findings_report`.
 
 **Description:** Of the 23 message types in Table 21, only **1** (MSG-G8)
 has fully defined field layouts.  13 messages are part of LunaNet 1.0
 but have content marked ``{LSIS-TBW-*}``.  9 messages are future
-placeholders not included in LunaNet 1.0.  This means the message
-parsing gateway can only fully parse Time of Transmission data; all
+placeholders not included in LunaNet 1.0.  This means the parser
+can only fully parse Time of Transmission data; all
 other message payloads are opaque until the spec defines them.
 
 **Impact on interoperability:**
@@ -730,46 +715,38 @@ Test Summary
 
 .. list-table::
    :header-rows: 1
-   :widths: 35 10 15 15
+   :widths: 33 33 33
 
    * - Suite
-     - Tests
      - Tags
      - How to run
-   * - GD6.1 Message parser unit tests
-     - 22
+   * - Message parser unit tests
      - ``[messages]``
      - ``task test-cpp``
-   * - GD6.2 ToT calculator unit tests
-     - 12
+   * - ToT calculator unit tests
      - ``[messages]``
      - ``task test-cpp``
    * - E2E: TX |rarr| RX |rarr| parse |rarr| ToT
-     - 1
      - ``[e2e][rx]``
      - ``task test-cpp``
    * - Python wrapper tests
-     - 19
      - ---
      - ``task test-py``
-   * - SWIFI (Gateway 6: descoped parser scenarios)
-     - 0 (descoped)
+   * - Fault-injection scenarios (descoped for the parser)
      - ``[swifi]``
      - ``task swifi``
 
-**Total: 54 tests** (34 C++ unit + 1 C++ E2E + 19 Python)
 
-All tests pass with exit code 0.
 
 ----
 
 Related Documents
 -----------------
 
--  :doc:`signal/compliance_matrix` --- LSIS-AFS-801 through 810
--  :doc:`signal/architecture` --- module-to-gateway mapping
--  :doc:`signal/icd` --- formal interface control document
--  :doc:`assurance/mission_assurance` --- CFI, scrubbing patterns
--  :doc:`assurance/c_plus_plus_guidelines` --- coding standard
--  :doc:`assurance/fmea` --- FM-069 to FM-072 (Gateway 6)
--  :doc:`assurance/fault_coverage` --- descoped parser scenarios
+-  :doc:`/signal/compliance_matrix` --- LSIS-AFS-801 through 810
+-  :doc:`/signal/architecture` --- module map
+-  :doc:`/signal/icd` --- formal interface control document
+-  :doc:`/assurance/mission_assurance` --- CFI, scrubbing patterns
+-  :doc:`/assurance/c_plus_plus_guidelines` --- coding standard
+-  :doc:`/assurance/fmea` --- FM-069 to FM-072
+-  :doc:`/assurance/fault_coverage` --- descoped parser scenarios

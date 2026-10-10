@@ -131,7 +131,7 @@ html_css_files = ["custom.css"]
 
 latex_documents = [
     (
-        "gateway0",  # source start file (without .rst)
+        "history/gateway0",  # source start file (without .rst)
         "LunaLink-Gateway0-Phase1.tex",  # output filename
         "LSIS-AFS Reference Implementation\n"
         "Standards Compliance \\& Architecture",  # title

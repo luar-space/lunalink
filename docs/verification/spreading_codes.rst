@@ -1,9 +1,12 @@
-Gateway 1: Spreading Code Generation --- Verification Guide
-============================================================
+Spreading codes
+===============
 
-This document maps each Gateway 1 deliverable to its implementation,
-tests, and evidence.  A judge can verify compliance by reading this
-document top-to-bottom and running the commands in each section.
+The spreading-code block produces the Gold-2046 code for AFS-I and the
+Weil-10230 and Weil-1500 codes for AFS-Q, for PRN 1 to 210, and combines the
+AFS-Q codes with the secondary codes into the matched code (LSIS V1.0 §2.3.5).
+
+This page lists the parameters, source files, interface, hardening and tests
+of each part, with the command that runs the tests.
 
 Quick Build & Run
 -----------------
@@ -17,8 +20,10 @@ All unit tests must pass with exit code 0.
 
 ----
 
-GD1.1 --- Spreading Code Loader (Gold, Weil, Legendre)
--------------------------------------------------------
+Spreading Code Loader (Gold, Weil, Legendre)
+--------------------------------------------
+
+Competition deliverable: GD1.1.
 
 Spec references: LSIS-AFS-101 (Gold), LSIS-AFS-102 (Weil)
 
@@ -205,8 +210,10 @@ Generator validation (file: ``cpp/tests/codes/test_prn_generators.cpp``)
 
 ----
 
-GD1.2 --- Tiered Code Combiner (Matched Code)
-----------------------------------------------
+Tiered Code Combiner (Matched Code)
+-----------------------------------
+
+Competition deliverable: GD1.2.
 
 Spec reference: LSIS-AFS-401 (AFS-Q Pilot Code Construction)
 
@@ -382,7 +389,7 @@ and verifies reconstruction.
 Python Bindings
 ---------------
 
-All GD1 components are exposed to Python via ``lunalink.afs``.
+All the components on this page are exposed to Python via ``lunalink.afs``.
 
 .. list-table::
    :header-rows: 1
@@ -439,68 +446,31 @@ Test Summary
 
 .. list-table::
    :header-rows: 1
-   :widths: 25 15 15 20 25
+   :widths: 50 50
 
    * - Suite
-     - Tests
-     - Assertions
-     - Run time
      - How to run
-   * - GD1 unit tests
-     - 21
-     - ~350
-     - < 1 s
+   * - Unit tests
      - ``task test-cpp``
    * - Generator validation
-     - 5
-     - 210+ (all PRNs)
-     - < 1 s
      - ``task test-cpp``
-   * - SWIFI (GD1 scenarios)
-     - 3
-     - ~30
-     - < 1 s
+   * - Fault-injection scenarios for this block
      - ``task swifi``
    * - Python bindings
-     - included in pytest
-     - ---
-     - < 5 s
      - ``task test-py``
 
-All C++ unit tests pass in a few seconds with exit code 0.
-SWIFI scenarios verify 100% single-bit fault detection for all GD1 hardening patterns.
+Checks against reference data
+-----------------------------
 
-Success criteria
-----------------
-
-.. list-table::
-   :header-rows: 1
-   :widths: 40 18 42
-
-   * - Criterion
-     - Result
-     - Evidence
-   * - All codes match reference hexadecimal values from Annex 3
-     - **Pass**
-     - 210/210 PRNs, every chip, for Gold-2046, Weil-10230 and Weil-1500
-       (``tests/test_annex3_codes.py``); independently corroborated
-       bit-exact against LANS-AFS-SIM (:doc:`interop_results` L1)
-   * - Code generation completes in < 1 second per PRN
-     - **Pass**
-     - < 10 ms measured (NFR-1.1, ``task wcet``)
-   * - All 12 interim test codes (Table 11) working
-     - **Pass**
-     - ``[LSIS-TABLE11]`` parameterised sweep, PRN 1–12 round-trip
-       (:doc:`gateway7`)
-   * - **100% test coverage for code generators**
-     - **Pass**
-     - Every file in ``cpp/codes/`` is at **100.0% effective coverage** —
-       every line a test can reach is reached, and every remaining line is
-       an explicitly categorised ``NOCOVER`` defence-in-depth path.
-       See below.
+``tests/test_annex3_codes.py`` compares every chip of the Gold-2046,
+Weil-10230 and Weil-1500 codes, for all 210 PRNs, with the Annex 3 reference
+files.  :doc:`/interop_results` reports the same codes compared with
+LANS-AFS-SIM at level 1.  The ``[LSIS-TABLE11]`` test in
+``cpp/tests/integration/test_e2e.cpp`` round-trips the twelve interim
+assignments of Table 11.  ``task wcet`` measures the time to generate a code.
 
 Coverage of the code generators
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------------
 
 Raw line coverage understates this: these generators are hardened, so a
 large share of their lines are fault-detection paths that execute only when
@@ -542,7 +512,7 @@ region**, so an untested line cannot hide behind a percentage.
    task coverage-effective   # 0 unmarked uncovered lines in cpp/codes/
 
 Every exclusion is categorised and milestone-reviewed in
-:doc:`assurance/coverage_exclusions`.
+:doc:`/assurance/coverage_exclusions`.
 
 .. note::
 
@@ -557,10 +527,10 @@ Every exclusion is categorised and milestone-reviewed in
 
 Related documents:
 
--  :doc:`signal/compliance_matrix` --- CM-110, CM-120, CM-130, CM-140, CM-150
--  :doc:`signal/architecture` --- module-to-gateway mapping
--  :doc:`signal/signal_chain` --- transmitter block diagram
--  :doc:`signal/validation_plan` --- five-level test hierarchy
--  :doc:`assurance/mission_assurance` --- TMR, CFI, CheckedRange patterns
--  :doc:`assurance/fmea` --- PRN generator failure modes
--  :doc:`assurance/fault_coverage` --- SWIFI scenario catalogue
+-  :doc:`/signal/compliance_matrix` --- CM-110, CM-120, CM-130, CM-140, CM-150
+-  :doc:`/signal/architecture` --- module map
+-  :doc:`/signal/signal_chain` --- transmitter block diagram
+-  :doc:`/signal/validation_plan` --- five-level test hierarchy
+-  :doc:`/assurance/mission_assurance` --- TMR, CFI, CheckedRange patterns
+-  :doc:`/assurance/fmea` --- PRN generator failure modes
+-  :doc:`/assurance/fault_coverage` --- SWIFI scenario catalogue

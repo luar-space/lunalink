@@ -107,24 +107,27 @@ what each one checks.
      - Guide
      - Source
    * - Spreading codes
-     - :doc:`gateway1`
+     - :doc:`/verification/spreading_codes`
      - ``cpp/codes/``
    * - Forward error correction
-     - :doc:`gateway2`
+     - :doc:`/verification/error_correction`
      - ``cpp/encoding/``
    * - Navigation message framing
-     - :doc:`gateway3`
+     - :doc:`/verification/framing`
      - ``cpp/messages/frame.cpp``
    * - Baseband signal generation
-     - :doc:`gateway4`
+     - :doc:`/verification/baseband`
      - ``cpp/signal/``
    * - Frame synchronisation and decoding
-     - :doc:`gateway5`
+     - :doc:`/verification/sync_decoding`
      - ``cpp/signal/sync_detector.cpp``, ``cpp/messages/frame_decode.cpp``
    * - Message parsing and time
-     - :doc:`gateway6`
+     - :doc:`/verification/message_parsing`
      - ``cpp/messages/message_parser.cpp``,
        ``cpp/messages/time_of_transmission.cpp``
+
+:doc:`/verification/integration` covers the tests that run the whole chain,
+and the Signal-In-Space Error calculation.
 
 .. code-block:: bash
 
@@ -144,6 +147,9 @@ How well does it perform?
 
    * - Read
      - What it shows
+   * - :doc:`/verification/performance`
+     - Where each timing and error-rate result is measured, and the timing
+       targets.
    * - :doc:`signal/ldpc_performance`
      - Bit and frame error rates of the LDPC decoder against the target in
        the standard, with confidence intervals.

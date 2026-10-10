@@ -1,9 +1,12 @@
-Gateway 3: Navigation Message Framing --- Verification Guide
-=============================================================
+Navigation message framing
+==========================
 
-This document maps each Gateway 3 deliverable to its implementation,
-tests, and evidence.  A judge can verify compliance by reading this
-document top-to-bottom and running the commands in each section.
+The framing block builds the 6000-symbol navigation frame: the synchronisation
+pattern, subframe 1 with the frame ID and time of interval, subframes 2 to 4,
+and their assembly and interleaving (LSIS V1.0 §2.4).
+
+This page lists the parameters, source files, interface, hardening and tests
+of each part, with the command that runs the tests.
 
 Quick Build & Run
 -----------------
@@ -18,8 +21,10 @@ All tests must pass with exit code 0.
 
 ----
 
-GD3.1 --- Synchronisation Pattern (SP)
----------------------------------------
+Synchronisation Pattern (SP)
+----------------------------
+
+Competition deliverable: GD3.1.
 
 Spec references: LSIS-330 (Table 12), LSIS-340
 
@@ -45,8 +50,10 @@ Implementation: ``cpp/messages/frame.cpp`` --- ``kSyncPattern`` array,
 
 ----
 
-GD3.2 --- Subframe 1 Builder (SB1)
-------------------------------------
+Subframe 1 Builder (SB1)
+------------------------
+
+Competition deliverable: GD3.2.
 
 Spec references: LSIS-410, LSIS-415 (Table 13, Table 14), BCH(51,8)
 
@@ -100,8 +107,10 @@ Verified in ``test_frame.cpp``: ``frame_build_partial SB1 with spec test vector`
 
 ----
 
-GD3.3 --- Subframe 2 Builder (SB2)
-------------------------------------
+Subframe 2 Builder (SB2)
+------------------------
+
+Competition deliverable: GD3.3.
 
 Spec references: LSIS-FID0-440, LSIS-FID0-465, LSIS-FID0-467,
 LSIS-FID0-510, LSIS-FID0-530 (Table 18)
@@ -148,8 +157,10 @@ Implementation files:
 
 ----
 
-GD3.4 --- Subframe 3 Builder (SB3)
-------------------------------------
+Subframe 3 Builder (SB3)
+------------------------
+
+Competition deliverable: GD3.4.
 
 Spec references: LSIS-FID0-450, LSIS-FID0-560 (Table 19), LSIS-FID0-570
 
@@ -194,8 +205,10 @@ Pipeline: ``subframe_build_sb3()`` |rarr| CRC-24Q append |rarr| LDPC SF3 encode 
 
 ----
 
-GD3.5 --- Subframe 4 Builder (SB4)
-------------------------------------
+Subframe 4 Builder (SB4)
+------------------------
+
+Competition deliverable: GD3.5.
 
 Spec references: LSIS-FID0-460, LSIS-FID0-600 (Table 20), LSIS-FID0-610
 
@@ -237,8 +250,10 @@ Pipeline: ``subframe_build_sb4()`` |rarr| CRC-24Q append |rarr| LDPC SF3 encode 
 
 ----
 
-GD3.6 --- Frame Assembler
---------------------------
+Frame Assembler
+---------------
+
+Competition deliverable: GD3.6.
 
 Spec references: LSIS-310, LSIS-FID0-430 (Figure 9), LSIS-FID0-470 (Table 17)
 
@@ -450,7 +465,7 @@ SWIFI fault injection (``cpp/tests/messages/test_swifi_messages.cpp``)
 Python Bindings
 ---------------
 
-All GD3 components are exposed to Python via ``lunalink.afs``.
+All the components on this page are exposed to Python via ``lunalink.afs``.
 
 .. list-table::
    :header-rows: 1
@@ -539,39 +554,26 @@ Test Summary
 
 .. list-table::
    :header-rows: 1
-   :widths: 25 15 15 20 25
+   :widths: 50 50
 
    * - Suite
-     - Tests
-     - Assertions
-     - Run time
      - How to run
-   * - GD3 unit tests
-     - 13
-     - ~200
-     - < 2 s
+   * - Unit tests
      - ``task test-cpp``
-   * - SWIFI (GD3 scenarios)
-     - 2
-     - ~20
-     - < 1 s
+   * - Fault-injection scenarios for this block
      - ``task swifi``
    * - Python bindings
-     - included in pytest
-     - ---
-     - < 5 s
      - ``task test-py``
 
-All C++ unit tests pass in a few seconds with exit code 0.
 SWIFI scenarios verify LDPC matrix corruption detection and output
 scrubbing for both standalone subframe and full frame pipelines.
 
 Related documents:
 
--  :doc:`signal/compliance_matrix` --- CM-310, CM-330, CM-340, CM-410--470
--  :doc:`signal/architecture` --- module-to-gateway mapping
--  :doc:`signal/signal_chain` --- transmitter block diagram
--  :doc:`signal/icd` --- formal interface control document
--  :doc:`assurance/mission_assurance` --- CFI, secure scrub, pessimistic default
--  :doc:`assurance/fmea` --- frame builder failure modes (FM-005)
--  :doc:`assurance/fault_coverage` --- SWIFI scenario catalogue (FI-13, FI-14)
+-  :doc:`/signal/compliance_matrix` --- CM-310, CM-330, CM-340, CM-410--470
+-  :doc:`/signal/architecture` --- module map
+-  :doc:`/signal/signal_chain` --- transmitter block diagram
+-  :doc:`/signal/icd` --- formal interface control document
+-  :doc:`/assurance/mission_assurance` --- CFI, secure scrub, pessimistic default
+-  :doc:`/assurance/fmea` --- frame builder failure modes (FM-005)
+-  :doc:`/assurance/fault_coverage` --- SWIFI scenario catalogue (FI-13, FI-14)

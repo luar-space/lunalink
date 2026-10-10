@@ -1,9 +1,12 @@
-Gateway 2: Forward Error Correction --- Verification Guide
-===========================================================
+Forward error correction
+========================
 
-This document maps each Gateway 2 deliverable to its implementation,
-tests, and evidence.  A judge can verify compliance by reading this
-document top-to-bottom and running the commands in each section.
+The forward-error-correction block implements the BCH(51,8) code that protects
+subframe 1, the rate-1/2 LDPC codes for subframes 2 to 4, the 60×98 block
+interleaver and the CRC-24 (LSIS V1.0 §2.4).
+
+This page lists the parameters, source files, interface, hardening and tests
+of each part, with the command that runs the tests.
 
 Quick Build & Run
 -----------------
@@ -14,13 +17,15 @@ Quick Build & Run
    task ber                   # runs BER simulations; slow, run once to verify
 
 All unit tests must pass with exit code 0.  The performance suite is
-excluded from the default run because it takes several minutes; the key
-numerical results are recorded in this document for reference.
+excluded from the default run because it takes several minutes; its results
+are in :doc:`/signal/bch_performance` and :doc:`/signal/ldpc_performance`.
 
 ----
 
-GD2.1 — BCH(51,8) Encoder and Decoder
---------------------------------------
+BCH(51,8) Encoder and Decoder
+-----------------------------
+
+Competition deliverable: GD2.1.
 
 Spec reference: LSIS-AFS-501
 
@@ -142,60 +147,18 @@ Run: ``task test-cpp``  (file: ``cpp/tests/encoding/test_bch.cpp``)
 Performance tests (``task ber``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-File: ``cpp/tests/performance/test_bch_ber.cpp``.  BPSK AWGN simulation comparing
-hard ML vs soft ML over 1,000–10,000 frames per Eb/N0 point.
-
-.. list-table::
-   :header-rows: 1
-   :widths: 15 18 18 15 20
-
-   * - Eb/N0 (dB)
-     - Hard FER
-     - Soft FER
-     - Frames
-     - Soft gain
-   * - 2.0
-     - 1.49 × 10\ :sup:`-1`
-     - 2.10 × 10\ :sup:`-2`
-     - 1,000
-     - 7×
-   * - 3.0
-     - 6.70 × 10\ :sup:`-2`
-     - 5.67 × 10\ :sup:`-3`
-     - 3,000
-     - 12×
-   * - 4.0
-     - 1.93 × 10\ :sup:`-2`
-     - 2.00 × 10\ :sup:`-3`
-     - 3,000
-     - 10×
-   * - 5.0
-     - 6.33 × 10\ :sup:`-3`
-     - 3.33 × 10\ :sup:`-4`
-     - 3,000
-     - 19×
-   * - 6.0
-     - 1.67 × 10\ :sup:`-3`
-     - **0**
-     - 3,000
-     - ∞
-   * - **7.6** (operating point)
-     - **0**
-     - **0**
-     - **10,000**
-     - —
-
-Key claim: the soft decoder reaches effective error-free operation ~2 dB
-before the hard decoder.  At the system operating point (Es/N0 = 0 dB →
-Eb/N0 = 7.6 dB for BCH R=9/52), zero frame errors in 10,000 frames bounds
-FER < 3 × 10\ :sup:`-4` at 95% confidence.
-
-Full discussion: ``docs/signal/bch_performance.rst``
+File: ``cpp/tests/performance/test_bch_ber.cpp``.  A BPSK simulation over an
+additive white Gaussian noise channel compares the hard-decision and
+soft-decision decoders across a range of Eb/N0, including the system
+operating point.  The frame error rates and their confidence bounds are in
+:doc:`/signal/bch_performance`.
 
 ----
 
-GD2.2 — LDPC Encoder and Decoder (5G NR, SF2/SF3/SF4)
--------------------------------------------------------
+LDPC Encoder and Decoder (5G NR, SF2/SF3/SF4)
+---------------------------------------------
+
+Competition deliverable: GD2.2.
 
 Spec reference: LSIS-AFS-320
 
@@ -300,36 +263,21 @@ Run: ``task test-cpp``  (file: ``cpp/tests/encoding/test_ldpc.cpp``)
    * - LDPC: Subframe types coverage
      - SF2, SF3, SF4 all reach encode+decode paths
 
-BER results — system operating point
+Bit error rate at the operating point
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The LSIS spec requires BER < 10\ :sup:`-5` at SNR > 0 dB.  Two
-interpretations of the SNR convention are addressed:
-
-.. list-table::
-   :header-rows: 1
-   :widths: 20 25 25 30
-
-   * - Interpretation
-     - Definition
-     - Test point
-     - Measured result
-   * - **A (primary)** Es/N0 > 0 dB
-     - Energy-per-symbol (standard for coded systems)
-     - Eb/N0 = 3.0 dB
-     - BER = 0, FER = 0 in 18,000,000 bits (SF2) and 13,050,000 bits (SF3)
-   * - **B (conservative)** Eb/N0 > 0 dB
-     - Energy-per-bit
-     - Eb/N0 = 2.0 dB
-     - BER = 0 in 18,000,000 bits (SF2, 95% upper bound 1.7 × 10\ :sup:`-7`)
-       and 13,050,000 bits (SF3, 95% upper bound 2.3 × 10\ :sup:`-7`)
-
-Full discussion: ``docs/signal/ldpc_performance.rst``
+LSIS V1.0 requires a bit error rate below 10\ :sup:`-5` at SNR > 0 dB.  That
+phrase can be read as energy per symbol or as energy per bit, and the decoder
+is measured under both readings.  The results, with their confidence bounds,
+are in :doc:`/signal/ldpc_performance`; :doc:`/signal/ldpc_algo_card` compares
+the decoder with a reference decoder and the finite-length bound.
 
 ----
 
-GD2.3 — Block Interleaver / De-interleaver (60×98)
----------------------------------------------------
+Block Interleaver / De-interleaver (60×98)
+------------------------------------------
+
+Competition deliverable: GD2.3.
 
 Spec reference: LSIS-FID0-470
 
@@ -365,8 +313,10 @@ Unit tests (file: ``cpp/tests/encoding/test_interleaver.cpp``)
 
 ----
 
-GD2.4 — CRC-24 Generator and Validator
----------------------------------------
+CRC-24 Generator and Validator
+------------------------------
+
+Competition deliverable: GD2.4.
 
 Spec reference: LSIS-FID0-467
 
@@ -404,7 +354,7 @@ Cross-Cutting: Integration and Assurance Tests
 -----------------------------------------------
 
 Beyond the per-component unit tests, the following integration tests
-cover GD2 end-to-end paths.
+cover the end-to-end paths through this block.
 
 Round-trip tests (``cpp/tests/encoding/``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -434,7 +384,7 @@ Generic TMR voting and ``CheckedRange`` saturation are exercised in
 Python Bindings
 ---------------
 
-All four GD2 components are exposed to Python via the ``lunalink.afs``
+All four components are exposed to Python via the ``lunalink.afs``
 extension module (nanobind).  Stubs are in ``src/lunalink/afs/_afs.pyi``.
 
 .. list-table::
@@ -476,7 +426,7 @@ Python tests:
 
 .. code-block:: bash
 
-   task test-py       # runs pytest suite including GD2 binding tests
+   task test-py       # runs the pytest suite, including the binding tests
 
 ----
 
@@ -523,39 +473,23 @@ Test Summary
 
 .. list-table::
    :header-rows: 1
-   :widths: 20 15 15 20 30
+   :widths: 50 50
 
    * - Suite
-     - Tests
-     - Assertions
-     - Run time
      - How to run
-   * - GD2 unit + integration
-     - 40
-     - ---
-     - seconds
+   * - Unit and integration tests
      - ``task test-cpp``
-   * - BCH BER simulation
-     - 3
-     - 26,011
-     - ~30 s
+   * - BCH frame-error-rate simulation
      - ``task ber``
-   * - LDPC reference comparison + frame FER sweep
-     - 2
-     - ---
-     - ~5 min
+   * - LDPC reference comparison and frame-error-rate sweep
      - ``task ber``
    * - Python bindings
-     - included in pytest
-     - —
-     - < 5 s
      - ``task test-py``
 
-All C++ unit tests pass in a few seconds with exit code 0.  Performance tests
-pass within the BER/FER bounds stated in this document.
+``task ber`` takes several minutes.
 
 Related documents:
 
-- ``docs/signal/bch_performance.rst`` — BCH hard vs soft characterisation
-- ``docs/signal/ldpc_performance.rst`` — LDPC BER waterfall characterisation
-- ``docs/signal/compliance_matrix.rst`` — full spec-to-code mapping
+- :doc:`/signal/bch_performance`: hard-decision and soft-decision BCH decoding
+- :doc:`/signal/ldpc_performance`: LDPC bit and frame error rates
+- :doc:`/signal/compliance_matrix`: implementation status by block

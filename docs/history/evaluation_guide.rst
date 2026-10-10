@@ -61,7 +61,7 @@ All five gate items, one command each.
      - **210** Gold codes (not 12) plus Weil primary/tertiary and
        secondary sets in ``test-vectors/codes/``; bit-exact vs Annex 3
        (``tests/test_annex3_codes.py``).  All 12 interim Table 11 codes
-       round-trip (:doc:`/gateway7`)
+       round-trip (:doc:`/history/gateway7`)
    * - 2
      - Encode a complete 12-second navigation frame
      - ``uv run python examples/01_transmit.py``
@@ -100,7 +100,7 @@ Where to look for each scored category.
      - Primary evidence
    * - **Correctness**
      - 40
-     - Per-gateway verification guides :doc:`/gateway0`–:doc:`/gateway8`,
+     - Per-gateway verification guides :doc:`/history/gateway0`–:doc:`/history/gateway8`,
        each mapping deliverable → implementation → verifying command.
        :doc:`/signal/compliance_matrix` and :doc:`/signal/shall_inventory`
        (76 normative identifiers dispositioned).
@@ -110,7 +110,7 @@ Where to look for each scored category.
        cross-decode of its signal
    * - **Performance**
      - 20
-     - :doc:`/gateway8` §*Performance report* — the consolidated NFR
+     - :doc:`/history/gateway8` §*Performance report* — the consolidated NFR
        table, all 20 NFRs.  :doc:`/signal/ldpc_performance` and
        :doc:`/signal/bch_performance` (BER/FER waterfalls with 95% Wilson
        CIs, error-floor search, convergence knee, quantisation sweep).
@@ -161,44 +161,44 @@ verify each item.
      - Design & Architecture
      - Clear architecture with defined components; dev environment ready;
        testing framework established
-     - :doc:`/gateway0`
+     - :doc:`/history/gateway0`
    * - 1
      - Spreading code generation
      - All codes match Annex 3 hex; < 1 s per PRN; all 12 interim
        Table 11 codes working
-     - :doc:`/gateway1`
+     - :doc:`/verification/spreading_codes`
    * - 2
      - Forward error correction
      - Encode < 100 ms/frame; decode < 1 s/frame;
        BER < 10\ :sup:`-5` at SNR > 0 dB
-     - :doc:`/gateway2`
+     - :doc:`/verification/error_correction`
    * - 3
      - Navigation message framing
      - Valid frames, all subframes; 68 + 52 + 5880 = 6000 symbols;
        12-second frame timing
-     - :doc:`/gateway3`
+     - :doc:`/verification/framing`
    * - 4
      - Baseband signal generation
      - 12-second I/Q files; correct chip and symbol rates
-     - :doc:`/gateway4`
+     - :doc:`/verification/baseband`
    * - 5
      - Frame synchronization & decoding
      - Decode < 1 s; frame sync > 99% at SNR > 0 dB
-     - :doc:`/gateway5`
+     - :doc:`/verification/sync_decoding`
    * - 6
      - Message parsing
      - All subframe types parse; ToT accurate; all message types handled
-     - :doc:`/gateway6`
+     - :doc:`/verification/message_parsing`
    * - 7
      - Integration & validation
      - Round-trip 100% accuracy; all compliance checks pass; successful
        interoperability testing
-     - :doc:`/gateway7`
+     - :doc:`/history/gateway7`
    * - 8
      - Documentation & examples
      - Anyone can build and run; all features documented; reproducible
        results
-     - :doc:`/gateway8`
+     - :doc:`/history/gateway8`
 
 .. _non-functional requirements:
 
@@ -388,7 +388,7 @@ Milestone 1 — Standards Compliance & Architecture (§3.2.1)
      - ``uv run python demo/v1_plot.py`` renders the chain;
        :doc:`/notebooks/01_spreading_codes` walks it stage by stage
    * - Implementation architecture description
-     - :doc:`/gateway0` is the Gateway 0 deliverable document;
+     - :doc:`/history/gateway0` is the Gateway 0 deliverable document;
        :doc:`/signal/architecture` records the design decisions and the
        module → gateway map
      - ``task docs-pdf`` builds ``gateway0`` as a standalone PDF
@@ -426,13 +426,13 @@ Milestone 2 — Reference Implementation (§3.2.2)
      - Where it is
      - How to verify
    * - Software implementation of LSIS-AFS signal framing
-     - :doc:`/gateway3` (framing), :doc:`/gateway5` (sync + decode),
-       :doc:`/gateway6` (message parsing).  Source: ``cpp/messages/``
+     - :doc:`/verification/framing` (framing), :doc:`/verification/sync_decoding` (sync + decode),
+       :doc:`/verification/message_parsing` (message parsing).  Source: ``cpp/messages/``
      - ``uv run python examples/01_transmit.py`` — 6000-symbol,
        12-second frame; ``task test-cpp``
    * - Modulation and coding per specification
-     - :doc:`/gateway1` (spreading codes), :doc:`/gateway2` (BCH + LDPC +
-       CRC-24 + interleaver), :doc:`/gateway4` (BPSK, I/Q multiplexing).
+     - :doc:`/verification/spreading_codes` (spreading codes), :doc:`/verification/error_correction` (BCH + LDPC +
+       CRC-24 + interleaver), :doc:`/verification/baseband` (BPSK, I/Q multiplexing).
        Algorithm records: :doc:`/signal/algorithms`,
        :doc:`/signal/bch_decoder_design`, :doc:`/signal/ldpc_algo_card`
      - ``uv run lunalink generate-codes`` — 210 PRN codes, bit-exact vs
@@ -470,7 +470,7 @@ Milestone 3 — Validation and Interoperability Demonstration (§3.2.3)
      - ``task ber`` (BER/FER sweeps); ``task performance`` (full run)
    * - Compliance with signal structure requirements
      - :doc:`/signal/compliance_matrix`, :doc:`/signal/shall_inventory`,
-       and the per-gateway guides :doc:`/gateway1`–:doc:`/gateway7`
+       and the per-gateway guides :doc:`/verification/spreading_codes`–:doc:`/history/gateway7`
      - ``task compliance-report`` → ``compliance_report.json``
    * - Parameter sensitivity testing
      - :doc:`/signal/validation_plan` §*Signal Impairment & Robustness* —
@@ -546,14 +546,14 @@ Final Submission Package
      - This site — :doc:`/quickstart`, :doc:`/api`, :doc:`/signal/icd`
    * - Examples demonstrating functionality
      - ``examples/`` (transmit, decode, round-trip), ``demo/``, and the
-       three tutorial notebooks (:doc:`/gateway8`)
+       three tutorial notebooks (:doc:`/history/gateway8`)
    * - Validation report showing compliance
-     - :doc:`/gateway7` (GD7.5) and ``compliance_report.json``;
-       performance analysis in :doc:`/gateway8`
+     - :doc:`/history/gateway7` (GD7.5) and ``compliance_report.json``;
+       performance analysis in :doc:`/history/gateway8`
 
 Optional-but-recommended items — performance analysis, design
 documentation, additional test vectors, visualization tools, BER
-performance curves — are all delivered; see :doc:`/gateway8` and
+performance curves — are all delivered; see :doc:`/history/gateway8` and
 :doc:`/signal/ldpc_performance`.
 
 ----

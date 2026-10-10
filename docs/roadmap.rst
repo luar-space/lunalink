@@ -53,7 +53,7 @@ Named here so the boundary of what has been demonstrated is explicit:
    current figure and the list of open lines are kept in one place,
    :doc:`assurance/coverage_exclusions`.  The
    spreading-code generators in ``cpp/codes/`` are already at 100.0% with
-   zero unmarked lines (:doc:`gateway1`).
+   zero unmarked lines (:doc:`/verification/spreading_codes`).
 4. **PNT pipeline (V5).**  Constellation simulation and position fix, as
    above.
 5. **Sample-clock-offset and phase-noise sweeps.**  The validation plan
@@ -111,7 +111,7 @@ Deliverables Status
     implemented — see :doc:`signal/compliance_matrix` and
     :doc:`signal/shall_inventory`.
 *   **Architecture documentation**: complete design record for all core
-    modules (:doc:`gateway0`, :doc:`signal/architecture`).
+    modules (:doc:`/history/gateway0`, :doc:`signal/architecture`).
 *   **Mission assurance**: 100% Python line coverage (CI-gated); C++
     coverage and MC/DC evidence per :doc:`assurance/mission_assurance`.
 *   **Interoperability**: bit-exact cross-check and signal cross-decode

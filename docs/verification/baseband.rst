@@ -1,9 +1,12 @@
-Gateway 4: Baseband Signal Generation --- Verification Guide
-=============================================================
+Baseband signal generation
+==========================
 
-This document maps each Gateway 4 deliverable to its implementation,
-tests, and evidence.  A judge can verify compliance by reading this
-document top-to-bottom and running the commands in each section.
+The baseband block modulates the spreading codes with BPSK, on AFS-I and on
+AFS-Q, and multiplexes the two channels into I/Q samples (LSIS V1.0 §2.3.1 and
+§2.3.2).
+
+This page lists the parameters, source files, interface, hardening and tests
+of each part, with the command that runs the tests.
 
 Quick Build & Run
 -----------------
@@ -18,8 +21,10 @@ All tests must pass with exit code 0.
 
 ----
 
-GD4.1 --- BPSK Modulator (AFS-I + AFS-Q)
------------------------------------------
+BPSK Modulator (AFS-I + AFS-Q)
+------------------------------
+
+Competition deliverable: GD4.1.
 
 Spec reference: LSIS-AFS-201
 
@@ -128,8 +133,10 @@ Run: ``task test-cpp`` (file: ``cpp/tests/signal/test_modulator.cpp``)
 
 ----
 
-GD4.2 --- IQ Multiplexer (5.115 MSPS)
---------------------------------------
+IQ Multiplexer (5.115 MSPS)
+---------------------------
+
+Competition deliverable: GD4.2.
 
 Spec reference: LSIS-AFS-301
 
@@ -251,14 +258,14 @@ Coherency test (``cpp/tests/codes/test_matched_code.cpp``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Verifies primary/secondary/tertiary phase alignment (LSIS-172) over a full
-6000-epoch frame.  This is the upstream prerequisite for GD4: if matched-code
+6000-epoch frame.  This is the upstream prerequisite for this block: if matched-code
 epochs are phase-incorrect, the modulated IQ stream carries the error.
 
 Round-trip test (``cpp/tests/integration/test_e2e.cpp``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The TX round-trip encodes through the full signal chain: matched-code epoch
-generation (G1) |rarr| BPSK modulation (G4) |rarr| IQ multiplexing (G4),
+generation |rarr| BPSK modulation |rarr| IQ multiplexing,
 verifying that the complete baseband output is reconstructable.
 
 SWIFI fault injection (``cpp/tests/signal/test_swifi_signal.cpp``)
@@ -282,7 +289,7 @@ SWIFI fault injection (``cpp/tests/signal/test_swifi_signal.cpp``)
 Python Bindings
 ---------------
 
-All GD4 components are exposed to Python via ``lunalink.afs``.
+All the components on this page are exposed to Python via ``lunalink.afs``.
 
 .. list-table::
    :header-rows: 1
@@ -315,7 +322,7 @@ All GD4 components are exposed to Python via ``lunalink.afs``.
      - CSV export for external analysis tools (FR-3.5)
 
 Signal file export therefore covers all three formats the constraints name:
-binary int16, binary float32, and CSV.  See :doc:`test_vectors` for the
+binary int16, binary float32, and CSV.  See :doc:`/test_vectors` for the
 container layout.
 
 Python tests: ``task test-py`` (file: ``tests/test_afs.py``)
@@ -346,10 +353,10 @@ Compliance Cross-Reference
      - ``modulate_bpsk_i`` epoch-aligned API
    * - LSIS-171
      - Align tertiary code with secondary code boundaries
-     - Upstream: ``matched_code.cpp`` (verified in G1)
+     - Upstream: ``matched_code.cpp`` (see :doc:`/verification/spreading_codes`)
    * - LSIS-220
      - Synchronise tertiary start with frame start
-     - Upstream: ``matched_code.cpp`` (verified in G1)
+     - Upstream: ``matched_code.cpp`` (see :doc:`/verification/spreading_codes`)
 
 ----
 
@@ -358,44 +365,28 @@ Test Summary
 
 .. list-table::
    :header-rows: 1
-   :widths: 25 15 15 20 25
+   :widths: 50 50
 
    * - Suite
-     - Tests
-     - Assertions
-     - Run time
      - How to run
-   * - GD4 unit tests
-     - 12
-     - ~120
-     - < 1 s
+   * - Unit tests
      - ``task test-cpp``
-   * - SWIFI (GD4 scenarios)
-     - 2
-     - ~20
-     - < 1 s
+   * - Fault-injection scenarios for this block
      - ``task swifi``
    * - Coherency (upstream)
-     - 1
-     - 6000 epochs
-     - < 2 s
      - ``task test-cpp``
    * - Python bindings
-     - included in pytest
-     - ---
-     - < 5 s
      - ``task test-py``
 
-All C++ unit tests pass in a few seconds with exit code 0.
 SWIFI scenarios verify aliasing detection and output scrubbing for both
 modulator and IQ multiplexer.
 
 Related documents:
 
--  :doc:`signal/compliance_matrix` --- LSIS-101, LSIS-102, LSIS-103, LSIS-160, LSIS-171, LSIS-220
--  :doc:`signal/architecture` --- module-to-gateway mapping
--  :doc:`signal/signal_chain` --- transmitter block diagram with chip rates and data types
--  :doc:`signal/icd` --- formal interface control document
--  :doc:`assurance/mission_assurance` --- branchless, CFI, scrubbing patterns
--  :doc:`assurance/fmea` --- modulator and IQ mux failure modes
--  :doc:`assurance/fault_coverage` --- SWIFI scenario catalogue
+-  :doc:`/signal/compliance_matrix` --- LSIS-101, LSIS-102, LSIS-103, LSIS-160, LSIS-171, LSIS-220
+-  :doc:`/signal/architecture` --- module map
+-  :doc:`/signal/signal_chain` --- transmitter block diagram with chip rates and data types
+-  :doc:`/signal/icd` --- formal interface control document
+-  :doc:`/assurance/mission_assurance` --- branchless, CFI, scrubbing patterns
+-  :doc:`/assurance/fmea` --- modulator and IQ mux failure modes
+-  :doc:`/assurance/fault_coverage` --- SWIFI scenario catalogue

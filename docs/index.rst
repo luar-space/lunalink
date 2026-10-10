@@ -118,17 +118,16 @@ against them does not require installing LunaLink.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Design Reviews:
+   :caption: Verification by Block:
 
-   gateway0
-   gateway1
-   gateway2
-   gateway3
-   gateway4
-   gateway5
-   gateway6
-   gateway7
-   gateway8
+   verification/spreading_codes
+   verification/error_correction
+   verification/framing
+   verification/baseband
+   verification/sync_decoding
+   verification/message_parsing
+   verification/integration
+   verification/performance
 
 .. toctree::
    :maxdepth: 2
