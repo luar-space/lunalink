@@ -336,7 +336,7 @@ Technical constraints
        equivalent for core algorithms
      - Met.  C++20 core with no third-party DSP dependency; runtime
        Python deps are NumPy plus two typing libraries.  No proprietary
-       libraries.  See :doc:`/tech_stack`
+       libraries.  See :doc:`/developing`
    * - TC-2
      - Data formats: binary I/Q (int16, float32), CSV, JSON
      - Met.  The ``LSISIQ`` container carries **both** int16 and float32,
@@ -440,7 +440,7 @@ Milestone 2 — Reference Implementation (§3.2.2)
    * - Configuration documentation
      - :doc:`/assurance/configuration_baseline` (baseline + reproducible
        build procedure), :doc:`/assurance/build_policy` (flight vs
-       non-flight build configurations), :doc:`/tech_stack` (toolchain and
+       non-flight build configurations), :doc:`/developing` (toolchain and
        dependency pins), :doc:`/governance/baseline_register`
      - ``task build-manifest`` → SHA-pinned build manifest;
        ``task check-flags`` asserts the compiled flag set

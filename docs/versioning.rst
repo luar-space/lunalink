@@ -45,6 +45,11 @@ Cutting a Release
    (``task version-tag`` automates this step — it computes the next patch
    or minor tag; ``DRY_RUN=1`` previews, ``PUSH=1`` pushes.)
 
+   Pushing the tag starts the release workflow
+   (``.github/workflows/release.yml``), which builds the source distribution
+   and the wheels, attaches them to the GitHub release and publishes to PyPI.
+   Run ``task validate-export`` before tagging; see :doc:`developing`.
+
 3. Rebuild the package to confirm the version resolves correctly::
 
       task build

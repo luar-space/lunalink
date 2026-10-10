@@ -84,7 +84,7 @@ that carries it.
      - :doc:`/signal/signal_chain`
    * - Technology stack selection
      - `Technology Stack`_
-     - :doc:`/tech_stack`
+     - :doc:`/developing`
    * - Development environment setup
      - `Technology Stack & Development Environment`_,
        `Continuous Integration`_

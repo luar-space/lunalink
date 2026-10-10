@@ -7,7 +7,15 @@ implementation, linked directly.
 Primary Specifications
 ----------------------
 
-*   **LSIS-AFS**: Lunar Net Signal-In-Space Recommended Standard – Augmented Forward Signal (Vol-A) (``docs/references/lunanet-signal-in-space-recommended-standard-augmented-forward-signal-vol-a.pdf``) (LSIS V1.0, 29 Jan 2025).
+*   **LSIS-AFS**: `LunaNet Signal-In-Space Recommended Standard – Augmented Forward Signal, Volume A
+    <https://www.nasa.gov/wp-content/uploads/2025/02/lunanet-signal-in-space-recommended-standard-augmented-forward-signal-vol-a.pdf>`_
+    (LSIS V1.0, 29 January 2025).  A copy is kept at
+    ``docs/references/lunanet-signal-in-space-recommended-standard-augmented-forward-signal-vol-a.pdf``.
+*   **LNIS**: `LunaNet Interoperability Specification
+    <https://www.nasa.gov/directorates/somd/space-communications-navigation-program/lunanet-interoperability-specification/>`_,
+    of which the standard above is an applicable document.
+*   **Interoperability test vectors**: `luar-space/lsis-afs-test-vectors
+    <https://github.com/luar-space/lsis-afs-test-vectors>`_; see :doc:`interoperate`.
 
 Engineering & Mission Assurance
 -------------------------------

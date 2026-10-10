@@ -66,9 +66,6 @@ order through the tutorial notebooks and a set of exercises.
    verifying
    interoperate
    teaching
-   developing
-   tech_stack
-   roadmap
 
 .. toctree::
    :maxdepth: 2
@@ -80,7 +77,38 @@ order through the tutorial notebooks and a set of exercises.
 
 .. toctree::
    :maxdepth: 2
-   :caption: The Signal:
+   :caption: Interoperability:
+
+   interop_results
+   test_vectors
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Verification by Block:
+
+   verification/spreading_codes
+   verification/error_correction
+   verification/framing
+   verification/baseband
+   verification/sync_decoding
+   verification/message_parsing
+   verification/integration
+   verification/performance
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Conformance & Specification Feedback:
+
+   signal/shall_inventory
+   signal/pics_proforma
+   signal/compliance_matrix
+   signal/spec_findings_report
+   signal/sisicd
+   signal/validation_plan
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Signal Design:
 
    signal/architecture
    signal/signal_chain
@@ -89,20 +117,7 @@ order through the tutorial notebooks and a set of exercises.
    signal/bch_performance
    signal/ldpc_performance
    signal/ldpc_algo_card
-   signal/sisicd
    signal/icd
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Conformance & Interoperability:
-
-   signal/compliance_matrix
-   signal/shall_inventory
-   signal/pics_proforma
-   signal/spec_findings_report
-   signal/validation_plan
-   interop_results
-   test_vectors
 
 .. toctree::
    :maxdepth: 2
@@ -122,19 +137,6 @@ order through the tutorial notebooks and a set of exercises.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Verification by Block:
-
-   verification/spreading_codes
-   verification/error_correction
-   verification/framing
-   verification/baseband
-   verification/sync_decoding
-   verification/message_parsing
-   verification/integration
-   verification/performance
-
-.. toctree::
-   :maxdepth: 2
    :caption: Process & Standards:
 
    governance/sdp
@@ -143,8 +145,15 @@ order through the tutorial notebooks and a set of exercises.
    standards/esa/ecss_standards
    standards/nasa/npr7150_standards
    standards/nasa_compliance_addendum
-   versioning
    references
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Developing:
+
+   developing
+   roadmap
+   versioning
 
 .. toctree::
    :maxdepth: 2
