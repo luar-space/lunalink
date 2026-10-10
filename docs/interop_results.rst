@@ -14,8 +14,8 @@ LANS-AFS-SIM is a transmit-side simulator: it exposes
 ``encode_LDPC_AFS_SF2``/``SF3`` and no decode, acquisition or tracking entry
 point.  That shapes what can be compared.  Encoding is deterministic, so
 bit-exact agreement is the complete comparison and is what L1–L2 check.
-Decoding is statistical, so it is characterised rather than compared — and
-only LunaLink has a decoder to characterise, which is why the receiver
+Decoding is statistical, so it is characterised rather than compared.  Only
+LunaLink has a decoder to characterise, which is why the receiver
 measurements in :doc:`signal/ldpc_algo_card` are LunaLink's shipped decoder
 against LunaLink's own unhardened float64 reference decoder and the
 finite-length sphere-packing bound, not against LANS-AFS-SIM.  It is also
@@ -124,14 +124,15 @@ Levels 4–5: reverse direction and parsing
 
 The results above cover levels 1–3 of the competition's five-level
 interoperability plan.  Levels 4 (an *independent receiver* decoding
-LunaLink-generated signals — PocketSDR-AFS, Ebinuma's software-defined
+LunaLink-generated signals, here PocketSDR-AFS, Ebinuma's software-defined
 receiver) and 5 (navigation-data parsing cross-checks) are the reverse
 direction.
 
 **Both are now demonstrated.**  ``task interop-receiver`` builds
-`PocketSDR-AFS <https://github.com/osqzss/PocketSDR-AFS>`__ — Sobukawa and
-Ebinuma's software-defined LANS AFS receiver, the receiving counterpart to
-LANS-AFS-SIM — and has it decode a signal LunaLink generated.
+`PocketSDR-AFS <https://github.com/osqzss/PocketSDR-AFS>`__ and has it decode
+a signal LunaLink generated.  PocketSDR-AFS is Sobukawa and Ebinuma's
+software-defined LANS AFS receiver, the receiving counterpart to
+LANS-AFS-SIM.
 
 .. list-table::
    :header-rows: 1
@@ -164,7 +165,7 @@ acquisition consumes part of the first, so a complete frame must follow it.
 The receiver runs with upstream's own invocation from ``pocket_trk.sh``.
 
 ``sdr_nav.c`` logs the first 80 hex characters of the 1200 decoded bits and,
-separately, characters 294–299 — the CRC-24.  Both are compared against
+separately, characters 294–299, which are the CRC-24.  Both are compared against
 LunaLink's own frame::
 
    transmitted SB2: 4850D19D04E4308D820462770927D9CA…  crc=A939B3
@@ -288,7 +289,7 @@ conditions (2-bit ADC, multiple SVs) this aliasing degrades acquisition
 sensitivity; for the clean LANS-AFS-SIM scenario it does not prevent a
 correct decode.  A flight-credible receiver would operate at the composite
 signal rate (≥ 10.23 MSPS) and acquire on the data-free AFS-Q pilot with
-coherent integration over the secondary code period (8 ms) or longer —
-receiver design beyond the demodulation needed to demonstrate cross-decode
+coherent integration over the secondary code period (8 ms) or longer.
+Receiver design beyond the demodulation needed to demonstrate cross-decode
 is outside the scope of this reference implementation.
 

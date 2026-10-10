@@ -46,8 +46,8 @@ Generate a 12-second AFS I/Q signal file in three steps:
    write_iq_file("signal.iq", iq, AFS_Q_CHIP_RATE, prn_id=1)
 
 Pass ``sample_format="int16"`` to store the samples at full scale as 16-bit
-integers instead — half the file size, the convention used by SDR capture
-files, and the format LANS-AFS-SIM emits:
+integers instead.  That halves the file size, and it is the convention used
+by SDR capture files and the format LANS-AFS-SIM emits:
 
 .. code-block:: python
 

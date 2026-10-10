@@ -101,7 +101,7 @@ Binary I/Q samples with a **128-byte metadata header**:
 
 Both TC-2 sample formats work.  ``float32`` carries
 normalised samples in [-1.0, +1.0] and is the default.  ``int16`` stores the
-same samples at full scale (±32767 — the value ``-32768`` is never emitted, so
+same samples at full scale (±32767; the value ``-32768`` is never emitted, so
 negation is exact), which halves file size and matches the convention used by
 SDR capture files and by LANS-AFS-SIM.  Quantisation to int16 costs no
 measurable decode performance; see the quantisation sweep in
@@ -149,11 +149,11 @@ This repository commits a compact vector set under ``test-vectors/``:
 *   ``fec/`` and ``decode/`` — component-level FEC and decode-chain vectors
     beyond the plan's four formats
 
-The full-size shared distribution — including 12-second signals for the
-Table 11 PRNs, bundled oracles (Annex 3, LANS-AFS-SIM dumps,
-PocketSDR-AFS), and a zero-dependency validator — is published at
+The full-size shared distribution is published at
 `luar-space/lsis-afs-test-vectors
-<https://github.com/luar-space/lsis-afs-test-vectors>`__.
+<https://github.com/luar-space/lsis-afs-test-vectors>`__.  It includes
+12-second signals for the Table 11 PRNs, bundled oracles (Annex 3,
+LANS-AFS-SIM dumps, PocketSDR-AFS) and a zero-dependency validator.
 
 A 12-second ``LSISIQ`` signal for **any** PRN regenerates from the Python
 API (:func:`~lunalink.afs.write_iq_file` writes exactly the header defined
@@ -169,9 +169,8 @@ under "Mandatory File Formats" above):
                                sample_rate=10.23e6)
     write_iq_file("signal_prn007_12s.iq", iq, sample_rate=10.23e6, prn_id=7)
 
-The CLI offers a one-line alternative — note that it writes the
-*headerless* float32 shape used at live interop workshops, not the
-``LSISIQ``-headed format::
+The CLI offers a one-line alternative.  It writes the *headerless* float32
+shape used at live interop workshops, not the ``LSISIQ``-headed format::
 
     uv run lunalink encode --format iq32 --prn 7 --rate 10230000 --out signal_prn007_12s.iq
 

@@ -10,7 +10,7 @@ Open work
 1. **Interoperability beyond SB2 and beyond baseband.**  Both directions are
    now demonstrated (:doc:`interop_results` L1-L5): LunaLink decodes
    LANS-AFS-SIM's signal, and PocketSDR-AFS decodes LunaLink's.  What remains
-   is breadth — comparing SB3 and SB4 as well as SB2, which needs a receiver
+   is breadth: comparing SB3 and SB4 as well as SB2, which needs a receiver
    that logs them in decoded form, and running the reverse direction against
    a captured RF signal rather than a generated baseband one.
 2. **Hardware-in-the-loop verification.**  The HAL_STUB coverage waivers in

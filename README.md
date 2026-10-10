@@ -7,7 +7,7 @@
 
 An open-source reference implementation of the **LunaNet Signal-In-Space
 Recommended Standard for the Augmented Forward Signal** (LSIS V1.0,
-29 January 2025) — the navigation signal that lunar service providers will
+29 January 2025), the navigation signal that lunar service providers will
 broadcast in the 2483.5–2500 MHz band, so that spacecraft and surface assets
 at the Moon can fix their position and time the way GNSS receivers do on Earth.
 
@@ -97,12 +97,13 @@ task swifi        # ~50 s  42/42 fault-injection test cases
 task test-cpp && task test-py   # ~1 min  232 C++ cases, 1250 Python tests
 ```
 
-Every claim below has a command beside it. Nothing here is asserted.
+Every claim below has a command beside it.
 
 ### It interoperates, in both directions, and that is checked on every run
 
-Not a diff against stored vectors. LunaLink **acquires and decodes another
-implementation's signal**, and another implementation decodes LunaLink's.
+The check goes beyond a diff against stored vectors: LunaLink acquires and
+decodes another implementation's signal, and another implementation decodes
+LunaLink's.
 
 Against [LANS-AFS-SIM](https://github.com/osqzss/LANS-AFS-SIM), an independent
 C implementation, via `task interop`:
@@ -192,13 +193,12 @@ Beyond that: bit and frame error waterfalls with 95% Wilson confidence
 intervals; an error-floor search finding zero errors in 60,000 frames per
 point; a convergence knee at ~15 iterations against a shipped cap of 50; and a
 quantisation sweep showing **int8 costs no measurable performance**, so an
-8-bit front end suffices. That last one is a receiver-design conclusion, not
-just a test result. `task ldpc-algo-card` regenerates all of it.
+8-bit front end suffices. `task ldpc-algo-card` regenerates all of it.
 
 ### The tools are qualified, not trusted
 
-Most projects assert their analysers work. These are made to prove it against
-deliberately defective code:
+The analysers are run against deliberately defective code, to show that they
+catch what they are relied on to catch:
 
 ```bash
 task validate-tidy      # proves clang-tidy catches the MISRA violations claimed
@@ -230,7 +230,7 @@ the command that regenerates it:
 | `task check-doc-metrics` | That documented figures still match the evidence they came from |
 | `task validate-export` | That the **committed** tree builds and tests, not just the working directory |
 
-The last two keep the rest honest. One fails if a number in the documentation
+The last two check the others. One fails if a number in the documentation
 drifts from its artefact; the other builds from `git archive` rather than from
 disk, catching anything present locally but never committed.
 
@@ -249,8 +249,8 @@ SF-001 to SF-005, each with the assumption adopted, a proposed resolution,
 and a recommendation to the working group.
 
 For the 11 message types whose payload the specification leaves open, LunaLink
-proposes concrete bit-level layouts, so that two implementations can agree on
-something real rather than on "to be written".
+proposes concrete bit-level layouts, so that two implementations have
+something definite to agree on.
 
 **Read the standard differently than we did?**
 [Tell us](https://github.com/luar-space/lunalink/issues/new?template=spec_finding.yml).
@@ -263,16 +263,16 @@ has **not flown**, has not been through independent software validation and
 verification, and is not qualified against ECSS-Q-ST-80C for any mission. ECSS
 Category B is self-assessed here, not certified.
 
-Known gaps, stated rather than discovered:
+Known gaps:
 
-- **No positioning pipeline.** Constellation simulation and position fix are
+- **No positioning pipeline:** constellation simulation and position fix are
   future work.
-- **No hardware in the loop.** The hardware abstraction layer coverage waivers
+- **No hardware in the loop:** the hardware abstraction layer coverage waivers
   resolve only on target hardware.
-- **No clock-drift compensation.** The receiver has no delay-locked loop.
+- **No clock-drift compensation:** the receiver has no delay-locked loop.
   Sample-clock-offset and phase-noise sweeps are named in the validation plan
   and not implemented.
-- **Interoperability breadth.** Both directions are demonstrated, but against
+- **Interoperability breadth:** both directions are demonstrated, but against
   generated baseband rather than captured radio-frequency signals, and SB3 and
   SB4 comparison needs a receiver that logs them decoded.
 
