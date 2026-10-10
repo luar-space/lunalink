@@ -57,8 +57,7 @@ Baseline Register
      - FEC complete: BCH(51,8) encode/decode, LDPC SF2 (2400,1200) /
        SF3–SF4 (1740,870) encode,
        60×98 block interleaver, CRC-24Q.  Assurance document suite
-       (FMEA, Safety Plan, SCMP, SDP, OSS assessment, certification
-       delta, and this register) added and baselined.
+       (FMEA, SCMP, SDP, and this register) added and baselined.
    * - BL-003
      - ``v1.0-submission``
      - *(recorded at tagging)*
@@ -134,15 +133,19 @@ Four rules govern change authority for every baseline in this register:
    * Verification phase exit criteria fully met (per ``sdp.rst``).
    * Golden test vectors committed to ``test-vectors/``.
    * Software Version Description populated and committed for the tag
-     (the SVD, ``svd.rst``, is maintained in the development tree and is
-     not shipped in this release).
+     (the SVD, ``svd.rst``, is a flight-programme document and is not shipped
+     in this release; the annotated git tag, ``CHANGELOG.md`` and the
+     generated ``build_manifest.json`` together carry the version, contents
+     and toolchain description it would record).
    * Lead Developer approval on the baseline PR.
 
 4. **Emergency hot-fixes** (S1 defect discovered post-baseline):
 
    * A new patch-level tag is created (e.g., ``v0.2.1``).
    * The hot-fix must satisfy all S1 fix-verification requirements of the
-     PRACA process (the PRACA record, ``praca.rst``, is maintained in the
-     development tree and is not shipped in this release).
+     PRACA process (the PRACA record, ``praca.rst``, is a flight-programme
+     document and is not shipped in this release; GitHub Issues are the
+     visible problem-report channel, as ``assurance/metrics_plan.rst``
+     records).
    * A new BL row is appended to this register for the patch tag.
    * The SVD for the affected baseline is superseded by the patch SVD.

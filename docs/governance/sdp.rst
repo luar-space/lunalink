@@ -14,6 +14,34 @@ The lifecycle model, roles, development tools and entry/exit criteria that
 govern LunaLink.  It formalises what ``developing.rst`` describes informally,
 as ECSS-E-ST-40C Rev.1 §5.2 (NPR 7150.2D SWE-013) requires.
 
+Document Set and Omissions
+--------------------------
+
+.. note::
+
+   **No standalone Software Safety Plan was produced for this release.**
+
+   The safety-planning role that ECSS-Q-ST-80C Rev.2 §5.3/§5.5 and
+   NPR 7150.2D SWE-027 assign to such a document is discharged here by three
+   others, as recorded in :doc:`/standards/nasa_compliance_addendum`:
+   :doc:`/assurance/fmea` analyses what can fail and how each failure is
+   detected and contained, :doc:`/assurance/fault_coverage` reconciles every
+   failure mode against the test that exercises it, and
+   :doc:`/assurance/mission_assurance` specifies the fault-containment
+   architecture those two assume.
+
+   Wherever this plan or the configuration baseline register refers to safety
+   review or safety acceptance criteria, those three documents are the
+   criteria.  A separate safety plan becomes necessary if LunaLink is ever
+   taken into a flight programme with an independent safety authority, and is
+   named as future work rather than quietly assumed.
+
+   Three further documents named in this plan exist only in a flight-programme
+   context and are not part of this release: a Software Version Description per
+   baseline, a problem-reporting record, and the full MISRA Guideline
+   Compliance Summary.  Each is marked where it is referenced, with the
+   artefact that stands in its place.
+
 Lifecycle Model
 ---------------
 
@@ -31,7 +59,7 @@ eight-gateway milestone sequence.  Each gateway constitutes a formal increment:
    * - Requirements
      - LSIS V1.0 specification received; gateway decomposition agreed
      - Compliance matrix baselined; SRS entries drafted for gateway scope
-     - ``compliance_matrix.rst``, Software Safety Plan (initial)
+     - ``compliance_matrix.rst``, ``signal/shall_inventory.rst``
    * - Design
      - Requirements phase exit criterion met
      - Architecture documented; FMEA complete for in-scope functions;
@@ -75,8 +103,8 @@ team in a flight programme.
      - Feature implementation; unit and integration tests; SWIFI tests for new
        hardening patterns; documentation
    * - **IV&V Engineer** *(flight programme only)*
-     - Independent verification of CI artifacts; review of FMEA and Safety Plan;
-       sign-off on baseline establishment
+     - Independent verification of CI artifacts; review of the FMEA and the
+       fault coverage report; sign-off on baseline establishment
    * - **CCB Chair** *(flight programme only)*
      - Approval of changes to formal baselines; waiver authority for process
        deviations
@@ -256,7 +284,8 @@ Both require:
 
 1. A GitHub Issue documenting: the non-conformance; the safety impact assessment
    (cross-reference to ``fmea.rst``); the proposed compensating control; the approver.
-2. Review against the Software Safety Plan acceptance criteria.
+2. Review against the fault-containment criteria in ``fmea.rst`` and
+   ``fault_coverage.rst`` (see *Document Set and Omissions* above).
 3. Lead Developer approval (CCB approval for flight programme context).
 4. A note in the Software Version Description for the affected release.
 
