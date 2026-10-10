@@ -9,7 +9,7 @@ Installation
 
 .. code-block:: bash
 
-   cd lsis-afs      # a clone of this repository
+   cd lunalink    # a clone of this repository
    task install   # uv sync --group dev — builds the C++ core + Python package
 
    # library-only alternative (no dev tooling):
@@ -346,7 +346,7 @@ need step-by-step control:
 
    # Step-by-step TX
    gold = prn_code(1)                          # 2046-chip Gold code
-   i_mod = modulate_i(gold, data_symbol=1)     # BPSK modulation
+   i_mod = modulate_i(gold, 1)                 # BPSK modulation of data symbol 1
    codeword = bch_encode(fid=0, toi=42)        # BCH(51,8) header
 
    # Step-by-step RX

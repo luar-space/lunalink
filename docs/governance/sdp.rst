@@ -152,9 +152,6 @@ Development Tools
    * - ASan / UBSan
      - Compiler-bundled
      - Runtime memory safety and undefined behaviour detection
-   * - gcov / gcovr
-     - CI runner pinned
-     - C++ line coverage reporting
    * - Sphinx
      - Pinned in ``uv.lock``
      - Documentation generation
@@ -229,19 +226,18 @@ Entry/Exit Criteria Summary
 Pre-commit Hook
 ----------------
 
-The pre-commit hook (``.githooks/pre-commit``) delegates to ``task ci-checks``, which
-runs the full quality pipeline in order:
+The pre-commit hook (``.githooks/pre-commit``) delegates to ``task pre-commit``, which
+runs the fast checks in order:
 
 1. ``build`` — compile C++ extension
-2. ``lint-check`` — ruff format + ruff check + pyright
-3. ``test-cpp`` — Catch2 tests via CTest
-4. ``coverage-cpp`` — gcov line coverage
-5. ``tidy`` — clang-tidy static analysis
-6. ``test-py`` — pytest with coverage
-7. ``sanitize`` — ASan + UBSan recompile and test
-8. ``docs-build`` — Sphinx documentation build
+2. ``lint-check`` — pyright, cppcheck, docstring sync, ruff format + ruff check
+3. ``tidy-staged`` — clang-tidy static analysis on the staged C++ files
+4. ``test-cpp`` — Catch2 tests via CTest
+5. ``test-py`` — pytest with coverage
 
-Any step failure blocks the commit.  ``--no-verify`` bypasses the hook; a
+Any step failure blocks the commit.  The full gate — LLVM coverage, the
+sanitizers, whole-tree clang-tidy, fault injection, traceability and the
+documentation build — is ``task ci-checks``, mirrored by the CI pipeline below.  ``--no-verify`` bypasses the hook; a
 commit that uses it must say why in its message.
 
 CI Pipeline
@@ -267,7 +263,7 @@ all pull requests.  Workflows run in parallel for fast feedback:
    * - ``clang-tidy``
      - Zero HICPP violations in the core source directories
    * - ``coverage-cpp``
-     - gcov line coverage; ≥ 90% required
+     - LLVM source-based coverage; ≥ 90% region, ≥ 85% line and ≥ 30% MC/DC required
    * - ``docs``
      - Sphinx build; zero warnings required (``-W --keep-going``)
 

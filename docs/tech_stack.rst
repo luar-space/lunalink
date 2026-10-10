@@ -38,9 +38,10 @@ Flight Software Stack (C++)
    * - **Clang-Tidy**
      - ≥ 14.0
      - Static analysis; enforces HICPP, CERT, and CppCoreGuidelines.
-   * - **gcovr**
-     - ≥ 7.0
-     - Coverage enforcement; mandates ≥ 90% C++ line coverage.
+   * - **llvm-cov**
+     - LLVM
+     - Source-based coverage with MC/DC; CI enforces ≥ 90% region, ≥ 85% line
+       and ≥ 30% MC/DC.
    * - **Sanitizers**
      - LLVM/GNU
      - Runtime validation; ASan and UBSan are active in CI to catch memory/UB faults.
@@ -97,7 +98,7 @@ Dependency Management
 Documentation
 ~~~~~~~~~~~~~
 *   **Mandate**: Docstrings for all public interfaces (PEP 257); Sphinx-based.
-*   **Compliance**: NumPy-style docstrings rendered via **Sphinx** with the **Furo** theme.
+*   **Compliance**: NumPy-style docstrings rendered via **Sphinx** with the **Read the Docs** theme.
 
 Type Safety
 ~~~~~~~~~~~

@@ -29,7 +29,7 @@ Install these before starting:
      - ``brew install ninja``
      - Fast C++ build backend (optional but recommended)
    * - A C++20 compiler
-     - Ships with Xcode CLT on macOS (``xcode-select --install``) or GCC 11+ / Clang 13+
+     - Ships with Xcode CLT on macOS (``xcode-select --install``, Apple Clang 15+) or GCC 13+ / Clang 16+
      - Compiles the C++ extension (``constinit``, ``span``)
    * - `clang-tidy <https://clang.llvm.org/extra/clang-tidy/>`_
      - ``brew install llvm``
@@ -44,12 +44,12 @@ Getting Started
 Clone the repository and run the one-time setup::
 
     # from a clone of this repository
-    cd lsis-afs
+    cd lunalink
     task install        # create .venv and install all dependencies
     task install-hooks  # register the pre-commit hook
 
-After this, ``task`` (with no arguments) runs the full quality pipeline:
-lint → test → docs.
+After this, ``task`` (with no arguments) runs the everyday quality pipeline:
+install → lint → test → docs-strict.
 
 Available Tasks
 ---------------
@@ -69,15 +69,21 @@ Run ``task --list`` to see all tasks. The most common ones are:
    * - ``task test``
      - Rebuild the C++ extension, run Catch2 tests, then run pytest.
    * - ``task test-cpp``
-     - Build and run only the C++ Catch2 tests via CTest.
+     - Build and run only the C++ Catch2 tests via CTest (excludes ``[slow]``).
    * - ``task coverage-cpp``
-     - Build and run C++ tests with gcov, then generate HTML report via gcovr.
+     - Build and run C++ tests with LLVM source-based coverage (region, line,
+       branch, MC/DC), then generate an HTML report with ``llvm-cov``.
    * - ``task lint``
-     - Run ``pyright`` (type checking) and ``ruff`` (formatting + linting).
+     - Run ``pyright``, ``cppcheck``, ``ruff`` (format + lint, with auto-fix)
+       and the docstring sync check.
    * - ``task metrics``
      - Report cyclomatic complexity and maintainability index via radon.
+   * - ``task docs-strict``
+     - Fast warnings-as-errors Sphinx build to ``docs/_build/html/``; the
+       docs gate, and the one to run before a commit.
    * - ``task docs-build``
-     - Build the Sphinx HTML documentation to ``docs/_build/html/``.
+     - The same build, but re-executing the notebooks first.  Use it only
+       when notebook outputs need regenerating.
    * - ``task docs-serve``
      - Serve the documentation locally with live reload on port 8000.
    * - ``task install-hooks``
@@ -87,9 +93,15 @@ Run ``task --list`` to see all tasks. The most common ones are:
    * - ``task tidy``
      - Run clang-tidy HICPP static analysis on all C++ signal sources.
    * - ``task wcet``
-     - Build in Release mode and run ``[performance]`` benchmarks to check WCET tolerance.
+     - Build in Release mode and run the ``[wcet]``-tagged timing benchmarks,
+       generating ``wcet_profile.rst``.
+   * - ``task pre-commit``
+     - What the git hook runs: build, lint-check, clang-tidy on staged files,
+       test-cpp, test-py.
    * - ``task ci-checks``
-     - Full local CI suite: build, lint, flags, test-cpp, coverage, tidy, test-py, sanitize, docs.
+     - Full local CI gate: build, lint, formatting, static analysis, build
+       flags, C++ tests, fault injection, traceability, doc metrics, tool
+       validation, Python tests, sanitizers, docs.
    * - ``task recertify``
      - Run all recertification gates locally and write
        ``docs/assurance/recertification_record.rst``.
@@ -135,14 +147,23 @@ Project Structure
 
     lunalink/
     ├── cpp/
-    │   ├── include/lunalink/signal/  # C++ public headers
-    │   ├── signal/                   # C++ implementation (no Python dependency)
+    │   ├── include/lunalink/ # C++ public headers, one directory per module
+    │   ├── codes/            # spreading codes (Gold, Weil, matched code)
+    │   ├── encoding/         # BCH, LDPC, CRC-24, interleaver
+    │   ├── messages/         # frame assembly and message parsing
+    │   ├── signal/           # modulation, I/Q multiplexing, sync, decode
+    │   ├── core/             # shared safety and integrity primitives
+    │   ├── platform/         # hardware abstraction layer
     │   ├── bindings/afs_module.cpp   # nanobind bindings
-    │   └── tests/            # Catch2 unit tests
+    │   ├── fuzz/             # libFuzzer harnesses
+    │   └── tests/            # Catch2 tests, mirroring the module directories
     ├── src/lunalink/         # Python package (src layout)
     │   ├── __init__.py       # exposes __version__
+    │   ├── cli.py            # the ``lunalink`` command
     │   └── afs/              # AFS Python API + extension stubs
     ├── tests/                # pytest tests
+    ├── examples/             # runnable transmit / decode / round-trip scripts
+    ├── scripts/              # evidence generators and CI gates
     ├── docs/                 # Sphinx documentation source
     ├── .githooks/            # pre-commit hook
     ├── .github/workflows/    # CI pipeline
@@ -154,9 +175,9 @@ Adding a New C++ Function
 --------------------------
 
 1. Declare the function in an appropriate header under ``cpp/include/lunalink/``.
-2. Implement it in the matching source file under the domain directory
-   (``cpp/codes/``, ``cpp/encoding/``, ``cpp/signal/``, or another module
-   directory), then add it to the ``lunalink_core`` sources in
+2. Implement it in the matching source file under the module directory
+   (``cpp/codes/``, ``cpp/encoding/``, ``cpp/messages/``, ``cpp/signal/``,
+   ``cpp/core/`` or ``cpp/platform/``), then add it to the ``lunalink_core`` sources in
    ``CMakeLists.txt``.
 3. Expose it via nanobind in ``cpp/bindings/afs_module.cpp``.
 4. Add/update the corresponding type stub in ``src/lunalink/afs/_afs.pyi``.
@@ -168,17 +189,14 @@ Pre-commit Hook
 ---------------
 
 The hook in ``.githooks/pre-commit`` runs automatically on every
-``git commit``. It delegates to ``task ci-checks`` (source of truth), which
-currently runs:
+``git commit``. It delegates to ``task pre-commit`` (``Taskfile.yml`` is the
+source of truth), which currently runs:
 
 1. build
 2. lint-check
-3. test-cpp
-4. coverage-cpp
-5. tidy
-6. test-py
-7. sanitize
-8. docs-build
+3. tidy-staged (clang-tidy on the staged C++ files only)
+4. test-cpp
+5. test-py
 
 Any failing step blocks the commit. To skip the hook in an emergency
 (not recommended)::
@@ -187,9 +205,12 @@ Any failing step blocks the commit. To skip the hook in an emergency
 
 To re-run the checks manually without committing::
 
-    task lint
-    task test
-    task docs-build
+    task pre-commit
+
+The hook is the fast subset. Coverage, the sanitizers, full clang-tidy, fault
+injection and the docs build are not in it: ``task pre-push`` runs the
+coverage gate and the strict docs build, and ``task ci-checks`` runs the
+whole gate.
 
 CI Pipeline
 -----------
@@ -281,8 +302,12 @@ their own tasks.
    * - **Recertification** (``recertify.yml``)
      - manual only
      - Every assurance gate against a chosen ref; emits a
-       milestone-tagged, signed-off record (:doc:`developing`
-       §*Recertification*).
+       milestone-tagged, signed-off record (see `Recertification`_ below).
+   * - **Release** (``release.yml``)
+     - ``v*`` tag, manual
+     - Builds the source distribution and binary wheels, attaches them to
+       the GitHub release and publishes to PyPI.  A manual run exercises
+       the build without publishing.
 
 Every CI runner has Ninja, so both the Python extension build (via
 scikit-build-core) and the C++ test build pick it up automatically.

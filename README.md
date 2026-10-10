@@ -70,7 +70,7 @@ If you have fifteen minutes, this is the tour:
 
 ```bash
 task interop      # ~10 s  bit-exact against an independent implementation
-task swifi        # ~50 s  42/42 fault-injection scenarios
+task swifi        # ~50 s  42/42 fault-injection test cases
 task test-cpp && task test-py   # ~1 min  229 C++ cases, 1242 Python tests
 ```
 
@@ -150,8 +150,8 @@ On top of that dialect sits a layered defence:
 Each pattern is attributed to its origin in NASA, ESA or JAXA flight practice
 in the [mission assurance case](https://luar-space.github.io/lunalink/assurance/mission_assurance.html),
 and each is exercised by fault injection rather than asserted. `task swifi`
-drives 42 scenarios across six techniques against the real injection APIs, all
-compiled out of flight builds.
+drives 34 scenarios, in 42 test cases across six techniques, against the real
+injection APIs, all compiled out of flight builds.
 
 C++ line coverage is 90.27% **by design**: 123 in-source
 `NOCOVER(DEFENCE_IN_DEPTH)` annotations mark paths that execute only when a
@@ -203,7 +203,7 @@ the command that regenerates it:
 | `task compliance-report` | Requirement and non-functional verdicts, from this run's output |
 | `task traceability` | Requirement → test tags, and that none is orphaned |
 | `task coverage-cpp` | Region, line and MC/DC coverage with per-file waivers |
-| `task swifi` | 42 fault-injection scenarios across 6 techniques |
+| `task swifi` | 34 fault-injection scenarios, in 42 test cases across 6 techniques |
 | `task swifi-reconcile` | Every fault-injection anchor matches the FMEA table, in both directions |
 | `task pics-proforma` | Conformance statement, failing if it disagrees with the shall inventory |
 | `task stack-usage` | Worst-case stack depth |

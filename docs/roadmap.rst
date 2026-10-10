@@ -46,10 +46,12 @@ Named here so the boundary of what has been demonstrated is explicit:
 2. **Hardware-in-the-loop verification.**  The HAL_STUB coverage waivers in
    :doc:`assurance/coverage_exclusions` resolve at TRL-5 on target
    hardware (PolarFire SoC).
-3. **Effective-coverage gate promotion.**  ``task coverage-effective`` reports
-   98.24% repository-wide; 45 uncovered lines across 13 files still need an
+3. **Effective-coverage gate promotion.**  ``task coverage-effective`` is
+   short of 100% repository-wide: a few dozen uncovered lines still need an
    individual disposition (test it, or mark it with a justified category)
    before the check can become a blocking gate in ``task ci-checks``.  The
+   current figure and the list of open lines are kept in one place,
+   :doc:`assurance/coverage_exclusions`.  The
    spreading-code generators in ``cpp/codes/`` are already at 100.0% with
    zero unmarked lines (:doc:`gateway1`).
 4. **PNT pipeline (V5).**  Constellation simulation and position fix, as
