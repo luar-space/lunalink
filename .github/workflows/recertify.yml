@@ -154,35 +154,16 @@ jobs:
       - run: task sanitize
 
   # --------------------------------------------------------------------------
-  # Gate 5 — C++ Line Coverage  [SWE-127]
+  # Gate 5 — C++ Structural Coverage (region / line / MC/DC)  [SWE-127]
   # --------------------------------------------------------------------------
-  gate-coverage-cpp:
-    name: "Gate: C++ Line Coverage"
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          ref: ${{ github.event.inputs.ref || github.ref }}
-          fetch-depth: 0
-      - name: Install ninja
-        run: sudo apt-get install -y ninja-build
-      - uses: arduino/setup-task@v2
-        with:
-          # Authenticated: the action downloads Task from GitHub releases,
-          # and shared runner IPs exhaust the anonymous rate limit.
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: astral-sh/setup-uv@v5
-        with:
-          python-version: "3.12"
-      - run: uv sync --group dev
-      - run: task coverage-cpp
-
-  # --------------------------------------------------------------------------
-  # Gate 6 — MC/DC Coverage  [SWE-127]
-  # --------------------------------------------------------------------------
-  gate-coverage-mcdc:
-    name: "Gate: MC/DC Coverage"
+  # This was two jobs: "C++ Line Coverage" running `task coverage-cpp`, and
+  # "MC/DC Coverage" rebuilding the same instrumented tree by hand. But
+  # `task coverage-cpp` IS the MC/DC task (-DENABLE_LLVM_COVERAGE=ON,
+  # -show-mcdc-summary), so the record presented one measurement twice as two
+  # independent SWE-127 gates. Neither enforced anything: both ran the
+  # measurement and discarded the verdict, passing at any coverage number.
+  gate-coverage:
+    name: "Gate: C++ Structural Coverage (region/line/MC/DC)"
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -210,38 +191,33 @@ jobs:
         with:
           python-version: "3.12"
       - run: uv sync --group dev
-      - name: Configure (LLVM MC/DC)
+      - name: Measure coverage
         run: |
           export PATH="/usr/lib/llvm-${LLVM_VERSION}/bin:${PATH}"
-          cmake -B build/mcdc -S . -G Ninja \
-            -DBUILD_PYTHON_BINDINGS=OFF \
-            -DBUILD_TESTING=ON \
-            -DCMAKE_BUILD_TYPE=Debug \
-            -DENABLE_LLVM_COVERAGE=ON \
-            -DCMAKE_C_COMPILER=clang \
-            -DCMAKE_CXX_COMPILER=clang++
-      - name: Build
+          task coverage-cpp
+      - name: Enforce the coverage floors
+        # The floors are defined once, in the THRESHOLDS table of
+        # scripts/coverage_evidence_report.py, which exits non-zero when a
+        # metric falls below its own. The gate this replaces ran the
+        # measurement and never looked at the result.
         run: |
           export PATH="/usr/lib/llvm-${LLVM_VERSION}/bin:${PATH}"
-          cmake --build build/mcdc --parallel
-      - name: Run tests
-        run: |
-          export PATH="/usr/lib/llvm-${LLVM_VERSION}/bin:${PATH}"
-          LLVM_PROFILE_FILE="lunalink-%m.profraw" \
-            ctest --test-dir build/mcdc --output-on-failure
-      - name: Merge profiles and generate MC/DC report
-        run: |
-          export PATH="/usr/lib/llvm-${LLVM_VERSION}/bin:${PATH}"
-          llvm-profdata merge -sparse build/mcdc/*.profraw \
-            -o build/mcdc/lunalink.profdata
-          llvm-cov report build/mcdc/test_lunalink \
-            -instr-profile=build/mcdc/lunalink.profdata \
-            -show-mcdc-summary \
-            -ignore-filename-regex='_deps|tests' \
-            -path-equivalence=.,$(pwd)
+          python3 scripts/coverage_evidence_report.py \
+            --build-dir build/coverage \
+            --output-rst build/coverage/coverage_evidence.rst \
+            --output-json build/coverage/coverage_summary.json
+      - name: Upload coverage evidence
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: recertify-coverage-evidence
+          path: |
+            build/coverage/coverage_evidence.rst
+            build/coverage/coverage_summary.json
+          retention-days: 90
 
   # --------------------------------------------------------------------------
-  # Gate 7 — clang-tidy Analysis  [SWE-108]
+  # Gate 6 — clang-tidy Analysis  [SWE-108]
   # --------------------------------------------------------------------------
   gate-tidy:
     name: "Gate: clang-tidy Analysis"
@@ -267,7 +243,7 @@ jobs:
         run: CC=clang CXX=clang++ task tidy
 
   # --------------------------------------------------------------------------
-  # Gate 8 — WCET Benchmark Profile  [Safety Plan §4]
+  # Gate 7 — WCET Benchmark Profile  [Safety Plan §4]
   # --------------------------------------------------------------------------
   gate-wcet:
     name: "Gate: WCET Benchmark Profile"
@@ -339,7 +315,7 @@ jobs:
             /tmp/wcet_results.xml
           retention-days: 90
 
-  # Gate 9 — Python Tests  [SWE-128]
+  # Gate 8 — Python Tests  [SWE-128]
   # --------------------------------------------------------------------------
   gate-test-python:
     name: "Gate: Python Tests"
@@ -362,7 +338,7 @@ jobs:
       - run: task test-py
 
   # --------------------------------------------------------------------------
-  # Gate 10 — Documentation Build  [SWE-104]
+  # Gate 9 — Documentation Build  [SWE-104]
   # --------------------------------------------------------------------------
   gate-docs:
     name: "Gate: Documentation Build"
@@ -399,8 +375,7 @@ jobs:
       - gate-test-cpp
       - gate-swifi
       - gate-sanitize
-      - gate-coverage-cpp
-      - gate-coverage-mcdc
+      - gate-coverage
       - gate-tidy
       - gate-wcet
       - gate-test-python
@@ -436,8 +411,7 @@ jobs:
           RESULT_TEST_CPP:     ${{ needs.gate-test-cpp.result }}
           RESULT_SWIFI:        ${{ needs.gate-swifi.result }}
           RESULT_SANITIZE:     ${{ needs.gate-sanitize.result }}
-          RESULT_COVERAGE_CPP: ${{ needs.gate-coverage-cpp.result }}
-          RESULT_COVERAGE_MCDC: ${{ needs.gate-coverage-mcdc.result }}
+          RESULT_COVERAGE:     ${{ needs.gate-coverage.result }}
           RESULT_TIDY:         ${{ needs.gate-tidy.result }}
           RESULT_WCET:         ${{ needs.gate-wcet.result }}
           RESULT_TEST_PYTHON:  ${{ needs.gate-test-python.result }}
@@ -466,8 +440,7 @@ jobs:
             --gate "test-cpp=$(map_result "${RESULT_TEST_CPP}")" \
             --gate "swifi=$(map_result "${RESULT_SWIFI}")" \
             --gate "sanitize=$(map_result "${RESULT_SANITIZE}")" \
-            --gate "coverage-cpp=$(map_result "${RESULT_COVERAGE_CPP}")" \
-            --gate "coverage-mcdc=$(map_result "${RESULT_COVERAGE_MCDC}")" \
+            --gate "coverage=$(map_result "${RESULT_COVERAGE}")" \
             --gate "tidy=$(map_result "${RESULT_TIDY}")" \
             --gate "wcet=$(map_result "${RESULT_WCET}")" \
             --gate "test-python=$(map_result "${RESULT_TEST_PYTHON}")" \
@@ -476,8 +449,7 @@ jobs:
             --gate-label "test-cpp=C++ Unit Tests (SWE-127)" \
             --gate-label "swifi=SWIFI Fault Injection (SW-SAF-06)" \
             --gate-label "sanitize=Sanitizers ASan+UBSan (SWE-128)" \
-            --gate-label "coverage-cpp=C++ Line Coverage (SWE-127)" \
-            --gate-label "coverage-mcdc=MC/DC Coverage (SWE-127)" \
+            --gate-label "coverage=C++ Structural Coverage region/line/MC-DC (SWE-127)" \
             --gate-label "tidy=clang-tidy Analysis (SWE-108)" \
             --gate-label "wcet=WCET Benchmark Profile (Safety Plan §4)" \
             --gate-label "test-python=Python Tests (SWE-128)" \

@@ -34,13 +34,6 @@ jobs:
       # Exposed so the badge steps can skip themselves where no gist is
       # configured (a fork, or this submission repository) instead of failing.
       GIST_SECRET: ${{ secrets.GIST_SECRET }}
-      # Single source of truth for these floors is the THRESHOLDS table in
-      # scripts/coverage_evidence_report.py (rendered in
-      # docs/assurance/coverage_evidence.rst with the ECSS rationale for each).
-      # Region — not line — is the ECSS Category B primary metric gated at 90%.
-      REGION_COVERAGE_MIN: "90"
-      LINE_COVERAGE_MIN: "85"
-      MCDC_COVERAGE_MIN: "30"
     steps:
       - uses: actions/checkout@v5
         with:
@@ -83,65 +76,74 @@ jobs:
           CMAKE_C_COMPILER_LAUNCHER: ccache
           CMAKE_CXX_COMPILER_LAUNCHER: ccache
 
+      # mission_assurance.rst states that the floors "are defined once, in the
+      # THRESHOLDS table of scripts/coverage_evidence_report.py, and consumed
+      # from there by .github/workflows/coverage-cpp.yml". They were not: this
+      # workflow restated three of the six in its own env block and enforced
+      # those with awk, ignoring the function, branch and per-file floors.
+      # The script owns the table and exits non-zero on a FAIL verdict, so the
+      # claim is now true and all six floors are gated.
+      - name: Generate coverage evidence and enforce the floors
+        run: |
+          export PATH="/usr/lib/llvm-${LLVM_VERSION}/bin:${PATH}"
+          python3 scripts/coverage_evidence_report.py \
+            --build-dir build/coverage \
+            --output-rst build/coverage/coverage_evidence.rst \
+            --output-json build/coverage/coverage_summary.json
+
       - name: Extract coverage metrics
         id: coverage
         run: |
           export PATH="/usr/lib/llvm-${LLVM_VERSION}/bin:${PATH}"
           mkdir -p build/coverage
 
-          # Re-run llvm-cov report and capture output
+          # Human-readable report, kept as an artifact. Measured on
+          # test_lunalink alone, matching coverage_evidence_report.py: the
+          # SWIFI binary is fault-detection evidence, not coverage (see its
+          # module docstring). Folding it in moved every metric -- regions
+          # 93.65 -> 93.49, lines 90.27 -> 89.94, MC/DC 40.59 -> 38.25 -- so
+          # the gate and the evidence report were scoring different things.
           llvm-cov report build/coverage/test_lunalink \
-            -object build/coverage/lunalink_swifi_tests \
             -instr-profile=build/coverage/lunalink.profdata \
             -show-mcdc-summary \
             -ignore-filename-regex='_deps|tests' \
             | tee build/coverage/mcdc_report.txt
 
-          # Parse TOTAL line for all metrics
-          TOTAL=$(grep '^TOTAL' build/coverage/mcdc_report.txt)
+          # Percentages come from the evidence JSON. This used to splice a
+          # positional array out of `grep -oE '[0-9]+\.[0-9]+%'` over the
+          # TOTAL line, which silently depends on column order and on every
+          # field carrying a decimal point.
+          python3 - <<'EOF'
+          import json, os
 
-          # Extract all percentage fields from TOTAL line
-          # Format: TOTAL  regions  missed  cover%  functions  missed  cover%  lines  missed  cover%  branches  missed  cover%  conditions  missed  cover%
-          PCTS=($(echo "$TOTAL" | grep -oE '[0-9]+\.[0-9]+%'))
-          REGION_PCT="${PCTS[0]}"
-          FUNCTION_PCT="${PCTS[1]}"
-          LINE_PCT="${PCTS[2]}"
-          BRANCH_PCT="${PCTS[3]}"
-          MCDC_PCT="${PCTS[4]}"
+          totals = json.load(open('build/coverage/coverage_summary.json'))['totals']
 
-          # Strip % for numeric comparison
-          MCDC_NUM="${MCDC_PCT%\%}"
+          def colour(pct):
+              if pct >= 100: return 'brightgreen'
+              if pct >= 80:  return 'yellow'
+              if pct >= 50:  return 'orange'
+              return 'red'
 
-          echo "region_pct=${REGION_PCT}" >> "$GITHUB_OUTPUT"
-          echo "function_pct=${FUNCTION_PCT}" >> "$GITHUB_OUTPUT"
-          echo "line_pct=${LINE_PCT}" >> "$GITHUB_OUTPUT"
-          echo "branch_pct=${BRANCH_PCT}" >> "$GITHUB_OUTPUT"
-          echo "mcdc_pct=${MCDC_PCT}" >> "$GITHUB_OUTPUT"
-          echo "mcdc_num=${MCDC_NUM}" >> "$GITHUB_OUTPUT"
+          rows = {}
+          for key, name in (('regions', 'region'), ('functions', 'function'),
+                            ('lines', 'line'), ('branches', 'branch'),
+                            ('mcdc', 'mcdc')):
+              pct = totals[key]['percent']
+              rows[f'{name}_pct'] = f'{pct:.2f}%'
+              rows[f'{name}_color'] = colour(pct)
 
-          # Determine badge colors: <50 red, 50-79 orange, 80-99 yellow, 100 brightgreen
-          badge_color() {
-            local num="${1%\%}"
-            if awk "BEGIN{exit !(${num} >= 100)}"; then echo "brightgreen"
-            elif awk "BEGIN{exit !(${num} >= 80)}"; then echo "yellow"
-            elif awk "BEGIN{exit !(${num} >= 50)}"; then echo "orange"
-            else echo "red"; fi
-          }
-          echo "region_color=$(badge_color "$REGION_PCT")" >> "$GITHUB_OUTPUT"
-          echo "line_color=$(badge_color "$LINE_PCT")" >> "$GITHUB_OUTPUT"
-          echo "branch_color=$(badge_color "$BRANCH_PCT")" >> "$GITHUB_OUTPUT"
-          echo "mcdc_color=$(badge_color "$MCDC_PCT")" >> "$GITHUB_OUTPUT"
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
+              for k, v in rows.items():
+                  fh.write(f'{k}={v}\n')
 
-          # Write badge JSON (shields.io endpoint format)
-          printf '{"schemaVersion":1,"label":"MC/DC","message":"%s","color":"%s"}\n' \
-            "$MCDC_PCT" "$(badge_color "$MCDC_PCT")" > build/coverage/coverage-badge.json
+          with open('build/coverage/coverage-badge.json', 'w') as fh:
+              json.dump({'schemaVersion': 1, 'label': 'MC/DC',
+                         'message': rows['mcdc_pct'],
+                         'color': rows['mcdc_color']}, fh)
 
-          # Write full summary JSON
-          printf '{"regions":"%s","functions":"%s","lines":"%s","branches":"%s","mcdc":"%s"}\n' \
-            "$REGION_PCT" "$FUNCTION_PCT" "$LINE_PCT" "$BRANCH_PCT" "$MCDC_PCT" \
-            > build/coverage/coverage-summary.json
-
-          echo "::notice::MC/DC Coverage: ${MCDC_PCT} | Lines: ${LINE_PCT} | Branches: ${BRANCH_PCT} | Regions: ${REGION_PCT}"
+          print(f"::notice::MC/DC {rows['mcdc_pct']} | Lines {rows['line_pct']} "
+                f"| Branches {rows['branch_pct']} | Regions {rows['region_pct']}")
+          EOF
 
       - name: Write job summary
         run: |
@@ -159,32 +161,6 @@ jobs:
           Full annotated HTML report is in the **mcdc-coverage** artifact for this run.
           EOF
 
-      - name: Enforce coverage thresholds
-        run: |
-          LINE_NUM="${{ steps.coverage.outputs.line_pct }}"
-          LINE_NUM="${LINE_NUM%\%}"
-          REGION_NUM="${{ steps.coverage.outputs.region_pct }}"
-          REGION_NUM="${REGION_NUM%\%}"
-          MCDC_NUM="${{ steps.coverage.outputs.mcdc_num }}"
-          FAIL=0
-
-          if awk "BEGIN{exit !(${REGION_NUM} < ${{ env.REGION_COVERAGE_MIN }})}"; then
-            echo "::error::Region coverage ${REGION_NUM}% is below minimum ${{ env.REGION_COVERAGE_MIN }}%"
-            FAIL=1
-          fi
-
-          if awk "BEGIN{exit !(${LINE_NUM} < ${{ env.LINE_COVERAGE_MIN }})}"; then
-            echo "::error::Line coverage ${LINE_NUM}% is below minimum ${{ env.LINE_COVERAGE_MIN }}%"
-            FAIL=1
-          fi
-
-          if awk "BEGIN{exit !(${MCDC_NUM} < ${{ env.MCDC_COVERAGE_MIN }})}"; then
-            echo "::error::MC/DC coverage ${MCDC_NUM}% is below minimum ${{ env.MCDC_COVERAGE_MIN }}%"
-            FAIL=1
-          fi
-
-          exit $FAIL
-
       - name: Upload coverage artifacts
         uses: actions/upload-artifact@v5
         with:
@@ -192,7 +168,8 @@ jobs:
           path: |
             build/coverage/mcdc_report.txt
             build/coverage/coverage-badge.json
-            build/coverage/coverage-summary.json
+            build/coverage/coverage_evidence.rst
+            build/coverage/coverage_summary.json
             build/coverage/html/
 
       - name: Update region coverage badge
