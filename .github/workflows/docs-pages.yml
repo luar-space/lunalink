@@ -92,6 +92,25 @@ jobs:
           fetch tidy.yml static-analysis-report
           fetch lint.yml cppcheck-report
           fetch wcet.yml wcet-profile
+
+          # These artifacts come from the producing workflows' PREVIOUS runs
+          # on main, so their content is always at least one commit old --
+          # and older still while a producer is failing: wcet.yml was red when
+          # this was written, which pinned wcet-profile two commits back. A
+          # page that reaches Sphinx without `:orphan:` fails the -W build on
+          # toc.not_included, so the consumer normalises instead of trusting
+          # the artifact's vintage. The generators emit it too, which makes
+          # this a no-op for anything built after daceb60.
+          for f in docs/assurance/static_analysis_report.rst \
+                   docs/assurance/cppcheck_report.rst \
+                   docs/assurance/wcet_profile.rst; do
+            [ -f "${f}" ] || continue
+            if [ "$(head -n1 "${f}")" != ":orphan:" ]; then
+              { printf ':orphan:\n\n'; cat "${f}"; } > "${f}.tmp"
+              mv "${f}.tmp" "${f}"
+              echo "prepended :orphan: to ${f##*/} (artifact predates the generator change)"
+            fi
+          done
       - run: task docs-build
       # Same shape as the fetch above, for the same reason: this swallowed its
       # own 403 through `2>/dev/null` and continue-on-error, so /coverage/ has
