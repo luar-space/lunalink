@@ -40,7 +40,7 @@ jobs:
         include: >-
           ${{ github.event_name != 'pull_request' && fromJSON('[{"python-version": "3.12", "os": "windows-latest"}, {"python-version": "3.12", "os": "macos-14"}]') || fromJSON('[]') }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Install Ninja (Linux)
@@ -50,12 +50,12 @@ jobs:
         if: runner.os != 'Windows'
         with:
           key: python-${{ matrix.python-version }}-${{ matrix.os }}
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           # Authenticated: the action downloads Task from GitHub releases,
           # and shared runner IPs exhaust the anonymous rate limit.
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
       - run: uv sync --group test
@@ -92,7 +92,7 @@ jobs:
 
       - name: Upload coverage data
         if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: python-coverage
           path: coverage.json
@@ -109,7 +109,7 @@ jobs:
       GIST_SECRET: ${{ secrets.GIST_SECRET }}
     steps:
       - name: Download coverage data
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: python-coverage
 
@@ -128,7 +128,7 @@ jobs:
 
       - name: Update Python coverage badge
         if: env.GIST_SECRET != ''
-        uses: schneegans/dynamic-badges-action@v1.7.0
+        uses: schneegans/dynamic-badges-action@v1.9.0
         with:
           auth: ${{ secrets.GIST_SECRET }}
           gistID: ${{ vars.COVERAGE_GIST_ID }}

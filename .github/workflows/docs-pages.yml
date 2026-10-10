@@ -26,7 +26,7 @@ jobs:
     outputs:
       pages_enabled: ${{ steps.pages.outputs.enabled }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Check whether GitHub Pages is enabled
         # Pages cannot be enabled on a private repository of this plan, and
         # deploy-pages fails with a 404 when it is not. The build still runs
@@ -41,12 +41,12 @@ jobs:
             echo "enabled=false" >> "$GITHUB_OUTPUT"
             echo "::notice::GitHub Pages is not enabled on this repository; the site was built but not deployed."
           fi
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           # Authenticated: the action downloads Task from GitHub releases,
           # and shared runner IPs exhaust the anonymous rate limit.
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
       - run: uv sync --group dev
@@ -141,7 +141,7 @@ jobs:
           mkdir -p docs/_build/html/coverage
           cp -r /tmp/coverage-artifact/html/. docs/_build/html/coverage/
           echo "coverage HTML embedded at /coverage/ from run ${run_id}"
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: docs/_build/html
 
@@ -155,4 +155,4 @@ jobs:
     needs: build
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

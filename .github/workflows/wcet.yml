@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Install tools
@@ -29,12 +29,12 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1
         with:
           key: wcet-release
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           # Authenticated: the action downloads Task from GitHub releases,
           # and shared runner IPs exhaust the anonymous rate limit.
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
       - run: uv sync --group dev
@@ -66,7 +66,7 @@ jobs:
           tail -30 /tmp/wcet_console.txt || true
       - name: Upload WCET console and XML
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: wcet-raw-output
           path: |
@@ -89,7 +89,7 @@ jobs:
             --bench-json /tmp/bench.json \
             --history /tmp/history.js
       - name: Upload WCET report
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: wcet-profile
           path: /tmp/wcet_profile.rst

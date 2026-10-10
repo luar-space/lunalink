@@ -35,7 +35,7 @@ jobs:
       # configured (a fork, or this submission repository) instead of failing.
       GIST_SECRET: ${{ secrets.GIST_SECRET }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       # Not cached. /usr/lib/llvm-19 is root-owned and actions/cache extracts
@@ -63,12 +63,12 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1
         with:
           key: coverage-mcdc
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           # Authenticated: the action downloads Task from GitHub releases,
           # and shared runner IPs exhaust the anonymous rate limit.
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
       - run: uv sync --group dev
@@ -166,7 +166,7 @@ jobs:
           EOF
 
       - name: Upload coverage artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: mcdc-coverage
           path: |
@@ -178,7 +178,7 @@ jobs:
 
       - name: Update region coverage badge
         if: github.ref == 'refs/heads/main' && github.event_name == 'push' && env.GIST_SECRET != ''
-        uses: schneegans/dynamic-badges-action@v1.7.0
+        uses: schneegans/dynamic-badges-action@v1.9.0
         with:
           auth: ${{ secrets.GIST_SECRET }}
           gistID: ${{ vars.COVERAGE_GIST_ID }}
@@ -189,7 +189,7 @@ jobs:
 
       - name: Update line coverage badge
         if: github.ref == 'refs/heads/main' && github.event_name == 'push' && env.GIST_SECRET != ''
-        uses: schneegans/dynamic-badges-action@v1.7.0
+        uses: schneegans/dynamic-badges-action@v1.9.0
         with:
           auth: ${{ secrets.GIST_SECRET }}
           gistID: ${{ vars.COVERAGE_GIST_ID }}
@@ -200,7 +200,7 @@ jobs:
 
       - name: Update branch coverage badge
         if: github.ref == 'refs/heads/main' && github.event_name == 'push' && env.GIST_SECRET != ''
-        uses: schneegans/dynamic-badges-action@v1.7.0
+        uses: schneegans/dynamic-badges-action@v1.9.0
         with:
           auth: ${{ secrets.GIST_SECRET }}
           gistID: ${{ vars.COVERAGE_GIST_ID }}
@@ -211,7 +211,7 @@ jobs:
 
       - name: Update MC/DC coverage badge
         if: github.ref == 'refs/heads/main' && github.event_name == 'push' && env.GIST_SECRET != ''
-        uses: schneegans/dynamic-badges-action@v1.7.0
+        uses: schneegans/dynamic-badges-action@v1.9.0
         with:
           auth: ${{ secrets.GIST_SECRET }}
           gistID: ${{ vars.COVERAGE_GIST_ID }}
