@@ -10,6 +10,13 @@ on:
       - 'src/**'
       - '**.rst'
       - '.github/workflows/docs-check.yml'
+      # The docs toolchain is a dependency group, so a lockfile bump can
+      # break the build with nothing else in the diff. Without these, the
+      # breathe 4.36 -> 5.1 pull request carried no Docs check at all: it
+      # touched only uv.lock, and would have failed first on main, in
+      # docs-pages.yml, after publishing was already underway.
+      - 'uv.lock'
+      - 'pyproject.toml'
 
 
 # Least privilege: every token use in this workflow is a read
