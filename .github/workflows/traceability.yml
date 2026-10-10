@@ -32,14 +32,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Run traceability scanner
         run: python3 scripts/verify_traceability.py --strict
       - name: Upload traceability report
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: traceability-report
           path: docs/assurance/evidence/traceability.json

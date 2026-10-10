@@ -27,15 +27,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           # Authenticated: the action downloads Task from GitHub releases,
           # and shared runner IPs exhaust the anonymous rate limit.
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
       - run: uv sync --group dev

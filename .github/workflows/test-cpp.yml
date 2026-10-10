@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Install Ninja
@@ -57,7 +57,7 @@ jobs:
           test -x build/test_lunalink || { echo "missing test_lunalink"; exit 1; }
           test -x build/lunalink_swifi_tests || { echo "missing lunalink_swifi_tests"; exit 1; }
       - name: Upload build
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: cpp-debug-build
           path: |
@@ -71,9 +71,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Download build
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: cpp-debug-build
           path: build/
@@ -94,7 +94,7 @@ jobs:
             --reporter "junit::out=build/test-results/lunalink.xml"
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: unit-test-results
           path: build/test-results/
@@ -106,13 +106,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
       - run: uv sync --group dev
       - name: Download build
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: cpp-debug-build
           path: build/
@@ -125,7 +125,7 @@ jobs:
           python3 scripts/swifi_report.py --xml build/swifi_results.xml
       - name: Upload SWIFI evidence
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: swifi-evidence
           path: |

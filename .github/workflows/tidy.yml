@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Install tools
@@ -38,7 +38,7 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1
         with:
           key: tidy
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           # Authenticated: the action downloads Task from GitHub releases,
           # and shared runner IPs exhaust the anonymous rate limit.
@@ -49,7 +49,7 @@ jobs:
         env:
           CMAKE_C_COMPILER_LAUNCHER: ccache
           CMAKE_CXX_COMPILER_LAUNCHER: ccache
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
       - name: Capture clang-tidy report
@@ -73,7 +73,7 @@ jobs:
           EOF
       - name: Upload clang-tidy report
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: static-analysis-report
           path: build/reports/static_analysis_report.rst
@@ -83,7 +83,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Install tools
@@ -93,7 +93,7 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1
         with:
           key: clang-sa
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           # Authenticated: the action downloads Task from GitHub releases,
           # and shared runner IPs exhaust the anonymous rate limit.

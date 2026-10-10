@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Install Ninja
@@ -48,7 +48,7 @@ jobs:
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build build --parallel
       - name: Upload build
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: cpp-debug-build-integration
           path: build/test_lunalink
@@ -60,9 +60,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Download build
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: cpp-debug-build-integration
           path: build/
