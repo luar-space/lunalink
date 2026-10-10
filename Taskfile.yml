@@ -762,6 +762,19 @@ tasks:
       - uv run python -m sphinx -b html docs/ docs/_build/html -W
     silent: false
 
+  docs-strict:
+    desc: Fast warnings-as-errors docs build — the CI gate without the notebook re-execution.
+    cmds:
+      # Same -W build as `docs-build`, minus `jupyter nbconvert --execute`.
+      # Nothing is lost: nbsphinx renders the notebooks from their committed
+      # outputs, so the only difference is that this does not rewrite them.
+      # Seconds instead of minutes, and no 400-line notebook diff to discard
+      # afterwards. Use `docs-build` when notebook OUTPUTS need regenerating;
+      # use this for everything else, including before every commit.
+      - task: docs-doxygen
+      - uv run python -m sphinx -b html docs/ docs/_build/html -W
+    silent: false
+
   docs-pdf:
     desc: Build the PDF documentation with Sphinx and xelatex.
     vars:
@@ -816,7 +829,7 @@ tasks:
     desc: Pre-push checks (coverage threshold gate, docs build).
     cmds:
       - task: coverage-cpp
-      - task: docs-build
+      - task: docs-strict
     silent: false
 
   swifi-reconcile:
@@ -846,23 +859,26 @@ tasks:
       - task: validate-tidy
       - task: test-py
       - task: sanitize
-      - task: docs-build
+      - task: docs-strict
       # `task validate-export` is deliberately NOT in this list: it requires a
       # clean working tree, and ci-checks is normally run mid-change. It runs in
       # CI on every push to main (.github/workflows/validate-export.yml) and
       # should be run by hand before tagging a release.
       #
-      # Discard the regenerated artefacts only — `swifi-report.py` rewrites
-      # `swifi_results.json`, `verify_traceability.py` rewrites
-      # `traceability.json`, `jupyter nbconvert --inplace` re-executes
-      # notebooks, and the docs-build self-heal regenerates
-      # `docs/_static/algo_card/*.png` via `task ldpc-algo-card` when
-      # `sp_results.json` is missing or empty (matplotlib output is not
-      # bit-deterministic).  The checkout is path-narrow so it does NOT
-      # wipe human-curated assurance RST (FMEA, fault_coverage,
-      # safety_plan, etc.) — a previous broad `git checkout
-      # docs/assurance` silently nuked FM-109 edits during S1-2b.
-      - git checkout docs/assurance/evidence docs/notebooks docs/_static/algo_card
+      # Discard the regenerated evidence only — `swifi-report.py` rewrites
+      # `swifi_results.json` and `verify_traceability.py` rewrites
+      # `traceability.json` on every run.
+      #
+      # The notebook and algo-card churn this used to clean up came from
+      # `docs-build` re-executing notebooks and self-healing the figures;
+      # `docs-strict` does neither, so those paths are no longer touched and
+      # are no longer discarded here.
+      #
+      # The checkout stays path-narrow so it does NOT wipe human-curated
+      # assurance RST (FMEA, fault_coverage, coverage_exclusions, …) — a
+      # previous broad `git checkout docs/assurance` silently nuked FM-109
+      # edits during S1-2b.
+      - git checkout docs/assurance/evidence
     silent: false
 
   recertify:
@@ -1046,5 +1062,5 @@ tasks:
       - task: install
       - task: lint
       - task: test
-      - task: docs-build
+      - task: docs-strict
     silent: false
