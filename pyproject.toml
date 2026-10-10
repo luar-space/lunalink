@@ -1,5 +1,5 @@
 [build-system]
-requires = ["scikit-build-core>=0.9", "nanobind>=2.0", "setuptools-scm"]
+requires = ["scikit-build-core>=1.1.1", "nanobind>=2.0", "setuptools-scm"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -8,7 +8,8 @@ dynamic = ["version"]
 description = "Reference implementation of the LunaNet Augmented Forward Signal (LSIS V1.0)"
 readme = "README.md"
 requires-python = ">=3.12"
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 authors = [{name = "Marco Fiscato", email = "marco.fiscato@gmail.com"}]
 maintainers = [{name = "Luar Space", email = "marco.fiscato@gmail.com"}]
 keywords = [
@@ -27,7 +28,6 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Telecommunications Industry",
-    "License :: OSI Approved :: Apache Software License",
     "Operating System :: MacOS",
     "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX :: Linux",
