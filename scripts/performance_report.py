@@ -145,6 +145,12 @@ def generate_rst(
 ) -> str:
     """Generate the RST report content."""
     lines = [
+        # Published by docs-pages.yml, never committed, so it is deliberately
+        # outside the toctree. Without `:orphan:` Sphinx reports
+        # toc.not_included and the -W docs build fails -- which is exactly
+        # what happened the first time the artifact fetch actually worked.
+        ":orphan:",
+        "",
         "WCET Profile",
         "============",
         "",
