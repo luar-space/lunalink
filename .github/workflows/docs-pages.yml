@@ -9,6 +9,11 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  # Needed to list the runs of the workflows that produce the assurance
+  # artifacts below. An explicit permissions block makes everything it does
+  # not name `none`, so without this the run listing fails with
+  # "Resource not accessible by integration (HTTP 403)".
+  actions: read
 
 concurrency:
   group: pages
@@ -61,12 +66,19 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -uo pipefail
+          set -euo pipefail
+          # A failing API call is a misconfiguration and fails the step; an
+          # empty result just means that workflow has not succeeded on main
+          # yet, which warns. The two are not the same and the previous
+          # continue-on-error could not tell them apart.
           fetch() {
             wf="$1"; artifact="$2"
-            run_id=$(gh api \
+            if ! run_id=$(gh api \
               "repos/${{ github.repository }}/actions/workflows/${wf}/runs?status=success&branch=main&per_page=1" \
-              --jq '.workflow_runs[0].id // empty')
+              --jq '.workflow_runs[0].id // empty'); then
+              echo "::error::cannot list ${wf} runs; the workflow token needs actions:read"
+              return 1
+            fi
             if [ -z "${run_id}" ]; then
               echo "::warning::no successful ${wf} run on main; ${artifact} is missing from the site"
               return
@@ -81,21 +93,35 @@ jobs:
           fetch lint.yml cppcheck-report
           fetch wcet.yml wcet-profile
       - run: task docs-build
+      # Same shape as the fetch above, for the same reason: this swallowed its
+      # own 403 through `2>/dev/null` and continue-on-error, so /coverage/ has
+      # been absent from the site with nothing in the log to say so.
       - name: Embed coverage HTML report
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          RUN_ID=$(gh api "repos/${{ github.repository }}/actions/workflows/coverage-cpp.yml/runs?status=success&branch=main&per_page=1" \
-            --jq '.workflow_runs[0].id' 2>/dev/null || echo "")
-          if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ]; then
-            gh run download "$RUN_ID" --name mcdc-coverage --dir /tmp/coverage-artifact/ 2>/dev/null || true
-            if [ -d /tmp/coverage-artifact/html ]; then
-              mkdir -p docs/_build/html/coverage
-              cp -r /tmp/coverage-artifact/html/. docs/_build/html/coverage/
-              echo "Coverage HTML embedded at /coverage/"
-            fi
+          set -euo pipefail
+          if ! run_id=$(gh api \
+            "repos/${{ github.repository }}/actions/workflows/coverage-cpp.yml/runs?status=success&branch=main&per_page=1" \
+            --jq '.workflow_runs[0].id // empty'); then
+            echo "::error::cannot list coverage-cpp.yml runs; the workflow token needs actions:read"
+            exit 1
           fi
-        continue-on-error: true
+          if [ -z "${run_id}" ]; then
+            echo "::warning::no successful coverage-cpp.yml run on main; /coverage/ is missing from the site"
+            exit 0
+          fi
+          if ! gh run download "${run_id}" --name mcdc-coverage --dir /tmp/coverage-artifact/; then
+            echo "::warning::run ${run_id} carries no mcdc-coverage artifact (expired?); /coverage/ is missing from the site"
+            exit 0
+          fi
+          if [ ! -d /tmp/coverage-artifact/html ]; then
+            echo "::warning::mcdc-coverage artifact has no html/ directory; /coverage/ is missing from the site"
+            exit 0
+          fi
+          mkdir -p docs/_build/html/coverage
+          cp -r /tmp/coverage-artifact/html/. docs/_build/html/coverage/
+          echo "coverage HTML embedded at /coverage/ from run ${run_id}"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs/_build/html
