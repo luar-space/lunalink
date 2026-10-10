@@ -30,7 +30,10 @@ enum class FrameDecodeStatus : uint8_t {
 /// Per-subframe decode status.
 struct SubframeDecodeResult {
   bool ldpc_converged = false; ///< true if LDPC decoder converged (H·c=0)
-  bool crc_ok = false;         ///< true if CRC-24Q verified after LDPC decode
+  /// true if CRC-24Q verified after LDPC decode AND the frame status is kOk.
+  /// frame_decode() scrubs every data buffer on a non-kOk status and clears
+  /// this flag with them, so a set flag always has data behind it.
+  bool crc_ok = false;
 };
 
 /// Full frame decode result. Navigation data is in the workspace buffers.
@@ -85,6 +88,10 @@ struct FrameDecodeWorkspace {
 /// Default LDPC iteration count for frame_decode().
 inline constexpr uint8_t kFrameDecodeLdpcIterations = 50;
 
+/// Default channel-LLR scale for frame_decode(): symbols reach the LDPC
+/// decoder unscaled.
+inline constexpr float kFrameDecodeLlrScale = 1.0F;
+
 /// Minimum input size: must contain at least one complete frame.
 inline constexpr size_t kFrameDecodeMinInput = kFrameLength;
 
@@ -105,15 +112,26 @@ static_assert(kFrameDecodeWorkspaceBytes < 400'000, "FrameDecodeWorkspace exceed
 ///   5. CRC-24Q validate each subframe
 ///   6. Strip CRC, copy data to workspace output buffers
 ///
-/// @param rx_symbols       Received soft symbols (bipolar: +1.0 = bit 0, −1.0 = bit 1).
-///                         Must contain at least kFrameLength symbols after the detected
-///                         sync offset. Recommended: pass >= kFrameLength symbols.
+/// @param rx_symbols       Received soft symbols (bipolar: +1.0 = bit 0, −1.0 = bit 1),
+///                         at unit signal amplitude: the sync threshold is an absolute
+///                         correlation sum. Must contain at least kFrameLength symbols
+///                         after the detected sync offset.
 /// @param result           Output: full decode result with per-subframe status.
 /// @param workspace        Caller-allocated scratchpad. After success, decoded data
 ///                         is in workspace.sb2_data, sb3_data, sb4_data.
 /// @param hal              Telemetry HAL for fault reporting.
 /// @param ldpc_iterations  LDPC BP iteration count (default: 50).
 /// @param sync_threshold   Sync detection threshold (default: kDefaultSyncThreshold).
+/// @param llr_scale        Factor applied to the de-interleaved payload before LDPC
+///                         decoding, converting unit-amplitude symbols to channel LLRs.
+///                         For BPSK over AWGN with noise variance sigma^2 it is
+///                         2/sigma^2. Sync detection and BCH decoding use the
+///                         unscaled symbols. Must be finite and positive; otherwise
+///                         kInvalidInput (default: kFrameDecodeLlrScale, no scaling).
+///
+/// On any status other than kOk the output data buffers are scrubbed and the
+/// per-subframe crc_ok flags are cleared. ldpc_converged still records which
+/// subframes converged.
 ///
 /// @return FrameDecodeStatus indicating overall decode outcome.
 [[nodiscard("frame_decode status carries CRC-24Q, LDPC and BCH failure flags — silently "
@@ -123,6 +141,7 @@ frame_decode(std::span<const float> rx_symbols,
              FrameDecodeWorkspace& workspace,
              ITelemetryHal& hal,
              uint8_t ldpc_iterations = kFrameDecodeLdpcIterations,
-             float sync_threshold = kDefaultSyncThreshold) noexcept;
+             float sync_threshold = kDefaultSyncThreshold,
+             float llr_scale = kFrameDecodeLlrScale) noexcept;
 
 } // namespace lunalink::signal

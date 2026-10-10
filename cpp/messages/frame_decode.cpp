@@ -9,6 +9,7 @@
 #include "lunalink/encoding/interleaver.hpp"
 
 #include <algorithm>
+#include <cmath>
 
 namespace lunalink::signal {
 
@@ -26,10 +27,13 @@ strip_crc_copy(std::span<const uint8_t> msg, std::span<uint8_t> data_out, size_t
 }
 
 /// Stage 0: Input validation and aliasing check.
-[[nodiscard]] FrameDecodeStatus
-decode_validate_input(std::span<const float> rx_symbols,
-                      const FrameDecodeWorkspace& workspace) noexcept {
+[[nodiscard]] FrameDecodeStatus decode_validate_input(std::span<const float> rx_symbols,
+                                                      const FrameDecodeWorkspace& workspace,
+                                                      float llr_scale) noexcept {
   if (rx_symbols.size() < kFrameDecodeMinInput) {
+    return FrameDecodeStatus::kInvalidInput;
+  }
+  if (!std::isfinite(llr_scale) || llr_scale <= 0.0F) {
     return FrameDecodeStatus::kInvalidInput;
   }
   if (spans_overlap(static_cast<const void*>(rx_symbols.data()),
@@ -92,10 +96,13 @@ decode_validate_input(std::span<const float> rx_symbols,
   return FrameDecodeStatus::kOk;
 }
 
-/// Stage 3: Payload — soft deinterleave.
+/// Stage 3: Payload — soft deinterleave, then scale to channel LLRs.
+/// The scale is applied here and not to rx_symbols so that sync detection and
+/// BCH decoding, which precede this stage, see unit-amplitude symbols.
 [[nodiscard]] FrameDecodeStatus decode_stage_deinterleave(std::span<const float> rx_symbols,
                                                           FrameDecodeWorkspace& workspace,
-                                                          size_t offset) noexcept {
+                                                          size_t offset,
+                                                          float llr_scale) noexcept {
   const size_t payload_start = offset + kSyncLength + kSb1Length;
   std::span<const float> payload_interleaved = rx_symbols.subspan(payload_start, kPayloadLength);
 
@@ -104,6 +111,11 @@ decode_validate_input(std::span<const float> rx_symbols,
 
   if (deint_status != InterleaverStatus::kOk) {
     return FrameDecodeStatus::kFaultDetected; // NOCOVER(DEFENCE_IN_DEPTH): deinterleave fault
+  }
+  // Unconditional multiply: a scale of 1.0F is exact in IEEE-754, so the default
+  // leaves every symbol bit-identical without a data-dependent branch.
+  for (float& symbol : workspace.deinterleave_buf) {
+    symbol *= llr_scale;
   }
   return FrameDecodeStatus::kOk;
 }
@@ -226,7 +238,8 @@ FrameDecodeStatus frame_decode(std::span<const float> rx_symbols,
                                FrameDecodeWorkspace& workspace,
                                ITelemetryHal& hal,
                                uint8_t ldpc_iterations,
-                               float sync_threshold) noexcept {
+                               float sync_threshold,
+                               float llr_scale) noexcept {
   // ── Pessimistic default ──────────────────────────────────────────────
   result = FrameDecodeResult{};
   FrameDecodeStatus status = FrameDecodeStatus::kFaultDetected;
@@ -237,7 +250,7 @@ FrameDecodeStatus frame_decode(std::span<const float> rx_symbols,
 
   // ── Input validation ─────────────────────────────────────────────────
   // cppcheck-suppress redundantInitialization  ; pessimistic default is intentional safety pattern
-  status = decode_validate_input(rx_symbols, workspace);
+  status = decode_validate_input(rx_symbols, workspace, llr_scale);
 
   // cppcheck-suppress duplicateCondition  ; single-exit accumulator pattern
   if (status == FrameDecodeStatus::kOk) {
@@ -264,7 +277,7 @@ FrameDecodeStatus frame_decode(std::span<const float> rx_symbols,
     LUNALINK_CRITICAL_ENTER;
     cfi_count = cfi_count + 1U; // Milestone 3: BCH decoded
     LUNALINK_CRITICAL_EXIT;
-    status = decode_stage_deinterleave(rx_symbols, workspace, offset);
+    status = decode_stage_deinterleave(rx_symbols, workspace, offset, llr_scale);
   }
 
   // cppcheck-suppress duplicateCondition  ; single-exit accumulator pattern
@@ -331,6 +344,12 @@ FrameDecodeStatus frame_decode(std::span<const float> rx_symbols,
     secure_scrub(workspace.sb2_data);
     secure_scrub(workspace.sb3_data);
     secure_scrub(workspace.sb4_data);
+    // The data is gone, so no subframe may still claim a verified CRC: a caller
+    // that trusts crc_ok would otherwise read zeros as validated navigation
+    // data. ldpc_converged is left as the per-subframe diagnostic.
+    result.sb2.crc_ok = false;
+    result.sb3.crc_ok = false;
+    result.sb4.crc_ok = false;
   }
 
   // ── Single exit ──────────────────────────────────────────────────────

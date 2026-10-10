@@ -8,12 +8,29 @@ follows [Semantic Versioning](https://semver.org/) as described in
 ## [Unreleased]
 
 ### Added
+- `llr_scale` on `frame_decode` and `noise_variance` on `receive_frame`,
+  which scale the payload to channel log-likelihood ratios before LDPC
+  decoding. Sync detection needs unit-amplitude symbols and the LDPC decoder
+  needs LLRs, so one pre-scaled input could not serve both. Both default to
+  the previous behaviour.
 - Public-release documentation: contributing guide, governance, security
   policy, code of conduct, citation metadata and this changelog.
 - `docs/references/verify_references.sh`, which checks the vendored copy of
   the LunaNet specification against the bytes NASA publishes.
 - Provenance record for every vendored reference document, in
   `docs/references/README.md`.
+
+### Fixed
+- `frame_decode` no longer leaves `crc_ok` set on a subframe whose data it
+  has scrubbed. When any subframe failed, the subframes that passed kept
+  their flag while their data was zeroed, so a caller could read zeros as
+  verified navigation data.
+- `receive_frame` raised `ValueError` from the SB2 parser, with either value
+  of `raise_on_error`, when SB2 passed its CRC and another subframe failed.
+  It now raises `DecodeError` or returns the failed result. The
+  `lunalink decode` command had the same crash.
+- The Python `frame_decode` binding returned uninitialised memory in the
+  data arrays of a failed decode. They are now zero.
 
 ### Changed
 - Repository reorganised for a general audience rather than for competition

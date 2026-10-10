@@ -14,6 +14,7 @@ import numpy as np
 import pytest
 
 from lunalink.afs import (
+    INTERLEAVER_SIZE,
     SB2_DATA_BITS,
     SB2_SPARE_BITS,
     SB2_SPARE_OFFSET,
@@ -21,10 +22,12 @@ from lunalink.afs import (
     SB4_DATA_BITS,
     DecodeError,
     DecodeResult,
+    FrameDecodeStatus,
     SubframeResult,
     SyncNotFoundError,
     TimeOfTransmission,
     TransmitFrame,
+    block_interleave,
     frame_build,
     make_test_payload,
     receive_frame,
@@ -216,6 +219,89 @@ class TestDecodeFrame:
         result = receive_frame(bipolar, raise_on_error=False)
         assert isinstance(result, DecodeResult)
         assert not result.all_ok
+
+    def test_noisy_frame_needs_noise_variance(self):
+        """A noisy unit-amplitude frame decodes once noise_variance is given."""
+        sb2, sb3, sb4 = make_test_payload("random", seed=42)
+        frame = frame_build(2, 77, sb2, sb3, sb4)
+        clean = np.where(frame == 0, 1.0, -1.0)
+        sigma = 0.6
+        rng = np.random.default_rng(3)
+        noisy = (clean + rng.normal(0.0, sigma, clean.shape)).astype(np.float32)
+
+        result = receive_frame(noisy, noise_variance=sigma**2)
+        assert result.all_ok
+        assert (result.fid, result.toi) == (2, 77)
+        np.testing.assert_array_equal(result.sb3.data, sb3)
+        np.testing.assert_array_equal(result.sb4.data, sb4)
+
+        # Without the scale the LDPC decoder is handed raw symbols and fails.
+        unscaled = receive_frame(noisy, raise_on_error=False)
+        assert not unscaled.all_ok
+
+    def test_noisy_frame_at_offset(self):
+        """Sync still locates a frame behind a noise prefix when LLRs are scaled.
+
+        The scale is applied to the payload only, so the sync threshold keeps
+        its meaning: the noise prefix must not trigger a false detection.
+        """
+        sb2, sb3, sb4 = make_test_payload("random", seed=7)
+        frame = frame_build(1, 5, sb2, sb3, sb4)
+        sigma = 0.6
+        offset = 250
+        rng = np.random.default_rng(9)
+        stream = rng.normal(0.0, sigma, offset + frame.size)
+        stream[offset:] += np.where(frame == 0, 1.0, -1.0)
+
+        result = receive_frame(stream.astype(np.float32), noise_variance=sigma**2)
+        assert result.all_ok
+        assert result.sync_offset == offset
+
+    @pytest.mark.parametrize("bad", [0.0, -1.0, float("nan"), float("inf")])
+    def test_noise_variance_must_be_positive_and_finite(self, bad):
+        """An unusable noise_variance is rejected before decoding."""
+        sb2, sb3, sb4 = make_test_payload("zeros")
+        frame = frame_build(0, 0, sb2, sb3, sb4)
+        bipolar = np.where(frame == 0, 1.0, -1.0).astype(np.float32)
+        with pytest.raises(ValueError, match="noise_variance"):
+            receive_frame(bipolar, noise_variance=bad)
+
+    @staticmethod
+    def _frame_with_sb4_destroyed():
+        """Return soft symbols of a frame whose SB4 codeword is replaced by junk."""
+        sb2, sb3, sb4 = make_test_payload("random", seed=11)
+        frame = frame_build(0, 5, sb2, sb3, sb4)
+        bipolar = np.where(frame == 0, 1.0, -1.0).astype(np.float32)
+        # Mark the SB4 codeword (after SB2's 2400 and SB3's 1740 symbols) and
+        # follow it through the interleaver to its positions in the frame.
+        mask = np.zeros(INTERLEAVER_SIZE, dtype=np.uint8)
+        mask[2400 + 1740 :] = 1
+        positions = 120 + np.flatnonzero(block_interleave(mask))
+        rng = np.random.default_rng(1)
+        bipolar[positions] = rng.choice([-1.0, 1.0], size=positions.size)
+        return bipolar
+
+    def test_partial_failure_returns_consistent_result(self):
+        """When one subframe fails, no subframe reports a CRC pass on empty data.
+
+        frame_decode scrubs every data buffer on failure.  The flags must be
+        cleared with the data, and receive_frame must return rather than raise.
+        """
+        result = receive_frame(self._frame_with_sb4_destroyed(), raise_on_error=False)
+        assert not result.all_ok
+        assert result.time is None
+        for sub in (result.sb2, result.sb3, result.sb4):
+            assert not sub.crc_ok
+            assert not sub.data.any()
+        # The intact subframes still report that they converged.
+        assert result.sb2.ldpc_converged
+        assert result.sb3.ldpc_converged
+
+    def test_partial_failure_raises_decode_error(self):
+        """A partial failure surfaces as DecodeError, not as a parser ValueError."""
+        with pytest.raises(DecodeError) as exc_info:
+            receive_frame(self._frame_with_sb4_destroyed())
+        assert exc_info.value.status == FrameDecodeStatus.LDPC_FAILED
 
 
 # ── transmit_frame tests ────────────────────────────────────────────────────

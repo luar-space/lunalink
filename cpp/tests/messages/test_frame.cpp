@@ -951,3 +951,150 @@ TEST_CASE("frame_build: invalid TOI rejected", "[frame]") {
   CHECK(frame_build(Fid::kNode1(), bad_toi, sb2, sb3, sb4, out, ldpc_ws, fbw) ==
         FrameStatus::kInvalidToi);
 }
+
+// ===========================================================================
+// frame_decode: channel-LLR scale and partial-failure consistency
+// ===========================================================================
+
+namespace {
+/// Fill three subframe buffers with deterministic non-trivial bits.
+void fill_subframes(std::span<uint8_t> sb2,
+                    std::span<uint8_t> sb3,
+                    std::span<uint8_t> sb4,
+                    std::mt19937& rng) {
+  for (auto& b : sb2) {
+    b = static_cast<uint8_t>(rng() & 1U);
+  }
+  for (auto& b : sb3) {
+    b = static_cast<uint8_t>(rng() & 1U);
+  }
+  for (auto& b : sb4) {
+    b = static_cast<uint8_t>(rng() & 1U);
+  }
+}
+} // namespace
+
+TEST_CASE(
+    "[LSIS-AFS-720] frame_decode: llr_scale decodes a noisy unit-amplitude frame at an offset",
+    "[frame]") {
+  // The sync detector needs unit-amplitude symbols (its threshold is an
+  // absolute correlation sum) and the LDPC decoder needs channel LLRs.  The
+  // caller passes unit-amplitude symbols plus llr_scale; frame_decode applies
+  // the scale to the payload only.
+  std::array<uint8_t, kSb2DataBits> sb2_data{};
+  std::array<uint8_t, kSb3DataBits> sb3_data{};
+  std::array<uint8_t, kSb4DataBits> sb4_data{};
+  std::mt19937 rng(7);
+  fill_subframes(sb2_data, sb3_data, sb4_data, rng);
+
+  std::array<uint8_t, kFrameLength> frame{};
+  LdpcEncodeWorkspace enc_ws{};
+  FrameBuildWorkspace fbw{};
+  REQUIRE(frame_build(Fid::kNode3(), Toi(17), sb2_data, sb3_data, sb4_data, frame, enc_ws, fbw) ==
+          FrameStatus::kOk);
+
+  // A noise-only prefix, then the frame, all at noise standard deviation 0.6.
+  constexpr size_t kOffset = 300;
+  constexpr float kSigma = 0.6F;
+  auto rx = std::make_unique<std::array<float, kFrameLength + kOffset>>();
+  std::normal_distribution<float> noise(0.0F, kSigma);
+  for (size_t i = 0; i < kOffset; ++i) {
+    (*rx)[i] = noise(rng);
+  }
+  for (size_t i = 0; i < kFrameLength; ++i) {
+    (*rx)[kOffset + i] = ((frame[i] == 0U) ? 1.0F : -1.0F) + noise(rng);
+  }
+
+  FrameDecodeResult result{};
+  auto ws = std::make_unique<FrameDecodeWorkspace>();
+  NullTelemetryHal hal;
+  const float llr_scale = 2.0F / (kSigma * kSigma);
+  const auto status = frame_decode(
+      *rx, result, *ws, hal, kFrameDecodeLdpcIterations, kDefaultSyncThreshold, llr_scale);
+
+  REQUIRE(status == FrameDecodeStatus::kOk);
+  CHECK(result.sync.frame_offset == kOffset);
+  CHECK(result.bch.fid == Fid::kNode3());
+  CHECK(result.bch.toi == Toi(17));
+  CHECK(result.sb2.crc_ok);
+  CHECK(result.sb3.crc_ok);
+  CHECK(result.sb4.crc_ok);
+  CHECK(std::equal(sb2_data.begin(), sb2_data.begin() + kSb2SpareOffset, ws->sb2_data.begin()));
+  CHECK(std::equal(sb3_data.begin(), sb3_data.end(), ws->sb3_data.begin()));
+  CHECK(std::equal(sb4_data.begin(), sb4_data.end(), ws->sb4_data.begin()));
+}
+
+TEST_CASE("[LSIS-AFS-720] frame_decode: rejects a non-finite or non-positive llr_scale",
+          "[frame]") {
+  std::array<uint8_t, kSb2DataBits> sb2_data{};
+  std::array<uint8_t, kSb3DataBits> sb3_data{};
+  std::array<uint8_t, kSb4DataBits> sb4_data{};
+  std::array<uint8_t, kFrameLength> frame{};
+  LdpcEncodeWorkspace enc_ws{};
+  FrameBuildWorkspace fbw{};
+  REQUIRE(frame_build(Fid::kNode1(), Toi(0), sb2_data, sb3_data, sb4_data, frame, enc_ws, fbw) ==
+          FrameStatus::kOk);
+  auto rx = std::make_unique<std::array<float, kFrameLength>>();
+  binary_to_bipolar(frame, *rx);
+
+  auto ws = std::make_unique<FrameDecodeWorkspace>();
+  NullTelemetryHal hal;
+  for (const float bad : {0.0F,
+                          -1.0F,
+                          std::numeric_limits<float>::quiet_NaN(),
+                          std::numeric_limits<float>::infinity()}) {
+    FrameDecodeResult result{};
+    CHECK(frame_decode(
+              *rx, result, *ws, hal, kFrameDecodeLdpcIterations, kDefaultSyncThreshold, bad) ==
+          FrameDecodeStatus::kInvalidInput);
+    CHECK(result.status == FrameDecodeStatus::kInvalidInput);
+  }
+}
+
+TEST_CASE("[LSIS-AFS-720] frame_decode: a failed frame leaves no crc_ok flag set", "[frame]") {
+  // SB2 and SB3 are intact; SB4 is replaced with junk.  frame_decode scrubs
+  // every data buffer on a non-kOk status, so it must also clear crc_ok for
+  // the subframes that did pass: otherwise a caller reads zeros as verified
+  // navigation data.
+  std::array<uint8_t, kSb2DataBits> sb2_data{};
+  std::array<uint8_t, kSb3DataBits> sb3_data{};
+  std::array<uint8_t, kSb4DataBits> sb4_data{};
+  std::mt19937 rng(11);
+  fill_subframes(sb2_data, sb3_data, sb4_data, rng);
+
+  std::array<uint8_t, kFrameLength> frame{};
+  LdpcEncodeWorkspace enc_ws{};
+  FrameBuildWorkspace fbw{};
+  REQUIRE(frame_build(Fid::kNode1(), Toi(5), sb2_data, sb3_data, sb4_data, frame, enc_ws, fbw) ==
+          FrameStatus::kOk);
+  auto rx = std::make_unique<std::array<float, kFrameLength>>();
+  binary_to_bipolar(frame, *rx);
+
+  // Find where the SB4 codeword lands after interleaving, and overwrite it.
+  auto mask = std::make_unique<std::array<uint8_t, kPayloadLength>>();
+  auto mask_tx = std::make_unique<std::array<uint8_t, kPayloadLength>>();
+  std::fill(mask->begin() + kSb2Length + kSb3Length, mask->end(), uint8_t{1});
+  REQUIRE(block_interleave(*mask, *mask_tx) == InterleaverStatus::kOk);
+  const size_t payload_start = kSyncLength + kSb1Length;
+  for (size_t i = 0; i < kPayloadLength; ++i) {
+    if ((*mask_tx)[i] == 1U) {
+      (*rx)[payload_start + i] = ((rng() & 1U) == 0U) ? 1.0F : -1.0F;
+    }
+  }
+
+  FrameDecodeResult result{};
+  auto ws = std::make_unique<FrameDecodeWorkspace>();
+  NullTelemetryHal hal;
+  const auto status = frame_decode(*rx, result, *ws, hal);
+
+  REQUIRE(status != FrameDecodeStatus::kOk);
+  // The intact subframes converged; that diagnostic survives.
+  CHECK(result.sb2.ldpc_converged);
+  CHECK(result.sb3.ldpc_converged);
+  // No subframe claims a verified CRC, and no data is left behind.
+  CHECK_FALSE(result.sb2.crc_ok);
+  CHECK_FALSE(result.sb3.crc_ok);
+  CHECK_FALSE(result.sb4.crc_ok);
+  CHECK(std::all_of(ws->sb2_data.begin(), ws->sb2_data.end(), [](uint8_t b) { return b == 0U; }));
+  CHECK(std::all_of(ws->sb3_data.begin(), ws->sb3_data.end(), [](uint8_t b) { return b == 0U; }));
+}

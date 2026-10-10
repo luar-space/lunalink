@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import math
+
 from beartype import beartype
 from jaxtyping import jaxtyped
 
@@ -33,6 +35,7 @@ def receive_frame(
     *,
     ldpc_iterations: int = 50,
     sync_threshold: float = 0.0,
+    noise_variance: float | None = None,
     raise_on_error: bool = True,
 ) -> DecodeResult:
     """Decode an AFS navigation frame from soft-decision symbols.
@@ -45,12 +48,21 @@ def receive_frame(
     Parameters
     ----------
     rx_symbols : SoftSymbols
-        Bipolar soft-decision symbols (+1.0 = bit 0, -1.0 = bit 1).
-        Must contain at least 6000 symbols after the sync offset.
+        Bipolar soft-decision symbols (+1.0 = bit 0, -1.0 = bit 1), at
+        unit signal amplitude.  Must contain at least 6000 symbols after
+        the sync offset.
     ldpc_iterations : int
         LDPC decoder iteration limit (default: 50).
     sync_threshold : float
         Sync detection threshold (0 uses the C++ default of 50.0).
+    noise_variance : float, optional
+        Variance of the noise on ``rx_symbols``.  When given, the payload
+        is scaled by ``2 / noise_variance`` before LDPC decoding, which
+        turns the symbols into the channel log-likelihood ratios the
+        decoder expects.  Sync detection and BCH decoding use the
+        symbols as passed.  When omitted the symbols reach the LDPC
+        decoder unscaled, which is only adequate for clean or nearly
+        clean input.
     raise_on_error : bool
         If True (default), raises on failure.
         If False, returns a partial DecodeResult with error indicators.
@@ -66,6 +78,8 @@ def receive_frame(
         If sync pattern is not detected (and *raise_on_error* is True).
     DecodeError
         If BCH, LDPC, or CRC decoding fails (and *raise_on_error* is True).
+    ValueError
+        If *noise_variance* is not finite and positive.
 
     Examples
     --------
@@ -80,8 +94,16 @@ def receive_frame(
     >>> result.toi
     42
     """
+    llr_scale = 1.0
+    if noise_variance is not None:
+        if not math.isfinite(noise_variance) or noise_variance <= 0.0:
+            raise ValueError(
+                f"noise_variance must be finite and positive, got {noise_variance}"
+            )
+        llr_scale = 2.0 / noise_variance
+
     raw, sb2_data, sb3_data, sb4_data, status = _frame_decode_low(
-        rx_symbols, ldpc_iterations, sync_threshold
+        rx_symbols, ldpc_iterations, sync_threshold, llr_scale
     )
 
     # Fail fast: when sync is not found the remaining fields are meaningless.

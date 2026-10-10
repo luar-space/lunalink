@@ -247,10 +247,21 @@ API
        FrameDecodeWorkspace&    workspace,
        ITelemetryHal&           hal,
        uint8_t                  ldpc_iterations = 50,
-       float                    sync_threshold  = 50.0F) noexcept;
+       float                    sync_threshold  = 50.0F,
+       float                    llr_scale       = 1.0F) noexcept;
 
 Decoded navigation data is written to ``workspace.sb2_data``,
 ``workspace.sb3_data``, ``workspace.sb4_data``.
+
+``rx_symbols`` are at unit signal amplitude, because the sync threshold is an
+absolute correlation sum.  ``llr_scale`` converts them to the channel
+log-likelihood ratios the LDPC decoder expects, 2/σ² for noise variance σ².
+It is applied to the de-interleaved payload only, so sync detection and BCH
+decoding see the symbols as passed.
+
+On any status other than ``kOk`` the three data buffers are scrubbed and the
+``crc_ok`` flag of every subframe is cleared with them.  ``ldpc_converged``
+still records which subframes converged.
 
 Hardening
 ~~~~~~~~~
@@ -421,7 +432,7 @@ Frame decode bindings
    )
 
    result, sb2, sb3, sb4, status = frame_decode(
-       rx_symbols, ldpc_iterations=50, sync_threshold=50.0)
+       rx_symbols, ldpc_iterations=50, sync_threshold=50.0, llr_scale=1.0)
 
 ----
 

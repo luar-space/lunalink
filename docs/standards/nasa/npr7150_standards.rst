@@ -382,7 +382,7 @@ chapters:
      - ``.clang-tidy``, ``pyproject.toml``
    * - Unit Testing (SWE-062)
      - Complete
-     - 306 Catch2 test cases (including the 42-case SWIFI suite), pytest suite
+     - 309 Catch2 test cases (including the 42-case SWIFI suite), pytest suite
    * - Static Analysis (SWE-135)
      - Complete
      - clang-tidy, cppcheck, pyright, ruff

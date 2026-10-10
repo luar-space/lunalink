@@ -225,10 +225,12 @@ AWGN::
     L_ch = 2y / sigma^2
 
 This scaling provides the decoder with reliability information — without
-it, convergence degrades sharply.  The scaling is the caller's job at every
-level: :func:`lunalink.afs.receive_frame` and ``frame_decode`` pass the
-symbols they are given straight to the decoder, and C++ callers of
-``ldpc_decode`` must supply LLRs per the header contract in ``ldpc.hpp``.
+it, convergence degrades sharply.  ``frame_decode`` takes the factor as
+``llr_scale`` and applies it to the de-interleaved payload only, because the
+sync detector ahead of it needs unit-amplitude symbols.
+:func:`lunalink.afs.receive_frame` takes ``noise_variance`` and derives the
+factor from it.  Both default to no scaling.  C++ callers of ``ldpc_decode``
+must supply LLRs per the header contract in ``ldpc.hpp``.
 
 Test Methodology
 ----------------

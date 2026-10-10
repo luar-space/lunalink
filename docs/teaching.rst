@@ -117,22 +117,21 @@ Gaussian noise, and decode it.
    clean = np.where(frame.symbols == 0, 1.0, -1.0)
 
    sigma = 0.8
-   y = clean + rng.normal(0, sigma, clean.shape)
-   llr = (2 * y / sigma**2).astype(np.float32)
-   _, decoded_sb2, _, _, status = frame_decode(llr)
+   y = (clean + rng.normal(0, sigma, clean.shape)).astype(np.float32)
+   _, decoded_sb2, _, _, status = frame_decode(y, llr_scale=2 / sigma**2)
    print(status, np.array_equal(decoded_sb2, sb2))
 
-Decode ``y`` directly as well, without the factor ``2 / sigma**2``.  The LDPC
-decoder works on log-likelihood ratios, and the scaling is what tells it how
-far to trust each symbol.  Find the largest ``sigma`` at which each version
-still decodes.  The reason is in the section on channel LLR scaling in
+Decode ``y`` again without ``llr_scale``.  The LDPC decoder works on
+log-likelihood ratios, and the scale is what tells it how far to trust each
+symbol.  Find the largest ``sigma`` at which each version still decodes.  The
+reason is in the section on channel LLR scaling in
 :doc:`signal/ldpc_performance`.
 
 How many iterations does the LDPC decoder need
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``frame_decode`` takes
-the iteration limit as its second argument.  At a fixed ``sigma``, decode with
+the iteration limit as ``ldpc_iterations``.  At a fixed ``sigma``, decode with
 limits of 1, 2, 5, 15 and 50.  Compare what you find with the convergence
 results in :doc:`signal/ldpc_algo_card`.
 

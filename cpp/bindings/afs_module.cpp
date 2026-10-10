@@ -1305,7 +1305,8 @@ tuple[SyncResult, SyncDetectorStatus]
       "frame_decode",
       [](nb::ndarray<const float, nb::ndim<1>, nb::c_contig, nb::device::cpu> rx_symbols,
          uint8_t ldpc_iterations,
-         float sync_threshold) {
+         float sync_threshold,
+         float llr_scale) {
         NullTelemetryHal hal;
         FrameDecodeResult result{};
         auto workspace = std::make_unique<FrameDecodeWorkspace>();
@@ -1316,7 +1317,8 @@ tuple[SyncResult, SyncDetectorStatus]
                          *workspace,
                          hal,
                          ldpc_iterations,
-                         sync_threshold);
+                         sync_threshold,
+                         llr_scale);
 
         // Copy decoded data into numpy arrays — only when overall status is kOk
         // AND the individual subframe CRC passed.  On any fault, workspace data
@@ -1324,6 +1326,12 @@ tuple[SyncResult, SyncDetectorStatus]
         auto [sb2, sb2_dst] = make_numpy_1d<uint8_t>(kSb2DataBits);
         auto [sb3, sb3_dst] = make_numpy_1d<uint8_t>(kSb3DataBits);
         auto [sb4, sb4_dst] = make_numpy_1d<uint8_t>(kSb4DataBits);
+
+        // make_numpy_1d does not initialise its buffer.  Zero all three so that a
+        // failed decode returns zeros and not whatever the allocator handed back.
+        std::memset(sb2_dst, 0, kSb2DataBits);
+        std::memset(sb3_dst, 0, kSb3DataBits);
+        std::memset(sb4_dst, 0, kSb4DataBits);
 
         if (status == FrameDecodeStatus::kOk && result.sb2.crc_ok) {
           std::memcpy(sb2_dst, workspace->sb2_data.data(), kSb2DataBits);
@@ -1340,22 +1348,30 @@ tuple[SyncResult, SyncDetectorStatus]
       "rx_symbols"_a,
       "ldpc_iterations"_a = kFrameDecodeLdpcIterations,
       "sync_threshold"_a = 0.0F,
+      "llr_scale"_a = kFrameDecodeLlrScale,
       R"(Decode a complete AFS navigation frame from soft-decision symbols.
 
 Parameters
 ----------
 rx_symbols : array of float
-    Bipolar soft-decision symbols (+1.0 = bit 0, -1.0 = bit 1).
-    Must contain at least kFrameLength (6000) symbols after the sync offset.
+    Bipolar soft-decision symbols (+1.0 = bit 0, -1.0 = bit 1), at unit
+    signal amplitude.  Must contain at least kFrameLength (6000) symbols
+    after the sync offset.
 ldpc_iterations : int, optional
     LDPC BP iteration count (default: 50).
 sync_threshold : float, optional
     Sync detection threshold (default: 50.0). Set to 0 to use default.
+llr_scale : float, optional
+    Factor applied to the payload before LDPC decoding, converting symbols
+    to channel LLRs: 2/sigma^2 for noise variance sigma^2.  Sync detection
+    and BCH decoding use the unscaled symbols.  Must be finite and
+    positive (default: 1.0, no scaling).
 
 Returns
 -------
 tuple[FrameDecodeResult, ndarray, ndarray, ndarray, FrameDecodeStatus]
-    (result, sb2_data, sb3_data, sb4_data, status)
+    (result, sb2_data, sb3_data, sb4_data, status).  On any status other
+    than OK the data arrays are zero and every ``crc_ok`` flag is False.
 )");
 
   // ─── AFS-I signal constants (derived from prn.hpp spec values) ──────────

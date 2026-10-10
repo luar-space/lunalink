@@ -278,6 +278,7 @@ def frame_decode(
     rx_symbols: SoftSymbols,
     ldpc_iterations: int = 50,
     sync_threshold: float = 0.0,
+    llr_scale: float = 1.0,
 ) -> tuple[
     FrameDecodeResult,
     Sb2Payload,

@@ -94,7 +94,7 @@ If you have fifteen minutes, this is the tour:
 ```bash
 task interop      # ~10 s  bit-exact against an independent implementation
 task swifi        # ~50 s  42/42 fault-injection test cases
-task test-cpp && task test-py   # ~1 min  229 C++ cases, 1242 Python tests
+task test-cpp && task test-py   # ~1 min  232 C++ cases, 1250 Python tests
 ```
 
 Every claim below has a command beside it. Nothing here is asserted.
