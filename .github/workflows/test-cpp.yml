@@ -71,11 +71,18 @@ jobs:
         with:
           name: cpp-debug-build
           path: build/
+      # The routing contract (scripts/lint_test_tags.py) is "test-cpp runs
+      # ~[slow], acceptance runs everything", and `task test-cpp` honours it.
+      # Restating it as a list of five tags drifted: [fft_bench][slow] was
+      # landing in this fast job. 230 cases under the old filter, 229 under
+      # ~[slow] — the FFT microbench is the only difference.
+      - name: Check every test case declares a tag
+        run: python3 scripts/lint_test_tags.py
       - name: Run unit tests
         run: |
           chmod +x build/test_lunalink
           mkdir -p build/test-results
-          build/test_lunalink "~[ber]~[fer]~[channel]~[wcet]~[e2e]" \
+          build/test_lunalink "~[slow]" \
             --abort --rng-seed 42 \
             --reporter console \
             --reporter "junit::out=build/test-results/lunalink.xml"

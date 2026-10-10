@@ -282,52 +282,48 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release
       - name: Build
         run: cmake --build build/wcet --parallel
+      # Reporters write to files, so a Catch2 budget failure would
+      # otherwise surface as a bare "exit code 1" with no indication of which
+      # budget was missed — the same lesson wcet.yml records.
       - name: Run benchmarks
+        # `[wcet]` is the tag these benchmarks actually carry. This read
+        # `[performance]` — a Taskfile target name, not a Catch2 tag — which
+        # matched nothing; Catch2 3.4.0 exits 0 on an empty filter, so the
+        # gate recorded PASS over zero measurements.
         run: |
-          build/wcet/test_lunalink "[performance]" --reporter console \
-            2>&1 | tee /tmp/wcet_raw.txt
-      - name: Check WCET tolerance (±2% intra-run input-class spread)
+          build/wcet/test_lunalink "[wcet]" \
+            --reporter "console::out=/tmp/wcet_console.txt" \
+            --reporter "xml::out=/tmp/wcet_results.xml"
+      - name: Show benchmark output
+        if: always()
         run: |
-          python3 - <<'PYEOF'
-          import re, sys
+          grep -B4 -A12 -E "FAILED|with expansion" /tmp/wcet_console.txt || true
+          echo "--- tail ---"
+          tail -30 /tmp/wcet_console.txt || true
+      # The hand-rolled parser this replaces read the "estimated total run
+      # time" column and folded the samples/iterations counts into the
+      # benchmark name, so it recovered 2 of 7 benchmarks, each exactly once,
+      # and then skipped every tolerance check for want of a second sample.
+      # performance_report.py reads the XML reporter's mean/low/high/stddev
+      # and gates on 95% CI spread, defaulting to --stability fail. It is the
+      # same check wcet.yml runs.
+      - name: Check WCET measurement quality (95% CI spread)
+        run: |
+          python3 scripts/performance_report.py \
+            --xml /tmp/wcet_results.xml \
+            --console /tmp/wcet_console.txt \
+            --output /tmp/wcet_profile.rst
+      - name: Upload WCET profile
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: recertify-wcet-profile
+          path: |
+            /tmp/wcet_profile.rst
+            /tmp/wcet_console.txt
+            /tmp/wcet_results.xml
+          retention-days: 90
 
-          with open('/tmp/wcet_raw.txt') as f:
-              raw = f.read()
-
-          timing_pattern = re.compile(
-              r'^\s*([\w_]+(?:\s+[\w_]+)*?)\s+(\d+(?:\.\d+)?)\s+(ns|us|ms)\s', re.MULTILINE)
-          timings: dict[str, list[float]] = {}
-          for m in timing_pattern.finditer(raw):
-              name = m.group(1).strip()
-              val  = float(m.group(2))
-              unit = m.group(3)
-              if unit == 'us':
-                  val *= 1_000
-              elif unit == 'ms':
-                  val *= 1_000_000
-              timings.setdefault(name, []).append(val)
-
-          ci_failed = False
-          for fn, vals in sorted(timings.items()):
-              if len(vals) < 2:
-                  print(f'WARN  {fn}: only one timing sample; tolerance check skipped')
-              else:
-                  lo, hi = min(vals), max(vals)
-                  pct = (hi - lo) / lo * 100.0 if lo > 0 else 0.0
-                  if pct > 2.0:
-                      print(f'FAIL  {fn}: deviation {pct:.1f}% exceeds ±2% limit')
-                      ci_failed = True
-                  else:
-                      print(f'PASS  {fn}: deviation {pct:.1f}% within ±2%')
-
-          if not timings:
-              print('(no [performance] benchmarks found)')
-          if ci_failed:
-              print('ERROR: one or more functions exceeded ±2% WCET tolerance.', file=sys.stderr)
-              sys.exit(1)
-          PYEOF
-
-  # --------------------------------------------------------------------------
   # Gate 9 — Python Tests  [SWE-128]
   # --------------------------------------------------------------------------
   gate-test-python:

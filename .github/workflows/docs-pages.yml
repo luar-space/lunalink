@@ -49,30 +49,42 @@ jobs:
         # generates it before Sphinx runs. nbsphinx needs pandoc to render
         # the notebooks' Markdown cells.
         run: sudo apt-get install -y doxygen pandoc
-      - name: Download static-analysis artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: static-analysis-report
-          path: docs/assurance/
-        continue-on-error: true
-      - name: Download cppcheck artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: cppcheck-report
-          path: docs/assurance/
-        continue-on-error: true
-      - name: Download WCET profile artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: wcet-profile
-          path: docs/assurance/
-        continue-on-error: true
+      # These three artifacts are produced by OTHER workflows, so
+      # download-artifact cannot reach them: it looks only inside the current
+      # run and failed every time with "Artifact not found for name: ...",
+      # silenced by continue-on-error. The site has therefore been published
+      # without the static-analysis, cppcheck and WCET pages that
+      # metrics_plan.rst and sdp.rst cite as deliverables. Resolve each
+      # producing workflow's latest successful run on main instead.
+      - name: Download assurance artifacts from their producing workflows
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -uo pipefail
+          fetch() {
+            wf="$1"; artifact="$2"
+            run_id=$(gh api \
+              "repos/${{ github.repository }}/actions/workflows/${wf}/runs?status=success&branch=main&per_page=1" \
+              --jq '.workflow_runs[0].id // empty')
+            if [ -z "${run_id}" ]; then
+              echo "::warning::no successful ${wf} run on main; ${artifact} is missing from the site"
+              return
+            fi
+            if gh run download "${run_id}" --name "${artifact}" --dir docs/assurance/; then
+              echo "fetched ${artifact} from ${wf} run ${run_id}"
+            else
+              echo "::warning::${wf} run ${run_id} carries no ${artifact} (expired?); it is missing from the site"
+            fi
+          }
+          fetch tidy.yml static-analysis-report
+          fetch lint.yml cppcheck-report
+          fetch wcet.yml wcet-profile
       - run: task docs-build
       - name: Embed coverage HTML report
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          RUN_ID=$(gh api "repos/${{ github.repository }}/actions/workflows/coverage-cpp.yml/runs?status=success&per_page=1" \
+          RUN_ID=$(gh api "repos/${{ github.repository }}/actions/workflows/coverage-cpp.yml/runs?status=success&branch=main&per_page=1" \
             --jq '.workflow_runs[0].id' 2>/dev/null || echo "")
           if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ]; then
             gh run download "$RUN_ID" --name mcdc-coverage --dir /tmp/coverage-artifact/ 2>/dev/null || true

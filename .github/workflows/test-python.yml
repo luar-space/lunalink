@@ -77,12 +77,16 @@ jobs:
 
       - run: task test-py
 
+      # Pin the badge to one job. `python-version == '3.12'` alone is also
+      # true for the windows-latest and macos-14 entries, so all three
+      # uploaded an artifact named python-coverage and the badge job's
+      # download resolved the name to whichever one the API returned.
       - name: Generate coverage JSON
-        if: matrix.python-version == '3.12'
+        if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-latest'
         run: uv run python -m coverage json -o coverage.json
 
       - name: Upload coverage data
-        if: matrix.python-version == '3.12'
+        if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v5
         with:
           name: python-coverage

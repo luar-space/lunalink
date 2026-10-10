@@ -87,7 +87,7 @@ Run ``task --list`` to see all tasks. The most common ones are:
    * - ``task tidy``
      - Run clang-tidy HICPP static analysis on all C++ signal sources.
    * - ``task wcet``
-     - Build in Release mode and run ``[performance]`` benchmarks to check WCET tolerance.
+     - Build in Release mode and run ``[wcet]`` benchmarks to check WCET tolerance.
    * - ``task ci-checks``
      - Full local CI suite: build, lint, flags, test-cpp, coverage, tidy, test-py, sanitize, docs.
    * - ``task recertify``

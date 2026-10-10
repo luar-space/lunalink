@@ -175,7 +175,7 @@ Chapter 4 — Software Engineering Life Cycle Requirements
        demand by ``task recertify``)
    * - SWE-070
      - Use validated models/simulations for qualification of flight software
-     - ``wcet_profile.rst``, ``[performance]`` benchmarks
+     - ``wcet_profile.rst``, ``[wcet]`` benchmarks
    * - SWE-071
      - Update test/verification plans to be consistent with requirements
      - Updated each gateway
@@ -320,7 +320,7 @@ Key concepts:
 
 **Relevance to LunaLink:**
 
-* BER performance simulations (``[performance]`` Catch2 tests).
+* BER performance simulations (``[channel][ber]`` Catch2 tests).
 * WCET profiling (``wcet.yml``, ``wcet_profile.rst``).
 * Digital twin as a high-fidelity simulation of the flight signal chain.
 
