@@ -43,7 +43,7 @@ jobs:
         # Breathe renders the C++ API from Doxygen XML; task docs-build
         # generates it before Sphinx runs. nbsphinx needs pandoc to render
         # the notebooks' Markdown cells.
-        run: sudo apt-get install -y doxygen pandoc
+        run: sudo apt-get update && sudo apt-get install -y doxygen pandoc
       # docs-strict is the same -W warnings-as-errors Sphinx build minus
       # `jupyter nbconvert --execute`: seconds instead of minutes, because
       # nbsphinx renders the notebooks from their committed outputs. The

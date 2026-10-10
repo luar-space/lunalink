@@ -57,6 +57,8 @@ jobs:
           sudo apt-get install -y \
             clang-${LLVM_VERSION} llvm-${LLVM_VERSION} lld-${LLVM_VERSION}
       - name: Install Ninja
+        # No apt-get update: the LLVM step above added the apt.llvm.org
+        # source and refreshed the index already, in this same job.
         run: sudo apt-get install -y ninja-build
       - uses: hendrikmuhs/ccache-action@v1
         with:

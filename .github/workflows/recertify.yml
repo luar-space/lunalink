@@ -73,7 +73,7 @@ jobs:
           python-version: "3.12"
       - run: uv sync --group dev
       - name: Install cppcheck + ninja
-        run: sudo apt-get install -y cppcheck ninja-build
+        run: sudo apt-get update && sudo apt-get install -y cppcheck ninja-build
       - name: Lint checks (pyright, cppcheck, ruff)
         run: task lint-check
       - name: Build flags gate (S10 / SWE-109)
@@ -99,7 +99,7 @@ jobs:
           ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
       - name: Install ninja
-        run: sudo apt-get install -y ninja-build
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
       - uses: arduino/setup-task@v2
         with:
           # Authenticated: the action downloads Task from GitHub releases,
@@ -120,7 +120,7 @@ jobs:
           ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
       - name: Install ninja
-        run: sudo apt-get install -y ninja-build
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
       - uses: arduino/setup-task@v2
         with:
           # Authenticated: the action downloads Task from GitHub releases,
@@ -145,7 +145,7 @@ jobs:
           ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
       - name: Install ninja
-        run: sudo apt-get install -y ninja-build
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
       - uses: arduino/setup-task@v2
         with:
           # Authenticated: the action downloads Task from GitHub releases,
@@ -229,7 +229,7 @@ jobs:
           ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
       - name: Install clang + clang-tidy + ninja
-        run: sudo apt-get install -y ninja-build clang clang-tidy
+        run: sudo apt-get update && sudo apt-get install -y ninja-build clang clang-tidy
       - uses: arduino/setup-task@v2
         with:
           # Authenticated: the action downloads Task from GitHub releases,
@@ -255,7 +255,7 @@ jobs:
           ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
       - name: Install ninja
-        run: sudo apt-get install -y ninja-build
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
       - uses: arduino/setup-task@v2
         with:
           # Authenticated: the action downloads Task from GitHub releases,
@@ -359,7 +359,7 @@ jobs:
           python-version: "3.12"
       - run: uv sync --group dev
       - name: Install doxygen and pandoc
-        run: sudo apt-get install -y doxygen pandoc
+        run: sudo apt-get update && sudo apt-get install -y doxygen pandoc
       - run: task docs-build
 
   # --------------------------------------------------------------------------

@@ -43,7 +43,7 @@ jobs:
           python-version: "3.12"
       - run: uv sync --group dev
       - name: Install cppcheck
-        run: sudo apt-get install -y cppcheck
+        run: sudo apt-get update && sudo apt-get install -y cppcheck
       # clang-format comes from the pinned dev dependency (pyproject.toml), not
       # from apt: Ubuntu's is a different major version and formats differently.
       - name: Run lint checks
@@ -55,6 +55,8 @@ jobs:
         # time, and check_build_flags.py reads nothing else. Compiling the
         # tree first (156 translation units) produced no input to the gate.
         run: |
+          # The cppcheck step above already refreshed the package index in
+          # this job, so no second apt-get update here.
           sudo apt-get install -y ninja-build
           cmake -B build/flags -S . -G Ninja \
             -DBUILD_PYTHON_BINDINGS=OFF \
