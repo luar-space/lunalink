@@ -84,7 +84,7 @@ Test Payloads
 ~~~~~~~~~~~~~
 
 :func:`~lunalink.afs.make_test_payload` generates standard subframe data for
-the competition test scenarios (see :doc:`test_vectors` for the full
+the standard test scenarios (see :doc:`test_vectors` for the full
 MSG-1…MSG-5 definitions):
 
 .. code-block:: python
@@ -259,7 +259,7 @@ Generating Interoperability Test Vectors
 ----------------------------------------
 
 The :mod:`lunalink.afs.vectors` module produces full-length test vectors in the
-competition-standard formats for cross-team validation.
+shared interoperability formats, for comparison with other implementations.
 
 Generate all standard scenarios at once
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

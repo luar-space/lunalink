@@ -1,8 +1,10 @@
 Compliance Matrix
 =================
 
-Implementation status for every requirement in the LSIS-AFS Specification
-(LSIS V1.0), organised by the competition's eight-gateway structure.
+Implementation status by block of the signal chain, for the requirements of
+the LSIS-AFS Specification (LSIS V1.0) and for the receive side, which the
+specification does not cover with "shall" statements.  For the requirements
+in the order of the specification's own sections, see :doc:`shall_inventory`.
 
 .. note::
 
@@ -20,8 +22,10 @@ Implementation status for every requirement in the LSIS-AFS Specification
    The shall inventory carries the mapping: each of its rows cites the
    implementing ``[LSIS-AFS-*]`` tag in its evidence column.
 
-Gateway 1: Spreading Code Generation
--------------------------------------
+Spreading code generation
+-------------------------
+
+Guide: :doc:`/verification/spreading_codes`.
 
 .. list-table::
    :widths: 15 60 10 15
@@ -52,8 +56,10 @@ Gateway 1: Spreading Code Generation
      - ✅
      - Implemented [Hardened] in ``matched_code.cpp``
 
-Gateway 2: Forward Error Correction
-------------------------------------
+Forward error correction
+------------------------
+
+Guide: :doc:`/verification/error_correction`.
 
 .. list-table::
    :widths: 15 60 10 15
@@ -92,8 +98,10 @@ Gateway 2: Forward Error Correction
      - ✅
      - Implemented [Hardened] CRC-24Q (0x864CFB)
 
-Gateway 3: Message Framing
----------------------------
+Message framing
+---------------
+
+Guide: :doc:`/verification/framing`.
 
 .. list-table::
    :widths: 15 60 10 15
@@ -116,8 +124,10 @@ Gateway 3: Message Framing
      - ✅
      - Implemented [Hardened] in ``interleaver.cpp``
 
-Gateway 4: Baseband Signal Generation
---------------------------------------
+Baseband signal generation
+--------------------------
+
+Guide: :doc:`/verification/baseband`.
 
 .. list-table::
    :widths: 15 60 10 15
@@ -152,8 +162,10 @@ Gateway 4: Baseband Signal Generation
      - ✅
      - Implemented in ``matched_code.cpp``
 
-Gateway 5: Frame Sync & Decoding
----------------------------------
+Frame synchronisation and decoding
+----------------------------------
+
+Guide: :doc:`/verification/sync_decoding`.
 
 .. list-table::
    :widths: 15 60 10 15
@@ -172,8 +184,10 @@ Gateway 5: Frame Sync & Decoding
      - ✅
      - Implemented [Hardened] in ``frame_decode.cpp``; 6-milestone CFI
 
-Gateway 6: Message Parsing & Time
-----------------------------------
+Message parsing and time
+------------------------
+
+Guide: :doc:`/verification/message_parsing`.
 
 .. list-table::
    :widths: 15 60 10 15
@@ -196,8 +210,10 @@ Gateway 6: Message Parsing & Time
      - ✅
      - Verified in serialization tests
 
-Gateway 7: Validation & Utilities
-----------------------------------
+Validation and utilities
+------------------------
+
+Guide: :doc:`/verification/integration`.
 
 .. list-table::
    :widths: 15 60 10 15
@@ -228,8 +244,8 @@ Gateway 7: Validation & Utilities
      - ✅
      - Frame decode < 1 s; WCET profiling; BER waterfall; quantization
 
-Gateway 8: Documentation & Examples
-------------------------------------
+Documentation and examples
+--------------------------
 
 .. list-table::
    :widths: 15 60 10 15

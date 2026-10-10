@@ -9,7 +9,7 @@ Validation Hierarchy
 Five levels cover the signal chain end to end.
 
 *   **Level 1: Unit Tests** — Mathematical correctness of LFSRs, GF(2) operations, and bit-packing.
-*   **Level 2: Component Tests** — Verification of individual Gateways (G1-G6).
+*   **Level 2: Component Tests** — Verification of the individual blocks (:doc:`/verifying`).
     *   **Generator Validation:** Bit-for-bit comparison between C++ Algorithmic Generators (Gold, Weil) and Annex3 Hex reference data.
     *   **Coherency Validation:** Verification of Primary/Secondary/Tertiary phase alignment (LSIS-172) over a full 6000-epoch frame.
     *   **Interim Codes:** Validation of Table 11 mappings for PRN 1-12.
@@ -101,20 +101,20 @@ The cross-implementation frame comparison against LANS-AFS-SIM
 but distinct set: five frame cases spanning three fill patterns (all-zeros,
 all-ones, alternating) plus boundary FID/TOI values.
 
-Performance Benchmarking (GD7.3, GD8.2)
----------------------------------------
+Performance Benchmarking
+------------------------
 
 Final verification measures four NFRs:
 
-*   **Generation Latency (GD1.1):** < 1.0s per PRN.
-*   **Encoding Throughput (GD2.2):** > 10 Frames Per Second (FPS).
-*   **Decoding Latency (GD2.2):** < 1.0s per 12s frame.
+*   **Generation Latency:** < 1.0s per PRN.
+*   **Encoding Throughput:** > 10 Frames Per Second (FPS).
+*   **Decoding Latency:** < 1.0s per 12s frame.
 *   **Real-Time Margin:** Processing time must be < 8% of signal duration (12s).
 
 Design Rationale & Traceability
 -------------------------------
 
-Each gateway deliverable (GD8.1) includes a **Design Rationale** section explaining:
+The design records (:doc:`algorithms`, :doc:`bch_decoder_design`) explain:
 *   **Algorithm Choice:** e.g., "Layered Sum-Product BP chosen for LDPC decoding — exact check-node update with a clamped, numerically analysed φ-transform."
 *   **Mathematical Alignment:** Code snippets linked to Equation 1, Equation 2, and Figure 7/8 of the LSIS spec.
 *   **Implementation Trade-offs:** Rationale for static buffer sizing vs. heap flexibility.

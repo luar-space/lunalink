@@ -1,8 +1,11 @@
 Test Vector Format & Interoperability
 =====================================
 
-The LunaLink test vector format, aligned with the official **LSIS-AFS
-Interoperability Testing** protocol (Levels 1–5).
+The LunaLink test vector format.  It follows the interoperability plan written for the ESA-CCSDS competition, which the
+`shared vector repository <https://github.com/luar-space/lsis-afs-test-vectors>`__
+bundles as ``references/interoperability.pdf``.
+That plan is not part of LSIS V1.0.  To compare your own implementation
+against these vectors, see :doc:`interoperate`.
 
 Purpose
 -------
@@ -10,12 +13,12 @@ Purpose
 Any team can check its AFS receiver pipeline against our encoder output, or
 ours against theirs, without installing this library.  Each vector pairs
 ground-truth message fields with the intermediate and final encoded outputs,
-competition headers included.
+file headers included.
 
 Interoperability Levels
 -----------------------
 
-The official competition structure splits validation into five levels:
+The plan splits validation into five levels:
 
 *   **Level 1: Code Generation**: Verification of identical spreading codes
     (Gold, Weil, Legendre).
@@ -31,7 +34,7 @@ The official competition structure splits validation into five levels:
 Standardized Test Messages (Level 2)
 ------------------------------------
 
-Milestone 2 validation requires processing the five official baseline messages:
+The plan defines five baseline messages:
 
 .. list-table:: Mandatory Test Scenarios
    :header-rows: 1
@@ -60,7 +63,7 @@ Milestone 2 validation requires processing the five official baseline messages:
 Mandatory File Formats
 ----------------------
 
-Exports take four official competition formats:
+Exports take the four formats the plan defines:
 
 1. Spreading Codes (``codes_prn{N}.hex``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -119,7 +122,7 @@ Take the format from the header; never infer it from the payload:
 
 4. Parsed Data (``parsed_{id}.json``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-JSON field extraction using the official schema:
+JSON field extraction using the plan's schema:
 
 .. code-block:: json
 
@@ -144,7 +147,7 @@ This repository commits a compact vector set under ``test-vectors/``:
     sample rates, gzipped to keep the clone light
 *   ``parsed/`` — parsed-data JSONs
 *   ``fec/`` and ``decode/`` — component-level FEC and decode-chain vectors
-    beyond the competition's mandatory formats
+    beyond the plan's four formats
 
 The full-size shared distribution — including 12-second signals for the
 Table 11 PRNs, bundled oracles (Annex 3, LANS-AFS-SIM dumps,

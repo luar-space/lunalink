@@ -151,8 +151,9 @@ How well does it perform?
      - Where each timing and error-rate result is measured, and the timing
        targets.
    * - :doc:`signal/ldpc_performance`
-     - Bit and frame error rates of the LDPC decoder against the target in
-       the standard, with confidence intervals.
+     - Bit and frame error rates of the LDPC decoder against the target set
+       by the competition, with confidence intervals.  LSIS V1.0 sets no
+       error-rate requirement.
    * - :doc:`signal/ldpc_algo_card`
      - The shipped decoder measured against a reference decoder and the
        finite-length bound, with convergence, quantisation and error-floor
@@ -222,8 +223,9 @@ These limits are stated here so that a reader does not have to discover them.
 - There is no positioning pipeline and no hardware-in-the-loop testing.
 - Coverage passes with waivers, each recorded in
   :doc:`assurance/coverage_exclusions`.
-- The target "SNR > 0 dB" in the performance requirement can be read two
-  ways.  :doc:`signal/ldpc_performance` reports both.
+- The error-rate target, "BER < 10\ :sup:`-5` at SNR > 0 dB", comes from the
+  competition requirements and can be read two ways.
+  :doc:`signal/ldpc_performance` reports both.
 - The development history in this repository is filtered from a larger
   private tree.  The README's Provenance section says how.
 

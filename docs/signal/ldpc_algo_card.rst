@@ -10,7 +10,8 @@ LDPC Sum-Product Decoder — Algorithm Card
   ``docs/references/``) — §2.4.3: LDPC encoding, frame structure
 - `3GPP TS 38.212 <https://www.3gpp.org/DynaReport/38212.htm>`_ — Base Graph 2
   (BG2) structure shared with 5G NR
-- Competition deliverables, Gateway 2 — ``BER < 10⁻⁵`` at ``SNR > 0 dB``
+- Competition requirements: ``BER < 10⁻⁵`` at ``SNR > 0 dB`` (LSIS V1.0
+  sets no error-rate requirement)
 
 Executive Summary
 -----------------
@@ -283,7 +284,7 @@ Spec Compliance
 ---------------
 
 **Requirement:** ``BER < 10⁻⁵`` at ``SNR > 0 dB``
-(Gateway 2 validation checklist, competition deliverables).
+(from the competition requirements).
 
 **Coding gain** over uncoded BPSK: approximately **7.5 dB** at ``BER = 10⁻⁵``
 (uncoded BPSK requires ``Eb/N0 ≈ 9.6 dB`` for ``BER = 10⁻⁵``; the coded

@@ -33,37 +33,37 @@ defined in :doc:`../assurance/mission_assurance`:
 *   **Memory Pinning**: Large look-up tables are mapped to the
     ``.lunalink_lut`` section for physical memory placement control.
 
-Module & Gateway Mapping
-------------------------
+Module map
+----------
 
 .. list-table::
    :header-rows: 1
-   :widths: 20 60 20
+   :widths: 20 40 40
 
    * - Module
-     - Deliverable
-     - Gateway
+     - Component
+     - Guide
    * - ``prn``
-     - Spreading Code Loader (GD1.1)
-     - G1
+     - Spreading code loader
+     - :doc:`/verification/spreading_codes`
    * - ``matched_code``
-     - Tiered Code Combiner (GD1.2)
-     - G1
+     - Tiered code combiner
+     - :doc:`/verification/spreading_codes`
    * - ``bch``
-     - BCH(51,8) Codec (GD2.1)
-     - G2
+     - BCH(51,8) codec
+     - :doc:`/verification/error_correction`
    * - ``ldpc``
-     - LDPC Encoder/Decoder (GD2.2)
-     - G2
+     - LDPC encoder and decoder
+     - :doc:`/verification/error_correction`
    * - ``frame``
-     - Message Framing (GD3.1)
-     - G3
+     - Message framing
+     - :doc:`/verification/framing`
    * - ``modulator``
-     - BPSK Modulation (GD4.1)
-     - G4
+     - BPSK modulation
+     - :doc:`/verification/baseband`
    * - ``iq_mux``
-     - IQ Multiplexing (GD4.2)
-     - G4
+     - IQ multiplexing
+     - :doc:`/verification/baseband`
 
 Python Integration
 ------------------

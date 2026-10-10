@@ -1,41 +1,11 @@
-Development Status
-==================
+Roadmap
+=======
 
-LunaLink grew in phases, from the first PRN codes to the validated AFS-I and
-AFS-Q Signal-In-Space (SIS) reference implementation delivered for the
-competition.
+The transmit and receive chains of LSIS V1.0 are implemented and tested;
+:doc:`verifying` indexes the evidence.  This page lists what is not done.
 
-Phased Implementation
----------------------
-
-.. list-table::
-   :header-rows: 1
-   :widths: 10 60 30
-
-   * - Phase
-     - Focus Area
-     - Status
-   * - **V1**
-     - AFS-I Baseband Generation (PRN codes, BPSK modulation)
-     - ✅ Completed
-   * - **V2**
-     - Complete AFS Transmitter (AFS-I/Q Mux, SB1 Encoder, Docs)
-     - ✅ Completed
-   * - **V3**
-     - Full Codec implementation (BCH/LDPC codec, CRC-24, decode chain)
-     - ✅ Completed
-   * - **V4**
-     - Validation & Interop (test vectors, BER curves, cross-implementation
-       decode against LANS-AFS-SIM)
-     - ✅ Completed
-   * - **V5**
-     - PNT Pipeline (constellation simulation, position fix)
-     - 📅 Future work — beyond competition scope
-
-Post-submission work
---------------------
-
-Named here so the boundary of what has been demonstrated is explicit:
+Open work
+---------
 
 1. **Interoperability beyond SB2 and beyond baseband.**  Both directions are
    now demonstrated (:doc:`interop_results` L1-L5): LunaLink decodes
@@ -54,16 +24,17 @@ Named here so the boundary of what has been demonstrated is explicit:
    :doc:`assurance/coverage_exclusions`.  The
    spreading-code generators in ``cpp/codes/`` are already at 100.0% with
    zero unmarked lines (:doc:`/verification/spreading_codes`).
-4. **PNT pipeline (V5).**  Constellation simulation and position fix, as
-   above.
+4. **Positioning pipeline.**  Constellation simulation and position fix.
 5. **Sample-clock-offset and phase-noise sweeps.**  The validation plan
    names them; neither is implemented, and the receiver has no delay-locked
    loop to compensate clock drift.  Quantisation and burst-error impairments
    are tested end to end (``test_e2e_impairments.cpp``); Doppler is
    exercised only through the L3 cross-decode of a foreign signal.
 
-Component Traceability
+Implemented components
 ----------------------
+
+Other pages cite these component IDs.
 
 .. list-table::
    :header-rows: 1
@@ -103,18 +74,3 @@ Component Traceability
      - Navigation Message Parsing (FID/TOI, WN/ITOW, time of transmission;
        SB3/SB4 payloads as raw bit-slices per the V1.0 TBW field layouts)
      - ✅ Done
-
-Deliverables Status
--------------------
-
-*   **Standards compliance**: mandatory LSIS V1.0 requirements traced and
-    implemented — see :doc:`signal/compliance_matrix` and
-    :doc:`signal/shall_inventory`.
-*   **Architecture documentation**: complete design record for all core
-    modules (:doc:`/history/gateway0`, :doc:`signal/architecture`).
-*   **Mission assurance**: 100% Python line coverage (CI-gated); C++
-    coverage and MC/DC evidence per :doc:`assurance/mission_assurance`.
-*   **Interoperability**: bit-exact cross-check and signal cross-decode
-    against LANS-AFS-SIM (:doc:`interop_results`); test vectors published
-    at `luar-space/lsis-afs-test-vectors
-    <https://github.com/luar-space/lsis-afs-test-vectors>`__.

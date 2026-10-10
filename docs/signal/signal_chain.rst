@@ -1,5 +1,5 @@
-Signal Chain (GD1-GD4)
-======================
+Signal chain
+============
 
 The signal generation pipeline follows the LSIS V1.0 Augmented Forward Signal (AFS) specification: modular, flight-hardened components that turn navigation data into baseband I/Q samples.
 
@@ -15,14 +15,14 @@ Block Diagram
              │                          │
              ▼                          ▼
     ┌─────────────────┐     ┌──────────────────────┐
-    │  GD1.1 Code Ldr  │     │  Tertiary Code         │
+    │  Code Loader     │     │  Tertiary Code         │
     │  (Gold-2046)     │     │  (Weil-1500)           │
     └────────┬────────┘     └──────────┬───────────┘
              │                          │
              │  ◀── Nav Data Symbols    │
              ▼      (500 sps, C8 frame) │
     ┌─────────────────┐                 │
-    │  GD4.1 BPSK(1)  │                 │
+    │  BPSK(1)        │                 │
     │  Modulator      │                 │
     │                 │                 │
     │  1.023 Mcps     │                 │
@@ -32,7 +32,7 @@ Block Diagram
              │                          │
              │                          ▼
              │                ┌─────────────────┐
-             │                │  GD1.2 Matched  │
+             │                │  Matched Code   │
              │                │  Combiner       │
              │                │                 │
              │                │  primary ⊕      │
@@ -45,7 +45,7 @@ Block Diagram
              │                         │
              │                         ▼
              │                ┌─────────────────┐
-             │                │  GD4.1 BPSK(5)  │
+             │                │  BPSK(5)        │
              │                │  Modulator      │
              │                │                 │
              │                │  5.115 Mcps     │
@@ -56,7 +56,7 @@ Block Diagram
              ▼                         ▼
     ┌──────────────────────────────────────────────┐
     │                                              │
-    │              GD4.2 IQ Multiplexer            │
+    │              IQ Multiplexer                  │
     │                                              │
     │  AFS-I (I channel)      AFS-Q (Q channel)    │
     │  Upsampled 5x           Pass-through         │
@@ -70,10 +70,10 @@ Block Diagram
 Data Flow
 ---------
 
-1.  **Code Loading (GD1.1)**:
+1.  **Code Loading**:
     A lookup into the static tables (``prn_table_*.cpp``) returns the full chip sequences for the Primary (Gold-2046, Weil-10230) and Tertiary (Weil-1500) codes.  PRN ID validation is TMR-protected; storage is packed.
 
-2.  **Matched-Code Combination (GD1.2)**:
+2.  **Matched-Code Combination**:
     For the AFS-Q pilot channel, three components are XORed together to form the final ranging code:
 
     *   **Primary**: Weil-10230 code (10230 chips, 2 ms epoch).
@@ -82,13 +82,13 @@ Data Flow
 
     The combiner handles phasing logic and enforces ``CheckedRange`` constraints on offsets.
 
-3.  **Modulation (GD4.1)**:
+3.  **Modulation**:
     Binary chips ``{0, 1}`` are mapped to bipolar baseband samples ``{+1, -1}`` using branchless arithmetic.
 
     *   **AFS-I**: Modulated with navigation data symbols.
     *   **AFS-Q**: Pilot channel, no data modulation (data symbol always +1).
 
-4.  **IQ Multiplexing (GD4.2)**:
+4.  **IQ Multiplexing**:
     The two channels are combined into a single complex baseband stream at the higher chip rate (5.115 Mcps) with aliasing protection and watchdog liveness ticks (work-in-progress counter updates for the software watchdog).
 
 Component Status
@@ -101,16 +101,16 @@ Component Status
    * - ID
      - Description
      - Status
-   * - GD1.1
+   * - C1
      - Spreading Code Loader (Gold, Weil, Legendre)
      - Implemented [Hardened]
-   * - GD1.2
+   * - C3
      - Matched-code Combiner (Tiered assembly)
      - Implemented [Hardened]
-   * - GD4.1
+   * - C2
      - BPSK Modulator (I + Q)
      - Implemented [Hardened]
-   * - GD4.2
+   * - C4
      - IQ Multiplexer (5.115 MSPS)
      - Implemented [Hardened]
    * - C5-E
@@ -132,7 +132,6 @@ Component Status
      - Navigation Message Parsing (FID/TOI, WN/ITOW, ToT)
      - Implemented
 
-The GD-prefixed rows are the gateway deliverables this page's diagram covers
-in detail; the C-prefixed rows are the encoding/framing components of the
-full chain (IDs per :doc:`../roadmap`), which feed the ``Nav Data Symbols``
-input above.
+Component IDs are those of :doc:`../roadmap`.  The diagram on this page covers
+C1 to C4 in detail; C5 to C9 are the encoding and framing components, which
+feed the ``Nav Data Symbols`` input above.

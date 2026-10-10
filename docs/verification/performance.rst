@@ -2,9 +2,9 @@ Timing and channel performance
 ==============================
 
 This page says where each performance result is measured and how to reproduce
-it.  The bit-error-rate target comes from LSIS V1.0.  The timing targets come
-from the rubric of the competition LunaLink was first built for; the standard
-sets none.
+it.  LSIS V1.0 sets no error-rate or timing requirement.  The targets used
+here come from the requirements of the competition LunaLink was first built
+for.
 
 .. code-block:: bash
 

@@ -266,9 +266,10 @@ Run: ``task test-cpp``  (file: ``cpp/tests/encoding/test_ldpc.cpp``)
 Bit error rate at the operating point
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-LSIS V1.0 requires a bit error rate below 10\ :sup:`-5` at SNR > 0 dB.  That
-phrase can be read as energy per symbol or as energy per bit, and the decoder
-is measured under both readings.  The results, with their confidence bounds,
+LSIS V1.0 sets no error-rate requirement.  The target used here, a bit error
+rate below 10\ :sup:`-5` at SNR > 0 dB, comes from the competition
+requirements.  "SNR" can be read as energy per symbol or as energy per bit,
+and the decoder is measured under both readings.  The results, with their confidence bounds,
 are in :doc:`/signal/ldpc_performance`; :doc:`/signal/ldpc_algo_card` compares
 the decoder with a reference decoder and the finite-length bound.
 

@@ -91,7 +91,7 @@ substantially more Eb/N0 at the same physical channel SNR:
 
 The BCH decoder therefore operates with **4.6 dB more Eb/N0** than the LDPC
 decoder at the same physical SNR.  The system operating point of Es/N0 = 0 dB
-(LSIS spec: SNR > 0 dB) maps to Eb/N0 = 7.6 dB for BCH — well past both
+(competition requirement: SNR > 0 dB) maps to Eb/N0 = 7.6 dB for BCH — well past both
 decoders' waterfall regions.
 
 FER Waterfall Results

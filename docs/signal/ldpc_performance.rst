@@ -1,8 +1,9 @@
 LDPC Decoder Performance Characterization
 ==========================================
 
-Empirical BER/FER for the LSIS-AFS LDPC decoder, measured against the spec
-requirement (BER < 10\ :sup:`-5` at SNR > 0 dB).  Every number on this page is produced by one reproducible
+Empirical BER/FER for the LSIS-AFS LDPC decoder, measured against the target
+set by the competition requirements (BER < 10\ :sup:`-5` at SNR > 0 dB).
+LSIS V1.0 itself sets no error-rate requirement.  Every number on this page is produced by one reproducible
 command — ``task ldpc-algo-card`` — which runs the characterisation tool
 (``scripts/ldpc_characterise.cpp``) against the decoder that ships in this
 repository and regenerates the tables and figures included below.  The full
@@ -51,15 +52,15 @@ Channel Model
 - **LLR computation:** L\ :sub:`ch` = 2y / sigma\ :sup:`2` (optimal for BPSK AWGN)
 - **Eb/N0 to sigma:** sigma = 1 / sqrt(2 * R * Eb/N0\ :sub:`linear`)
 
-Spec Requirement
-----------------
+Target
+------
 
-**G2 success criterion:** BER < 10\ :sup:`-5` @ SNR > 0 dB.
+**Competition target:** BER < 10\ :sup:`-5` @ SNR > 0 dB.
 
 SNR Interpretation Note
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-The LSIS-AFS spec phrase "SNR > 0 dB" is ambiguous. Two interpretations exist
+The phrase "SNR > 0 dB" in the competition requirement is ambiguous. Two interpretations exist
 and both are addressed:
 
 .. list-table::
