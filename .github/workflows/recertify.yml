@@ -42,6 +42,13 @@ on:
 permissions:
   contents: read
 
+# Serialised per ref, never cancelled: each run is dispatched deliberately
+# and emits a signed-off record, so a second certification of the same ref
+# queues behind the first rather than killing it.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
 
   # --------------------------------------------------------------------------
@@ -50,6 +57,7 @@ jobs:
   gate-lint:
     name: "Gate: Lint / Static Analysis"
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
         with:
@@ -84,6 +92,7 @@ jobs:
   gate-test-cpp:
     name: "Gate: C++ Unit Tests"
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
         with:
@@ -104,6 +113,7 @@ jobs:
   gate-swifi:
     name: "Gate: SWIFI Fault Injection"
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
         with:
@@ -128,6 +138,7 @@ jobs:
   gate-sanitize:
     name: "Gate: Sanitizers (ASan + UBSan)"
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
         with:
@@ -148,6 +159,7 @@ jobs:
   gate-coverage-cpp:
     name: "Gate: C++ Line Coverage"
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
         with:
@@ -172,6 +184,7 @@ jobs:
   gate-coverage-mcdc:
     name: "Gate: MC/DC Coverage"
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     env:
       LLVM_VERSION: "19"
     steps:
@@ -233,6 +246,7 @@ jobs:
   gate-tidy:
     name: "Gate: clang-tidy Analysis"
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
         with:
@@ -258,6 +272,7 @@ jobs:
   gate-wcet:
     name: "Gate: WCET Benchmark Profile"
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
         with:
@@ -329,6 +344,7 @@ jobs:
   gate-test-python:
     name: "Gate: Python Tests"
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
         with:
@@ -351,6 +367,7 @@ jobs:
   gate-docs:
     name: "Gate: Documentation Build"
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
         with:
@@ -375,6 +392,7 @@ jobs:
   record:
     name: Generate Recertification Record
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: always()
     needs:
       - gate-lint

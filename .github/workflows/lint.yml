@@ -6,13 +6,13 @@ on:
     tags: ["v*"]
     paths-ignore:
       - 'docs/**'
-      - '*.md'
-      - '*.rst'
+      - '**.md'
+      - '**.rst'
   pull_request:
     paths-ignore:
       - 'docs/**'
-      - '*.md'
-      - '*.rst'
+      - '**.md'
+      - '**.rst'
 
 
 # Least privilege: every token use in this workflow is a read
@@ -20,10 +20,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
 jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
         with:
@@ -39,9 +44,6 @@ jobs:
       - run: uv sync --group dev
       - name: Install cppcheck
         run: sudo apt-get install -y cppcheck
-      - uses: hendrikmuhs/ccache-action@v1
-        with:
-          key: lint
       # clang-format comes from the pinned dev dependency (pyproject.toml), not
       # from apt: Ubuntu's is a different major version and formats differently.
       - name: Run lint checks
@@ -49,17 +51,16 @@ jobs:
       - name: Check C++ formatting
         run: task format-cpp-check
       - name: Check build flags (S10 gate)
+        # Configure only: Ninja writes compile_commands.json at configure
+        # time, and check_build_flags.py reads nothing else. Compiling the
+        # tree first (156 translation units) produced no input to the gate.
         run: |
-          # Build to generate compile_commands.json first
           sudo apt-get install -y ninja-build
           cmake -B build/flags -S . -G Ninja \
             -DBUILD_PYTHON_BINDINGS=OFF \
             -DBUILD_TESTING=ON \
             -DCMAKE_BUILD_TYPE=Debug \
-            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-          cmake --build build/flags --parallel
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
           uv run python scripts/check_build_flags.py build/flags/compile_commands.json
       - name: Capture cppcheck report
         if: always()

@@ -6,13 +6,13 @@ on:
     tags: ["v*"]
     paths-ignore:
       - 'docs/**'
-      - '*.md'
-      - '*.rst'
+      - '**.md'
+      - '**.rst'
   pull_request:
     paths-ignore:
       - 'docs/**'
-      - '*.md'
-      - '*.rst'
+      - '**.md'
+      - '**.rst'
 
 
 # Least privilege: every token use in this workflow is a read
@@ -20,10 +20,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
 jobs:
   test:
     name: Test (Python ${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -97,6 +102,7 @@ jobs:
     needs: test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     env:
       # Skip the badge where no gist is configured (a fork, or the submission
       # repository) instead of failing the workflow over a cosmetic artefact.
