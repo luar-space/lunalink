@@ -53,6 +53,9 @@ published at `luar-space/lsis-afs-test-vectors
 <https://github.com/luar-space/lsis-afs-test-vectors>`__, and comparing
 against them does not require installing LunaLink.
 
+To learn or teach the signal, start at :doc:`teaching`.  It gives a reading
+order through the tutorial notebooks and a set of exercises.
+
 :doc:`roadmap` lists what is not done.
 
 .. toctree::
@@ -62,6 +65,7 @@ against them does not require installing LunaLink.
    quickstart
    verifying
    interoperate
+   teaching
    developing
    tech_stack
    roadmap

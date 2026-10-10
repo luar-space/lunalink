@@ -225,10 +225,10 @@ AWGN::
     L_ch = 2y / sigma^2
 
 This scaling provides the decoder with reliability information — without
-it, convergence degrades sharply.  The Python wrapper
-(:func:`lunalink.afs.receive_frame`) applies the scaling internally; C++
-callers of ``ldpc_decode`` must supply LLRs per the header contract in
-``ldpc.hpp``.
+it, convergence degrades sharply.  The scaling is the caller's job at every
+level: :func:`lunalink.afs.receive_frame` and ``frame_decode`` pass the
+symbols they are given straight to the decoder, and C++ callers of
+``ldpc_decode`` must supply LLRs per the header contract in ``ldpc.hpp``.
 
 Test Methodology
 ----------------

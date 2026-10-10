@@ -136,6 +136,12 @@ Given a stream of soft-decision bipolar symbols, decode in one call:
 The input ``bipolar_symbols`` is a ``float32`` array where ``+1.0`` represents
 bit 0 and ``-1.0`` represents bit 1.  Must contain at least 6000 symbols.
 
+Symbols from a noisy channel must be scaled to channel log-likelihood ratios
+before they are passed in: ``2 * y / sigma**2`` for noise variance
+``sigma**2``.  ``receive_frame`` does not apply this scaling, and without it
+decoding fails at noise levels the decoder otherwise handles.  See the
+section on channel LLR scaling in :doc:`signal/ldpc_performance`.
+
 The :class:`~lunalink.afs.DecodeResult` dataclass
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
