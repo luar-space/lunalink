@@ -104,7 +104,25 @@ ninja.make-fallback = true
 cmake.define.FETCHCONTENT_BASE_DIR = {env="FETCHCONTENT_BASE_DIR", default="/tmp/fetchcontent"}
 
 [tool.cibuildwheel]
+# These patterns match the GIL-enabled interpreters only: the free-threaded
+# builds identify as cp313t / cp314t, which "cp313-*" and "cp314-*" do not
+# match, and cibuildwheel additionally requires
+# enable = ["cpython-freethreading"] before it will produce them.
+#
+# That exclusion is deliberate, not an oversight. The C++ core has never been
+# analysed for concurrent use: it contains no synchronisation primitives at
+# all -- no std::mutex, no std::atomic, no thread_local -- and it does hold
+# shared mutable state, such as the function-local vDSP FFT setup singletons
+# in cpp/include/lunalink/signal/fft.hpp. Under a removed GIL, nothing stops
+# two Python threads entering the extension at once, so a free-threaded wheel
+# would ship a concurrency claim this project has not substantiated. Revisit
+# when there is a thread-safety analysis to cite; Python 3.14 makes
+# free-threading officially supported, so the question will keep being asked.
 build = "cp312-* cp313-* cp314-*"
+
+# musl targets are skipped: the wheels link a C++ runtime and no mission
+# toolchain in scope uses musl, so building them would create an artifact
+# nobody tests against.
 skip = "*-musllinux_*"
 test-requires = ["pytest", "numpy", "jaxtyping", "beartype"]
 test-command = "python -m pytest {project}/tests -x -q --override-ini='addopts='"
