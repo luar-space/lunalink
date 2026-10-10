@@ -75,7 +75,8 @@ Competition deliverable: GD7.1.
 Signal-In-Space Error is the error between a satellite's broadcast position
 and velocity and its true position and velocity.  LSIS V1.0 §2.2 requires the
 95th percentile over 24 hours to stay below 40 m in position (LSIS-001) and
-0.01 m/s in velocity (LSIS-002).  LunaLink implements the two equations of
+0.01 m/s in velocity (LSIS-002); the standard marks both limits and the
+24-hour period as to be confirmed.  LunaLink implements the two equations of
 §2.2.2 and the percentile check.  The caller supplies the true and broadcast
 vectors; LunaLink has no constellation simulation (see :doc:`/roadmap`).
 

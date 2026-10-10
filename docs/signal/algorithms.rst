@@ -17,7 +17,7 @@ BCH(51,8) Channel Coding
 ------------------------
 
 The SB1 frame header (FID + TOI) is protected by the BCH(51,8) code of LSIS
-§2.4.3.1.1.  Two components are provided: a constant-time LFSR encoder and
+§2.4.2.  Two components are provided: a constant-time LFSR encoder and
 a maximum-likelihood correlation decoder.
 
 BCH(51,8) Encoder: LFSR-based Mapping

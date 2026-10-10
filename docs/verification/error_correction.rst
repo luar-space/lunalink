@@ -182,21 +182,21 @@ Code parameters
      - 1200
      - 1/2
      - 240 bits
-     - 40
+     - 120
    * - SF3
-     - 4560
+     - 4576
      - 1740
      - 870
      - 1/2
      - 176 bits
-     - 29
+     - 88
    * - SF4
-     - 4560
+     - 4576
      - 1740
      - 870
      - 1/2
      - 176 bits
-     - 29 (reuses SF3 matrices)
+     - 88 (reuses SF3 matrices)
 
 Implementation files:
 

@@ -81,7 +81,7 @@ without committing to bit positions the spec has not yet pinned.
 Proposed Bit-Layout (Common Header)
 -----------------------------------
 
-The sub-block sizes themselves are fixed by LSIS V1.0 (Table 14): before
+The sub-block sizes themselves are fixed by LSIS V1.0 (Table 16): before
 rate-1/2 LDPC encoding, SB2 is 1200 bits (1176 data + 24-bit CRC-24) and
 SB3/SB4 are 870 bits each (846 data + 24-bit CRC-24).  The SISICD does not
 change those containers — it defines the layout of the *message payload*
