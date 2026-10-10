@@ -43,6 +43,10 @@ To use LunaLink, build it and run the tests:
 :doc:`quickstart` then walks through generating and decoding a frame, and
 :doc:`signal/architecture` explains how the chain fits together.
 
+To check what LunaLink claims, start at :doc:`verifying`.  It gives, for each
+claim, the page that documents it and the command that reproduces the
+evidence.
+
 To check your own LSIS-AFS implementation against LunaLink, start at
 :doc:`interoperate`.  The shared test vectors and their validator are
 published at `luar-space/lsis-afs-test-vectors
@@ -56,6 +60,7 @@ against them does not require installing LunaLink.
    :caption: Getting Started:
 
    quickstart
+   verifying
    interoperate
    developing
    tech_stack
