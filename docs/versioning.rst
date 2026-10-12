@@ -61,7 +61,7 @@ How It Works
 the ``scikit_build_core.metadata.setuptools_scm`` metadata provider::
 
    [build-system]
-   requires = ["scikit-build-core>=0.9", "nanobind>=2.0", "setuptools-scm"]
+   requires = ["scikit-build-core>=1.1.1", "nanobind>=2.0", "setuptools-scm"]
 
    [project]
    dynamic = ["version"]

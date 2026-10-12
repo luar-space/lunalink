@@ -106,18 +106,27 @@ cmake.define.FETCHCONTENT_BASE_DIR = {env="FETCHCONTENT_BASE_DIR", default="/tmp
 [tool.cibuildwheel]
 # These patterns match the GIL-enabled interpreters only: the free-threaded
 # builds identify as cp313t / cp314t, which "cp313-*" and "cp314-*" do not
-# match, and cibuildwheel additionally requires
-# enable = ["cpython-freethreading"] before it will produce them.
+# match. The pattern is the whole of the exclusion: cibuildwheel 4.x
+# (release.yml pins 4.3.0) no longer gates free-threading behind an enable
+# group -- "cpython-freethreading" is not a value `enable` accepts any more,
+# and cp313t / cp314t are ordinary identifiers in its build-platforms table.
+# So broadening these patterns (to "cp313*-*", say) would start shipping
+# free-threaded wheels with nothing else to stop them.
 #
 # That exclusion is deliberate, not an oversight. The C++ core has never been
 # analysed for concurrent use: it contains no synchronisation primitives at
-# all -- no std::mutex, no std::atomic, no thread_local -- and it does hold
-# shared mutable state, such as the function-local vDSP FFT setup singletons
-# in cpp/include/lunalink/signal/fft.hpp. Under a removed GIL, nothing stops
-# two Python threads entering the extension at once, so a free-threaded wheel
-# would ship a concurrency claim this project has not substantiated. Revisit
-# when there is a thread-safety analysis to cite; Python 3.14 makes
-# free-threading officially supported, so the question will keep being asked.
+# all -- no std::mutex, no std::atomic, no thread_local -- and it holds
+# mutable state its own contract says must not be shared, such as the
+# per-instance `mutable` split-complex scratch of the vDSP FFT backend
+# ("Fft<N> is **not** safe to share across threads",
+# cpp/include/lunalink/signal/fft.hpp). The extension would not even deliver
+# free-threading as advertised: the nanobind module does not declare
+# nb::mod_gil_not_used(), so importing it on a free-threaded interpreter
+# re-enables the GIL. A free-threaded wheel would therefore ship either a
+# concurrency claim this project has not substantiated or a wheel that turns
+# the GIL back on. Revisit when there is a thread-safety analysis to cite;
+# Python 3.14 makes free-threading officially supported, so the question will
+# keep being asked.
 build = "cp312-* cp313-* cp314-*"
 
 # musl targets are skipped: the wheels link a C++ runtime and no mission

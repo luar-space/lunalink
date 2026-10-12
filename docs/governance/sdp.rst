@@ -126,7 +126,7 @@ Development Tools
      - ≥ 3.15; CI runner pinned
      - C++ build system
    * - scikit-build-core
-     - Pinned in ``uv.lock``
+     - Pinned in ``[build-system] requires`` (``>= 1.1.1``)
      - Python extension build backend
    * - uv
      - Pinned in CI runner
