@@ -95,7 +95,15 @@ fallback_version = "0.0.0.dev0"
 git_describe_command = ["git", "describe", "--tags", "--long", "--match", "v[0-9]*"]
 
 [tool.scikit-build]
-minimum-version = "0.9"
+# Not a dependency floor -- that is [build-system] requires above. This is the
+# bug-compatibility switch (the cmake_minimum_required of this backend): it
+# selects which release's DEFAULTS apply, so leaving it at 0.9 asked a 1.1.1
+# backend for 0.9-era behaviour. Raised to match the floor. Of the 61 resolved
+# settings, only two change: sdist.inclusion-mode classic -> default and
+# sdist.resolve-symlinks classic -> all. Both are no-ops here -- the sdist file
+# list is identical and the repo tracks no symlinks -- and neither touches the
+# wheel path at all.
+minimum-version = "1.1.1"
 wheel.packages = ["src/lunalink"]
 metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
 ninja.make-fallback = true
