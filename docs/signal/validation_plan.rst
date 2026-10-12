@@ -17,8 +17,8 @@ Five levels cover the signal chain end to end.
 *   **Level 4: Compliance Tests** — Traceability to every "shall" requirement in the LSIS V1.0 spec.
 *   **Level 5: Interoperability Tests** — Cross-decoding of standardized test vectors with independent implementations.
 
-Reference-Grade Edge Case Validation (G2, G3, G6)
--------------------------------------------------
+Reference-Grade Edge Case Validation
+------------------------------------
 
 Flight-like scenarios demand these temporal and numerical edge cases:
 
@@ -28,27 +28,27 @@ Flight-like scenarios demand these temporal and numerical edge cases:
 
    * - Scenario
      - Description
-     - Target Gateway
+     - Block
    * - **WN Rollover**
      - Transition from Week 8191 to 0.
-     - G6 (Parser)
+     - Message parsing
    * - **ITOW Boundary**
      - Transition from 503 to 0 (end of week).
-     - G6 (Parser)
+     - Message parsing
    * - **Field Limits**
      - Maximum and minimum values for all 22 MSG types (eccentricity, drift, etc.).
-     - G6 (Parser)
+     - Message parsing
    * - **Invalid FID/TOI**
      - Injection of out-of-range Frame ID (>3) or Time of Interval (>99).
-     - G2 (BCH Decoder)
+     - Error correction (BCH decoder)
    * - **CRC Collisions**
      - Verification of CRC-24 error detection with specific bit-error patterns.
-     - G2 (Integrity)
+     - Error correction (CRC-24)
 
-Signal Impairment & Robustness (G4, G5)
----------------------------------------
+Signal Impairment & Robustness
+------------------------------
 
-The baseband signal generator (G4) carries a reference channel model that puts the G5 receiver through realistic lunar-orbit impairments.
+The baseband signal generator carries a reference channel model that puts the receiver through realistic lunar-orbit impairments.
 
 1. **Doppler (CFO, carrier frequency offset):** *Exercised on a foreign signal*
 
@@ -82,7 +82,7 @@ The baseband signal generator (G4) carries a reference channel model that puts t
      to test PLL jitter tolerance.
    * No test exists in this release; recorded in :doc:`../roadmap`.
 
-Standardized Test Scenarios (G7)
+Standardized Test Scenarios
 --------------------------------
 
 As defined in the Interoperability Plan, the exported round-trip test

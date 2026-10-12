@@ -196,5 +196,5 @@ Test Methodology
   (proves zero errors at spec SNR)
 - **Seeds are fixed** (42, 77, 99, 137) for full reproducibility
 - **Test file:** ``cpp/tests/performance/test_bch_ber.cpp``
-- **All tests tagged** ``[performance]`` are excluded from default CTest runs;
+- **All tests are tagged** ``[performance]`` and excluded from default CTest runs;
   run explicitly with ``task performance``

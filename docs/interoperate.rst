@@ -82,7 +82,11 @@ you only need levels 1 and 2, a sparse checkout leaves it out:
    git clone --filter=blob:none https://github.com/luar-space/lsis-afs-test-vectors
    cd lsis-afs-test-vectors
    git sparse-checkout init --cone
-   git sparse-checkout set codes frames inputs references validate.py manifest.json
+   git sparse-checkout set codes frames inputs references
+
+Files in the repository root, ``validate.py`` and ``manifest.json`` among
+them, are always checked out.  On a sparse checkout ``verify-manifest``
+reports the files you left out as missing; ``check-annex3`` is unaffected.
 
 To compare your own output, write it in the formats described in
 :doc:`test_vectors` and point the matching ``diff`` command at the directory:
