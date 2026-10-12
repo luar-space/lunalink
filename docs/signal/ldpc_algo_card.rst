@@ -1,4 +1,4 @@
-LDPC Sum-Product Decoder — Algorithm Card
+LDPC Sum-Product Decoder: Algorithm Card
 ==========================================
 
 .. _spec-references:
@@ -22,7 +22,7 @@ check-node updates via the
 `φ-transform <https://en.wikipedia.org/wiki/Low-density_parity-check_code#Belief_propagation>`_
 identity. ``float64`` arithmetic with syndrome-check early termination every
 iteration. For the SF2 code (``n=2400``, ``k=1200``, rate 1/2), the
-``FER = 1%`` cliff is at **~1.19 dB Eb/N0** — a **1.0 dB**
+``FER = 1%`` cliff is at **~1.19 dB Eb/N0**, a **1.0 dB**
 `Shannon gap <https://en.wikipedia.org/wiki/Noisy-channel_coding_theorem>`_,
 dominated entirely by the code design (block length and base graph), not the
 decoder algorithm.
@@ -62,7 +62,7 @@ Decoder Configuration
 
 - **Algorithm:** Layered
   `sum-product belief propagation <https://en.wikipedia.org/wiki/Low-density_parity-check_code#Belief_propagation>`_
-- **Check-node update:** φ-transform — ``φ(x) = ln(1 + 2/expm1(|x|))``, self-inverse
+- **Check-node update:** φ-transform, ``φ(x) = ln(1 + 2/expm1(|x|))``, self-inverse
 - **Arithmetic:** IEEE 754 ``float64`` (double precision)
 - **Max iterations:** 50 (default)
 - **Early termination:**
@@ -76,10 +76,10 @@ Decoder Configuration
   entries in ``H`` (SF2: ``E ≈ 25,600``, SF3: ``E ≈ 18,800``). Each entry requires
   one ``phi_func()`` evaluation (two transcendentals) plus gather/scatter bookkeeping.
 - **Scope:** The decoder is specialised for the two LSIS-AFS parity-check matrices
-  (SF2 and SF3/SF4). It does not accept arbitrary ``H`` matrices — the CSR table
+  (SF2 and SF3/SF4). It does not accept arbitrary ``H`` matrices: the CSR table
   data is compiled in at build time from Annex 1.
 - **Memory:** ``~342 KB`` per ``LdpcWorkspace`` (heap-allocated). Each workspace
-  is independent — the decoder is fully **re-entrant** and **thread-safe** when
+  is independent, so the decoder is fully **re-entrant** and **thread-safe** when
   each call uses its own workspace.
 
 Channel Model
@@ -149,7 +149,7 @@ structure). The sum-product algorithm is the optimal message-passing rule for
 this graph. The ``phi_func()`` implementation introduces clamping at
 ``|x| < 1e-10`` (returns 30.0, error 6.3 on a near-zero message) and
 ``|x| > 30`` (returns 0.0, error 1.9e-13). Both clamp regions correspond to
-messages with negligible influence on hard decisions — the clamping error does
+messages with negligible influence on hard decisions; the clamping error does
 not shift the FER=1% cliff by a measurable amount (< 0.01 dB).
 
 **Finite-length bound note:** The
@@ -206,7 +206,7 @@ Four configurations at ``Eb/N0 = 1.2 dB`` (mid-waterfall):
 4. **15 iterations** — reduced iteration budget (3× less than default)
 
 The baseline is the reference. ``int8`` quantisation adds negligible loss.
-``int4`` and reduced iterations show measurable degradation — quantifying where
+``int4`` and reduced iterations show measurable degradation, which quantifies where
 each fraction of a dB goes.
 
 Quantisation Sweep
@@ -230,10 +230,10 @@ channels (BPSK AWGN), error performance is theoretically independent of the
 transmitted codeword. Empirically, all-zero messages show lower FER than
 random messages. The mechanism is **puncturing**, not filler bits: the first
 ``2·Zc`` systematic bits (240 for SF2, 176 for SF3/SF4) are never
-transmitted, and the decoder initialises their LLRs to 0 — "no channel
+transmitted, and the decoder initialises their LLRs to 0, meaning "no channel
 information" (``load_channel_llrs`` in ``ldpc.cpp``). The hard-decision rule
 maps a non-negative LLR to bit 0, so any punctured position that belief
-propagation fails to pin down resolves to 0 — always correct for the
+propagation fails to pin down resolves to 0: always correct for the
 all-zero message, wrong about half the time for a random message.
 Shortening is a distinct, symmetric mechanism: the 10 SF3/SF4 filler bits
 are *known* zeros regardless of the message and are initialised to a
@@ -258,12 +258,12 @@ the failure mode at three operating points:
 
 - **1.0 dB** (deep waterfall, FER ~5%): errors cluster around ``k/2 ≈ 600``,
   the expected value for non-converged output (~50% bit error rate).
-- **1.2 dB** (mid-cliff, FER ~1%): the key operating region — do near-misses
+- **1.2 dB** (mid-cliff, FER ~1%): the key operating region. Do near-misses
   appear, or are failures still catastrophic?
 - **1.4 dB** (near error-free, FER ~0.1%): rare failures at the tail of the
   waterfall.
 
-This is characteristic of BP on short LDPC codes: failures are binary — either
+This is characteristic of BP on short LDPC codes. Failures are binary: either
 the decoder converges to the correct codeword, or it fails to converge and the
 output carries no useful information. The
 `CRC-24 <https://en.wikipedia.org/wiki/Cyclic_redundancy_check>`_ on each
@@ -274,7 +274,7 @@ Boundary Robustness
 
 Saturation stress tests at extreme SNR points verify graceful degradation:
 
-- ``Eb/N0 = 0.1 dB`` (below capacity — Shannon limit is ``0.19 dB``): decoder
+- ``Eb/N0 = 0.1 dB`` (below capacity; the Shannon limit is ``0.19 dB``): decoder
   returns ``kNotConverged`` for nearly all frames. No crashes, no
   ``kFaultDetected``.
 - ``Eb/N0 = 10.0 dB`` (high SNR, LLR saturation): zero
@@ -311,7 +311,7 @@ Test Methodology
   Wilson score 95% confidence intervals
 - **Confidence intervals:**
   `Wilson score <https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval#Wilson_score_interval>`_
-  method — handles ``p=0`` and ``p=1`` gracefully, preferred over
+  method, which handles ``p=0`` and ``p=1`` gracefully and is preferred over
   `Wald intervals <https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval#Normal_approximation_interval_or_Wald_interval>`_
   for small error counts
 - **Parallelisation:** work items distributed across all available CPU cores via

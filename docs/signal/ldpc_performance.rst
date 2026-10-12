@@ -4,7 +4,7 @@ LDPC Decoder Performance Characterization
 Empirical BER/FER for the LSIS-AFS LDPC decoder, measured against the target
 set by the competition requirements (BER < 10\ :sup:`-5` at SNR > 0 dB).
 LSIS V1.0 itself sets no error-rate requirement.  Every number on this page is produced by one reproducible
-command — ``task ldpc-algo-card`` — which runs the characterisation tool
+command, ``task ldpc-algo-card``, which runs the characterisation tool
 (``scripts/ldpc_characterise.cpp``) against the decoder that ships in this
 repository and regenerates the tables and figures included below.  The full
 algorithm-level characterisation (convergence CDF, error patterns,
@@ -37,12 +37,12 @@ Decoder Configuration
 ---------------------
 
 - **Algorithm:** Layered Sum-Product belief propagation (φ-transform
-  formulation with quantified clamping analysis — see ``ldpc.cpp``)
+  formulation with quantified clamping analysis; see ``ldpc.cpp``)
 - **Arithmetic:** float64
 - **Max iterations:** 50
 - **Early termination:** syndrome check every iteration
 - **Hardening:** CFI sentinels, TMR mirrors, bounds checks, scrub-on-error
-  (characterised with hardening enabled — the numbers below include its cost)
+  (characterised with hardening enabled, so the numbers below include its cost)
 
 Channel Model
 -------------
@@ -138,7 +138,7 @@ belief-propagation implementations on this code.
 Error Floor Search
 ~~~~~~~~~~~~~~~~~~
 
-60,000 frames per point at 2.5 and 3.0 dB for each code — **zero frame
+60,000 frames per point at 2.5 and 3.0 dB for each code gave **zero frame
 errors** in all four runs (72 M bits per SF2 point, 52.2 M bits per SF3
 point).  The 95% Wilson upper bound on FER is 6.4 × 10\ :sup:`-5` per
 point: no error floor is observable down to that level.
@@ -202,18 +202,18 @@ Decoder Symmetry Check
 For a linear code over a symmetric channel (BPSK AWGN) with a symmetric
 decoder, error performance is codeword-independent in theory.  Measured at
 the mid-waterfall point: random-codeword FER 0.88% vs all-zero FER 0% at
-15,000 frames each.  The all-zero case is genuinely easier, and the
+15,000 frames each.  The all-zero case is easier, and the
 mechanism is the interaction of **puncturing** with the hard-decision
 tie-break, not the BP update itself: the first 2·Zc systematic bits
 (240 for SF2) are never transmitted, the decoder initialises their LLRs
 to 0 ("no channel information"), and the hard-decision rule maps a
-non-negative LLR to bit 0 — always correct for the all-zero message,
+non-negative LLR to bit 0.  That is always correct for the all-zero message and
 wrong for roughly half the punctured positions of a random message
 whenever BP fails to pin them down.  (Shortening is a separate mechanism:
 the SF3/SF4 filler bits are *known* zeros and are initialised to a
 high-confidence positive LLR; SF2, the code used in this test, has no
 filler bits.  See :doc:`ldpc_algo_card` for the same analysis.)
-All headline results above therefore use random payloads — the
+All headline results above therefore use random payloads, the
 conservative, harder case.
 
 Channel LLR Scaling
@@ -224,7 +224,7 @@ AWGN::
 
     L_ch = 2y / sigma^2
 
-This scaling provides the decoder with reliability information — without
+This scaling provides the decoder with reliability information.  Without
 it, convergence degrades sharply.  ``frame_decode`` takes the factor as
 ``llr_scale`` and applies it to the de-interleaved payload only, because the
 sync detector ahead of it needs unit-amplitude symbols.

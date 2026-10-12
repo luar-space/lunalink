@@ -2,7 +2,7 @@ Signal-In-Space Interface Control Document (SISICD)
 ===================================================
 
 The SISICD proposes bit-level payload layouts for the navigation message
-types whose content LSIS V1.0 leaves "To Be Written" (TBW) — 11 LunaNet-1.0 message types carry explicit
+types whose content LSIS V1.0 leaves "To Be Written" (TBW).  Eleven LunaNet-1.0 message types carry explicit
 ``{LSIS-TBW-*}`` content markers; see the "Messages with TBW content" list
 in :doc:`shall_inventory` for the authoritative enumeration.
 
@@ -84,7 +84,7 @@ Proposed Bit-Layout (Common Header)
 The sub-block sizes themselves are fixed by LSIS V1.0 (Table 16): before
 rate-1/2 LDPC encoding, SB2 is 1200 bits (1176 data + 24-bit CRC-24) and
 SB3/SB4 are 870 bits each (846 data + 24-bit CRC-24).  The SISICD does not
-change those containers — it defines the layout of the *message payload*
+change those containers; it defines the layout of the *message payload*
 carried inside a sub-block's message-data field.  Each SISICD-defined
 message payload uses the common structure below, placed at the start of the
 sub-block's data field (any remaining data bits carry the spec-mandated
@@ -108,7 +108,7 @@ Illustrative Example of the Header Convention
 
 The sketch below shows how a future spec revision (or an interop working
 group) could pin a payload using the common header above.  It is a
-**worked example only** — MSG-G3's content is defined by the spec, and
+**worked example only**: MSG-G3's content is defined by the spec, and
 LunaLink does not transmit or parse this layout.
 
 Example: a high-precision clock-model payload

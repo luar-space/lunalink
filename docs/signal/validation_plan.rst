@@ -50,7 +50,7 @@ Signal Impairment & Robustness (G4, G5)
 
 The baseband signal generator (G4) carries a reference channel model that puts the G5 receiver through realistic lunar-orbit impairments.
 
-1. **Doppler (CFO — carrier frequency offset):** — *Exercised on a foreign signal*
+1. **Doppler (CFO, carrier frequency offset):** *Exercised on a foreign signal*
 
    * The L3 cross-decode acquires (PCPS) and tracks (PLL) a 7-SV LANS-AFS-SIM
      composite with lunar NRHO ephemeris, so carrier offset is handled on a
@@ -59,14 +59,14 @@ The baseband signal generator (G4) carries a reference channel model that puts t
    * Not yet done: a parametric −10…+10 kHz sweep on the LunaLink-generated
      signal.
 
-2. **Clock Drift (SCO — sample clock offset):** — *Planned, not implemented*
+2. **Clock Drift (SCO, sample clock offset):** *Planned, not implemented*
 
    * Intent: sample clock offsets up to 50 ppm; code-phase tracking must
      compensate.
    * No test exists in this release and the receiver has no delay-locked
      loop; recorded in :doc:`../roadmap`.
 
-3. **Quantization Loss:** — *Implemented*
+3. **Quantization Loss:** *Implemented*
 
    * ``cpp/tests/integration/test_e2e_impairments.cpp``
      (``task integration``): full TX→RX round trips at int16 and int8, an
@@ -76,7 +76,7 @@ The baseband signal generator (G4) carries a reference channel model that puts t
      (:doc:`ldpc_performance` §*Quantization Resilience*), so an 8-bit
      front-end suffices.
 
-4. **Phase Noise:** — *Planned, not implemented*
+4. **Phase Noise:** *Planned, not implemented*
 
    * Intent: oscillator phase noise per standard PNT models (Wiener process)
      to test PLL jitter tolerance.

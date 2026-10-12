@@ -164,13 +164,13 @@ The ``MessageType`` enum enumerates all 23 MSG IDs from Table 21, so the type
 router never rejects a valid message.  Completeness, though, comes in three
 tiers:
 
-**Tier 1 --- Fully defined (1 message):**
+**Tier 1, fully defined (1 message):**
 
 Only **MSG-G8 (Time of Transmission)** has complete field definitions
 with bit widths, value ranges, and formulas (Table 22, LSIS-720).
 This is the only message whose content LunaLink can fully parse.
 
-**Tier 2 --- LunaNet 1.0, content not defined (13 messages):**
+**Tier 2, LunaNet 1.0 with content not defined (13 messages):**
 
 These are part of LNIS V1.0 but their field layouts are open: eleven are
 marked ``{LSIS-TBW-*}`` (To Be Written), and MSG-G3 and MSG-S20 carry
@@ -254,7 +254,7 @@ parse their payload until the spec defines it.
 
 *F = Fundamental (mandatory), O = Optional, C = Communication.*
 
-**Tier 3 --- Not LunaNet 1.0 (9 messages):**
+**Tier 3, not LunaNet 1.0 (9 messages):**
 
 These are placeholders for future LNIS versions.  LunaLink enumerates
 them so the type router returns ``kUnknown`` rather than crashing on a
@@ -365,7 +365,7 @@ Run: ``task test-cpp`` (file: ``cpp/tests/messages/test_message_parser.cpp``,
    * - type_field_to_message_type unknown
      - Values 0, 6, 7, 9, 255 all return ``kUnknown``
 
-SWIFI parser scenarios (documented and descoped for this release --- see
+SWIFI parser scenarios (documented and descoped for this release; see
 :doc:`/assurance/fault_coverage`):
 
 -  CFI skip injection in ``extract_bits()``, bit-value injection in
@@ -489,7 +489,7 @@ Hardening
 .. |leq| unicode:: U+2264
 .. |approx| unicode:: U+2248
 
-FMEA: **FM-072** --- ``compute_tot()`` arithmetic overflow or
+FMEA: **FM-072**, ``compute_tot()`` arithmetic overflow or
 SEU-corrupted input.
 
 Unit tests
@@ -595,7 +595,7 @@ All C++ types and functions are exposed via nanobind:
 
 Type stubs: ``src/lunalink/afs/_afs.pyi``
 
-Python tests: ``tests/test_afs.py`` --- classes ``TestParseSb2`` (7 tests),
+Python tests: ``tests/test_afs.py``, classes ``TestParseSb2`` (7 tests),
 ``TestParseSb3`` (4 tests), ``TestParseSb4`` (3 tests), ``TestComputeTot``
 (11 tests including full E2E round-trip)
 

@@ -8,10 +8,10 @@ Core Design Decisions
 ---------------------
 
 1.  **No Exceptions & No RTTI**: the C++ core compiles with ``-fno-exceptions``
-    and ``-fno-rtti`` — deterministic behaviour, and compatibility with the
+    and ``-fno-rtti``, for deterministic behaviour and compatibility with the
     embedded flight-software constraints of the ECSS and NASA standards.
-2.  **Stateless Signal Chain**: most core functions — modulators, encoders,
-    multiplexers — are stateless and take ``std::span``, which buys memory
+2.  **Stateless Signal Chain**: most core functions (modulators, encoders,
+    multiplexers) are stateless and take ``std::span``, which buys memory
     safety without dynamic allocation.
 3.  **Static Table Storage**: Spreading codes (Gold, Weil) are stored as packed
     bitstreams in static storage (``prn_table_*.cpp``) to minimize startup time

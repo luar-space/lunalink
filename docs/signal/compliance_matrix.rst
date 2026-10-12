@@ -9,15 +9,15 @@ in the order of the specification's own sections, see :doc:`shall_inventory`.
 .. note::
 
    **Requirement-ID schemes.** Three complementary ID families appear across
-   the project.  *Compliance-matrix row* IDs (``CM-110``, ``CM-321``, …) —
-   used only in this document — number the implementation-status rows below,
-   organised by gateway.  *Specification-level* IDs (``LSIS-110``,
-   ``LSIS-FID0-467``, …) — used in :doc:`shall_inventory` — enumerate the
+   the project.  *Compliance-matrix row* IDs (``CM-110``, ``CM-321``, …),
+   used only in this document, number the implementation-status rows below,
+   organised by block.  *Specification-level* IDs (``LSIS-110``,
+   ``LSIS-FID0-467``, …), used in :doc:`shall_inventory`, enumerate the
    spec's "shall" statements by spec section; a ``CM-nnn`` row and an
    ``LSIS-nnn`` shall with the same number are unrelated.
-   *Implementation-level* tags (``[LSIS-AFS-101]``, ``[LSIS-AFS-501]``, …) —
+   *Implementation-level* tags (``[LSIS-AFS-101]``, ``[LSIS-AFS-501]``, …),
    used in source code, test names, and
-   :doc:`../assurance/traceability_matrix` — identify the functions that
+   :doc:`../assurance/traceability_matrix`, identify the functions that
    implement the shalls, and are what the CI traceability gate enforces.
    The shall inventory carries the mapping: each of its rows cites the
    implementing ``[LSIS-AFS-*]`` tag in its evidence column.

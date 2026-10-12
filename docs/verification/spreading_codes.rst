@@ -78,7 +78,7 @@ Tables are generated from Annex 3 reference hex files via
 .. |rarr| unicode:: U+2192
 
 Generator validation (``test_prn_generators.cpp``) cross-checks all 210
-Gold PRNs produced by ``GoldGenerator`` against the packed LUT --- any
+Gold PRNs produced by ``GoldGenerator`` against the packed LUT; any
 bit-for-bit mismatch fails the build.
 
 Packed storage

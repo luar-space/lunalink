@@ -10,7 +10,7 @@ deterministically.
 
 Each finding carries a stable ``SF-NNN`` identifier that the rest of the
 documentation cites.  The register below covers the ambiguities that are
-**interoperability-critical** — those where two conformant implementations
+**interoperability-critical**, those where two conformant implementations
 can make different choices and fail to interoperate.  LSIS V1.0 lists 46
 open items in its Table ZZ-1 (16 TBW, 25 TBC and 5 TBD).  Every one is
 dispositioned in the table of `All open items in LSIS V1.0`_ below.
@@ -51,7 +51,7 @@ Register
 
 .. _sf-001:
 
-SF-001 — Matched-Code Phasing for AFS-Q
+SF-001: Matched-Code Phasing for AFS-Q
 ----------------------------------------
 
 *   **Observation**: §2.3.5.4 notes that matched-code assignment and tertiary
@@ -65,7 +65,7 @@ SF-001 — Matched-Code Phasing for AFS-Q
 
 .. _sf-002:
 
-SF-002 — Navigation Message Structure (SB2–SB4)
+SF-002: Navigation Message Structure (SB2–SB4)
 ------------------------------------------------
 
 *   **Observation**: Table 21 defines 23 message types; 14 are designated
@@ -74,13 +74,13 @@ SF-002 — Navigation Message Structure (SB2–SB4)
     TBW, and MSG-G3 and MSG-S20 carry TBD items.
 *   **Conflict**: Total frame construction is blocked without bit-level
     definitions for these types.
-*   **Proposed Resolution**: LunaLink utilizes the **LunaLink SISICD extension**
+*   **Proposed Resolution**: LunaLink uses the **LunaLink SISICD extension**
     to provide draft bit-layouts for the TBW types (:doc:`sisicd`).
     This allows for full-frame validation until the formal SISICD is published.
 
 .. _sf-003:
 
-SF-003 — Baseband Digital Interchange Format
+SF-003: Baseband Digital Interchange Format
 ----------------------------------------------
 
 *   **Observation**: The standard defines the RF waveform but not the digital
@@ -88,19 +88,19 @@ SF-003 — Baseband Digital Interchange Format
 *   **Proposed Resolution**: We propose a standard for **Interleaved Signed 16-bit
     IQ (int16)** pairs at the AFS-Q chip rate (5.115 MSPS) as the primary
     digital interchange format for hardware-in-the-loop validation.  The
-    concrete container LunaLink ships — a 128-byte ``LSISIQ`` header plus
-    interleaved samples — is specified in :doc:`/test_vectors`.
+    concrete container LunaLink ships, a 128-byte ``LSISIQ`` header plus
+    interleaved samples, is specified in :doc:`/test_vectors`.
 
 .. _sf-004:
 
-SF-004 — SB3/SB4 Type Field Width (TBC)
+SF-004: SB3/SB4 Type Field Width (TBC)
 -----------------------------------------
 
 *   **Observation**: Tables 19 and 20 give the SB3/SB4 type field width as
     "4 or 6" bits, marked ``{LSIS-TBC-2023}`` / ``{LSIS-TBC-2024}``.
 *   **Conflict**: The two choices are not compatible. A 4-bit field cannot
     represent the MSG IDs up to 32 that Table 21 defines, and every field
-    offset after the type field shifts by 2 bits — so a 4-bit and a 6-bit
+    offset after the type field shifts by 2 bits, so a 4-bit and a 6-bit
     implementation disagree on the entire remainder of the subframe, not just
     on the type.
 *   **Proposed Resolution**: LunaLink uses **6 bits**, because Table 21
@@ -112,7 +112,7 @@ SF-004 — SB3/SB4 Type Field Width (TBC)
 
 .. _sf-005:
 
-SF-005 — SB2 Field Layout (TBW)
+SF-005: SB2 Field Layout (TBW)
 ---------------------------------
 
 *   **Observation**: Table 22 defines the SB2 Week Number (13 bits) and
@@ -121,7 +121,7 @@ SF-005 — SB2 Field Layout (TBW)
 *   **Conflict**: Time-of-transmission recovery is the one fully specified
     message (MSG-G8), yet a receiver cannot locate its inputs. Two
     implementations that disagree on the offsets both decode without error
-    and produce different times — the failure is silent, which is worse than
+    and produce different times. The failure is silent, which is worse than
     a decode failure.
 *   **Proposed Resolution**: LunaLink places **WN at bit offset 0 and ITOW at
     bit offset 13**, MSB-first per LSIS-320. This is a reasonable default but
@@ -400,7 +400,7 @@ Recommendation to the LNIS Working Group
 -----------------------------------------
 
 In priority order for interoperability: resolve **SF-005** (SB2 field
-offsets) and **SF-004** (type field width) first — both are cheap
+offsets) and **SF-004** (type field width) first. Both are cheap
 editorial decisions that unblock cross-implementation decoding today.
 **SF-001** (matched-code phasing) follows, as it gates AFS-Q acquisition
 between independent receivers. **SF-002** is the largest body of work and

@@ -45,7 +45,7 @@ boundary.
    * - Encoding
      - None (LSIS-340: uncoded)
 
-Implementation: ``cpp/messages/frame.cpp`` --- ``kSyncPattern`` array,
+Implementation: the ``kSyncPattern`` array in ``cpp/messages/frame.cpp``,
 ``constinit``, ``alignas(64)``, placed in ``LUNALINK_LUT_SECTION``.
 
 ----

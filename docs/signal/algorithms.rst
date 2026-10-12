@@ -1,12 +1,12 @@
 Algorithm Selection Rationale
 =============================
 
-Which algorithms and architectural patterns the Forward Error Correction (FEC) and signal-processing components use, and why.  Three properties decided every choice — **determinism**, **fault tolerance**, **computational efficiency** — in the order Class B flight software demands.
+Which algorithms and architectural patterns the Forward Error Correction (FEC) and signal-processing components use, and why.  Three properties decided every choice: **determinism**, **fault tolerance** and **computational efficiency**, in the order Class B flight software demands.
 
 Architectural Hardening Patterns
 --------------------------------
 
-Lunar missions — satellites, landers, rovers — impose the patterns below.
+Lunar missions (satellites, landers, rovers) impose the patterns below.
 
 *   **Strict, Reproducible Arithmetic:** All Belief Propagation (BP) calculations in the LDPC decoder use IEEE-754 float64 with ``-fno-fast-math`` and a fixed, layered update order, giving **bit-reproducible results** run-to-run and across conforming toolchains. The numerically sensitive φ-transform is clamped with a quantified worst-case error analysis (documented in ``ldpc.cpp``). For flight targets without an FPU, the structural hardening transfers unchanged to a fixed-point port.
 *   **Flat Worst-Case Execution Time (WCET):** Critical loops in the BCH decoder, CRC-24 generator, and LDPC check-node update are implemented using **branchless logic**. By removing data-dependent branches, the implementation guarantees a stable execution time, which is essential for real-time scheduling and avoiding "jitter" in navigation streams.
@@ -55,7 +55,7 @@ LDPC Encoder: Two-Stage Sparse Matrix Multiplication
 2.  Stage 2: Calculate parity :math:`p_2 = (C \cdot s + D \cdot p_1) \pmod 2`.
 
 **Rationale:**
-*   **Efficiency:** sparse multiplication avoids the :math:`O(n^2)` cost of a dense generator matrix — the difference between meeting and missing throughput on low-power lunar hardware.
+*   **Efficiency:** sparse multiplication avoids the :math:`O(n^2)` cost of a dense generator matrix, which is the difference between meeting and missing throughput on low-power lunar hardware.
 *   **Low Memory:** only the sparse sub-matrices (:math:`A, B, C, D`) are stored, which cuts the ROM/Flash footprint well below that of a full generator matrix.
 
 LDPC Decoder: Layered Sum-Product Belief Propagation
@@ -65,8 +65,8 @@ LDPC Decoder: Layered Sum-Product Belief Propagation
 
 **Rationale:**
 *   **Convergence Speed:** Layered scheduling converges approximately 2× faster than standard "flooding" schedules, reducing the number of required iterations and thus CPU cycles.
-*   **Decoding Optimality:** Sum-Product is the exact BP update — no Min-Sum approximation loss. The 3-way gap decomposition in ``test_ldpc_reference.cpp`` measures the shipped decoder within 0.15 dB of reference BP implementations on this code, i.e. essentially at the algorithmic optimum for its length.
-*   **Numerical Stability:** the φ-transform's singular endpoints are clamped with a quantified worst-case error analysis (upper clamp error ≈ 1.9e-13; empirically verified not to shift the waterfall by more than 0.01 dB — see ``ldpc.cpp``).
+*   **Decoding Optimality:** Sum-Product is the exact BP update, with no Min-Sum approximation loss. The 3-way gap decomposition in ``test_ldpc_reference.cpp`` measures the shipped decoder within 0.15 dB of reference BP implementations on this code, i.e. essentially at the algorithmic optimum for its length.
+*   **Numerical Stability:** the φ-transform's singular endpoints are clamped with a quantified worst-case error analysis (upper clamp error ≈ 1.9e-13; empirically verified not to shift the waterfall by more than 0.01 dB; see ``ldpc.cpp``).
 *   **Memory Footprint:** layered decoding updates in place, cutting LLR storage by nearly half against flooding.
 
 Integrity & Shaping
@@ -100,7 +100,7 @@ Weil Code Generation
 **Algorithm:** Construction of Weil sequences by XORing a Legendre sequence with a cyclically shifted version of itself, with specific insertion points for balancing.
 
 **Rationale:**
-*   **Superior Correlation:** at these lengths — 10230 primary, 1500 tertiary — Weil codes beat Gold codes on both cross- and auto-correlation, and that margin is what rejects multi-access interference (MAI) in a dense lunar constellation.
+*   **Superior Correlation:** at these lengths (10230 primary, 1500 tertiary) Weil codes beat Gold codes on both cross- and auto-correlation, and that margin is what rejects multi-access interference (MAI) in a dense lunar constellation.
 *   **Large Code Set:** the family is large and its correlation properties near-uniform, so many unique PRN IDs cost nothing in performance.
 *   **Compliance:** Mandated by LSIS-AFS-102 for the Augmented Forward Signal.
 

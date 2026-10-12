@@ -37,7 +37,7 @@ Hard-decision ML (``bch_decode``)
 - **Metric:** Hamming distance to each codebook entry
 - **Output:** Codebook entry with minimum Hamming distance
 
-The decoder is exhaustive ML — it evaluates all 400 codebook entries and
+The decoder is exhaustive ML: it evaluates all 400 codebook entries and
 always returns the nearest codeword regardless of the number of bit errors.
 This gives strictly better performance than an algebraic t=2 decoder, which
 would declare failure for bursts exceeding 2 errors.
@@ -91,7 +91,7 @@ substantially more Eb/N0 at the same physical channel SNR:
 
 The BCH decoder therefore operates with **4.6 dB more Eb/N0** than the LDPC
 decoder at the same physical SNR.  The system operating point of Es/N0 = 0 dB
-(competition requirement: SNR > 0 dB) maps to Eb/N0 = 7.6 dB for BCH — well past both
+(competition requirement: SNR > 0 dB) maps to Eb/N0 = 7.6 dB for BCH, well past both
 decoders' waterfall regions.
 
 FER Waterfall Results
@@ -196,5 +196,5 @@ Test Methodology
   (proves zero errors at spec SNR)
 - **Seeds are fixed** (42, 77, 99, 137) for full reproducibility
 - **Test file:** ``cpp/tests/performance/test_bch_ber.cpp``
-- **All tests tagged** ``[performance]`` — excluded from default CTest runs;
+- **All tests tagged** ``[performance]`` are excluded from default CTest runs;
   run explicitly with ``task performance``

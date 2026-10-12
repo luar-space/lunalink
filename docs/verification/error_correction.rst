@@ -73,7 +73,7 @@ Encoder (``bch_encode``)
 
 Generates a 52-bit codeword from a FID ∈ {0,1,2,3} and TOI ∈ {0..99}
 using a linear-feedback shift register.  Output is written to a
-caller-supplied buffer — no dynamic allocation, no exceptions.
+caller-supplied buffer, with no dynamic allocation and no exceptions.
 
 Hard-decision ML decoder (``bch_decode``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -81,7 +81,7 @@ Hard-decision ML decoder (``bch_decode``)
 Exhaustive ML over the 400-entry codebook using Hamming distance.  Always
 returns the nearest codeword regardless of error count.  Unlike an
 algebraic t=2 decoder, it never declares failure due to excess errors; it
-simply returns the best available estimate.
+returns the best available estimate.
 
 Soft-decision ML decoder (``bch_decode_soft``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -89,7 +89,7 @@ Soft-decision ML decoder (``bch_decode_soft``)
 Accepts 52 float channel LLRs (L\ :sub:`ch` = 2y / σ²).  Maximises the
 inner-product metric Σ llr\ :sub:`j` × (1 − 2c\ :sub:`j`) over all 400
 codebook entries.  This is the optimal (maximum-likelihood) decision rule
-for BPSK AWGN — it retains reliability information discarded by hard
+for BPSK AWGN: it retains reliability information discarded by hard
 thresholding.
 
 Hardening
@@ -211,7 +211,7 @@ Two-stage sparse encoding: p1 = B\ :sup:`-1`·(A·s), p2 = C·s + D·p1
 (mod 2).  A post-encode H·c=0 parity check verifies correctness and
 detects faults before the codeword leaves the encoder.
 
-Decoder (``ldpc_decode``) — Layered Sum-Product Belief Propagation
+Decoder (``ldpc_decode``): Layered Sum-Product Belief Propagation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - **Algorithm:** Layered Sum-Product BP (φ-transform formulation, with a
