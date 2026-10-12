@@ -11,6 +11,8 @@
 #include <array>
 #include <chrono>
 #include <cstdint>
+#include <iomanip>
+#include <iostream>
 #include <span>
 #include <string>
 #include <vector>
@@ -161,11 +163,34 @@ void check_constant_time(const std::string& name, P&& prepare, F&& run) {
   REQUIRE(lo > 0.0);
   const double spread_pct = (hi - lo) / lo * 100.0;
 
-  UNSCOPED_INFO(name << " spread " << spread_pct << "% across " << kClasses.size()
-                     << " input classes (tolerance " << kSpreadTolerancePct << "%)");
+  // Reported unconditionally, and deliberately not via UNSCOPED_INFO: Catch2
+  // buffers INFO and flushes it only when an assertion fails, so the spread --
+  // the measurand this gate exists to bound -- used to be recorded on exactly
+  // the runs where it was already too late.  A passing run threw its number
+  // away, which left no way to tell a one-off scheduler artefact from drift
+  // toward a data-dependent path.  This test also carries no BENCHMARK macros
+  // (it needs the min-of-kReps estimator and preparation outside the timed
+  // region), so it emits no <BenchmarkResults> and performance_report.py
+  // cannot see it either; stdout is the only channel it has.
+  //
+  // Note where this lands.  Catch2's console reporter, redirected with
+  // `console::out=`, does NOT capture std::cout, so these lines are absent
+  // from wcet_console.txt; the XML reporter captures them per test case into
+  // <TestCase><StdOut>, so wcet_results.xml is the file that archives them
+  // (both are uploaded as the wcet-raw-output artifact).  They also appear on
+  // the step's own stdout, which is the quickest place to read them but
+  // expires with the run log.
+  //
+  // One line per primitive, fixed prefix and field order, so grepping
+  // "[constant-time]" over the archived XML reconstructs a history, and a
+  // future step can parse it into bench.json without the format changing
+  // again.
+  std::cout << "[constant-time] " << name << " spread " << std::fixed << std::setprecision(2)
+            << spread_pct << "% tolerance " << kSpreadTolerancePct << "%";
   for (size_t i = 0; i < kClasses.size(); ++i) {
-    UNSCOPED_INFO("  " << class_name(kClasses.at(i)) << ": " << means.at(i) << " ns");
+    std::cout << " | " << class_name(kClasses.at(i)) << " " << means.at(i) << " ns";
   }
+  std::cout << std::endl;
 
   CHECK(spread_pct < kSpreadTolerancePct);
 }
