@@ -79,9 +79,8 @@ you only need levels 1 and 2, a sparse checkout leaves it out:
 
 .. code-block:: bash
 
-   git clone --filter=blob:none https://github.com/luar-space/lsis-afs-test-vectors
+   git clone --filter=blob:none --sparse https://github.com/luar-space/lsis-afs-test-vectors
    cd lsis-afs-test-vectors
-   git sparse-checkout init --cone
    git sparse-checkout set codes frames inputs references
 
 Files in the repository root, ``validate.py`` and ``manifest.json`` among
