@@ -8,3 +8,7 @@ __pycache__/
 *.egg-info/
 .venv/
 .claude/
+.ruff_cache/
+# Gitignored and absent from a CI checkout, but 1.5 GB locally — and the usage
+# line at the top of Dockerfile.cross-arch is a local command.
+third_party/
