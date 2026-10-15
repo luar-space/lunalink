@@ -191,7 +191,7 @@ Clang Static Analyzer) and three runtime checkers (AddressSanitizer,
 UndefinedBehaviorSanitizer, libFuzzer with a committed seed corpus and a
 nightly deep fuzz). MC/DC is measured natively. CI runs on **big-endian
 s390x** alongside arm64, catching byte-order defects that x86 and ARM CI never
-will.
+will, and on **RISC-V**, the instruction set of the flight target.
 
 ### The evidence regenerates itself
 

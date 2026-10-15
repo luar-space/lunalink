@@ -3,6 +3,7 @@
 #
 # Targets: linux/arm64 (LE, strict alignment)
 #          linux/s390x (BE, strict alignment — endianness validation)
+#          linux/riscv64 (LE — the flight target ISA, PolarFire SoC is RV64GC)
 #
 # Tests run inside RUN directives — build success = tests pass.
 #

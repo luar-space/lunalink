@@ -264,8 +264,8 @@ their own tasks.
        minimisation.
    * - **Cross-Architecture** (``cross-arch.yml``)
      - push to main
-     - Docker buildx + QEMU: ``linux/arm64`` and big-endian
-       ``linux/s390x`` build and test.
+     - Docker buildx + QEMU: ``linux/arm64``, big-endian ``linux/s390x``
+       and ``linux/riscv64`` (the flight target ISA) build and test.
    * - **validate-export** (``validate-export.yml``)
      - push, PR, manual
      - Builds and tests a ``git archive`` of the committed tree, catching

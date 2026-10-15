@@ -38,6 +38,10 @@ jobs:
             scope: arm64
           - platform: linux/s390x
             scope: s390x
+          # The flight target ISA: PolarFire SoC runs RV64GC, which is what
+          # Ubuntu's riscv64 baseline targets.
+          - platform: linux/riscv64
+            scope: riscv64
     steps:
       - uses: actions/checkout@v7
         with:
@@ -69,7 +73,7 @@ jobs:
           # in full on every run, including re-runs of a job that failed for
           # infrastructure reasons and never reached a test.
           #
-          # Per-platform scope: arm64 and s390x share no layers.
+          # Per-platform scope: the platforms share no layers.
           #
           # mode=min exports the final image's layer chain, which here is all
           # three stages, since they are linear ancestors. mode=max would add

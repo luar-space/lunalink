@@ -56,8 +56,9 @@ Flight build requirements:
 Tier 2 — CI / Digital Twin
 ---------------------------
 Uses the same source and flags as Tier 1, plus sanitizers and extended
-test instrumentation.  Runs on x86_64, ARM64 (LE), and s390x (BE) to
-verify endianness correctness and cross-platform portability.
+test instrumentation.  Runs on x86_64, ARM64 (LE), s390x (BE), and RISC-V
+(LE, the flight target ISA) to verify endianness correctness and
+cross-platform portability.
 
 Non-flight code (tests, tools, benchmarks, bindings) may enable broader
 C++ features (exceptions, RTTI) when explicitly configured, but must
