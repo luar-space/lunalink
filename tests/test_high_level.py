@@ -257,7 +257,9 @@ class TestDecodeFrame:
         assert result.all_ok
         assert result.sync_offset == offset
 
-    @pytest.mark.parametrize("bad", [0.0, -1.0, float("nan"), float("inf"), 1e-45])
+    @pytest.mark.parametrize(
+        "bad", [0.0, -1.0, float("nan"), float("inf"), 1e-45, 1e46]
+    )
     def test_noise_variance_must_be_positive_and_finite(self, bad):
         """An unusable noise_variance is rejected before decoding."""
         sb2, sb3, sb4 = make_test_payload("zeros")
@@ -265,6 +267,23 @@ class TestDecodeFrame:
         bipolar = np.where(frame == 0, 1.0, -1.0).astype(np.float32)
         with pytest.raises(ValueError, match="noise_variance"):
             receive_frame(bipolar, noise_variance=bad)
+
+    @pytest.mark.parametrize("variance", [1, np.float32(0.25), np.float64(0.25)])
+    def test_noise_variance_accepts_any_real_number(self, variance):
+        """An int or a NumPy scalar (what np.var returns) is accepted."""
+        sb2, sb3, sb4 = make_test_payload("random", seed=6)
+        frame = frame_build(0, 0, sb2, sb3, sb4)
+        bipolar = np.where(frame == 0, 1.0, -1.0).astype(np.float32)
+        assert receive_frame(bipolar, noise_variance=variance).all_ok
+
+    def test_overflowing_llr_saturates(self):
+        """Amplitude 3 with variance 1e-38 overflows float32; it must saturate."""
+        sb2, sb3, sb4 = make_test_payload("random", seed=7)
+        frame = frame_build(0, 0, sb2, sb3, sb4)
+        loud = np.where(frame == 0, 3.0, -3.0).astype(np.float32)
+        result = receive_frame(loud, noise_variance=1e-38)
+        assert result.all_ok
+        np.testing.assert_array_equal(result.sb3.data, sb3)
 
     @pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf")])
     def test_non_finite_symbol_is_invalid_input(self, bad):

@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 namespace lunalink::signal {
 
@@ -119,9 +120,13 @@ strip_crc_copy(std::span<const uint8_t> msg, std::span<uint8_t> data_out, size_t
     return FrameDecodeStatus::kFaultDetected; // NOCOVER(DEFENCE_IN_DEPTH): deinterleave fault
   }
   // Unconditional multiply: a scale of 1.0F is exact in IEEE-754, so the default
-  // leaves every symbol bit-identical without a data-dependent branch.
+  // leaves every symbol bit-identical without a data-dependent branch.  The
+  // product of two finite floats can still overflow to +/-inf, which
+  // ldpc_decode rejects as invalid; saturate instead, since an LLR that large
+  // carries the same decision as the largest finite one.
+  constexpr float kLlrMax = std::numeric_limits<float>::max();
   for (float& symbol : workspace.deinterleave_buf) {
-    symbol *= llr_scale;
+    symbol = std::clamp(symbol * llr_scale, -kLlrMax, kLlrMax);
   }
   return FrameDecodeStatus::kOk;
 }

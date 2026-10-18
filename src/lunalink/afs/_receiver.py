@@ -5,6 +5,8 @@
 from __future__ import annotations
 
 import math
+import struct
+from typing import SupportsFloat
 
 from beartype import beartype
 from jaxtyping import jaxtyped
@@ -28,8 +30,10 @@ from lunalink.afs.signal import (
     frame_decode as _frame_decode_low,
 )
 
-# Largest finite float32: frame_decode takes the LLR scale as a float32.
-_FLOAT32_MAX = 3.4028234663852886e38
+
+def _as_float32(value: float) -> float:
+    """Round *value* to float32, as the C++ frame_decode receives it."""
+    return struct.unpack("f", struct.pack("f", value))[0]
 
 
 @jaxtyped(typechecker=beartype)
@@ -38,7 +42,7 @@ def receive_frame(
     *,
     ldpc_iterations: int = 50,
     sync_threshold: float = 0.0,
-    noise_variance: float | None = None,
+    noise_variance: SupportsFloat | None = None,
     raise_on_error: bool = True,
 ) -> DecodeResult:
     """Decode an AFS navigation frame from soft-decision symbols.
@@ -53,22 +57,24 @@ def receive_frame(
     rx_symbols : SoftSymbols
         Bipolar soft-decision symbols (+1.0 = bit 0, -1.0 = bit 1), at
         unit signal amplitude.  Must contain at least 6000 symbols after
-        the sync offset.  A NaN or infinity in the located frame fails
-        the decode, with status ``INVALID_INPUT`` in the payload or
-        ``BCH_FAILED`` in SB1 (a ``DecodeError``, or a failed result when
-        *raise_on_error* is False).
+        the sync offset.  A NaN or infinity in the located frame's
+        payload fails the decode with status ``INVALID_INPUT``, and one in
+        SB1 with ``BCH_FAILED`` (a ``DecodeError``, or a failed result when
+        *raise_on_error* is False).  One in the sync pattern can still
+        decode, since the payload is then intact.
     ldpc_iterations : int
         LDPC decoder iteration limit (default: 50).
     sync_threshold : float
         Sync detection threshold (0 uses the C++ default of 50.0).
     noise_variance : float, optional
-        Variance of the noise on ``rx_symbols``.  When given, the payload
-        is scaled by ``2 / noise_variance`` before LDPC decoding, which
-        turns the symbols into the channel log-likelihood ratios the
-        decoder expects.  Sync detection and BCH decoding use the
-        symbols as passed.  When omitted the symbols reach the LDPC
-        decoder unscaled, which is only adequate for clean or nearly
-        clean input.
+        Variance of the noise on ``rx_symbols``; any real number type,
+        including a NumPy scalar such as the result of ``np.var``.  When
+        given, the payload is scaled by ``2 / noise_variance`` before LDPC
+        decoding, which turns the symbols into the channel log-likelihood
+        ratios the decoder expects.  Sync detection and BCH decoding use
+        the symbols as passed.  When omitted the symbols reach the LDPC
+        decoder unscaled, which is only adequate for clean or nearly clean
+        input.
     raise_on_error : bool
         If True (default), raises on failure.
         If False, returns a partial DecodeResult with error indicators.
@@ -85,8 +91,9 @@ def receive_frame(
     DecodeError
         If BCH, LDPC, or CRC decoding fails (and *raise_on_error* is True).
     ValueError
-        If *noise_variance* is not finite and positive, or is so small that
-        ``2 / noise_variance`` does not fit in a float32.
+        If *noise_variance* is not finite and positive, or is so small or
+        so large that the LLR scale ``2 / noise_variance`` is not a finite,
+        positive float32.
 
     Examples
     --------
@@ -103,15 +110,18 @@ def receive_frame(
     """
     llr_scale = 1.0
     if noise_variance is not None:
-        if not math.isfinite(noise_variance) or noise_variance <= 0.0:
+        variance = float(noise_variance)
+        if not math.isfinite(variance) or variance <= 0.0:
             raise ValueError(
                 f"noise_variance must be finite and positive, got {noise_variance}"
             )
-        llr_scale = 2.0 / noise_variance
-        if llr_scale > _FLOAT32_MAX:
+        # frame_decode takes the scale as a float32: it must neither overflow
+        # to inf nor underflow to 0 there.
+        llr_scale = _as_float32(2.0 / variance)
+        if not math.isfinite(llr_scale) or llr_scale <= 0.0:
             raise ValueError(
-                f"noise_variance {noise_variance} is too small: the LLR scale "
-                "2 / noise_variance must fit in a float32"
+                f"noise_variance {noise_variance} gives an LLR scale "
+                "2 / noise_variance outside the float32 range"
             )
 
     raw, sb2_data, sb3_data, sb4_data, status = _frame_decode_low(

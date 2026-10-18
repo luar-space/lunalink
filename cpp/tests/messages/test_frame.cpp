@@ -1051,6 +1051,34 @@ TEST_CASE("[LSIS-AFS-720] frame_decode: rejects a non-finite or non-positive llr
   }
 }
 
+TEST_CASE("[LSIS-AFS-720] frame_decode: a scaled LLR that overflows saturates", "[frame]") {
+  // 3.0F * 2e38F overflows to +inf.  The scaled payload must saturate rather
+  // than reach ldpc_decode as a non-finite LLR, which it rejects.
+  std::array<uint8_t, kSb2DataBits> sb2_data{};
+  std::array<uint8_t, kSb3DataBits> sb3_data{};
+  std::array<uint8_t, kSb4DataBits> sb4_data{};
+  std::mt19937 rng(31);
+  fill_subframes(sb2_data, sb3_data, sb4_data, rng);
+
+  std::array<uint8_t, kFrameLength> frame{};
+  LdpcEncodeWorkspace enc_ws{};
+  FrameBuildWorkspace fbw{};
+  REQUIRE(frame_build(Fid::kNode1(), Toi(3), sb2_data, sb3_data, sb4_data, frame, enc_ws, fbw) ==
+          FrameStatus::kOk);
+  auto rx = std::make_unique<std::array<float, kFrameLength>>();
+  for (size_t i = 0; i < kFrameLength; ++i) {
+    (*rx)[i] = (frame[i] == 0U) ? 3.0F : -3.0F;
+  }
+
+  FrameDecodeResult result{};
+  auto ws = std::make_unique<FrameDecodeWorkspace>();
+  NullTelemetryHal hal;
+  REQUIRE(frame_decode(
+              *rx, result, *ws, hal, kFrameDecodeLdpcIterations, kDefaultSyncThreshold, 2.0e38F) ==
+          FrameDecodeStatus::kOk);
+  CHECK(std::equal(sb3_data.begin(), sb3_data.end(), ws->sb3_data.begin()));
+}
+
 TEST_CASE("[LSIS-AFS-720] frame_decode: a failed frame leaves no crc_ok flag set", "[frame]") {
   // SB2 and SB3 are intact; SB4 is replaced with junk.  frame_decode scrubs
   // every data buffer on a non-kOk status, so it must also clear crc_ok for
