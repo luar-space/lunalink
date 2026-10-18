@@ -21,7 +21,7 @@ Engineering & Mission Assurance
 -------------------------------
 
 *   **NASA Software Assurance**: `NASA-STD-8739.8B: Software Assurance and Software Engineering <https://standards.nasa.gov/standard/NASA/NASA-STD-87398>`_.
-*   **ESA ECSS**: `ECSS-E-ST-40C: Software Engineering Standard <https://ecss.nl/standard/ecss-e-st-40c-software-engineering/>`_.
+*   **ESA ECSS**: `ECSS-E-ST-40C Rev.1: Software <https://ecss.nl/standard/ecss-e-st-40c-rev-1-software-30-april-2025/>`_ (30 April 2025).
 *   **ESA ECSS-Q**: `ECSS-Q-ST-80C: Software Product Assurance <https://ecss.nl/standard/ecss-q-st-80c-rev-1-software-product-assurance/>`_.
 *   **MISRA C++:2023**: Guidelines for the use of the C++ language in critical systems.
 

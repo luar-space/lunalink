@@ -19,7 +19,7 @@ Executive Summary
 The LSIS-AFS LDPC decoder uses **layered sum-product belief propagation**
 (`belief propagation <https://en.wikipedia.org/wiki/Belief_propagation>`_) with
 check-node updates via the
-`φ-transform <https://en.wikipedia.org/wiki/Low-density_parity-check_code#Belief_propagation>`_
+`φ-transform <https://en.wikipedia.org/wiki/Low-density_parity-check_code#Decoding>`_
 identity. ``float64`` arithmetic with syndrome-check early termination every
 iteration. For the SF2 code (``n=2400``, ``k=1200``, rate 1/2), the
 ``FER = 1%`` cliff is at **~1.19 dB Eb/N0**, a **1.0 dB**
@@ -61,7 +61,7 @@ Decoder Configuration
 ---------------------
 
 - **Algorithm:** Layered
-  `sum-product belief propagation <https://en.wikipedia.org/wiki/Low-density_parity-check_code#Belief_propagation>`_
+  `sum-product belief propagation <https://en.wikipedia.org/wiki/Low-density_parity-check_code#Decoding>`_
 - **Check-node update:** φ-transform, ``φ(x) = ln(1 + 2/expm1(|x|))``, self-inverse
 - **Arithmetic:** IEEE 754 ``float64`` (double precision)
 - **Max iterations:** 50 (default)
@@ -144,7 +144,7 @@ BI-AWGN (binary-input `AWGN <https://en.wikipedia.org/wiki/Additive_white_Gaussi
 
 This gap is entirely attributable to the code design (block length ``n=2400`` and
 the LSIS-AFS
-`base graph <https://en.wikipedia.org/wiki/Low-density_parity-check_code#Construction>`_
+`base graph <https://en.wikipedia.org/wiki/Low-density_parity-check_code#Code_construction>`_
 structure). The sum-product algorithm is the optimal message-passing rule for
 this graph. The ``phi_func()`` implementation introduces clamping at
 ``|x| < 1e-10`` (returns 30.0, error 6.3 on a near-zero message) and
@@ -174,7 +174,7 @@ Error Floor
 
 High-frame-count runs at 2.5 dB and 3.0 dB probe for
 `error floors <https://en.wikipedia.org/wiki/Error_floor>`_ caused by
-`trapping sets <https://en.wikipedia.org/wiki/Low-density_parity-check_code#Trapping_sets>`_
+trapping sets
 in the `Tanner graph <https://en.wikipedia.org/wiki/Tanner_graph>`_. The
 `Wilson score <https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval#Wilson_score_interval>`_
 95% CI upper bound provides a statistical limit on the unobserved FER.
@@ -312,7 +312,7 @@ Test Methodology
 - **Confidence intervals:**
   `Wilson score <https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval#Wilson_score_interval>`_
   method, which handles ``p=0`` and ``p=1`` gracefully and is preferred over
-  `Wald intervals <https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval#Normal_approximation_interval_or_Wald_interval>`_
+  `Wald intervals <https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval#Problems_with_using_a_normal_approximation_or_%22Wald_interval%22>`_
   for small error counts
 - **Parallelisation:** work items distributed across all available CPU cores via
   atomic work queue (each simulation is independent)
