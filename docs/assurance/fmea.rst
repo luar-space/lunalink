@@ -3,9 +3,9 @@ Software FMEA
 
 **Document ID**: LUNALINK-FMEA-001
 **Specification Reference**: ECSS-Q-ST-80C Rev.2 §5.5 (dependability); method per ECSS-Q-HB-80-03A Rev.1; ECSS-Q-ST-30C; MIL-STD-1629A; NPR 7150.2D SWE-028/029 (secondary)
-**Revision**: 1.3
-**Date**: 2026-03-20
-**Status**: Released — Competition Submission Baseline
+**Revision**: 1.4
+**Date**: 2026-10-18
+**Status**: Released — v1.0.0 baseline
 
 This Software Failure Modes and Effects Analysis (FMEA) is the formal companion to the
 Fault Containment Architecture described in ``mission_assurance.rst``.  Where that document

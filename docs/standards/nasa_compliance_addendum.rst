@@ -5,7 +5,7 @@ NASA Compliance Addendum
 **Specification Reference**: NPR 7150.2D (secondary cross-reference)
 **Revision**: 1.0
 **Date**: 2026-03-13
-**Status**: Released — Competition Submission Baseline
+**Status**: Released — v1.0.0 baseline
 
 Purpose
 -------

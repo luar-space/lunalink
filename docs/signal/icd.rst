@@ -5,7 +5,7 @@ Interface Control Document
 **Specification Reference**: NPR 7150.2D SWE-090
 **Revision**: 1.0
 **Date**: 2026-03-12
-**Status**: Released — Competition Submission Baseline
+**Status**: Released — v1.0.0 baseline
 
 Purpose
 -------

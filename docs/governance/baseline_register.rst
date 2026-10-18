@@ -5,7 +5,7 @@ Configuration Baseline Register
 **Specification Reference**: ECSS-Q-ST-80C Rev.2 §5.4; NPR 7150.2D SWE-077 (secondary)
 **Revision**: 1.0
 **Date**: 2026-03-12
-**Status**: Released — Competition Submission Baseline
+**Status**: Released — v1.0.0 baseline
 
 Purpose
 -------

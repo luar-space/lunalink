@@ -3,9 +3,9 @@ Software Configuration Management Plan
 
 **Document ID**: LUNALINK-SCMP-001
 **Specification Reference**: ECSS-Q-ST-80C Rev.2 §5.4; NPR 7150.2D SWE-074, SWE-077, SWE-079 (secondary)
-**Revision**: 1.0
-**Date**: 2026-03-12
-**Status**: Released — Competition Submission Baseline
+**Revision**: 1.1
+**Date**: 2026-10-18
+**Status**: Released — v1.0.0 baseline
 
 Purpose and Scope
 -----------------

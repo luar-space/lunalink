@@ -5,7 +5,7 @@ Software Metrics Plan
 **Specification Reference**: ECSS-Q-HB-80-04A; NPR 7150.2D SWE-164 (secondary)
 **Revision**: 1.0
 **Date**: 2026-03-12
-**Status**: Released — Competition Submission Baseline
+**Status**: Released — v1.0.0 baseline
 
 Purpose
 -------

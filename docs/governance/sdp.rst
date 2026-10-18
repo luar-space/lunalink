@@ -3,9 +3,9 @@ Software Development Plan
 
 **Document ID**: LUNALINK-SDP-001
 **Specification Reference**: ECSS-E-ST-40C Rev.1 §5.2; NPR 7150.2D SWE-013 (secondary)
-**Revision**: 1.0
-**Date**: 2026-03-12
-**Status**: Released — Competition Submission Baseline
+**Revision**: 1.1
+**Date**: 2026-10-18
+**Status**: Released — v1.0.0 baseline
 
 Purpose
 -------

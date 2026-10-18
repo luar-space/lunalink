@@ -3,9 +3,9 @@ Fault Coverage Report
 
 **Document ID**: LUNALINK-FAULT-COV-001
 **Specification Reference**: ECSS-Q-ST-80C Rev.2 §5.5; method per ECSS-Q-HB-80-03A Rev.1; NPR 7150.2D SWE-027 (secondary)
-**Revision**: 2.0
-**Date**: 2026-03-20
-**Status**: Released — Competition Submission Baseline
+**Revision**: 2.1
+**Date**: 2026-10-18
+**Status**: Released — v1.0.0 baseline
 
 Purpose
 -------
