@@ -147,14 +147,25 @@ reference.
 Run the cross-checks from LunaLink
 ----------------------------------
 
-With LunaLink installed (:doc:`quickstart`), two tasks reproduce the results
-published in :doc:`interop_results`:
+With LunaLink installed (:doc:`quickstart`), three tasks check it against
+other sources:
 
 .. code-block:: bash
 
+   task conformance        # every level, against the shared vectors
    task interop            # levels 1 to 3, against LANS-AFS-SIM
    task interop-receiver   # levels 4 and 5, against PocketSDR-AFS
 
+``task conformance`` holds LunaLink to the shared vectors the same way you
+would hold your own implementation to them.  It fetches the release pinned in
+``scripts/interop/conformance.py``, has LunaLink produce every level (codes,
+frames, the subframe bits it encodes, the FEC vectors, signals, the bits its
+receiver recovers from the shared signals, and parsed data) and runs the
+repository's ``diff-*`` commands on the result.  Levels 3 and 5 start from the
+shared frames and level 4 from the shared signals, so a fault is reported at
+the level where it occurs.  CI runs it on every change and weekly.
+
+The other two reproduce the results published in :doc:`interop_results`.
 ``task interop`` clones and builds LANS-AFS-SIM on its first run.  It compares
 the spreading codes and the encoded frames of the two implementations bit for
 bit, then acquires, tracks and decodes a signal that LANS-AFS-SIM generated.

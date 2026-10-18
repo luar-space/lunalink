@@ -264,6 +264,9 @@ Reproduction
    task interop            # levels 1 to 3, against LANS-AFS-SIM
    task interop-receiver   # levels 4 and 5, against PocketSDR-AFS
 
+``task conformance`` checks LunaLink against the shared test vectors at every
+level; see :doc:`interoperate`.
+
 ``task interop`` runs these two steps, which can also be run by hand:
 
 .. code-block:: bash

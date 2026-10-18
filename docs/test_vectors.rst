@@ -10,8 +10,9 @@ against these vectors, see :doc:`interoperate`.
 Purpose
 -------
 
-Any team can check its AFS receiver pipeline against our encoder output, or
-ours against theirs, without installing this library.  Each vector pairs
+Any team can check its implementation against the shared vectors, the same
+ones LunaLink is checked against, without installing this library.  Each
+vector pairs
 ground-truth message fields with the intermediate and final encoded outputs,
 file headers included.
 
@@ -138,22 +139,30 @@ JSON field extraction using the plan's schema:
 What ships where
 ----------------
 
-This repository commits a compact vector set under ``test-vectors/``:
+The published vectors are in the shared repository,
+`luar-space/lsis-afs-test-vectors
+<https://github.com/luar-space/lsis-afs-test-vectors>`__.  They are the
+reference: they ship with the oracles each level was checked against
+(Annex 3, LANS-AFS-SIM dumps, PocketSDR-AFS) and a zero-dependency
+validator, and LunaLink is held to them like any other implementation.
+``task conformance`` fetches a pinned release, has LunaLink produce every
+level, and runs the repository's ``diff-*`` commands on the result; see
+:doc:`interoperate`.
 
-*   ``codes/`` — 210 × ``codes_prn{NNN}.hex`` (Level 1, sectioned hex format)
+This repository also commits fixtures under ``test-vectors/`` so that
+``task test-py`` can exercise the formats without a network connection:
+
+*   ``codes/`` — ``codes_prn{NNN}.hex`` in the sectioned hex format
 *   ``frames/`` — encoded 6000-symbol frames with the ``LSISAFS`` header
 *   ``signals/`` — I/Q vectors with the ``LSISIQ`` header: PRN 1 at full
     12-second duration, plus short (2 ms) vectors for PRN 1–12 at both
     sample rates, gzipped to keep the clone light
 *   ``parsed/`` — parsed-data JSONs
-*   ``fec/`` and ``decode/`` — component-level FEC and decode-chain vectors
-    beyond the plan's four formats
+*   ``fec/`` — BCH and CRC-24Q vectors
+*   ``decode/`` — expected decoder outputs
 
-The full-size shared distribution is published at
-`luar-space/lsis-afs-test-vectors
-<https://github.com/luar-space/lsis-afs-test-vectors>`__.  It includes
-12-second signals for the Table 11 PRNs, bundled oracles (Annex 3,
-LANS-AFS-SIM dumps, PocketSDR-AFS) and a zero-dependency validator.
+They are not the published set: the file names and test payloads differ.
+To compare an implementation, use the shared repository.
 
 A 12-second ``LSISIQ`` signal for **any** PRN regenerates from the Python
 API (:func:`~lunalink.afs.write_iq_file` writes exactly the header defined
@@ -190,9 +199,13 @@ Regeneration
 
 ::
 
-    # everything, into a checkout of the shared vectors repository
-    uv run python scripts/export_test_vectors_all.py --public-repo <path>
+    # every level, into a checkout of the shared vector repository
+    uv run python scripts/export_test_vectors_all.py <path-to-lsis-afs-test-vectors>
 
-    # individual levels / local subsets
-    uv run python scripts/export_test_vectors_l1.py test-vectors/codes
-    uv run python scripts/export_test_vectors_fec.py --output-dir test-vectors/fec
+    # LunaLink's offline fixtures under test-vectors/
+    uv run python tests/generate_test_vectors.py
+
+A new release of the shared vectors has to pass the repository's own
+``check-*`` commands.  LunaLink then moves the pin in
+``scripts/interop/conformance.py`` and has to pass ``task conformance``
+against it.

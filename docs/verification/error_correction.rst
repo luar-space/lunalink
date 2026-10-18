@@ -438,12 +438,9 @@ Python tests:
 Interoperability Test Vectors
 ------------------------------
 
-Pre-generated static test vectors are committed under ``test-vectors/``.
-They can be regenerated at any time from the live implementation:
-
-.. code-block:: bash
-
-   python tests/generate_test_vectors.py
+The shared vector repository, `luar-space/lsis-afs-test-vectors
+<https://github.com/luar-space/lsis-afs-test-vectors>`__, has a vector set
+for each stage of this block in ``fec/``, with full inputs and outputs:
 
 .. list-table::
    :header-rows: 1
@@ -454,22 +451,25 @@ They can be regenerated at any time from the live implementation:
      - Description
    * - ``fec/bch_vectors.json``
      - 24
-     - BCH encode/decode pairs for all 4 FIDs × 6 TOI spot values
-   * - ``fec/ldpc_vectors.json``
-     - 12
-     - LDPC encode for SF2/SF3/SF4 × 4 message patterns (hex-truncated)
+     - BCH(51,8) codewords for all 4 FIDs × 6 TOI values, with decode
+       round trip
    * - ``fec/crc24_vectors.json``
      - 8
-     - CRC-24Q input → 24-bit CRC pairs with verify flag
+     - CRC-24Q input → 24-bit CRC pairs
    * - ``fec/interleaver_vectors.json``
      - 4
-     - 5880-bit round-trip pairs with spot-check position mapping
+     - 60×98 block interleaver, full 5880-bit input and output
+   * - ``fec/ldpc_vectors.json``
+     - 12
+     - LDPC encode for SF2/SF3/SF4 × 4 message patterns, full codewords
 
-Validate them against the current build:
+``task conformance`` has LunaLink produce the same four files and runs the
+repository's ``validate.py diff-fec`` on them, along with the checks for
+every other level (:doc:`/interoperate`).
 
-.. code-block:: bash
-
-   uv run pytest tests/test_interop_self.py
+The BCH and CRC-24Q files are also kept under ``test-vectors/fec/`` as
+offline fixtures, which ``uv run pytest tests/test_interop_self.py`` checks
+against the current build.
 
 ----
 

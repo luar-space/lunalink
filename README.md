@@ -75,7 +75,9 @@ are three ways to do that.
    with the reference data they were checked against. Its `validate.py` uses
    only the Python standard library and compares your codes, frames, signals,
    decoded bits and parsed data against the set:
-   `python validate.py diff-frames /path/to/your/frames/`.
+   `python validate.py diff-frames /path/to/your/frames/`. LunaLink is held
+   to the same set: `task conformance` runs those comparisons on its output,
+   in CI.
 2. Run the cross-checks from LunaLink. `task interop` and
    `task interop-receiver` run it against two independent implementations, and
    `scripts/interop/validate_foreign_vectors.py` runs its decoder over a
