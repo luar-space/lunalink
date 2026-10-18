@@ -3,8 +3,8 @@ Interface Control Document
 
 **Document ID**: LUNALINK-ICD-001
 **Specification Reference**: NPR 7150.2D SWE-090
-**Revision**: 1.0
-**Date**: 2026-03-12
+**Revision**: 1.1
+**Date**: 2026-10-18
 **Status**: Released — v1.0.0 baseline
 
 Purpose
@@ -63,8 +63,10 @@ computation.
      - Not thread-safe; re-entrant
    * - ``multiplex_iq``
      - ``IqMuxStatus multiplex_iq(i_samples, q_samples, out) noexcept``
-     - ``i_samples``, ``q_samples``: equal-length spans of int8 {-1, +1}
-     - ``out`` interleaved as [I0, Q0, I1, Q1, …]; ``IqMuxStatus``
+     - ``i_samples``: 2046 AFS-I chips, ``q_samples``: 10230 AFS-Q chips,
+       both int8 in {-1, +1}
+     - ``out``: 20460 int16 samples interleaved as [I0, Q0, I1, Q1, …];
+       ``IqMuxStatus``
      - ``kInputTooSmall``, ``kOutputTooSmall``, ``kInvalidISample``,
        ``kInvalidQSample``, ``kNullInput``
      - Not thread-safe; re-entrant
@@ -154,14 +156,15 @@ all names listed below under the ``lunalink.afs`` namespace.
        at +1)
      - ``ValueError`` on invalid chips
    * - ``multiplex_iq``
-     - ``multiplex_iq(i: ndarray[int8], q: ndarray[int8]) -> ndarray[int8]``
-     - Interleaves I and Q chips as [I0, Q0, I1, Q1, …]; output length =
-       2 × len(i)
+     - ``multiplex_iq(i: ndarray[int8], q: ndarray[int8]) -> ndarray[int16]``
+     - Takes one code epoch (2046 I chips, 10230 Q chips) and returns 10230
+       (I, Q) rows, shape ``(10230, 2)``, each I chip held for the five Q
+       chips it spans
      - ``ValueError`` on length mismatch or invalid sample
 
 The platform-layer facilities (``run_post``, ``SignalChainFsm``,
-``WindowedWatchdog``) are deliberately **not** exposed to Python — they are
-flight-software scaffolding exercised by the C++ unit and SWIFI suites.
+``WindowedWatchdog``) are deliberately not exposed to Python.  They are
+flight-software scaffolding, exercised by the C++ unit and SWIFI suites.
 
 Type stubs are maintained in ``src/lunalink/afs/_afs.pyi``.
 
@@ -223,8 +226,8 @@ The Hardware Abstraction Layer is one pure-virtual interface,
 chain never depends on how a platform delivers telemetry: a reference to the
 interface is injected at construction (``SyncDetector``, ``SignalChainFsm``)
 or passed per call (``frame_decode``, ``WindowedWatchdog::evaluate``).  Two
-implementations ship with it — ``NullTelemetryHal`` discards packets and is
-the default in non-flight stubs; ``CaptureTelemetryHal<N>`` stores up to
+implementations ship with it: ``NullTelemetryHal`` discards packets and is
+the default in non-flight stubs, and ``CaptureTelemetryHal<N>`` stores up to
 ``N`` packets for test assertions.
 
 .. list-table::
@@ -297,7 +300,8 @@ Data Formats
     All chip sequences use the bipolar convention of LSIS Table 8: logical 0 →
     chip value +1, logical 1 → chip value -1 (implemented as the branchless
     mapping in ``modulator.hpp``).  In C++ the type is ``int8_t``; in Python
-    it is a plain ``int`` in {-1, +1}.  Callers must not pass any other value.
+    chips come back as ``int8`` arrays of {-1, +1}.  Callers must not pass any
+    other value.
 
 **IQ interleave format**
     ``multiplex_iq`` produces an interleaved sample stream ordered as::
@@ -305,7 +309,7 @@ Data Formats
         [I₀, Q₀, I₁, Q₁, I₂, Q₂, …, Iₙ₋₁, Qₙ₋₁]
 
     It works one code epoch at a time: 2046 AFS-I chips and 10230 AFS-Q chips
-    in, 20460 interleaved ``int16`` samples out — each I chip is held for the
+    in, 20460 interleaved ``int16`` samples out.  Each I chip is held for the
     five Q chips it spans, since the chip rates are 1.023 and 5.115 Mchip/s.
     A shorter input returns ``IqMuxStatus::kInputTooSmall``, an output that
     cannot hold 20460 samples returns ``kOutputTooSmall``, and a chip outside
@@ -352,12 +356,15 @@ failure that also raises a ``FaultPacket`` through the HAL.
      - ``kOutputTooSmall``, ``kInvalidFid``, ``kInvalidToi``,
        ``kNullOutput``, ``kInvalidInput``, ``kAmbiguousMatch`` (two
        codewords at equal Hamming distance)
-     - ``kAmbiguousMatch`` is a decode failure: the frame is discarded at
-       the frame boundary (Zone 2) and the chain resumes with the next one;
-       the rest are argument errors
+     - ``kAmbiguousMatch``, and ``kNullOutput`` from the hard decoder
+       ``bch_decode`` (no codeword within distance 2), are decode failures:
+       the frame is discarded at the frame boundary (Zone 2) and the chain
+       resumes with the next one.  ``bch_decode_soft`` reports a non-finite
+       LLR as ``kInvalidInput``.  The rest are argument errors
    * - ``LdpcStatus`` (``encoding/ldpc.hpp``)
-     - ``kInvalidInput``, ``kOutputTooSmall``, ``kNotConverged``
-       (iteration cap reached without a satisfied syndrome)
+     - ``kInvalidInput`` (wrong length, zero iterations, or a NaN or
+       infinite LLR), ``kOutputTooSmall``, ``kNotConverged`` (iteration cap
+       reached without a satisfied syndrome)
      - ``kNotConverged`` is a decode failure (Zone 2, frame discarded);
        the rest are argument errors
    * - ``CrcStatus`` (``encoding/crc.hpp``)
@@ -374,9 +381,11 @@ failure that also raises a ``FaultPacket`` through the HAL.
        the frame (Zone 2)
    * - ``FrameDecodeStatus`` (``messages/frame_decode.hpp``)
      - ``kSyncNotFound``, ``kBchFailed``, ``kLdpcFailed``, ``kCrcFailed``,
-       ``kInvalidInput``
-     - Zone 2 — the frame is discarded and the next one is processed; the
-       Python layer maps these to ``SyncNotFoundError`` and friends
+       ``kInvalidInput`` (too few symbols, a non-positive or non-finite
+       ``llr_scale``, or a NaN or infinity in the located frame's payload)
+     - Zone 2: the frame is discarded and the next one is processed.  On any
+       of them every ``crc_ok`` is false and the data buffers are zero.  The
+       Python layer raises ``SyncNotFoundError`` or ``DecodeError``
    * - ``MessageParseStatus`` (``messages/message_parser.hpp``)
      - ``kInvalidInput``
      - Argument error
@@ -413,7 +422,7 @@ failure that also raises a ``FaultPacket`` through the HAL.
 (Zone 1) the function scrubs its buffers and returns without writing
 output; the caller applies frame-level policy (Zone 2), discarding the
 frame and resuming with the next; two consecutive frame faults, a failed
-integrity check or a legal-transition-matrix miss escalate to Zone 3 —
+integrity check or a legal-transition-matrix miss escalate to Zone 3:
 ``SignalChainFsm`` enters ``kSafeMode``, transmission halts and a
 ``FaultPacket`` is emitted.  The exact values of every enumerator are in the header
 named, and in :doc:`../api_cpp`; the tests reference them by name, so a
