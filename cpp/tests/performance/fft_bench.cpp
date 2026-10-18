@@ -253,24 +253,41 @@ template <uint32_t N> void verify_impulse_response() {
   }
 }
 
-// Tagged ``[slow]`` so the default ``~[slow]`` filter used by ``task
-// test-cpp`` and ``task sanitize`` excludes it — sanitiser-instrumented
-// timings are bogus, and the bench's own ``task bench-fft`` invokes it
-// explicitly via the ``[fft_bench]`` filter regardless of ``[slow]``.
-// Same convention as ``[wcet][slow]`` and ``[ber][slow]``.
-TEST_CASE("FFT microbench: size × backend × mode grid", "[fft_bench][slow]") {
-  // Sanity-check at every size we then time.  test_fft_sizes.cpp
-  // already covers correctness for the default Tier-2 build, but if
-  // a future slice introduces per-size dispatch (e.g. an A5 GPU
-  // backend above N=8192), a broken backend at N=16384 would escape
-  // a single-size spot-check.  Six impulse-checks total cost <1 ms.
+// Correctness, separated from the timing grid below so it can run where the
+// bench must not.  It used to live inside the bench TEST_CASE, which made the
+// project's ONLY multi-size FFT check reachable only by also running the
+// benchmark -- and the comment justifying that pointed at test_fft_sizes.cpp,
+// a file which does not exist.  Cross-Architecture is the gate that most needs
+// these: s390x is the suite's only big-endian, strict-alignment target, and
+// complex float round-tripping is exactly where an endianness bug surfaces.
+// It cannot afford the grid under QEMU, so the two must be separately
+// selectable.  Deliberately NOT [slow]: six impulse checks cost under a
+// millisecond, so the fast suite can carry them too.
+TEST_CASE("FFT: impulse response is exact at every benchmarked size", "[fft]") {
+  // One per size actually timed below.  A single-size spot-check would miss a
+  // future per-size dispatch (an A5 GPU backend above N=8192, say) breaking
+  // only at N=16384.
   verify_impulse_response<2048>();
   verify_impulse_response<4096>();
   verify_impulse_response<8192>();
   verify_impulse_response<16384>();
   verify_impulse_response<32768>();
   verify_impulse_response<65536>();
+}
 
+// Tagged ``[slow]`` so the default ``~[slow]`` filter used by ``task
+// test-cpp`` and ``task sanitize`` excludes it — sanitiser-instrumented
+// timings are bogus, and the bench's own ``task bench-fft`` invokes it
+// explicitly via the ``[fft_bench]`` filter regardless of ``[slow]``.
+// Same convention as ``[wcet][slow]`` and ``[ber][slow]``.
+//
+// ``[fft_bench]`` is also excluded explicitly by Cross-Architecture, which
+// runs Debug under QEMU where an emulated timing grid measures the emulator
+// rather than the code -- and where this was the single costliest thing in
+// the job.  Timing tags must be excluded by name there, not inherited from
+// ``[slow]``, because that gate deliberately keeps the slow correctness
+// tests.
+TEST_CASE("FFT microbench: size × backend × mode grid", "[fft_bench][slow]") {
   CsvWriter csv(output_csv_path());
   std::printf("FFT microbench (variant=%s, output=%s)\n", variant_id(), output_csv_path());
   std::printf("  size  single                                 thr10 (10 concurrent threads)\n");

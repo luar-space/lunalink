@@ -6,13 +6,13 @@ on:
     tags: ["v*"]
     paths-ignore:
       - 'docs/**'
-      - '*.md'
-      - '*.rst'
+      - '**.md'
+      - '**.rst'
   pull_request:
     paths-ignore:
       - 'docs/**'
-      - '*.md'
-      - '*.rst'
+      - '**.md'
+      - '**.rst'
 
 
 # Least privilege: every token use in this workflow is a read
@@ -20,37 +20,47 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
 jobs:
   test:
     name: Test (Python ${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        # PRs: single fast job. Main: full matrix.
-        python-version: ${{ github.event_name == 'pull_request' && fromJSON('["3.13"]') || fromJSON('["3.12", "3.13", "3.14"]') }}
+        # PRs: a single job on 3.12. Main: the full matrix.
+        #
+        # 3.12 rather than the middle of the range because it is the floor
+        # that requires-python = ">=3.12" promises, and the floor is where
+        # incompatibility actually lands: a 3.13-only stdlib call or syntax
+        # passes a 3.13 job and breaks the oldest interpreter we advertise.
+        python-version: ${{ github.event_name == 'pull_request' && fromJSON('["3.12"]') || fromJSON('["3.12", "3.13", "3.14"]') }}
         os: [ubuntu-latest]
         # Folded scalar: the inline JSON contains colons, which YAML cannot
         # parse in a plain scalar — the workflow failed to load without it.
         include: >-
           ${{ github.event_name != 'pull_request' && fromJSON('[{"python-version": "3.12", "os": "windows-latest"}, {"python-version": "3.12", "os": "macos-14"}]') || fromJSON('[]') }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Install Ninja (Linux)
         if: runner.os == 'Linux'
-        run: sudo apt-get install -y ninja-build
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
       - uses: hendrikmuhs/ccache-action@v1
         if: runner.os != 'Windows'
         with:
           key: python-${{ matrix.python-version }}-${{ matrix.os }}
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           # Authenticated: the action downloads Task from GitHub releases,
           # and shared runner IPs exhaust the anonymous rate limit.
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
       - run: uv sync --group test
@@ -77,13 +87,17 @@ jobs:
 
       - run: task test-py
 
+      # Pin the badge to one job. `python-version == '3.12'` alone is also
+      # true for the windows-latest and macos-14 entries, so all three
+      # uploaded an artifact named python-coverage and the badge job's
+      # download resolved the name to whichever one the API returned.
       - name: Generate coverage JSON
-        if: matrix.python-version == '3.12'
+        if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-latest'
         run: uv run python -m coverage json -o coverage.json
 
       - name: Upload coverage data
-        if: matrix.python-version == '3.12'
-        uses: actions/upload-artifact@v5
+        if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v7
         with:
           name: python-coverage
           path: coverage.json
@@ -93,13 +107,14 @@ jobs:
     needs: test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     env:
       # Skip the badge where no gist is configured (a fork, or the submission
       # repository) instead of failing the workflow over a cosmetic artefact.
       GIST_SECRET: ${{ secrets.GIST_SECRET }}
     steps:
       - name: Download coverage data
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: python-coverage
 
@@ -118,7 +133,7 @@ jobs:
 
       - name: Update Python coverage badge
         if: env.GIST_SECRET != ''
-        uses: schneegans/dynamic-badges-action@v1.7.0
+        uses: schneegans/dynamic-badges-action@v1.9.0
         with:
           auth: ${{ secrets.GIST_SECRET }}
           gistID: ${{ vars.COVERAGE_GIST_ID }}

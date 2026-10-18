@@ -8,34 +8,91 @@ on:
       - 'cmake/**'
       - 'CMakeLists.txt'
       - 'Dockerfile.cross-arch'
+      - '.dockerignore'
       - '.github/workflows/cross-arch.yml'
 
-# Least privilege: every token use in this workflow is a read
-# (arduino/setup-task fetching Task from GitHub releases).
+# Least privilege: this workflow makes no GITHUB_TOKEN API calls at all. The
+# layer cache below does not go through GITHUB_TOKEN — buildx reaches the
+# Actions cache service with ACTIONS_RUNTIME_TOKEN, which is supplied to
+# actions directly and is not governed by this block.
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
   cross-arch:
     name: Test (${{ matrix.platform }})
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        platform: [linux/arm64, linux/s390x]
+        include:
+          # `scope` is the cache namespace: matrix.platform contains a slash,
+          # which is not safe to interpolate into a cache scope, and GitHub
+          # expressions have no replace() to strip it.
+          - platform: linux/arm64
+            scope: arm64
+          - platform: linux/s390x
+            scope: s390x
+          # The flight target ISA: PolarFire SoC runs RV64GC, which is what
+          # Ubuntu's riscv64 baseline targets.
+          - platform: linux/riscv64
+            scope: riscv64
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-qemu-action@v4
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
       - name: Build & test (${{ matrix.platform }})
-        run: >
-          docker buildx build
-          --platform ${{ matrix.platform }}
-          --progress=plain
-          --no-cache
-          -f Dockerfile.cross-arch .
+        # Uses build-push-action rather than `docker buildx build` in a run
+        # step specifically for the cache: type=gha needs ACTIONS_RUNTIME_TOKEN
+        # and ACTIONS_RESULTS_URL, which are exposed to actions but NOT to run
+        # steps, so a raw buildx invocation silently gets no cache at all.
+        #
+        # Nothing is pushed or loaded; the image is discarded. The RUN
+        # directives are the test, so building IS running the suite.
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.cross-arch
+          platforms: ${{ matrix.platform }}
+          target: verify
+          push: false
+          # Replaces a bare --no-cache. That flag was close to a no-op here:
+          # every run gets a fresh runner with an empty builder, so there was
+          # never a cache to invalidate — only one that was never populated.
+          # Installing a C++ toolchain under emulation was therefore repeated
+          # in full on every run, including re-runs of a job that failed for
+          # infrastructure reasons and never reached a test.
+          #
+          # Per-platform scope: the platforms share no layers.
+          #
+          # mode=min exports the final image's layer chain, which here is all
+          # three stages, since they are linear ancestors. mode=max would add
+          # stages absent from the final image, of which there are none — so
+          # the two are near-equivalent here and min is simply the leaner
+          # default. Note it does NOT avoid exporting the `verify` layers:
+          # verify is the final stage, so its layers ship to the cache and are
+          # then never restored, because no-cache-filter stops the lookup.
+          # That waste is unavoidable while the tests are the last stage, and
+          # it is worth watching: the Actions cache is a 10 GB per-repository
+          # budget shared with every other cache here, the ccache that WCET
+          # Profile relies on included. If eviction starts hurting, the fix is
+          # to stop exporting this scope, not to drop no-cache-filter.
+          cache-from: type=gha,scope=cross-arch-${{ matrix.scope }}
+          cache-to: type=gha,scope=cross-arch-${{ matrix.scope }},mode=min
+          # The integrity guarantee. `verify` holds the test RUNs and nothing
+          # else, so naming it here means a cache hit can never stand in for
+          # actually executing the suite. Without this, an unchanged context
+          # would produce a green run that tested nothing. The toolchain and
+          # build stages stay cacheable; `build` is keyed on COPY, so changed
+          # code still recompiles.
+          no-cache-filter: verify

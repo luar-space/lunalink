@@ -9,6 +9,13 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "ci"
+    # Grouped for the same reason as dev-tooling below, and more sharply: a
+    # workflow-file change matches no paths-ignore entry, so each separate
+    # action bump ran the entire C++ suite. Six such pull requests landed at
+    # once and cost 288 runner-minutes between them, MC/DC coverage included.
+    groups:
+      github-actions:
+        patterns: ["*"]
 
   # Python dependencies. Grouped so that routine tooling bumps arrive as one
   # pull request rather than a dozen; the runtime dependencies are few and

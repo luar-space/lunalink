@@ -33,6 +33,12 @@ PLATFORMS: dict[str, dict[str, str]] = {
         "alignment": "Strict",
         "purpose": "Endianness + alignment validation",
     },
+    "riscv64": {
+        "docker_platform": "linux/riscv64",
+        "endian": "LE",
+        "alignment": "Permissive",
+        "purpose": "Flight target ISA (PolarFire SoC, RV64GC)",
+    },
 }
 
 BUILDER_NAME = "lunalink-cross-arch"

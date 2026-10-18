@@ -1,11 +1,18 @@
 name: Acceptance Tests
 
+# The full C++ suite, Debug, with no tag filter -- all 264 cases, including
+# the [slow] ones that test-cpp.yml deliberately excludes. That makes this a
+# strict superset of the ~[slow] fast gate, not a complementary slice of it:
+# the whole binary runs, unit tests included. `task test-acceptance` is the
+# local equivalent.
+#
+# On merges to main and on release tags. There is no nightly schedule: the
+# push trigger is what gates main, and a nightly would only re-certify a ref
+# that has already been certified here.
 on:
   push:
     branches: [main]
     tags: ["v*"]
-  # schedule:
-  #   - cron: '0 4 * * *'  # nightly at 04:00 UTC
   workflow_dispatch:
 
 
@@ -14,16 +21,21 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
 jobs:
   acceptance:
-    name: Acceptance (BER, E2E, channel, WCET)
+    name: Acceptance (full suite, Debug)
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Install Ninja
-        run: sudo apt-get install -y ninja-build
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
       - uses: hendrikmuhs/ccache-action@v1
         with:
           key: acceptance
@@ -45,7 +57,7 @@ jobs:
             --reporter "junit::out=build/test-results/lunalink_acceptance.xml"
       - name: Upload acceptance results
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: acceptance-test-results
           path: build/test-results/

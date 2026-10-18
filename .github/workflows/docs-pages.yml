@@ -9,6 +9,11 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  # Needed to list the runs of the workflows that produce the assurance
+  # artifacts below. An explicit permissions block makes everything it does
+  # not name `none`, so without this the run listing fails with
+  # "Resource not accessible by integration (HTTP 403)".
+  actions: read
 
 concurrency:
   group: pages
@@ -17,10 +22,11 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     outputs:
       pages_enabled: ${{ steps.pages.outputs.enabled }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Check whether GitHub Pages is enabled
         # Pages cannot be enabled on a private repository of this plan, and
         # deploy-pages fails with a 404 when it is not. The build still runs
@@ -35,12 +41,12 @@ jobs:
             echo "enabled=false" >> "$GITHUB_OUTPUT"
             echo "::notice::GitHub Pages is not enabled on this repository; the site was built but not deployed."
           fi
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           # Authenticated: the action downloads Task from GitHub releases,
           # and shared runner IPs exhaust the anonymous rate limit.
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
       - run: uv sync --group dev
@@ -48,42 +54,94 @@ jobs:
         # Breathe renders the C++ API from Doxygen XML; task docs-build
         # generates it before Sphinx runs. nbsphinx needs pandoc to render
         # the notebooks' Markdown cells.
-        run: sudo apt-get install -y doxygen pandoc
-      - name: Download static-analysis artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: static-analysis-report
-          path: docs/assurance/
-        continue-on-error: true
-      - name: Download cppcheck artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: cppcheck-report
-          path: docs/assurance/
-        continue-on-error: true
-      - name: Download WCET profile artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: wcet-profile
-          path: docs/assurance/
-        continue-on-error: true
+        run: sudo apt-get update && sudo apt-get install -y doxygen pandoc
+      # These three artifacts are produced by OTHER workflows, so
+      # download-artifact cannot reach them: it looks only inside the current
+      # run and failed every time with "Artifact not found for name: ...",
+      # silenced by continue-on-error. The site has therefore been published
+      # without the static-analysis, cppcheck and WCET pages that
+      # metrics_plan.rst and sdp.rst cite as deliverables. Resolve each
+      # producing workflow's latest successful run on main instead.
+      - name: Download assurance artifacts from their producing workflows
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # A failing API call is a misconfiguration and fails the step; an
+          # empty result just means that workflow has not succeeded on main
+          # yet, which warns. The two are not the same and the previous
+          # continue-on-error could not tell them apart.
+          fetch() {
+            wf="$1"; artifact="$2"
+            if ! run_id=$(gh api \
+              "repos/${{ github.repository }}/actions/workflows/${wf}/runs?status=success&branch=main&per_page=1" \
+              --jq '.workflow_runs[0].id // empty'); then
+              echo "::error::cannot list ${wf} runs; the workflow token needs actions:read"
+              return 1
+            fi
+            if [ -z "${run_id}" ]; then
+              echo "::warning::no successful ${wf} run on main; ${artifact} is missing from the site"
+              return
+            fi
+            if gh run download "${run_id}" --name "${artifact}" --dir docs/assurance/; then
+              echo "fetched ${artifact} from ${wf} run ${run_id}"
+            else
+              echo "::warning::${wf} run ${run_id} carries no ${artifact} (expired?); it is missing from the site"
+            fi
+          }
+          fetch tidy.yml static-analysis-report
+          fetch lint.yml cppcheck-report
+          fetch wcet.yml wcet-profile
+
+          # These artifacts come from the producing workflows' PREVIOUS runs
+          # on main, so their content is always at least one commit old --
+          # and older still while a producer is failing: wcet.yml was red when
+          # this was written, which pinned wcet-profile two commits back. A
+          # page that reaches Sphinx without `:orphan:` fails the -W build on
+          # toc.not_included, so the consumer normalises instead of trusting
+          # the artifact's vintage. The generators emit it too, which makes
+          # this a no-op for anything built after daceb60.
+          for f in docs/assurance/static_analysis_report.rst \
+                   docs/assurance/cppcheck_report.rst \
+                   docs/assurance/wcet_profile.rst; do
+            [ -f "${f}" ] || continue
+            if [ "$(head -n1 "${f}")" != ":orphan:" ]; then
+              { printf ':orphan:\n\n'; cat "${f}"; } > "${f}.tmp"
+              mv "${f}.tmp" "${f}"
+              echo "prepended :orphan: to ${f##*/} (artifact predates the generator change)"
+            fi
+          done
       - run: task docs-build
+      # Same shape as the fetch above, for the same reason: this swallowed its
+      # own 403 through `2>/dev/null` and continue-on-error, so /coverage/ has
+      # been absent from the site with nothing in the log to say so.
       - name: Embed coverage HTML report
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          RUN_ID=$(gh api "repos/${{ github.repository }}/actions/workflows/coverage-cpp.yml/runs?status=success&per_page=1" \
-            --jq '.workflow_runs[0].id' 2>/dev/null || echo "")
-          if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ]; then
-            gh run download "$RUN_ID" --name mcdc-coverage --dir /tmp/coverage-artifact/ 2>/dev/null || true
-            if [ -d /tmp/coverage-artifact/html ]; then
-              mkdir -p docs/_build/html/coverage
-              cp -r /tmp/coverage-artifact/html/. docs/_build/html/coverage/
-              echo "Coverage HTML embedded at /coverage/"
-            fi
+          set -euo pipefail
+          if ! run_id=$(gh api \
+            "repos/${{ github.repository }}/actions/workflows/coverage-cpp.yml/runs?status=success&branch=main&per_page=1" \
+            --jq '.workflow_runs[0].id // empty'); then
+            echo "::error::cannot list coverage-cpp.yml runs; the workflow token needs actions:read"
+            exit 1
           fi
-        continue-on-error: true
-      - uses: actions/upload-pages-artifact@v3
+          if [ -z "${run_id}" ]; then
+            echo "::warning::no successful coverage-cpp.yml run on main; /coverage/ is missing from the site"
+            exit 0
+          fi
+          if ! gh run download "${run_id}" --name mcdc-coverage --dir /tmp/coverage-artifact/; then
+            echo "::warning::run ${run_id} carries no mcdc-coverage artifact (expired?); /coverage/ is missing from the site"
+            exit 0
+          fi
+          if [ ! -d /tmp/coverage-artifact/html ]; then
+            echo "::warning::mcdc-coverage artifact has no html/ directory; /coverage/ is missing from the site"
+            exit 0
+          fi
+          mkdir -p docs/_build/html/coverage
+          cp -r /tmp/coverage-artifact/html/. docs/_build/html/coverage/
+          echo "coverage HTML embedded at /coverage/ from run ${run_id}"
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: docs/_build/html
 
@@ -93,7 +151,8 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: build
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

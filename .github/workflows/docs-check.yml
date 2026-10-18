@@ -1,20 +1,22 @@
 name: Docs Check
 
+# Pull requests only. Every push to main builds the docs anyway in
+# docs-pages.yml, with the full `task docs-build` that re-executes the
+# notebooks; running this one there too built the same site twice.
 on:
-  push:
-    branches: [main]
-    tags: ["v*"]
-    paths:
-      - 'docs/**'
-      - 'src/**'
-      - '*.rst'
-      - '.github/workflows/docs-check.yml'
   pull_request:
     paths:
       - 'docs/**'
       - 'src/**'
-      - '*.rst'
+      - '**.rst'
       - '.github/workflows/docs-check.yml'
+      # The docs toolchain is a dependency group, so a lockfile bump can
+      # break the build with nothing else in the diff. Without these, the
+      # breathe 4.36 -> 5.1 pull request carried no Docs check at all: it
+      # touched only uv.lock, and would have failed first on main, in
+      # docs-pages.yml, after publishing was already underway.
+      - 'uv.lock'
+      - 'pyproject.toml'
 
 
 # Least privilege: every token use in this workflow is a read
@@ -22,20 +24,25 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
 jobs:
   docs:
     name: Docs
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           # Authenticated: the action downloads Task from GitHub releases,
           # and shared runner IPs exhaust the anonymous rate limit.
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
       - run: uv sync --group dev
@@ -43,5 +50,9 @@ jobs:
         # Breathe renders the C++ API from Doxygen XML; task docs-build
         # generates it before Sphinx runs. nbsphinx needs pandoc to render
         # the notebooks' Markdown cells.
-        run: sudo apt-get install -y doxygen pandoc
-      - run: task docs-build
+        run: sudo apt-get update && sudo apt-get install -y doxygen pandoc
+      # docs-strict is the same -W warnings-as-errors Sphinx build minus
+      # `jupyter nbconvert --execute`: seconds instead of minutes, because
+      # nbsphinx renders the notebooks from their committed outputs. The
+      # notebooks are still executed on main by docs-pages.yml.
+      - run: task docs-strict

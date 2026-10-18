@@ -1037,7 +1037,7 @@ tasks:
     silent: false
 
   cross-arch:
-    desc: Build and test C++ core on arm64 + s390x via Docker buildx + QEMU emulation.
+    desc: Build and test C++ core on arm64 + s390x + riscv64 via Docker buildx + QEMU emulation.
     cmd: python3 scripts/cross_arch_test.py
 
   cross-arch-quick:

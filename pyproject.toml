@@ -1,5 +1,5 @@
 [build-system]
-requires = ["scikit-build-core>=0.9", "nanobind>=2.0", "setuptools-scm"]
+requires = ["scikit-build-core>=1.1.1", "nanobind>=2.0", "setuptools-scm"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -8,7 +8,8 @@ dynamic = ["version"]
 description = "Reference implementation of the LunaNet Augmented Forward Signal (LSIS V1.0)"
 readme = "README.md"
 requires-python = ">=3.12"
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 authors = [{name = "Marco Fiscato", email = "marco.fiscato@gmail.com"}]
 maintainers = [{name = "Luar Space", email = "marco.fiscato@gmail.com"}]
 keywords = [
@@ -27,7 +28,6 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Telecommunications Industry",
-    "License :: OSI Approved :: Apache Software License",
     "Operating System :: MacOS",
     "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX :: Linux",
@@ -95,7 +95,15 @@ fallback_version = "0.0.0.dev0"
 git_describe_command = ["git", "describe", "--tags", "--long", "--match", "v[0-9]*"]
 
 [tool.scikit-build]
-minimum-version = "0.9"
+# Not a dependency floor -- that is [build-system] requires above. This is the
+# bug-compatibility switch (the cmake_minimum_required of this backend): it
+# selects which release's DEFAULTS apply, so leaving it at 0.9 asked a 1.1.1
+# backend for 0.9-era behaviour. Raised to match the floor. Of the 61 resolved
+# settings, only two change: sdist.inclusion-mode classic -> default and
+# sdist.resolve-symlinks classic -> all. Both are no-ops here -- the sdist file
+# list is identical and the repo tracks no symlinks -- and neither touches the
+# wheel path at all.
+minimum-version = "1.1.1"
 wheel.packages = ["src/lunalink"]
 metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
 ninja.make-fallback = true
@@ -104,7 +112,34 @@ ninja.make-fallback = true
 cmake.define.FETCHCONTENT_BASE_DIR = {env="FETCHCONTENT_BASE_DIR", default="/tmp/fetchcontent"}
 
 [tool.cibuildwheel]
+# These patterns match the GIL-enabled interpreters only: the free-threaded
+# builds identify as cp313t / cp314t, which "cp313-*" and "cp314-*" do not
+# match. The pattern is the whole of the exclusion: cibuildwheel 4.x
+# (release.yml pins 4.3.0) no longer gates free-threading behind an enable
+# group -- "cpython-freethreading" is not a value `enable` accepts any more,
+# and cp313t / cp314t are ordinary identifiers in its build-platforms table.
+# So broadening these patterns (to "cp313*-*", say) would start shipping
+# free-threaded wheels with nothing else to stop them.
+#
+# That exclusion is deliberate, not an oversight. The C++ core has never been
+# analysed for concurrent use: it contains no synchronisation primitives at
+# all -- no std::mutex, no std::atomic, no thread_local -- and it holds
+# mutable state its own contract says must not be shared, such as the
+# per-instance `mutable` split-complex scratch of the vDSP FFT backend
+# ("Fft<N> is **not** safe to share across threads",
+# cpp/include/lunalink/signal/fft.hpp). The extension would not even deliver
+# free-threading as advertised: the nanobind module does not declare
+# nb::mod_gil_not_used(), so importing it on a free-threaded interpreter
+# re-enables the GIL. A free-threaded wheel would therefore ship either a
+# concurrency claim this project has not substantiated or a wheel that turns
+# the GIL back on. Revisit when there is a thread-safety analysis to cite;
+# Python 3.14 makes free-threading officially supported, so the question will
+# keep being asked.
 build = "cp312-* cp313-* cp314-*"
+
+# musl targets are skipped: the wheels link a C++ runtime and no mission
+# toolchain in scope uses musl, so building them would create an artifact
+# nobody tests against.
 skip = "*-musllinux_*"
 test-requires = ["pytest", "numpy", "jaxtyping", "beartype"]
 test-command = "python -m pytest {project}/tests -x -q --override-ini='addopts='"

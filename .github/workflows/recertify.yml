@@ -42,6 +42,13 @@ on:
 permissions:
   contents: read
 
+# Serialised per ref, never cancelled: each run is dispatched deliberately
+# and emits a signed-off record, so a second certification of the same ref
+# queues behind the first rather than killing it.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
 
   # --------------------------------------------------------------------------
@@ -50,22 +57,23 @@ jobs:
   gate-lint:
     name: "Gate: Lint / Static Analysis"
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           # Authenticated: the action downloads Task from GitHub releases,
           # and shared runner IPs exhaust the anonymous rate limit.
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
       - run: uv sync --group dev
       - name: Install cppcheck + ninja
-        run: sudo apt-get install -y cppcheck ninja-build
+        run: sudo apt-get update && sudo apt-get install -y cppcheck ninja-build
       - name: Lint checks (pyright, cppcheck, ruff)
         run: task lint-check
       - name: Build flags gate (S10 / SWE-109)
@@ -84,14 +92,15 @@ jobs:
   gate-test-cpp:
     name: "Gate: C++ Unit Tests"
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
       - name: Install ninja
-        run: sudo apt-get install -y ninja-build
-      - uses: arduino/setup-task@v2
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - uses: arduino/setup-task@v3
         with:
           # Authenticated: the action downloads Task from GitHub releases,
           # and shared runner IPs exhaust the anonymous rate limit.
@@ -104,19 +113,20 @@ jobs:
   gate-swifi:
     name: "Gate: SWIFI Fault Injection"
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
       - name: Install ninja
-        run: sudo apt-get install -y ninja-build
-      - uses: arduino/setup-task@v2
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - uses: arduino/setup-task@v3
         with:
           # Authenticated: the action downloads Task from GitHub releases,
           # and shared runner IPs exhaust the anonymous rate limit.
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
       - run: uv sync --group dev
@@ -128,14 +138,15 @@ jobs:
   gate-sanitize:
     name: "Gate: Sanitizers (ASan + UBSan)"
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
       - name: Install ninja
-        run: sudo apt-get install -y ninja-build
-      - uses: arduino/setup-task@v2
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - uses: arduino/setup-task@v3
         with:
           # Authenticated: the action downloads Task from GitHub releases,
           # and shared runner IPs exhaust the anonymous rate limit.
@@ -143,39 +154,22 @@ jobs:
       - run: task sanitize
 
   # --------------------------------------------------------------------------
-  # Gate 5 — C++ Line Coverage  [SWE-127]
+  # Gate 5 — C++ Structural Coverage (region / line / MC/DC)  [SWE-127]
   # --------------------------------------------------------------------------
-  gate-coverage-cpp:
-    name: "Gate: C++ Line Coverage"
+  # This was two jobs: "C++ Line Coverage" running `task coverage-cpp`, and
+  # "MC/DC Coverage" rebuilding the same instrumented tree by hand. But
+  # `task coverage-cpp` IS the MC/DC task (-DENABLE_LLVM_COVERAGE=ON,
+  # -show-mcdc-summary), so the record presented one measurement twice as two
+  # independent SWE-127 gates. Neither enforced anything: both ran the
+  # measurement and discarded the verdict, passing at any coverage number.
+  gate-coverage:
+    name: "Gate: C++ Structural Coverage (region/line/MC/DC)"
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          ref: ${{ github.event.inputs.ref || github.ref }}
-          fetch-depth: 0
-      - name: Install ninja
-        run: sudo apt-get install -y ninja-build
-      - uses: arduino/setup-task@v2
-        with:
-          # Authenticated: the action downloads Task from GitHub releases,
-          # and shared runner IPs exhaust the anonymous rate limit.
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: astral-sh/setup-uv@v5
-        with:
-          python-version: "3.12"
-      - run: uv sync --group dev
-      - run: task coverage-cpp
-
-  # --------------------------------------------------------------------------
-  # Gate 6 — MC/DC Coverage  [SWE-127]
-  # --------------------------------------------------------------------------
-  gate-coverage-mcdc:
-    name: "Gate: MC/DC Coverage"
-    runs-on: ubuntu-latest
+    timeout-minutes: 45
     env:
       LLVM_VERSION: "19"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
@@ -188,64 +182,60 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ninja-build \
             clang-${LLVM_VERSION} llvm-${LLVM_VERSION} lld-${LLVM_VERSION}
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           # Authenticated: the action downloads Task from GitHub releases,
           # and shared runner IPs exhaust the anonymous rate limit.
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
       - run: uv sync --group dev
-      - name: Configure (LLVM MC/DC)
+      - name: Measure coverage
         run: |
           export PATH="/usr/lib/llvm-${LLVM_VERSION}/bin:${PATH}"
-          cmake -B build/mcdc -S . -G Ninja \
-            -DBUILD_PYTHON_BINDINGS=OFF \
-            -DBUILD_TESTING=ON \
-            -DCMAKE_BUILD_TYPE=Debug \
-            -DENABLE_LLVM_COVERAGE=ON \
-            -DCMAKE_C_COMPILER=clang \
-            -DCMAKE_CXX_COMPILER=clang++
-      - name: Build
+          task coverage-cpp
+      - name: Enforce the coverage floors
+        # The floors are defined once, in the THRESHOLDS table of
+        # scripts/coverage_evidence_report.py, which exits non-zero when a
+        # metric falls below its own. The gate this replaces ran the
+        # measurement and never looked at the result.
         run: |
           export PATH="/usr/lib/llvm-${LLVM_VERSION}/bin:${PATH}"
-          cmake --build build/mcdc --parallel
-      - name: Run tests
-        run: |
-          export PATH="/usr/lib/llvm-${LLVM_VERSION}/bin:${PATH}"
-          LLVM_PROFILE_FILE="lunalink-%m.profraw" \
-            ctest --test-dir build/mcdc --output-on-failure
-      - name: Merge profiles and generate MC/DC report
-        run: |
-          export PATH="/usr/lib/llvm-${LLVM_VERSION}/bin:${PATH}"
-          llvm-profdata merge -sparse build/mcdc/*.profraw \
-            -o build/mcdc/lunalink.profdata
-          llvm-cov report build/mcdc/test_lunalink \
-            -instr-profile=build/mcdc/lunalink.profdata \
-            -show-mcdc-summary \
-            -ignore-filename-regex='_deps|tests' \
-            -path-equivalence=.,$(pwd)
+          python3 scripts/coverage_evidence_report.py \
+            --build-dir build/coverage \
+            --output-rst build/coverage/coverage_evidence.rst \
+            --output-json build/coverage/coverage_summary.json
+      - name: Upload coverage evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: recertify-coverage-evidence
+          path: |
+            build/coverage/coverage_evidence.rst
+            build/coverage/coverage_summary.json
+          retention-days: 90
 
   # --------------------------------------------------------------------------
-  # Gate 7 — clang-tidy Analysis  [SWE-108]
+  # Gate 6 — clang-tidy Analysis  [SWE-108]
   # --------------------------------------------------------------------------
   gate-tidy:
     name: "Gate: clang-tidy Analysis"
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
       - name: Install clang + clang-tidy + ninja
-        run: sudo apt-get install -y ninja-build clang clang-tidy
-      - uses: arduino/setup-task@v2
+        run: sudo apt-get update && sudo apt-get install -y ninja-build clang clang-tidy
+      - uses: arduino/setup-task@v3
         with:
           # Authenticated: the action downloads Task from GitHub releases,
           # and shared runner IPs exhaust the anonymous rate limit.
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
       - run: uv sync --group dev
@@ -253,24 +243,25 @@ jobs:
         run: CC=clang CXX=clang++ task tidy
 
   # --------------------------------------------------------------------------
-  # Gate 8 — WCET Benchmark Profile  [Safety Plan §4]
+  # Gate 7 — WCET Benchmark Profile  [Safety Plan §4]
   # --------------------------------------------------------------------------
   gate-wcet:
     name: "Gate: WCET Benchmark Profile"
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
       - name: Install ninja
-        run: sudo apt-get install -y ninja-build
-      - uses: arduino/setup-task@v2
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - uses: arduino/setup-task@v3
         with:
           # Authenticated: the action downloads Task from GitHub releases,
           # and shared runner IPs exhaust the anonymous rate limit.
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
       - run: uv sync --group dev
@@ -282,95 +273,93 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release
       - name: Build
         run: cmake --build build/wcet --parallel
+      # Reporters write to files, so a Catch2 budget failure would
+      # otherwise surface as a bare "exit code 1" with no indication of which
+      # budget was missed — the same lesson wcet.yml records.
       - name: Run benchmarks
+        # `[wcet]` is the tag these benchmarks actually carry. This read
+        # `[performance]` — a Taskfile target name, not a Catch2 tag — which
+        # matched nothing; Catch2 3.4.0 exits 0 on an empty filter, so the
+        # gate recorded PASS over zero measurements.
         run: |
-          build/wcet/test_lunalink "[performance]" --reporter console \
-            2>&1 | tee /tmp/wcet_raw.txt
-      - name: Check WCET tolerance (±2% intra-run input-class spread)
+          build/wcet/test_lunalink "[wcet]" \
+            --reporter "console::out=/tmp/wcet_console.txt" \
+            --reporter "xml::out=/tmp/wcet_results.xml"
+      - name: Show benchmark output
+        if: always()
         run: |
-          python3 - <<'PYEOF'
-          import re, sys
+          grep -B4 -A12 -E "FAILED|with expansion" /tmp/wcet_console.txt || true
+          echo "--- tail ---"
+          tail -30 /tmp/wcet_console.txt || true
+      # The hand-rolled parser this replaces read the "estimated total run
+      # time" column and folded the samples/iterations counts into the
+      # benchmark name, so it recovered 2 of 7 benchmarks, each exactly once,
+      # and then skipped every tolerance check for want of a second sample.
+      # performance_report.py reads the XML reporter's mean/low/high/stddev
+      # and gates on 95% CI spread, defaulting to --stability fail. It is the
+      # same check wcet.yml runs.
+      - name: Check WCET measurement quality (95% CI spread)
+        run: |
+          python3 scripts/performance_report.py \
+            --xml /tmp/wcet_results.xml \
+            --console /tmp/wcet_console.txt \
+            --output /tmp/wcet_profile.rst
+      - name: Upload WCET profile
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: recertify-wcet-profile
+          path: |
+            /tmp/wcet_profile.rst
+            /tmp/wcet_console.txt
+            /tmp/wcet_results.xml
+          retention-days: 90
 
-          with open('/tmp/wcet_raw.txt') as f:
-              raw = f.read()
-
-          timing_pattern = re.compile(
-              r'^\s*([\w_]+(?:\s+[\w_]+)*?)\s+(\d+(?:\.\d+)?)\s+(ns|us|ms)\s', re.MULTILINE)
-          timings: dict[str, list[float]] = {}
-          for m in timing_pattern.finditer(raw):
-              name = m.group(1).strip()
-              val  = float(m.group(2))
-              unit = m.group(3)
-              if unit == 'us':
-                  val *= 1_000
-              elif unit == 'ms':
-                  val *= 1_000_000
-              timings.setdefault(name, []).append(val)
-
-          ci_failed = False
-          for fn, vals in sorted(timings.items()):
-              if len(vals) < 2:
-                  print(f'WARN  {fn}: only one timing sample; tolerance check skipped')
-              else:
-                  lo, hi = min(vals), max(vals)
-                  pct = (hi - lo) / lo * 100.0 if lo > 0 else 0.0
-                  if pct > 2.0:
-                      print(f'FAIL  {fn}: deviation {pct:.1f}% exceeds ±2% limit')
-                      ci_failed = True
-                  else:
-                      print(f'PASS  {fn}: deviation {pct:.1f}% within ±2%')
-
-          if not timings:
-              print('(no [performance] benchmarks found)')
-          if ci_failed:
-              print('ERROR: one or more functions exceeded ±2% WCET tolerance.', file=sys.stderr)
-              sys.exit(1)
-          PYEOF
-
-  # --------------------------------------------------------------------------
-  # Gate 9 — Python Tests  [SWE-128]
+  # Gate 8 — Python Tests  [SWE-128]
   # --------------------------------------------------------------------------
   gate-test-python:
     name: "Gate: Python Tests"
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           # Authenticated: the action downloads Task from GitHub releases,
           # and shared runner IPs exhaust the anonymous rate limit.
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
       - run: uv sync --group dev
       - run: task test-py
 
   # --------------------------------------------------------------------------
-  # Gate 10 — Documentation Build  [SWE-104]
+  # Gate 9 — Documentation Build  [SWE-104]
   # --------------------------------------------------------------------------
   gate-docs:
     name: "Gate: Documentation Build"
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           # Authenticated: the action downloads Task from GitHub releases,
           # and shared runner IPs exhaust the anonymous rate limit.
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
       - run: uv sync --group dev
       - name: Install doxygen and pandoc
-        run: sudo apt-get install -y doxygen pandoc
+        run: sudo apt-get update && sudo apt-get install -y doxygen pandoc
       - run: task docs-build
 
   # --------------------------------------------------------------------------
@@ -379,21 +368,21 @@ jobs:
   record:
     name: Generate Recertification Record
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: always()
     needs:
       - gate-lint
       - gate-test-cpp
       - gate-swifi
       - gate-sanitize
-      - gate-coverage-cpp
-      - gate-coverage-mcdc
+      - gate-coverage
       - gate-tidy
       - gate-wcet
       - gate-test-python
       - gate-docs
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
@@ -412,7 +401,7 @@ jobs:
             echo "ref_name=${BRANCH}" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
 
@@ -422,8 +411,7 @@ jobs:
           RESULT_TEST_CPP:     ${{ needs.gate-test-cpp.result }}
           RESULT_SWIFI:        ${{ needs.gate-swifi.result }}
           RESULT_SANITIZE:     ${{ needs.gate-sanitize.result }}
-          RESULT_COVERAGE_CPP: ${{ needs.gate-coverage-cpp.result }}
-          RESULT_COVERAGE_MCDC: ${{ needs.gate-coverage-mcdc.result }}
+          RESULT_COVERAGE:     ${{ needs.gate-coverage.result }}
           RESULT_TIDY:         ${{ needs.gate-tidy.result }}
           RESULT_WCET:         ${{ needs.gate-wcet.result }}
           RESULT_TEST_PYTHON:  ${{ needs.gate-test-python.result }}
@@ -452,8 +440,7 @@ jobs:
             --gate "test-cpp=$(map_result "${RESULT_TEST_CPP}")" \
             --gate "swifi=$(map_result "${RESULT_SWIFI}")" \
             --gate "sanitize=$(map_result "${RESULT_SANITIZE}")" \
-            --gate "coverage-cpp=$(map_result "${RESULT_COVERAGE_CPP}")" \
-            --gate "coverage-mcdc=$(map_result "${RESULT_COVERAGE_MCDC}")" \
+            --gate "coverage=$(map_result "${RESULT_COVERAGE}")" \
             --gate "tidy=$(map_result "${RESULT_TIDY}")" \
             --gate "wcet=$(map_result "${RESULT_WCET}")" \
             --gate "test-python=$(map_result "${RESULT_TEST_PYTHON}")" \
@@ -462,8 +449,7 @@ jobs:
             --gate-label "test-cpp=C++ Unit Tests (SWE-127)" \
             --gate-label "swifi=SWIFI Fault Injection (SW-SAF-06)" \
             --gate-label "sanitize=Sanitizers ASan+UBSan (SWE-128)" \
-            --gate-label "coverage-cpp=C++ Line Coverage (SWE-127)" \
-            --gate-label "coverage-mcdc=MC/DC Coverage (SWE-127)" \
+            --gate-label "coverage=C++ Structural Coverage region/line/MC-DC (SWE-127)" \
             --gate-label "tidy=clang-tidy Analysis (SWE-108)" \
             --gate-label "wcet=WCET Benchmark Profile (Safety Plan §4)" \
             --gate-label "test-python=Python Tests (SWE-128)" \
@@ -475,7 +461,7 @@ jobs:
           cat docs/assurance/recertification_record.rst
 
       - name: Upload recertification record
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: >-
             recertification-record-${{ github.event.inputs.milestone || 'Periodic' }}-${{ steps.meta.outputs.short }}
