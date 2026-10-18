@@ -15,6 +15,13 @@ follows [Semantic Versioning](https://semver.org/) as described in
   the previous behaviour.
 - Public-release documentation: contributing guide, governance, security
   policy, code of conduct, citation metadata and this changelog.
+- `task conformance`, which checks LunaLink against a pinned release of the
+  shared test vectors (`luar-space/lsis-afs-test-vectors`) at every level,
+  using that repository's own `validate.py diff-*` commands. CI runs it on
+  every change and weekly.
+- The API reference lists the binding functions (`prn_code`, `bch_encode`,
+  `frame_decode`, `ldpc_decode` and the rest). Sphinx autodoc had skipped all
+  of them because it does not recognise nanobind functions.
 - `docs/references/verify_references.sh`, which checks the vendored copy of
   the LunaNet specification against the bytes NASA publishes.
 - Provenance record for every vendored reference document, in
@@ -31,6 +38,13 @@ follows [Semantic Versioning](https://semver.org/) as described in
   `lunalink decode` command had the same crash.
 - The Python `frame_decode` binding returned uninitialised memory in the
   data arrays of a failed decode. They are now zero.
+- A NaN or infinity in a frame's payload decoded to an all-zero subframe
+  that passed LDPC and CRC-24Q, so `frame_decode` reported `kOk` with
+  `crc_ok` set and wrong navigation data. It now returns `kInvalidInput`, and
+  `ldpc_decode` rejects non-finite LLRs. (FMEA FM-075.)
+- `receive_frame` now raises `ValueError` for a `noise_variance` so small
+  that `2 / noise_variance` overflows float32, as documented, instead of
+  failing the decode.
 
 ### Changed
 - Repository reorganised for a general audience rather than for competition
@@ -39,6 +53,9 @@ follows [Semantic Versioning](https://semver.org/) as described in
 
 ### Removed
 - Competition organiser documents, which were never LunaLink's to redistribute.
+- The truncated interleaver and LDPC fixtures in `test-vectors/fec/`. Nothing
+  read them, and their schema differed from the shared repository's full
+  vectors under the same file names.
 
 ## [1.0.0] - 2026-09-04
 
