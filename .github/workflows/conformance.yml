@@ -1,0 +1,59 @@
+name: Conformance
+
+# LunaLink against the shared test vectors (luar-space/lsis-afs-test-vectors)
+# at the release pinned in scripts/interop/conformance.py.  LunaLink produces
+# every level and the vector repository's own validate.py judges it, with the
+# same diff-* commands any other implementation runs.  The weekly run catches a
+# change on either side that the push and PR triggers would not.
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '**.rst'
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '**.rst'
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+
+# Least privilege: every token use in this workflow is a read
+# (arduino/setup-task fetching Task from GitHub releases).
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  conformance:
+    name: Shared test vectors
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: conformance
+      - uses: arduino/setup-task@v3
+        with:
+          # Authenticated: the action downloads Task from GitHub releases,
+          # and shared runner IPs exhaust the anonymous rate limit.
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: '3.12'
+      - run: uv sync --group test
+        env:
+          CMAKE_C_COMPILER_LAUNCHER: ccache
+          CMAKE_CXX_COMPILER_LAUNCHER: ccache
+      - run: task conformance
