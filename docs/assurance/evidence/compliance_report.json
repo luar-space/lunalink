@@ -7,7 +7,7 @@
     "build/test_e2e.xml",
     "build/swifi-ninja/swifi_results.xml"
   ],
-  "total_test_cases": 326,
+  "total_test_cases": 327,
   "requirements": [
     {
       "id": "LSIS-AFS-101",
@@ -392,6 +392,7 @@
         "[LSIS-AFS-720] frame_decode: clean round-trip with offset",
         "[LSIS-AFS-720] frame_decode: llr_scale decodes a noisy unit-amplitude frame at an offset",
         "[LSIS-AFS-720] frame_decode: rejects a non-finite or non-positive llr_scale",
+        "[LSIS-AFS-720] frame_decode: a scaled LLR that overflows saturates",
         "[LSIS-AFS-720] frame_decode: a failed frame leaves no crc_ok flag set",
         "[LSIS-AFS-720] frame_decode: rejects non-finite symbols instead of decoding them",
         "[LSIS-AFS-720] E2E round-trip: TX \u2192 AWGN \u2192 RX \u2192 bit-exact recovery"
@@ -679,7 +680,7 @@
       "id": "NFR-3.1",
       "description": "Unit tests for all components",
       "status": "PASS",
-      "evidence": "326 test cases executed"
+      "evidence": "327 test cases executed"
     },
     {
       "id": "NFR-3.2",
@@ -691,7 +692,7 @@
       "id": "NFR-3.3",
       "description": "Test coverage > 90%",
       "status": "PASS",
-      "evidence": "C++ region 93.70% (>= 90%), line 90.34% (>= 85%), MC/DC 43.43% (>= 30%) from coverage_summary.json @ d104611; Python 100% (pytest --cov gate)"
+      "evidence": "C++ region 93.70% (>= 90%), line 90.34% (>= 85%), MC/DC 43.43% (>= 30%) from coverage_summary.json @ 08f1a5a; Python 100% (pytest --cov gate)"
     },
     {
       "id": "NFR-3.4",
@@ -745,7 +746,7 @@
       "id": "NFR-5.4",
       "description": "Version control with meaningful history",
       "status": "PASS",
-      "evidence": "258 commits over 230 days (2026-03-02 to 2026-10-18), mean subject 63 chars"
+      "evidence": "265 commits over 230 days (2026-03-02 to 2026-10-18), mean subject 63 chars"
     }
   ],
   "summary": {

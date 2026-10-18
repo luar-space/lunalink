@@ -3,9 +3,9 @@ Coverage Evidence Report
 
 :Document ID: LUNALINK-COV-001
 :Specification Reference: ECSS-Q-ST-80C Rev.2 §5.5; ECSS-E-ST-40C §5.5.1
-:Revision: v1.0.0-62-gd104611
+:Revision: v1.0.0-69-g08f1a5a
 :Date: 2026-10-18
-:Status: Generated — d104611
+:Status: Generated — 08f1a5a
 :Tool: Homebrew LLVM version 22.1.0
 :Compiler: Homebrew clang version 22.1.0
 :Flags: -fprofile-instr-generate -fcoverage-mapping -fcoverage-mcdc
@@ -17,7 +17,7 @@ Coverage Evidence Report
 Methodology
 -----------
 Structural coverage is measured from **functional tests only**
-(``test_lunalink``, 548 tests). Fault injection (SWIFI) tests
+(``test_lunalink``, 550 tests). Fault injection (SWIFI) tests
 prove fault *detection* correctness and are reported separately in
 ``swifi_results.json`` (LUNALINK-SWIFI-001). SWIFI tests do not contribute
 to structural coverage because they exercise the same code paths as
@@ -55,7 +55,7 @@ Thresholds
      - No single file significantly below project average
 
 
-Coverage Summary (548 functional tests)
+Coverage Summary (550 functional tests)
 ---------------------------------------
 
 .. list-table::
@@ -307,7 +307,7 @@ Per-File Breakdown
      - 
    * - ``messages/frame_decode.cpp``
      - 93.23%
-     - 91.82%
+     - 91.86%
      - 100.00%
      - 83.67%
      - 46.67%

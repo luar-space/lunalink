@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
-  "generated": "2026-10-18T21:08:06+00:00",
-  "git_sha": "d104611",
-  "git_describe": "v1.0.0-62-gd104611",
+  "generated": "2026-10-18T21:37:48+00:00",
+  "git_sha": "08f1a5a",
+  "git_describe": "v1.0.0-69-g08f1a5a",
   "tool": {
     "llvm_cov_version": "Homebrew LLVM version 22.1.0",
     "compiler": "Homebrew clang version 22.1.0"
@@ -15,7 +15,7 @@
     "mcdc": 30.0,
     "per_file_line": 80.0
   },
-  "test_count": 548,
+  "test_count": 550,
   "totals": {
     "regions": {
       "count": 1778,
@@ -23,9 +23,9 @@
       "percent": 93.7007874015748
     },
     "lines": {
-      "count": 2899,
-      "covered": 2619,
-      "percent": 90.34149706795446
+      "count": 2900,
+      "covered": 2620,
+      "percent": 90.3448275862069
     },
     "functions": {
       "count": 205,
@@ -784,9 +784,9 @@
         "percent": 93.23308270676691
       },
       "lines": {
-        "count": 220,
-        "covered": 202,
-        "percent": 91.81818181818183
+        "count": 221,
+        "covered": 203,
+        "percent": 91.8552036199095
       },
       "functions": {
         "count": 10,
