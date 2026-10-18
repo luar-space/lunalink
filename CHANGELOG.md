@@ -18,7 +18,7 @@ follows [Semantic Versioning](https://semver.org/) as described in
 - `task conformance`, which checks LunaLink against a pinned release of the
   shared test vectors (`luar-space/lsis-afs-test-vectors`) at every level,
   using that repository's own `validate.py diff-*` commands. CI runs it on
-  every change and weekly.
+  every code change and weekly.
 - The API reference lists the binding functions (`prn_code`, `bch_encode`,
   `frame_decode`, `ldpc_decode` and the rest). Sphinx autodoc had skipped all
   of them because it does not recognise nanobind functions.
@@ -42,9 +42,13 @@ follows [Semantic Versioning](https://semver.org/) as described in
   that passed LDPC and CRC-24Q, so `frame_decode` reported `kOk` with
   `crc_ok` set and wrong navigation data. It now returns `kInvalidInput`, and
   `ldpc_decode` rejects non-finite LLRs. (FMEA FM-075.)
-- `receive_frame` now raises `ValueError` for a `noise_variance` so small
-  that `2 / noise_variance` overflows float32, as documented, instead of
-  failing the decode.
+- `receive_frame` raises `ValueError`, as documented, for a `noise_variance`
+  whose LLR scale `2 / noise_variance` overflows or underflows float32,
+  instead of failing the decode. It accepts any real number for
+  `noise_variance`, including an `int` and the NumPy scalar `np.var`
+  returns, which the type check had rejected.
+- A large channel LLR (symbol amplitude times `llr_scale`) that overflowed
+  float32 made `frame_decode` reject a clean frame; it now saturates.
 
 ### Changed
 - Repository reorganised for a general audience rather than for competition

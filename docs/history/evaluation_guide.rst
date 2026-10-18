@@ -100,8 +100,9 @@ Where to look for each scored category.
      - Primary evidence
    * - **Correctness**
      - 40
-     - Per-gateway verification guides :doc:`/history/gateway0`–:doc:`/history/gateway8`,
-       each mapping deliverable → implementation → verifying command.
+     - Per-gateway verification guides (:doc:`/history/gateway0`, the six
+       per-block guides listed in :doc:`/verifying`, :doc:`/history/gateway7`
+       and :doc:`/history/gateway8`), each mapping deliverable → implementation → verifying command.
        :doc:`/signal/compliance_matrix` and :doc:`/signal/shall_inventory`
        (76 normative identifiers dispositioned).
        ``task compliance-report`` → **31/31 requirements PASS**.
@@ -470,7 +471,8 @@ Milestone 3 — Validation and Interoperability Demonstration (§3.2.3)
      - ``task ber`` (BER/FER sweeps); ``task performance`` (full run)
    * - Compliance with signal structure requirements
      - :doc:`/signal/compliance_matrix`, :doc:`/signal/shall_inventory`,
-       and the per-gateway guides :doc:`/verification/spreading_codes`–:doc:`/history/gateway7`
+       and the per-gateway guides (the six per-block guides listed in
+       :doc:`/verifying`, and :doc:`/history/gateway7`)
      - ``task compliance-report`` → ``compliance_report.json``
    * - Parameter sensitivity testing
      - :doc:`/signal/validation_plan` §*Signal Impairment & Robustness* —

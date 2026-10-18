@@ -803,5 +803,5 @@ above:
 - **Validation Plan** (``docs/signal/validation_plan.rst``) — five-level test hierarchy with entry/exit criteria
 - **Compliance Matrix** (``docs/signal/compliance_matrix.rst``) — full spec-to-code traceability
 - **Developer Guide** (``docs/developing.rst``) — environment setup, task reference, contribution workflow
-- **Technology Stack** (``docs/tech_stack.rst``) — tool versions and ESA Python guidelines compliance
+- **Technology Stack** (``docs/tech_stack.rst``, since folded into ``docs/developing.rst``) — tool versions and ESA Python guidelines compliance
 - **Test Vector Format** (``docs/test_vectors.rst``) — interoperability vector specification

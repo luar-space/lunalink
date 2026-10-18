@@ -163,7 +163,7 @@ frames, the subframe bits it encodes, the FEC vectors, signals, the bits its
 receiver recovers from the shared signals, and parsed data) and runs the
 repository's ``diff-*`` commands on the result.  Levels 3 and 5 start from the
 shared frames and level 4 from the shared signals, so a fault is reported at
-the level where it occurs.  CI runs it on every change and weekly.
+the level where it occurs.  CI runs it on every code change and weekly.
 
 The other two reproduce the results published in :doc:`interop_results`.
 ``task interop`` clones and builds LANS-AFS-SIM on its first run.  It compares
