@@ -75,17 +75,18 @@ on CPython 3.10 or later.
    python validate.py check-annex3      # the codes match Annex 3
 
 The ``signals/`` directory is by far the largest part of the repository.  If
-you only need levels 1 and 2, a sparse checkout leaves it out:
+you don't need the level 3 signals, a sparse checkout leaves it out:
 
 .. code-block:: bash
 
    git clone --filter=blob:none --sparse https://github.com/luar-space/lsis-afs-test-vectors
    cd lsis-afs-test-vectors
-   git sparse-checkout set codes frames inputs references
+   git sparse-checkout set codes fec frames inputs parsed references
 
 Files in the repository root, ``validate.py`` and ``manifest.json`` among
 them, are always checked out.  On a sparse checkout ``verify-manifest``
-reports the files you left out as missing; ``check-annex3`` is unaffected.
+reports the files under ``signals/`` as missing and ``check-signals`` fails
+for want of them; every other ``check-*`` command works.
 
 To compare your own output, write it in the formats described in
 :doc:`test_vectors` and point the matching ``diff`` command at the directory:
