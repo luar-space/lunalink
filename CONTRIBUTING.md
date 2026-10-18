@@ -18,8 +18,8 @@ is specific to contributing.
   implementation, transmitter or receiver, and you cross-check it against
   LunaLink, we want the result whether it passes or fails. Failures are more
   useful.
-- **Test vectors.** Vectors that disagree with ours, or that cover cases ours
-  do not, belong in [lsis-afs-test-vectors][vectors].
+- **Test vectors.** Vectors that disagree with the shared set, or that cover
+  cases it does not, belong in [lsis-afs-test-vectors][vectors].
 - **Ports.** Building the core for a new target, especially real flight-adjacent
   hardware, closes gaps that no amount of desktop testing can.
 

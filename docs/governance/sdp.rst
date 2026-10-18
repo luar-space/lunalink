@@ -218,7 +218,8 @@ Entry/Exit Criteria Summary
      - All CI workflows green on ``main``
      - SWIFI 100%; MC/DC at or above the enforced CI floor (design target
        100% on safety-tagged decision points); zero static-analysis
-       violations; WCET in tolerance; golden vectors committed and passing
+       violations; WCET in tolerance; ``task conformance`` passes against
+       the pinned shared test vectors
    * - Baseline → Release
      - Verification exit criteria met
      - Signed git tag created; SVD produced; binary MD5 recorded

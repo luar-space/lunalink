@@ -38,9 +38,11 @@ change control.  LunaLink SCIs are listed below.
    * - Test suite
      - ``cpp/tests/``, ``tests/``
      - Catch2 and pytest tests; includes SWIFI fault-injection suite
-   * - Golden test vectors
-     - ``test-vectors/`` (also published as ``luar-space/lsis-afs-test-vectors``)
-     - Immutable, versioned JSON test vectors; normative reference for LSIS ecosystem
+   * - Test vector fixtures
+     - ``test-vectors/``
+     - Offline fixtures for the Python tests.  The published vectors are a
+       separate repository, ``luar-space/lsis-afs-test-vectors``, whose
+       release is pinned in ``scripts/interop/conformance.py``
    * - Build system
      - ``CMakeLists.txt``, ``pyproject.toml``, ``Taskfile.yml``
      - Build definitions and task runner
@@ -185,7 +187,8 @@ Configuration Audit
 **Functional Configuration Audit (FCA)**: Verifies that the software satisfies its
 functional requirements.  Performed by:
 
-*   Passing the Golden Test Vector Suite (all nominal + corner case vectors pass)
+*   Passing ``task conformance``: every level of the pinned release of the
+    shared test vectors (``luar-space/lsis-afs-test-vectors``)
 *   Passing the SWIFI fault-injection suite (100% single-bit fault detection)
 *   Passing the CI coverage gate (design target 100% MC/DC on safety-tagged
     decision points; the gate currently enforces a 30% whole-library floor —

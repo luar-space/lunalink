@@ -195,9 +195,12 @@ ships all five levels with bundled oracles and a zero-dependency validator:
    https://github.com/luar-space/lsis-afs-test-vectors
 
 Its ``codes/`` (210 × ``codes_prnNNN.hex``), ``frames/``, ``signals/``
-(12-second I/Q per PRN), and ``parsed/`` directories follow the repository
-structure defined in the interoperability plan, and every vector there is
-regenerable from this repository via ``scripts/export_test_vectors_all.py``.
+(ten 12-second I/Q signals at PRNs 1, 2, 3 and 12), and ``parsed/``
+directories follow the repository structure defined in the interoperability
+plan.  The vectors LunaLink produced
+are regenerable from this repository via ``scripts/export_test_vectors_all.py``;
+the bundled oracles (Annex 3, LANS-AFS-SIM dumps, PocketSDR-AFS decodes) are
+not.
 
 Methodology
 -----------

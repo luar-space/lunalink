@@ -679,21 +679,29 @@ Demonstration of a pattern is.
 
 7. Golden Test Vector Suite (CCSDS / LunaNet ICD)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LunaLink publishes a **versioned, machine-readable test vector library** that
-constitutes the reference for the entire LSIS ecosystem.
+The shared test vectors are a **versioned, machine-readable library** that
+other LSIS-AFS implementations check themselves against.
 
-*   **Status**: The test vector suite is **delivered**: vectors are committed
-    under ``test-vectors/`` in this repository and published externally as
+*   **Status**: **delivered**, as a separate repository with tagged releases,
     `luar-space/lsis-afs-test-vectors
-    <https://github.com/luar-space/lsis-afs-test-vectors>`__.
-    ``tests/generate_test_vectors.py`` generates the vectors from the
-    reference implementation.
+    <https://github.com/luar-space/lsis-afs-test-vectors>`__.  LunaLink's
+    export scripts (``scripts/export_test_vectors_*.py``) produced them.
+    Levels 1 and 2 are checked against sources other than LunaLink (Annex 3,
+    LANS-AFS-SIM), level 4 is an independent receiver's decode
+    (PocketSDR-AFS) of the level 3 signals, and levels 3 and 5 and the FEC
+    components are checked for structure and against the other levels.  The
+    repository's CI runs those checks.
+    ``task conformance`` holds LunaLink to a pinned release with the same
+    ``validate.py diff-*`` commands any implementation runs.  The files under
+    ``test-vectors/`` in this repository are offline test fixtures, not the
+    published set.
 
 *   **Design intent**: a reference implementation owes two things — its own
-    correctness, and a way for others to check theirs against it.  The published
-    JSON vector library discharges the second.  It is the normative reference: when
-    a hardware receiver or another software implementation disagrees with a
-    LunaLink vector, the vector stands until a spec erratum overturns it.
+    correctness, and a way for others to check theirs against it.  The shared
+    vectors discharge the second.  LSIS V1.0 is the normative text: when an
+    implementation disagrees with a vector, the disagreement is resolved
+    against the standard, and a vector found wrong is corrected in a new
+    release that LunaLink then has to pass.
 
 *   **Planned vector categories**:
 
@@ -719,9 +727,8 @@ constitutes the reference for the entire LSIS ecosystem.
 *   **Format**: Each vector will be a self-describing JSON object containing the
     input parameters, the expected output at each pipeline stage, the LSIS
     requirement IDs exercised, and the LunaLink git commit SHA used to generate it.
-*   **Benefit**: Establishes LunaLink as the normative reference for the LSIS
-    ecosystem; enables any hardware or software implementation to validate their own
-    compliance against a single, authoritative, machine-readable source.
+*   **Benefit**: any hardware or software implementation, LunaLink included,
+    checks itself against the same published, machine-readable set.
 
 ECSS Compliance Status
 ----------------------
