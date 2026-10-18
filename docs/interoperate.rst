@@ -132,6 +132,14 @@ does not compare your decoder with LunaLink's.
 standard leaves a payload to be written, the shared JSON files carry the raw
 bits and name the open item, so use ``diff-inputs`` to compare those bits.
 
+The repository also has vectors for each error-correction stage on its own,
+in ``fec/``: BCH(51,8) codewords, CRC-24Q values, the 60×98 interleaver and
+the LDPC encoder for SF2 to SF4, each with full inputs and outputs.  They
+locate a level 2 mismatch to one stage.  ``python validate.py check-fec``
+checks the shipped set, and ``python validate.py diff-fec
+/path/to/your/fec/`` compares yours.  ``diff-fec`` expects all four files,
+with the same names and JSON fields as the ones in ``fec/``.
+
 The repository's own README lists every file, the ``check-*`` commands that
 verify each level against its reference data, and the licence of each bundled
 reference.
