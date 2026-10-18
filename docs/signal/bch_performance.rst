@@ -38,9 +38,12 @@ Hard-decision ML (``bch_decode``)
 - **Output:** Codebook entry with minimum Hamming distance
 
 The decoder is exhaustive ML: it evaluates all 400 codebook entries and
-always returns the nearest codeword regardless of the number of bit errors.
-This gives strictly better performance than an algebraic t=2 decoder, which
-would declare failure for bursts exceeding 2 errors.
+always fills in the FID and TOI of the nearest codeword.  Beyond distance
+2 it also sets ``kNullOutput``, and on a tie ``kAmbiguousMatch``, but the
+estimate is still there.  The FER figures below score that estimate and
+ignore the status, which is what lets the hard decoder beat an algebraic
+t=2 decoder: that decoder would declare failure on every frame with more
+than 2 errors.
 
 Soft-decision ML (``bch_decode_soft``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

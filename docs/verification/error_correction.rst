@@ -78,10 +78,14 @@ caller-supplied buffer, with no dynamic allocation and no exceptions.
 Hard-decision ML decoder (``bch_decode``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Exhaustive ML over the 400-entry codebook using Hamming distance.  Always
-returns the nearest codeword regardless of error count.  Unlike an
-algebraic t=2 decoder, it never declares failure due to excess errors; it
-returns the best available estimate.
+Exhaustive ML over the 400-entry codebook using Hamming distance.  It
+always fills in the FID and TOI of the nearest codeword, and the status
+says how far to trust them: ``kOk`` within distance 2, the code's
+guaranteed correction radius; ``kNullOutput`` beyond it; and
+``kAmbiguousMatch`` when two codewords tie.  A caller can therefore reject
+the header, as an algebraic t=2 decoder would, or take the ML estimate.
+``frame_decode`` uses the soft decoder below, which has no distance
+check.
 
 Soft-decision ML decoder (``bch_decode_soft``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
