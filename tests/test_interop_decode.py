@@ -31,6 +31,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "scripts" / "interop"))
 
 from iq_receiver import (  # noqa: E402
+    CHIP_RATE_HZ,
     CHIPS_PER_EPOCH,
     despread_symbols,
     pcps_acquire,
@@ -45,7 +46,7 @@ pytestmark = pytest.mark.skipif(
 
 # Generate at 5.115 MHz (5× chip rate), decimate to 1.023 MSPS for all processing.
 LANS_SAMPLE_RATE_HZ = 5_115_000.0
-DECIMATION_FACTOR = int(LANS_SAMPLE_RATE_HZ / 1_023_000.0)  # 5
+DECIMATION_FACTOR = int(LANS_SAMPLE_RATE_HZ / CHIP_RATE_HZ)  # 5
 FRAME_DURATION_S = 25.0  # >2 frames ensures we capture at least one complete
 
 

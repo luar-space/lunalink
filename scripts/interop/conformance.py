@@ -32,8 +32,6 @@ Exit status is 0 only if every level passes.
 from __future__ import annotations
 
 import argparse
-import gzip
-import struct
 import subprocess
 import sys
 import tempfile
@@ -55,8 +53,11 @@ from iq_receiver import decode_iq_file  # noqa: E402
 
 VECTORS_REPO = "https://github.com/luar-space/lsis-afs-test-vectors"
 # The shared release LunaLink is held to.  Moving to a newer release is a
-# deliberate change: bump this, and LunaLink has to pass the new vectors.
+# deliberate change: bump both, and LunaLink has to pass the new vectors.  The
+# commit pins the release itself: a tag can be moved, and this script runs the
+# fetched validate.py.
 VECTORS_TAG = "v0.6.2"
+VECTORS_COMMIT = "4f1e66235485fd0cad74ef5b3fba1eab7590392f"
 VECTORS_DIR = REPO_ROOT / "third_party" / "lsis-afs-test-vectors"
 
 
@@ -66,27 +67,43 @@ def _git(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess[str
     )
 
 
-def fetch_vectors(target: Path, tag: str) -> None:
-    """Clone the shared vectors at ``tag``, or move an existing clone to it."""
+def _head(target: Path) -> str:
+    proc = _git("rev-parse", "HEAD", cwd=target)
+    return proc.stdout.strip() if proc.returncode == 0 else ""
+
+
+def fetch_vectors(target: Path, tag: str, commit: str) -> None:
+    """Check out the shared vectors at ``tag`` and confirm it is ``commit``.
+
+    Clones on first use; an existing clone is reused when it is already at
+    ``commit`` and otherwise fetched and moved.  Raises RuntimeError if git
+    fails or the tag does not point at ``commit``.
+    """
     if (target / ".git").exists():
-        current = _git("describe", "--tags", "--exact-match", cwd=target)
-        if current.returncode == 0 and current.stdout.strip() == tag:
-            print(f"Shared vectors at {tag}: {target}")
+        if _head(target) == commit:
+            print(f"Shared vectors at {tag} ({commit[:12]}): {target}")
             return
         print(f"Moving shared vectors to {tag} ...")
         for args in (
-            ("fetch", "--depth", "1", "origin", "tag", tag),
+            ("fetch", "--depth", "1", "--force", "origin", "tag", tag),
             ("checkout", tag),
         ):
             proc = _git(*args, cwd=target)
             if proc.returncode != 0:
                 raise RuntimeError(f"git {' '.join(args)} failed:\n{proc.stderr}")
-        return
-    print(f"Cloning {VECTORS_REPO} at {tag} ...")
-    target.parent.mkdir(parents=True, exist_ok=True)
-    proc = _git("clone", "--depth", "1", "--branch", tag, VECTORS_REPO, str(target))
-    if proc.returncode != 0:
-        raise RuntimeError(f"git clone failed:\n{proc.stderr}")
+    else:
+        print(f"Cloning {VECTORS_REPO} at {tag} ...")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        proc = _git("clone", "--depth", "1", "--branch", tag, VECTORS_REPO, str(target))
+        if proc.returncode != 0:
+            raise RuntimeError(f"git clone failed:\n{proc.stderr}")
+    head = _head(target)
+    if head != commit:
+        raise RuntimeError(
+            f"{tag} is at {head or 'an unknown commit'}, but the pinned release is "
+            f"{commit}.  The tag has moved upstream; review the change before "
+            "updating VECTORS_COMMIT."
+        )
 
 
 def _run(cmd: list[str]) -> tuple[int, str]:
@@ -123,20 +140,12 @@ def produce_decode(signals_dir: Path, out_dir: Path) -> None:
     """
     out_dir.mkdir(parents=True, exist_ok=True)
     for path in sorted(signals_dir.glob("signal_*.iq.gz")):
-        prn = _header_prn(path)
-        result = decode_iq_file(path, prn)
+        result = decode_iq_file(path)
         bits = np.concatenate(
             [result.sb2.data, result.sb3.data, result.sb4.data]
         ).astype(np.uint8)
         stem = path.name.removesuffix(".gz").removesuffix(".iq")
         (out_dir / f"decoded_fec_{stem}.bin").write_bytes(bits.tobytes())
-
-
-def _header_prn(path: Path) -> int:
-    """Read the PRN field of a gzip-compressed ``LSISIQ`` header."""
-    with gzip.open(path, "rb") as f:
-        header = f.read(32)
-    return struct.unpack_from("<I", header, 28)[0]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -167,7 +176,7 @@ def main(argv: list[str] | None = None) -> int:
     vectors: Path = args.vectors or VECTORS_DIR
     if args.vectors is None:
         try:
-            fetch_vectors(vectors, VECTORS_TAG)
+            fetch_vectors(vectors, VECTORS_TAG, VECTORS_COMMIT)
         except RuntimeError as exc:
             print(f"FAIL  could not fetch the shared vectors at {VECTORS_TAG}:\n{exc}")
             return 1

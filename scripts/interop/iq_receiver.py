@@ -20,6 +20,7 @@ Used by ``tests/test_interop_decode.py`` (signals from LANS-AFS-SIM) and
 from __future__ import annotations
 
 import gzip
+import shutil
 import tempfile
 from pathlib import Path
 
@@ -123,24 +124,29 @@ def despread_symbols(
     return symbols
 
 
-def decode_iq_file(path: Path, prn_id: int) -> DecodeResult:
+def decode_iq_file(path: Path, prn_id: int | None = None) -> DecodeResult:
     """Acquire, despread and decode one PRN from an ``LSISIQ`` file.
 
-    A ``.gz`` file is decompressed to a temporary file first, since
+    *prn_id* defaults to the PRN recorded in the file's header.  A ``.gz``
+    file is streamed to a temporary file first, since
     :func:`lunalink.afs.read_iq_file` reads plain files.  The I/Q is reduced to
-    one sample per chip by taking the middle sample of each chip.
+    one sample per chip, the middle sample of each, before the complex array
+    is formed.
     """
     if path.suffix == ".gz":
-        with tempfile.NamedTemporaryFile(suffix=".iq") as tmp:
-            with gzip.open(path) as src:
-                tmp.write(src.read())
-            tmp.flush()
-            sig = read_iq_file(tmp.name)
+        with tempfile.TemporaryDirectory() as tmp:
+            plain = Path(tmp) / path.stem
+            with gzip.open(path) as src, plain.open("wb") as dst:
+                shutil.copyfileobj(src, dst, 1 << 20)
+            sig = read_iq_file(plain)
     else:
         sig = read_iq_file(path)
 
+    prn = sig.prn_id if prn_id is None else prn_id
     step = int(round(sig.sample_rate / CHIP_RATE_HZ))
-    iq = (sig.iq[:, 0] + 1j * sig.iq[:, 1]).astype(np.complex64)[step // 2 :: step]
-    delay, doppler = pcps_acquire(iq, prn_id)
-    symbols = despread_symbols(iq, prn_id, doppler, delay)
+    chips = sig.iq[step // 2 :: step].copy()  # a copy, so the full array can go
+    del sig
+    iq = (chips[:, 0] + 1j * chips[:, 1]).astype(np.complex64)
+    delay, doppler = pcps_acquire(iq, prn)
+    symbols = despread_symbols(iq, prn, doppler, delay)
     return receive_frame(np.sign(symbols).astype(np.float32), raise_on_error=False)
