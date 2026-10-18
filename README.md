@@ -95,8 +95,9 @@ If you have fifteen minutes, this is the tour:
 
 ```bash
 task interop      # ~10 s  bit-exact against an independent implementation
+task conformance  # ~1 min every level of the shared test vectors
 task swifi        # ~50 s  42/42 fault-injection test cases
-task test-cpp && task test-py   # ~1 min  232 C++ cases, 1250 Python tests
+task test-cpp && task test-py   # ~1 min  the C++ and Python test suites
 ```
 
 Every claim below has a command beside it.
