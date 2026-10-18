@@ -71,6 +71,11 @@ lunalink.afs
    :exclude-members: _afs, FrameDecodeResult, FrameDecodeStatus, LegendreStatus, receive_frame, transmit_frame, make_test_payload, DecodeResult, SubframeResult, TimeOfTransmission, TransmitFrame, AfsError, DecodeError, SyncNotFoundError, MessageParseStatus, MessageType, Sb2ParseResult, Sb3ParseResult, Sb4ParseResult, TotResult, TotStatus, IqFile
    :show-inheritance:
 
+Functions
+^^^^^^^^^
+
+.. binding-functions:: lunalink.afs
+
 lunalink.afs.signal
 ~~~~~~~~~~~~~~~~~~~
 

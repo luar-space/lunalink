@@ -1,9 +1,13 @@
 """Sphinx configuration for lunalink documentation."""
 
+import importlib
 import sys
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as get_version
 from pathlib import Path
+
+from docutils.statemachine import StringList
+from sphinx.util.docutils import SphinxDirective
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
@@ -86,8 +90,35 @@ def _skip_binary_module(app, modname):
     return None
 
 
+class _BindingFunctions(SphinxDirective):
+    """Emit ``autofunction`` for every nanobind function a module exports.
+
+    autodoc does not recognise nanobind's ``nb_func`` as a routine, so
+    ``automodule :members:`` documents the binding classes but silently drops
+    every binding function. Listing them from ``__all__`` at build time keeps
+    the API page complete as bindings are added.
+    """
+
+    required_arguments = 1
+
+    def run(self):
+        modname = self.arguments[0]
+        module = importlib.import_module(modname)
+        names = sorted(
+            n for n in module.__all__ if type(getattr(module, n)).__name__ == "nb_func"
+        )
+        source = self.get_source_info()[0] or ""
+        lines = StringList()
+        for name in names:
+            lines.append(f".. autofunction:: {modname}.{name}", source)
+            lines.append("", source)
+        self.state_machine.insert_input(lines, source)
+        return []
+
+
 def setup(app):  # noqa: D103
     app.connect("viewcode-find-source", _skip_binary_module)
+    app.add_directive("binding-functions", _BindingFunctions)
 
 
 # nbsphinx: notebooks are pre-executed by `task docs-build` so figures render
