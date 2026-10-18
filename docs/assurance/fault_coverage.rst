@@ -335,7 +335,7 @@ deliberate gaps:
   development tree to scenarios for components that are not part of this
   release; the IDs are permanently retired rather than renumbered.
 - **FI-39, FI-40** — reserved; never assigned to a shipped scenario.
-- **FI-42–FI-45** — assigned to the descoped Gateway 6 parser scenarios
+- **FI-42–FI-45** — assigned to the descoped message-parsing scenarios
   documented below; no test case carries these tags in this release.
 
 Summary
@@ -373,8 +373,8 @@ majority vote has nothing left to compare against.  That limit is inherent to
 TMR without hardware scrubbing, and the FMEA (``assurance/fmea.rst``) records
 it as such.
 
-Descoped Scenarios (Gateway 6 — Message Parsing)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Descoped Scenarios (Message Parsing)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The following SWIFI scenarios are **documented and descoped for this
 release**: the parser hardening mechanisms they target are implemented and

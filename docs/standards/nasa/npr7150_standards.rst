@@ -415,7 +415,7 @@ chapters:
      - Digital twin only; flight target at programme adoption
    * - Cybersecurity (SWE-156/207)
      - Partial
-     - OSS assessment done; formal threat model at Gateway 4
+     - OSS assessment done; no formal threat model yet
 
 
 Document Inventory

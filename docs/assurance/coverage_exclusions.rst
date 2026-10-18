@@ -66,9 +66,9 @@ Every file in ``cpp/codes/`` — the spreading-code generators — is at
      - 24
      - 100.0%
 
-This is the metric that answers the Gateway 1 success criterion *"100% test
-coverage for code generators"*: every line a test can reach is reached, and
-every line it cannot is categorised below.
+This is the metric behind the target of *"100% test coverage for code
+generators"*: every line a test can reach is reached, and every line it cannot
+is categorised below.
 
 .. code-block:: bash
 

@@ -88,17 +88,18 @@ bidirectional trace.
     justifiable against an external standard.  Bidirectional traceability links
     each C++ function directly to a specific requirement ID in the LunaNet (LSIS)
     specification, and each requirement back to the exact test case that verifies it.
-*   **Current scope**: ``scripts/verify_traceability.py`` validates the LDPC matrix
-    CSV files against their embedded CRC-32 checksums and cross-checks the
-    ``signal/compliance_matrix.rst`` table for formatting consistency.  The
-    ``[LSIS-AFS-*]`` tags in the source headers (updated at Gateway 2) are the
-    traceable implementation markers; the ``signal/compliance_matrix.rst`` document
-    is the human-curated bidirectional traceability artefact for this release.
-*   **Gateway 4 deliverable**: Full automated compliance matrix generation — parsing
-    LSIS spec PDF, core C++ source, and Catch2 test names simultaneously into
-    a machine-generated HTML report published to ``gh-pages`` — is scoped to
-    Gateway 4.  A blocking CI gate on tag density (all signal-chain headers must
-    carry ``[LSIS-AFS-*]`` annotations) is already enforced by the ``lint`` CI job.
+*   **Current scope**: ``scripts/verify_traceability.py`` scans the C++ source for
+    ``[LSIS-AFS-*]`` and ``[SW-SAF-*]`` tags, checks that every tagged requirement
+    has at least one test carrying the same tag, and writes the machine-readable
+    matrix to ``assurance/evidence/traceability.json``; the ``traceability`` CI
+    workflow fails on a gap.  ``task pics-proforma`` regenerates the PICS from the
+    shall inventory, and ``task compliance-report`` grades every requirement from
+    the test, coverage and performance results.  :doc:`traceability_matrix` and
+    ``signal/shall_inventory.rst`` are the human-readable views.
+*   **Not done**: generating the matrix from the text of the LSIS PDF itself.  The
+    shall inventory that links spec clauses to tags is curated by hand.  A
+    blocking CI gate on tag density (all signal-chain headers must carry
+    ``[LSIS-AFS-*]`` annotations) is enforced by the ``lint`` CI job.
 *   **Benefit**: Transforms compliance from a manual audit into a reproducible,
     traceable record.  An auditor can cross-reference ``signal/compliance_matrix.rst``
     against the implementation tags in headers to verify bidirectional coverage.
@@ -664,14 +665,14 @@ Demonstration of a pattern is.
 
 *   **Safety Coverage Report**: The SWIFI suite produces a machine-readable fault coverage report on every passing CI run, published to the **documentation site** (``gh-pages``) for a stable, permanent, publicly accessible URL. It is not committed to the ``main`` branch. The report records, for each injection scenario: the fault injected, the detection mechanism that fired, the cycle count from injection to detection, and pass/fail. The headline metric is **Single-Bit Fault Detection Coverage**: the percentage of injected single-bit faults that were correctly detected and contained before affecting the output. This must be **100%**; any regression is a blocking CI failure.
 *   **Mandate**: Every new hardening pattern added to this document **must** be accompanied by a corresponding SWIFI test case before the pattern is considered verified. A pattern without a SWIFI test is classified as "documented but unverified" and is not admissible as evidence in a safety case review.
-*   **Mutation testing (Gateway 4 planned deliverable)**: A planned CI addition will
+*   **Mutation testing (planned, not implemented)**: A planned CI addition will
     run mutation testing (via ``mutate-cpp`` or equivalent) against
     ``[LSIS-AFS-*]``-tagged functions.  Mutation testing deliberately introduces
     source-level faults (operator flips, condition negations) and verifies the test
     suite kills every mutant.  This proves that the MC/DC test vectors are not only
     achieving coverage but are semantically sensitive to the logic they cover.
-    Integration is planned for Gateway 4 exit; the SWIFI suite provides the primary
-    fault-detection coverage evidence for this release.
+    It is not scheduled; the SWIFI suite provides the primary fault-detection
+    coverage evidence for this release.
 *   **Benefit**: Converts the hardening specification from a set of engineering claims
     into a set of empirically verified, reproducible safety assertions.  The
     ``fault_coverage.rst`` report records 100% single-bit fault detection coverage
