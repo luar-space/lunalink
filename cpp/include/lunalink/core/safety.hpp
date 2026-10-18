@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <span>
 #include <type_traits>
@@ -183,6 +184,25 @@ spans_overlap(std::span<T> a, std::span<U> b) noexcept {
                        a.size_bytes(),
                        static_cast<const void*>(b.data()),
                        b.size_bytes());
+}
+
+/**
+ * @brief Runtime input guard: returns true if every value is finite.
+ *
+ * A NaN or infinity in a soft-symbol or LLR buffer must be rejected before
+ * decoding.  A NaN propagates through belief propagation, every hard decision
+ * comes out 0, and the all-zero word is both a valid LDPC codeword and a valid
+ * CRC-24Q message (zero seed), so the corrupted subframe would pass every check.
+ */
+[[nodiscard(
+    "all_finite returns false when the buffer holds a NaN or infinity; ignoring "
+    "the result lets non-finite input decode to a CRC-valid all-zero subframe")]] inline bool
+all_finite(std::span<const float> values) noexcept {
+  bool finite = true;
+  for (const float v : values) {
+    finite = finite && std::isfinite(v);
+  }
+  return finite;
 }
 
 /**

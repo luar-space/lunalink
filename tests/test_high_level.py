@@ -266,6 +266,21 @@ class TestDecodeFrame:
         with pytest.raises(ValueError, match="noise_variance"):
             receive_frame(bipolar, noise_variance=bad)
 
+    @pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf")])
+    def test_non_finite_symbol_is_invalid_input(self, bad):
+        """A NaN or infinity is rejected, not decoded to a CRC-valid zero subframe."""
+        sb2, sb3, sb4 = make_test_payload("random", seed=5)
+        frame = frame_build(0, 0, sb2, sb3, sb4)
+        bipolar = np.where(frame == 0, 1.0, -1.0).astype(np.float32)
+        bipolar[500] = bad
+        with pytest.raises(DecodeError) as excinfo:
+            receive_frame(bipolar)
+        assert excinfo.value.status == FrameDecodeStatus.INVALID_INPUT
+        result = receive_frame(bipolar, raise_on_error=False)
+        assert not result.all_ok
+        assert not (result.sb2.crc_ok or result.sb3.crc_ok or result.sb4.crc_ok)
+        assert not result.sb2.data.any()
+
     @staticmethod
     def _frame_with_sb4_destroyed():
         """Return soft symbols of a frame whose SB4 codeword is replaced by junk."""

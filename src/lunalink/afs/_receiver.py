@@ -53,7 +53,10 @@ def receive_frame(
     rx_symbols : SoftSymbols
         Bipolar soft-decision symbols (+1.0 = bit 0, -1.0 = bit 1), at
         unit signal amplitude.  Must contain at least 6000 symbols after
-        the sync offset.
+        the sync offset.  A NaN or infinity in the located frame fails
+        the decode, with status ``INVALID_INPUT`` in the payload or
+        ``BCH_FAILED`` in SB1 (a ``DecodeError``, or a failed result when
+        *raise_on_error* is False).
     ldpc_iterations : int
         LDPC decoder iteration limit (default: 50).
     sync_threshold : float

@@ -105,6 +105,12 @@ strip_crc_copy(std::span<const uint8_t> msg, std::span<uint8_t> data_out, size_t
                                                           float llr_scale) noexcept {
   const size_t payload_start = offset + kSyncLength + kSb1Length;
   std::span<const float> payload_interleaved = rx_symbols.subspan(payload_start, kPayloadLength);
+  // A non-finite payload symbol would decode to an all-zero subframe that
+  // passes LDPC and CRC-24Q, and be reported as verified navigation data.
+  // (SB1 is covered by bch_decode_soft, which rejects non-finite LLRs.)
+  if (!all_finite(payload_interleaved)) {
+    return FrameDecodeStatus::kInvalidInput;
+  }
 
   const auto deint_status = block_deinterleave_soft(payload_interleaved,
                                                     std::span<float>(workspace.deinterleave_buf));

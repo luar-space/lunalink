@@ -1098,3 +1098,69 @@ TEST_CASE("[LSIS-AFS-720] frame_decode: a failed frame leaves no crc_ok flag set
   CHECK(std::all_of(ws->sb2_data.begin(), ws->sb2_data.end(), [](uint8_t b) { return b == 0U; }));
   CHECK(std::all_of(ws->sb3_data.begin(), ws->sb3_data.end(), [](uint8_t b) { return b == 0U; }));
 }
+
+TEST_CASE("[LSIS-AFS-720] frame_decode: rejects non-finite symbols instead of decoding them",
+          "[frame]") {
+  // A NaN in a subframe's payload used to propagate through belief propagation,
+  // turn every hard decision to 0, and come out as an all-zero subframe that
+  // passes both LDPC and CRC-24Q (zero seed): kOk with wrong navigation data.
+  std::array<uint8_t, kSb2DataBits> sb2_data{};
+  std::array<uint8_t, kSb3DataBits> sb3_data{};
+  std::array<uint8_t, kSb4DataBits> sb4_data{};
+  std::mt19937 rng(23);
+  fill_subframes(sb2_data, sb3_data, sb4_data, rng);
+
+  std::array<uint8_t, kFrameLength> frame{};
+  LdpcEncodeWorkspace enc_ws{};
+  FrameBuildWorkspace fbw{};
+  REQUIRE(frame_build(Fid::kNode2(), Toi(9), sb2_data, sb3_data, sb4_data, frame, enc_ws, fbw) ==
+          FrameStatus::kOk);
+  auto clean = std::make_unique<std::array<float, kFrameLength>>();
+  binary_to_bipolar(frame, *clean);
+
+  // First, middle and last payload symbol.  (A NaN in SB1 fails the BCH stage;
+  // see "frame_decode: BCH failure" above.)
+  const size_t payload_start = kSyncLength + kSb1Length;
+  const std::array<size_t, 3> positions = {payload_start, payload_start + 500, kFrameLength - 1};
+  const std::array<float, 3> values = {std::numeric_limits<float>::quiet_NaN(),
+                                       std::numeric_limits<float>::infinity(),
+                                       -std::numeric_limits<float>::infinity()};
+  auto ws = std::make_unique<FrameDecodeWorkspace>();
+  NullTelemetryHal hal;
+  for (const size_t pos : positions) {
+    for (const float bad : values) {
+      auto rx = std::make_unique<std::array<float, kFrameLength>>(*clean);
+      (*rx)[pos] = bad;
+      FrameDecodeResult result{};
+      CHECK(frame_decode(*rx, result, *ws, hal) == FrameDecodeStatus::kInvalidInput);
+      CHECK(result.status == FrameDecodeStatus::kInvalidInput);
+      CHECK_FALSE(result.sb2.crc_ok);
+      CHECK_FALSE(result.sb3.crc_ok);
+      CHECK_FALSE(result.sb4.crc_ok);
+      CHECK(
+          std::all_of(ws->sb2_data.begin(), ws->sb2_data.end(), [](uint8_t b) { return b == 0U; }));
+    }
+  }
+
+  // One bad symbol in the sync pattern leaves the payload clean.  Whether the
+  // sync search still locks depends on the value (a NaN drops out of the
+  // correlation, an infinity swamps it); either way a frame reported kOk
+  // carries the transmitted data, and a failed one claims no CRC.
+  for (const float bad : values) {
+    auto rx = std::make_unique<std::array<float, kFrameLength>>(*clean);
+    (*rx)[3] = bad;
+    FrameDecodeResult result{};
+    if (frame_decode(*rx, result, *ws, hal) == FrameDecodeStatus::kOk) {
+      CHECK(std::equal(sb3_data.begin(), sb3_data.end(), ws->sb3_data.begin()));
+    } else {
+      CHECK_FALSE(result.sb2.crc_ok);
+      CHECK_FALSE(result.sb3.crc_ok);
+      CHECK_FALSE(result.sb4.crc_ok);
+    }
+  }
+
+  // The same frame without the bad value still decodes.
+  FrameDecodeResult result{};
+  REQUIRE(frame_decode(*clean, result, *ws, hal) == FrameDecodeStatus::kOk);
+  CHECK(std::equal(sb3_data.begin(), sb3_data.end(), ws->sb3_data.begin()));
+}

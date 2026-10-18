@@ -1016,7 +1016,10 @@ LdpcStatus ldpc_decode(LdpcSubframe type,
 
   // --- Precondition checks ---
   // M4: Reject zero iterations. M5: Validate symbol count matches N_output.
-  if (iterations == 0 || symbols.size() != static_cast<size_t>(p.N_output)) {
+  // A non-finite LLR would converge to the all-zero codeword and pass CRC-24Q
+  // downstream, so it is invalid input like a wrong size.
+  if (iterations == 0 || symbols.size() != static_cast<size_t>(p.N_output) ||
+      !all_finite(symbols)) {
     // cppcheck-suppress redundantInitialization ; pessimistic default is intentional safety pattern
     status = LdpcStatus::kInvalidInput;
   } else if (out.size() < static_cast<size_t>(p.K_nominal)) {

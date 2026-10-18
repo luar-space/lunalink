@@ -1356,7 +1356,8 @@ Parameters
 rx_symbols : array of float
     Bipolar soft-decision symbols (+1.0 = bit 0, -1.0 = bit 1), at unit
     signal amplitude.  Must contain at least kFrameLength (6000) symbols
-    after the sync offset.
+    after the sync offset.  A NaN or infinity in the located frame's
+    payload returns INVALID_INPUT; in SB1 it returns BCH_FAILED.
 ldpc_iterations : int, optional
     LDPC BP iteration count (default: 50).
 sync_threshold : float, optional

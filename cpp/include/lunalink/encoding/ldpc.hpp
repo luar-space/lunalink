@@ -112,6 +112,8 @@ struct LdpcWorkspace {
  *                   For BPSK AWGN: L_ch = 2*y/sigma^2, where y is the
  *                   received sample and sigma^2 is the noise variance.
  *                   Positive = likely bit 0, negative = likely bit 1.
+ *                   Every value must be finite; a NaN or infinity returns
+ *                   kInvalidInput.
  * @param iterations Number of BP iterations.
  * @param out        Buffer for decoded bits (1200 or 870 bits).
  * @param workspace  Scratchpad memory for this decoding instance.

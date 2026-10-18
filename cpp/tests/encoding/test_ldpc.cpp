@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <array>
+#include <limits>
 #include <numeric>
 #include <ranges>
 
@@ -390,4 +391,39 @@ TEST_CASE("LDPC: extreme LLR decode exercises numerical clamping", "[ldpc]") {
       CHECK(decoded[i] == msg[i]);
     }
   }
+}
+
+TEST_CASE("[LSIS-AFS-321] LDPC Decoder: rejects non-finite LLRs", "[ldpc]") {
+  // A NaN LLR propagates through every check node and the hard decisions all
+  // come out 0: the all-zero codeword, which satisfies H*c = 0.  It must be
+  // rejected as invalid input, not reported as a converged decode.
+  std::array<uint8_t, kSb2MsgBits> message{};
+  for (size_t i = 0; i < message.size(); ++i) {
+    message[i] = static_cast<uint8_t>(((i * 7U) % 3U == 0U) ? 1U : 0U);
+  }
+  std::array<uint8_t, kSb2Length> encoded{};
+  LdpcEncodeWorkspace enc_ws{};
+  REQUIRE(ldpc_encode(LdpcSubframe::kSF2, message, encoded, enc_ws) == LdpcStatus::kOk);
+
+  std::array<float, kSb2Length> soft{};
+  for (size_t i = 0; i < kSb2Length; ++i) {
+    soft[i] = (encoded[i] == 1U) ? -1.0F : 1.0F;
+  }
+
+  LdpcWorkspace ws{};
+  for (const float bad : {std::numeric_limits<float>::quiet_NaN(),
+                          std::numeric_limits<float>::infinity(),
+                          -std::numeric_limits<float>::infinity()}) {
+    auto rx = soft;
+    rx[17] = bad;
+    std::array<uint8_t, kSb2MsgBits> decoded{};
+    decoded.fill(0xFFU);
+    CHECK(ldpc_decode(LdpcSubframe::kSF2, rx, 50, decoded, ws) == LdpcStatus::kInvalidInput);
+    CHECK(std::all_of(decoded.begin(), decoded.end(), [](uint8_t b) { return b == 0U; }));
+  }
+
+  // The same LLRs without the bad value still decode.
+  std::array<uint8_t, kSb2MsgBits> decoded{};
+  REQUIRE(ldpc_decode(LdpcSubframe::kSF2, soft, 50, decoded, ws) == LdpcStatus::kOk);
+  CHECK(std::equal(message.begin(), message.end(), decoded.begin()));
 }

@@ -115,7 +115,9 @@ static_assert(kFrameDecodeWorkspaceBytes < 400'000, "FrameDecodeWorkspace exceed
 /// @param rx_symbols       Received soft symbols (bipolar: +1.0 = bit 0, −1.0 = bit 1),
 ///                         at unit signal amplitude: the sync threshold is an absolute
 ///                         correlation sum. Must contain at least kFrameLength symbols
-///                         after the detected sync offset.
+///                         after the detected sync offset. A NaN or infinity in the
+///                         located frame's payload returns kInvalidInput; in SB1 it
+///                         fails the BCH stage (kBchFailed).
 /// @param result           Output: full decode result with per-subframe status.
 /// @param workspace        Caller-allocated scratchpad. After success, decoded data
 ///                         is in workspace.sb2_data, sb3_data, sb4_data.

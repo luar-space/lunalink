@@ -774,6 +774,28 @@ FMEA Table — SISE Calculation (``sise.cpp``)
        array elements.  ``nth_element`` operates on a copy (no aliasing).
        CFI terminal check ensures percentile computation executed.
        All output fields scrubbed on any non-``kOk`` path.
+   * - FM-075
+     - ``frame_decode()`` or ``ldpc_decode()`` receives a NaN or infinity in
+       the payload symbols (front-end fault, corrupted capture, SEU in the
+       caller's buffer)
+     - The non-finite value propagates through belief propagation and every
+       hard decision comes out 0.  The all-zero word is a valid LDPC codeword
+       and a valid CRC-24Q message (zero seed), so the subframe was reported
+       ``kOk`` with ``crc_ok`` set and all-zero navigation data
+     - D-CFI: ``all_finite()`` scan of the located frame's 5880 payload
+       symbols in ``frame_decode()`` before de-interleaving, and of the LLRs
+       at ``ldpc_decode()`` entry; ``kInvalidInput`` on any non-finite value.
+       SB1 is covered by ``bch_decode_soft()``, which already rejected
+       non-finite LLRs.
+     - S1
+     - Zone 1
+     - Found in review (October 2026); before the fix one NaN anywhere in a
+       subframe's payload produced a CRC-valid all-zero subframe.  Output
+       buffers are scrubbed and every ``crc_ok`` cleared on the
+       ``kInvalidInput`` path.  Tests: ``frame_decode: rejects non-finite
+       symbols instead of decoding them`` and ``LDPC Decoder: rejects
+       non-finite LLRs`` (Catch2); ``test_non_finite_symbol_is_invalid_input``
+       (pytest).
 
 Open FMEA Items
 ---------------
