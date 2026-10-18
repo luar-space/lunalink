@@ -38,6 +38,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
@@ -165,7 +166,11 @@ def main(argv: list[str] | None = None) -> int:
 
     vectors: Path = args.vectors or VECTORS_DIR
     if args.vectors is None:
-        fetch_vectors(vectors, VECTORS_TAG)
+        try:
+            fetch_vectors(vectors, VECTORS_TAG)
+        except RuntimeError as exc:
+            print(f"FAIL  could not fetch the shared vectors at {VECTORS_TAG}:\n{exc}")
+            return 1
     validate = vectors / "validate.py"
 
     def check(*cmd: str) -> tuple[int, str]:
@@ -181,7 +186,7 @@ def main(argv: list[str] | None = None) -> int:
         work.mkdir(parents=True, exist_ok=True)
         shared_frames = str(vectors / "frames")
 
-        levels: list[tuple[str, object, tuple[str, ...]]] = [
+        levels: list[tuple[str, Callable[[], None], tuple[str, ...]]] = [
             (
                 "L1   codes",
                 lambda: _export("export_test_vectors_l1.py", work / "codes"),
@@ -244,8 +249,8 @@ def main(argv: list[str] | None = None) -> int:
                 continue
             start = time.monotonic()
             try:
-                produce()  # type: ignore[operator]
-            except RuntimeError as exc:
+                produce()
+            except Exception as exc:  # noqa: BLE001 - any producer failure fails the level
                 failed += 1
                 print(f"FAIL  {label}  (LunaLink could not produce it)\n{exc}")
                 continue
