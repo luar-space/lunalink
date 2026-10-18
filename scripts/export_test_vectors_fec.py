@@ -10,10 +10,10 @@ the public ``lsis-afs-test-vectors`` checkout):
   - ``interleaver_vectors.json``— 60×98 block interleaver, full 5880-bit I/O
   - ``ldpc_vectors.json``       — LDPC(1/2) SF2/SF3/SF4 encode, full codewords
 
-Unlike the truncated internal fixtures in ``tests/generate_test_vectors.py``
-(LDPC first/last 64 bits; interleaver first 32 bits), these ship **full**
-inputs and outputs so a third party can byte-compare each FEC stage in
-isolation — the consumer tool is ``validate.py diff-fec`` in the public repo.
+These ship **full** inputs and outputs so a third party can byte-compare each
+FEC stage in isolation — the consumer tool is ``validate.py diff-fec`` in the
+public repo.  ``scripts/interop/conformance.py`` runs that comparison on
+LunaLink's own output.
 
 If the target's sibling ``frames/`` and ``inputs/`` directories are present,
 a stitch-to-frames self-check runs: ``inputs/ → CRC → LDPC → interleave →

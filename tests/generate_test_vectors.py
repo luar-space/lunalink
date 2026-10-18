@@ -1,8 +1,11 @@
 # Copyright 2025-2026 Marco Fiscato
 # SPDX-License-Identifier: Apache-2.0
-"""LSIS-AFS interoperability test vector generator.
+"""Generate LunaLink's offline regression fixtures under test-vectors/.
 
-Generates test vectors per docs/references/interoperability.pdf.
+These are not the published interoperability vectors.  Those are in
+luar-space/lsis-afs-test-vectors, and ``task conformance`` checks LunaLink
+against them.  The files here let ``task test-py`` exercise the formats from
+docs/references/interoperability.pdf without a network connection.
 
 Repository structure produced::
 
@@ -11,8 +14,6 @@ Repository structure produced::
     frames/  frame_{N}.bin          64-byte LSISAFS header + 6000 binary symbols
     fec/     bch_vectors.json       BCH encode/decode pairs
              crc24_vectors.json     CRC-24 input -> 24-bit CRC pairs
-             interleaver_vectors.json  5880-bit round-trip pairs
-             ldpc_vectors.json      LDPC SF2/SF3/SF4 encode pairs
     signals/ signal_prn{N}_{rate}.iq.gz  128-byte LSISIQ header + float32 I/Q
     parsed/  parsed_{N}.json        parsed subframe fields per interop spec
     decode/  decode_{N}.json.gz     expected decoder outputs
@@ -41,17 +42,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from lunalink.afs._afs import (
     BCH_CODEWORD_LENGTH,
-    INTERLEAVER_COLS,
-    INTERLEAVER_ROWS,
-    INTERLEAVER_SIZE,
-    LdpcSubframe,
     bch_decode,
     bch_encode,
-    block_deinterleave,
-    block_interleave,
     crc24_calculate,
     crc24_verify,
-    ldpc_encode,
     prn_code,
     weil1500_code,
     weil10230_code,
@@ -373,117 +367,6 @@ def generate_crc24_vectors() -> None:
     print(f"[fec]    wrote {len(vectors)} CRC-24 vectors → {path}")
 
 
-def generate_interleaver_vectors() -> None:
-    """Write 60x98 block interleaver round-trip vectors with spot-check mapping."""
-    test_cases = [
-        # (description, seed or pattern)
-        ("all_zeros", np.zeros(INTERLEAVER_SIZE, dtype=np.uint8)),
-        ("all_ones", np.ones(INTERLEAVER_SIZE, dtype=np.uint8)),
-        ("sequential_mod2", np.arange(INTERLEAVER_SIZE, dtype=np.uint8) % 2),
-        (
-            "sequential_mod2_offset",
-            (np.arange(INTERLEAVER_SIZE, dtype=np.uint8) + 1) % 2,
-        ),
-    ]
-
-    vectors = []
-    for desc, data in test_cases:
-        interleaved = block_interleave(data)
-        deinterleaved = block_deinterleave(interleaved)
-        round_trip_ok = bool(np.array_equal(data, deinterleaved))
-
-        # Spot-check: first 8 input positions and where they map in the output
-        mapping = []
-        for i in range(8):
-            row, col = divmod(i, INTERLEAVER_COLS)
-            out_pos = col * INTERLEAVER_ROWS + row
-            mapping.append({"input_pos": i, "output_pos": int(out_pos)})
-
-        vectors.append(
-            {
-                "description": desc,
-                "input_hex_first32": bits_to_hex(data[:32]),
-                "output_hex_first32": bits_to_hex(interleaved[:32]),
-                "round_trip_ok": round_trip_ok,
-                "spot_check_mapping": mapping,
-            }
-        )
-
-    out = {
-        "description": (
-            f"60×98 block interleaver test vectors. "
-            f"Write row-wise ({INTERLEAVER_COLS} cols), "
-            f"read column-wise ({INTERLEAVER_ROWS} rows). "
-            f"Total size: {INTERLEAVER_SIZE} bits."
-        ),
-        "spec_ref": "LSIS-FID0-470",
-        "rows": INTERLEAVER_ROWS,
-        "cols": INTERLEAVER_COLS,
-        "size": INTERLEAVER_SIZE,
-        "generated": NOW_ISO,
-        "vectors": vectors,
-    }
-    path = VECTORS / "fec" / "interleaver_vectors.json"
-    path.write_text(json.dumps(out, indent=2))
-    print(f"[fec]    wrote {len(vectors)} interleaver vectors → {path}")
-
-
-def generate_ldpc_vectors() -> None:
-    """Write LDPC encode test vectors for SF2, SF3, and SF4 (12 total)."""
-    subframe_configs = [
-        (LdpcSubframe.SF2, 1200, 2400, "SF2"),
-        (LdpcSubframe.SF3, 870, 1740, "SF3"),
-        (LdpcSubframe.SF4, 870, 1740, "SF4"),
-    ]
-
-    test_patterns = [
-        ("all_zeros", lambda k: np.zeros(k, dtype=np.uint8)),
-        ("all_ones", lambda k: np.ones(k, dtype=np.uint8)),
-        # bit_i = (i + 1) mod 2 → first packed byte 0xAA, matches the interop-doc
-        # convention used by frame_3.bin and the public lsis-afs-test-vectors set.
-        (
-            "alternating",
-            lambda k: np.array([(i + 1) % 2 for i in range(k)], dtype=np.uint8),
-        ),
-        (
-            "rng_seed42",
-            lambda k: np.random.default_rng(42).integers(0, 2, k, dtype=np.uint8),
-        ),
-    ]
-
-    vectors = []
-    for sf, k, n, sf_name in subframe_configs:
-        for pat_name, pat_fn in test_patterns:
-            msg = pat_fn(k)
-            codeword = ldpc_encode(sf, msg)
-            vectors.append(
-                {
-                    "subframe": sf_name,
-                    "k": k,
-                    "n": n,
-                    "pattern": pat_name,
-                    "message_hex": bits_to_hex(msg),
-                    "codeword_hex_first64b": bits_to_hex(codeword[:64]),
-                    "codeword_hex_last64b": bits_to_hex(codeword[-64:]),
-                    "codeword_length": len(codeword),
-                }
-            )
-
-    out = {
-        "description": (
-            "5G NR LDPC encode test vectors (SF2/SF3/SF4). "
-            "codeword_hex fields are truncated to first/last 64 bits; "
-            "run ldpc_encode() to reproduce the full codeword."
-        ),
-        "spec_ref": "LSIS-AFS SF2/SF3/SF4",
-        "generated": NOW_ISO,
-        "vectors": vectors,
-    }
-    path = VECTORS / "fec" / "ldpc_vectors.json"
-    path.write_text(json.dumps(out, indent=2))
-    print(f"[fec]    wrote {len(vectors)} LDPC vectors → {path}")
-
-
 # ---------------------------------------------------------------------------
 # Parsed frame JSON (Level 5 format)
 # ---------------------------------------------------------------------------
@@ -680,14 +563,12 @@ def main() -> None:
     generate_frame_vectors()
     generate_bch_vectors()
     generate_crc24_vectors()
-    generate_interleaver_vectors()
-    generate_ldpc_vectors()
     generate_iq_vectors(prn_ids)
     generate_parsed_vectors()
     generate_decode_vectors()
 
-    print("\nDone. To validate the vectors against this implementation:")
-    print("  python tests/validate_test_vectors.py")
+    print("\nDone. To check the fixtures against this implementation:")
+    print("  uv run pytest tests/test_interop_self.py")
 
 
 if __name__ == "__main__":
