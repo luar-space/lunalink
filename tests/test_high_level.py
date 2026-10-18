@@ -257,7 +257,7 @@ class TestDecodeFrame:
         assert result.all_ok
         assert result.sync_offset == offset
 
-    @pytest.mark.parametrize("bad", [0.0, -1.0, float("nan"), float("inf")])
+    @pytest.mark.parametrize("bad", [0.0, -1.0, float("nan"), float("inf"), 1e-45])
     def test_noise_variance_must_be_positive_and_finite(self, bad):
         """An unusable noise_variance is rejected before decoding."""
         sb2, sb3, sb4 = make_test_payload("zeros")

@@ -28,6 +28,9 @@ from lunalink.afs.signal import (
     frame_decode as _frame_decode_low,
 )
 
+# Largest finite float32: frame_decode takes the LLR scale as a float32.
+_FLOAT32_MAX = 3.4028234663852886e38
+
 
 @jaxtyped(typechecker=beartype)
 def receive_frame(
@@ -79,7 +82,8 @@ def receive_frame(
     DecodeError
         If BCH, LDPC, or CRC decoding fails (and *raise_on_error* is True).
     ValueError
-        If *noise_variance* is not finite and positive.
+        If *noise_variance* is not finite and positive, or is so small that
+        ``2 / noise_variance`` does not fit in a float32.
 
     Examples
     --------
@@ -101,6 +105,11 @@ def receive_frame(
                 f"noise_variance must be finite and positive, got {noise_variance}"
             )
         llr_scale = 2.0 / noise_variance
+        if llr_scale > _FLOAT32_MAX:
+            raise ValueError(
+                f"noise_variance {noise_variance} is too small: the LLR scale "
+                "2 / noise_variance must fit in a float32"
+            )
 
     raw, sb2_data, sb3_data, sb4_data, status = _frame_decode_low(
         rx_symbols, ldpc_iterations, sync_threshold, llr_scale
