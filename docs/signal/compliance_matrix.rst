@@ -198,9 +198,11 @@ Guide: :doc:`/verification/message_parsing`.
      - Status
      - Notes
    * - CM-601
-     - Message Parsers (8 spec-defined + 14 SISICD types)
+     - Message parsers: SB2 WN/ITOW, and the SB3/SB4 type field for the 23
+       message types of Table 21
      - ✅
-     - Implemented in ``message_parser.cpp``; SB2 WN/ITOW, SB3/SB4 type routing
+     - Implemented in ``message_parser.cpp``; payloads without a field
+       layout in LSIS V1.0 pass through as raw bits (:doc:`sisicd`)
    * - CM-720
      - Calculate Time of Transmission (ToT)
      - ✅

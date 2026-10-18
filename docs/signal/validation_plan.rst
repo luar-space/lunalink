@@ -36,7 +36,10 @@ Flight-like scenarios demand these temporal and numerical edge cases:
      - Transition from 503 to 0 (end of week).
      - Message parsing
    * - **Field Limits**
-     - Maximum and minimum values for all 22 MSG types (eccentricity, drift, etc.).
+     - Maximum and minimum values of the fields LSIS V1.0 defines: WN and
+       ITOW in SB2, and the SB3/SB4 type field for all 23 message types of
+       Table 21 plus unknown values.  The other message payloads have no
+       field layout in LSIS V1.0 and pass through as raw bits.
      - Message parsing
    * - **Invalid FID/TOI**
      - Injection of out-of-range Frame ID (>3) or Time of Interval (>99).
