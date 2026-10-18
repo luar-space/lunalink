@@ -55,7 +55,7 @@ from iq_receiver import decode_iq_file  # noqa: E402
 VECTORS_REPO = "https://github.com/luar-space/lsis-afs-test-vectors"
 # The shared release LunaLink is held to.  Moving to a newer release is a
 # deliberate change: bump this, and LunaLink has to pass the new vectors.
-VECTORS_TAG = "v0.6.1"
+VECTORS_TAG = "v0.6.2"
 VECTORS_DIR = REPO_ROOT / "third_party" / "lsis-afs-test-vectors"
 
 
