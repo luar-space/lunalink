@@ -118,18 +118,24 @@ def _build_lsisiq_payload(iq: NDArray[np.float32], prn: int) -> bytes:
     return buf.getvalue() + iq.astype(np.float32).ravel().tobytes()
 
 
-def _gzip_write(path: Path, content: bytes) -> None:
+def _gzip_write(path: Path, content: bytes, compresslevel: int = 9) -> None:
     """Write ``content`` as gzip with compresslevel=9, mtime=0, FNAME embedded.
 
     ``compresslevel=9`` matches the v0.3.0 publication's deflate stream
     (XFL=2 in the gzip header).  ``mtime=0`` makes the wrapper
     deterministic across rebuilds.  The FNAME slot embeds the ``.iq``
     basename via ``filename=`` so the gzip header is fully pinned.
+    A lower ``compresslevel`` is for callers that only compare the gunzipped
+    samples, such as the conformance check; it changes the wrapper bytes.
     """
     iq_basename = path.name.removesuffix(".gz")
     with open(path, "wb") as f:
         with gzip.GzipFile(
-            filename=iq_basename, fileobj=f, mode="wb", compresslevel=9, mtime=0
+            filename=iq_basename,
+            fileobj=f,
+            mode="wb",
+            compresslevel=compresslevel,
+            mtime=0,
         ) as gz:
             gz.write(content)
 
@@ -158,6 +164,15 @@ def main(argv: list[str] | None = None) -> int:
         help="Directory containing the input frame_*.bin files. "
         "Defaults to ../lsis-afs-test-vectors/frames/ relative to the "
         "lunalink repo root.",
+    )
+    ap.add_argument(
+        "--compresslevel",
+        type=int,
+        choices=range(10),
+        default=9,
+        metavar="0-9",
+        help="gzip level (default 9, the published files). Lower is faster and "
+        "leaves the gunzipped samples unchanged.",
     )
     args = ap.parse_args(argv)
 
@@ -189,7 +204,7 @@ def main(argv: list[str] | None = None) -> int:
         payload = _build_lsisiq_payload(iq, prn)
 
         out_path = out_dir / out_name
-        _gzip_write(out_path, payload)
+        _gzip_write(out_path, payload, args.compresslevel)
 
         size = out_path.stat().st_size
         sha = _sha256(out_path)[:16]

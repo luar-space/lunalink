@@ -602,6 +602,15 @@ tasks:
     cmd: uv run python scripts/pics_proforma.py
     silent: false
 
+  conformance:
+    desc: >-
+      Check LunaLink against the shared test vectors
+      (luar-space/lsis-afs-test-vectors) at the pinned release: LunaLink
+      produces every level and the repository's own validate.py judges it.
+      Fetches the vectors into third_party/ on first run.
+    cmd: uv run python scripts/interop/conformance.py {{.CLI_ARGS}}
+    silent: false
+
   interop-receiver:
     desc: >-
       L4/L5 — build PocketSDR-AFS (a third-party LANS AFS receiver) and have it
