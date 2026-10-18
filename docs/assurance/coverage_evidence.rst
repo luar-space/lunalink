@@ -3,9 +3,9 @@ Coverage Evidence Report
 
 :Document ID: LUNALINK-COV-001
 :Specification Reference: ECSS-Q-ST-80C Rev.2 §5.5; ECSS-E-ST-40C §5.5.1
-:Revision: b7d8284
-:Date: 2026-09-01
-:Status: Generated — b7d8284
+:Revision: v1.0.0-62-gd104611
+:Date: 2026-10-18
+:Status: Generated — d104611
 :Tool: Homebrew LLVM version 22.1.0
 :Compiler: Homebrew clang version 22.1.0
 :Flags: -fprofile-instr-generate -fcoverage-mapping -fcoverage-mcdc
@@ -17,7 +17,7 @@ Coverage Evidence Report
 Methodology
 -----------
 Structural coverage is measured from **functional tests only**
-(``test_lunalink``, 534 tests). Fault injection (SWIFI) tests
+(``test_lunalink``, 548 tests). Fault injection (SWIFI) tests
 prove fault *detection* correctness and are reported separately in
 ``swifi_results.json`` (LUNALINK-SWIFI-001). SWIFI tests do not contribute
 to structural coverage because they exercise the same code paths as
@@ -55,7 +55,7 @@ Thresholds
      - No single file significantly below project average
 
 
-Coverage Summary (534 functional tests)
+Coverage Summary (548 functional tests)
 ---------------------------------------
 
 .. list-table::
@@ -67,11 +67,11 @@ Coverage Summary (534 functional tests)
      - Threshold
      - Verdict
    * - Region
-     - 93.65%
+     - 93.70%
      - >= 90%
      - PASS
    * - Line
-     - 90.27%
+     - 90.34%
      - >= 85%
      - PASS
    * - Function
@@ -79,11 +79,11 @@ Coverage Summary (534 functional tests)
      - >= 95%
      - PASS
    * - Branch
-     - 83.56%
+     - 83.94%
      - >= 75%
      - PASS
    * - MC/DC
-     - 40.59%
+     - 43.43%
      - >= 30%
      - PASS
 
@@ -194,11 +194,11 @@ Per-File Breakdown
      - 42.86%
      - 
    * - ``encoding/ldpc.cpp``
-     - 93.25%
-     - 88.71%
+     - 93.28%
+     - 88.73%
      - 100.00%
-     - 78.87%
-     - 32.35%
+     - 78.99%
+     - 33.33%
      - 
    * - ``encoding/ldpc_tables.cpp``
      - 87.50%
@@ -236,11 +236,11 @@ Per-File Breakdown
      - --
      - 
    * - ``include/lunalink/core/safety.hpp``
-     - 97.17%
-     - 92.59%
-     - 97.14%
-     - 87.50%
-     - 58.33%
+     - 97.27%
+     - 92.90%
+     - 97.22%
+     - 89.13%
+     - 64.29%
      - 
    * - ``include/lunalink/core/telemetry.hpp``
      - 92.31%
@@ -306,11 +306,11 @@ Per-File Breakdown
      - 33.33%
      - 
    * - ``messages/frame_decode.cpp``
-     - 92.74%
-     - 91.35%
+     - 93.23%
+     - 91.82%
      - 100.00%
-     - 80.00%
-     - 23.08%
+     - 83.67%
+     - 46.67%
      - 
    * - ``messages/message_parser.cpp``
      - 96.97%

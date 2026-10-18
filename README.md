@@ -176,7 +176,7 @@ and each is exercised by fault injection rather than asserted. `task swifi`
 drives 34 scenarios, in 42 test cases across six techniques, against the real
 injection APIs, all compiled out of flight builds.
 
-C++ line coverage is 90.27% **by design**: 123 in-source
+C++ line coverage is 90.34% **by design**: 123 in-source
 `NOCOVER(DEFENCE_IN_DEPTH)` annotations mark paths that execute only when a
 cosmic ray flips a bit. Those are covered by fault injection instead, and
 every exclusion is categorised and reviewed in the

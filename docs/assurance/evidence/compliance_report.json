@@ -7,7 +7,7 @@
     "build/test_e2e.xml",
     "build/swifi-ninja/swifi_results.xml"
   ],
-  "total_test_cases": 320,
+  "total_test_cases": 326,
   "requirements": [
     {
       "id": "LSIS-AFS-101",
@@ -156,7 +156,8 @@
         "[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF3 - Alternating pattern",
         "[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF4 - Alternating pattern (reuses SF3 matrices)",
         "[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF2 - Custom alpha (5/8 = 0.625)",
-        "[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF2 - Decoder returns kNotConverged on corrupted input"
+        "[LSIS-AFS-320] [LSIS-AFS-321] Gateway 2: LDPC Round-trip/SF2 - Decoder returns kNotConverged on corrupted input",
+        "[LSIS-AFS-321] LDPC Decoder: rejects non-finite LLRs"
       ],
       "status": "PASS"
     },
@@ -389,6 +390,10 @@
       "matched_tests": [
         "[LSIS-AFS-720] frame_decode: clean round-trip recovers data",
         "[LSIS-AFS-720] frame_decode: clean round-trip with offset",
+        "[LSIS-AFS-720] frame_decode: llr_scale decodes a noisy unit-amplitude frame at an offset",
+        "[LSIS-AFS-720] frame_decode: rejects a non-finite or non-positive llr_scale",
+        "[LSIS-AFS-720] frame_decode: a failed frame leaves no crc_ok flag set",
+        "[LSIS-AFS-720] frame_decode: rejects non-finite symbols instead of decoding them",
         "[LSIS-AFS-720] E2E round-trip: TX \u2192 AWGN \u2192 RX \u2192 bit-exact recovery"
       ],
       "status": "PASS"
@@ -674,7 +679,7 @@
       "id": "NFR-3.1",
       "description": "Unit tests for all components",
       "status": "PASS",
-      "evidence": "320 test cases executed"
+      "evidence": "326 test cases executed"
     },
     {
       "id": "NFR-3.2",
@@ -686,7 +691,7 @@
       "id": "NFR-3.3",
       "description": "Test coverage > 90%",
       "status": "PASS",
-      "evidence": "C++ region 93.65% (>= 90%), line 90.27% (>= 85%), MC/DC 40.59% (>= 30%) from coverage_summary.json @ b7d8284; Python 100% (pytest --cov gate)"
+      "evidence": "C++ region 93.70% (>= 90%), line 90.34% (>= 85%), MC/DC 43.43% (>= 30%) from coverage_summary.json @ d104611; Python 100% (pytest --cov gate)"
     },
     {
       "id": "NFR-3.4",
@@ -740,7 +745,7 @@
       "id": "NFR-5.4",
       "description": "Version control with meaningful history",
       "status": "PASS",
-      "evidence": "160 commits over 182 days (2026-03-02 to 2026-09-01), mean subject 61 chars"
+      "evidence": "258 commits over 230 days (2026-03-02 to 2026-10-18), mean subject 63 chars"
     }
   ],
   "summary": {

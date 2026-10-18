@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
-  "generated": "2026-09-01T14:46:33+00:00",
-  "git_sha": "b7d8284",
-  "git_describe": "b7d8284",
+  "generated": "2026-10-18T21:08:06+00:00",
+  "git_sha": "d104611",
+  "git_describe": "v1.0.0-62-gd104611",
   "tool": {
     "llvm_cov_version": "Homebrew LLVM version 22.1.0",
     "compiler": "Homebrew clang version 22.1.0"
@@ -15,32 +15,32 @@
     "mcdc": 30.0,
     "per_file_line": 80.0
   },
-  "test_count": 534,
+  "test_count": 548,
   "totals": {
     "regions": {
-      "count": 1763,
-      "covered": 1651,
-      "percent": 93.64719228587634
+      "count": 1778,
+      "covered": 1666,
+      "percent": 93.7007874015748
     },
     "lines": {
-      "count": 2879,
-      "covered": 2599,
-      "percent": 90.27440083362278
+      "count": 2899,
+      "covered": 2619,
+      "percent": 90.34149706795446
     },
     "functions": {
-      "count": 204,
-      "covered": 202,
-      "percent": 99.01960784313727
+      "count": 205,
+      "covered": 203,
+      "percent": 99.02439024390245
     },
     "branches": {
-      "count": 1186,
-      "covered": 991,
-      "percent": 83.55817875210792
+      "count": 1202,
+      "covered": 1009,
+      "percent": 83.94342762063228
     },
     "mcdc": {
-      "count": 170,
-      "covered": 69,
-      "percent": 40.588235294117645
+      "count": 175,
+      "covered": 76,
+      "percent": 43.42857142857143
     }
   },
   "per_file": [
@@ -313,14 +313,14 @@
     {
       "filename": "encoding/ldpc.cpp",
       "regions": {
-        "count": 504,
-        "covered": 470,
-        "percent": 93.25396825396825
+        "count": 506,
+        "covered": 472,
+        "percent": 93.2806324110672
       },
       "lines": {
-        "count": 638,
-        "covered": 566,
-        "percent": 88.71473354231975
+        "count": 639,
+        "covered": 567,
+        "percent": 88.73239436619718
       },
       "functions": {
         "count": 38,
@@ -328,14 +328,14 @@
         "percent": 100
       },
       "branches": {
-        "count": 336,
-        "covered": 265,
-        "percent": 78.86904761904762
+        "count": 338,
+        "covered": 267,
+        "percent": 78.99408284023669
       },
       "mcdc": {
-        "count": 68,
-        "covered": 22,
-        "percent": 32.35294117647059
+        "count": 69,
+        "covered": 23,
+        "percent": 33.33333333333333
       },
       "flags": []
     },
@@ -489,29 +489,29 @@
     {
       "filename": "include/lunalink/core/safety.hpp",
       "regions": {
-        "count": 106,
-        "covered": 103,
-        "percent": 97.16981132075472
+        "count": 110,
+        "covered": 107,
+        "percent": 97.27272727272728
       },
       "lines": {
-        "count": 162,
-        "covered": 150,
-        "percent": 92.5925925925926
+        "count": 169,
+        "covered": 157,
+        "percent": 92.89940828402366
       },
       "functions": {
-        "count": 35,
-        "covered": 34,
-        "percent": 97.14285714285714
+        "count": 36,
+        "covered": 35,
+        "percent": 97.22222222222221
       },
       "branches": {
-        "count": 40,
-        "covered": 35,
-        "percent": 87.5
+        "count": 46,
+        "covered": 41,
+        "percent": 89.13043478260869
       },
       "mcdc": {
-        "count": 12,
-        "covered": 7,
-        "percent": 58.333333333333336
+        "count": 14,
+        "covered": 9,
+        "percent": 64.28571428571429
       },
       "flags": []
     },
@@ -779,14 +779,14 @@
     {
       "filename": "messages/frame_decode.cpp",
       "regions": {
-        "count": 124,
-        "covered": 115,
-        "percent": 92.74193548387096
+        "count": 133,
+        "covered": 124,
+        "percent": 93.23308270676691
       },
       "lines": {
-        "count": 208,
-        "covered": 190,
-        "percent": 91.34615384615384
+        "count": 220,
+        "covered": 202,
+        "percent": 91.81818181818183
       },
       "functions": {
         "count": 10,
@@ -794,14 +794,14 @@
         "percent": 100
       },
       "branches": {
-        "count": 90,
-        "covered": 72,
-        "percent": 80
+        "count": 98,
+        "covered": 82,
+        "percent": 83.6734693877551
       },
       "mcdc": {
-        "count": 13,
-        "covered": 3,
-        "percent": 23.076923076923077
+        "count": 15,
+        "covered": 7,
+        "percent": 46.666666666666664
       },
       "flags": []
     },
