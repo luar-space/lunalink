@@ -59,7 +59,7 @@ jobs:
         #
         # Nothing is pushed or loaded; the image is discarded. The RUN
         # directives are the test, so building IS running the suite.
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: Dockerfile.cross-arch
