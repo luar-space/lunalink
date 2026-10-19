@@ -79,7 +79,7 @@ jobs:
         # [tool.cibuildwheel] in pyproject.toml. Architecture is overridden to
         # "native" here because each matrix entry is already a runner of the
         # architecture it builds for, so emulation would only make it slower.
-        uses: pypa/cibuildwheel@v4.3.0
+        uses: pypa/cibuildwheel@v4.3.1
         env:
           CIBW_ARCHS: native
 
