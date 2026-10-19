@@ -104,9 +104,8 @@ Every claim below has a command beside it.
 
 ### It interoperates, in both directions, and that is checked on every run
 
-The check goes beyond a diff against stored vectors: LunaLink acquires and
-decodes another implementation's signal, and another implementation decodes
-LunaLink's.
+LunaLink acquires and decodes another implementation's signal, and another
+implementation decodes LunaLink's.
 
 Against [LANS-AFS-SIM](https://github.com/osqzss/LANS-AFS-SIM), an independent
 C implementation, via `task interop`:
@@ -119,8 +118,8 @@ C implementation, via `task interop`:
 
 The two implementations derive spreading codes by **structurally different
 methods**, an 11-bit shift register with a delay table versus tables
-precomputed from the appendices. Bit-exact agreement is therefore independent
-confirmation, not two programs reading one table.
+precomputed from the appendices. Neither reads the other's table, so
+bit-exact agreement confirms both derivations independently.
 
 `task interop-receiver` runs the other direction:
 [PocketSDR-AFS](https://github.com/osqzss/PocketSDR-AFS), an independent
@@ -136,7 +135,7 @@ No third-party source is vendored here; the interop tasks clone and build the
 counterparts. Method, limits and per-level results are in the
 [interoperability report](https://luar-space.github.io/lunalink/interop_results.html).
 
-### It is written as flight software, not as a simulation
+### It is written as flight software
 
 The dialect is a restricted C++20 that unions MISRA C++:2023 (179 guidelines)
 with the JPL Institutional Coding Standard (D-60411), Holzmann's Power of Ten,
@@ -166,13 +165,13 @@ On top of that dialect sits a layered defence:
   verified as step 1 of the power-on self-test. Nothing transmits a symbol
   until the build verifies itself.
 - **Containment** — three nested Fault Isolation Zones, annotated in-source,
-  bounding the blast radius of any fault. The guarantee: a single radiation
-  event can corrupt at most one 12-second navigation frame, never the timing
-  system, never the on-board computer.
+  bounding the blast radius of any fault. A single radiation event can
+  corrupt at most one 12-second navigation frame; the timing system and the
+  on-board computer sit outside that zone.
 
 Each pattern is attributed to its origin in NASA, ESA or JAXA flight practice
 in the [mission assurance case](https://luar-space.github.io/lunalink/assurance/mission_assurance.html),
-and each is exercised by fault injection rather than asserted. `task swifi`
+and each is exercised by fault injection. `task swifi`
 drives 34 scenarios, in 42 test cases across six techniques, against the real
 injection APIs, all compiled out of flight builds.
 
@@ -182,15 +181,15 @@ cosmic ray flips a bit. Those are covered by fault injection instead, and
 every exclusion is categorised and reviewed in the
 [exclusions register](https://luar-space.github.io/lunalink/assurance/coverage_exclusions.html).
 
-### The decoder is measured against theory, not just "it works"
+### The decoder is measured against theory
 
 An independently written, unhardened float64 sum-product decoder exists purely
 as the theoretical ceiling. Comparing the shipped decoder against it *and*
 against the finite-length sphere-packing bound splits the Shannon gap into two
 attributable halves: the **code gap**, inherent to the design, and the
 **implementation gap** from hardening and clamping. The shipped, hardened
-decoder lands **within 0.15 dB of reference belief propagation**. The ~1.0 dB
-total gap belongs to the code, not to this implementation.
+decoder lands **within 0.15 dB of reference belief propagation**, so nearly
+all of the ~1.0 dB total gap comes from the code.
 
 Beyond that: bit and frame error waterfalls with 95% Wilson confidence
 intervals; an error-floor search finding zero errors in 60,000 frames per
@@ -198,7 +197,7 @@ point; a convergence knee at ~15 iterations against a shipped cap of 50; and a
 quantisation sweep showing **int8 costs no measurable performance**, so an
 8-bit front end suffices. `task ldpc-algo-card` regenerates all of it.
 
-### The tools are qualified, not trusted
+### The tools are qualified
 
 The analysers are run against deliberately defective code, to show that they
 catch what they are relied on to catch:
@@ -217,8 +216,8 @@ will, and on **RISC-V**, the instruction set of the flight target.
 
 ### The evidence regenerates itself
 
-Every artefact is script-produced rather than maintained by hand, and each has
-the command that regenerates it:
+Every artefact is produced by a script, listed here with the command that
+regenerates it:
 
 | Command | What it establishes |
 |:--|:--|
@@ -280,8 +279,7 @@ Known gaps:
   SB4 comparison needs a receiver that logs them decoded.
 
 The [roadmap](https://luar-space.github.io/lunalink/roadmap.html) tracks these.
-Where something is bounded, the documentation says so, and the positive claims
-above are meant to be read in that light.
+Where something is bounded, the documentation says so.
 
 ## Documentation
 
