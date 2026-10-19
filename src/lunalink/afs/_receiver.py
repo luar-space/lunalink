@@ -30,9 +30,19 @@ from lunalink.afs.signal import (
     frame_decode as _frame_decode_low,
 )
 
+# Smallest magnitude that rounds to infinity in float32: 2**128 * (1 - 2**-25).
+_FLOAT32_ROUNDS_TO_INF = 3.4028235677973366e38
+
 
 def _as_float32(value: float) -> float:
-    """Round *value* to float32, as the C++ frame_decode receives it."""
+    """Round *value* to float32, as the C++ frame_decode receives it.
+
+    Values that overflow float32 return infinity.  ``struct.pack("f", ...)``
+    itself returns infinity for them on Python 3.12 but raises
+    ``OverflowError`` on 3.13 and later, so they never reach it.
+    """
+    if abs(value) >= _FLOAT32_ROUNDS_TO_INF:
+        return math.copysign(math.inf, value)
     return struct.unpack("f", struct.pack("f", value))[0]
 
 
