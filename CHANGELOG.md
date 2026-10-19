@@ -54,6 +54,11 @@ follows [Semantic Versioning](https://semver.org/) as described in
 - Repository reorganised for a general audience rather than for competition
   assessment. The competition submission report and evaluation guide are
   preserved under the project history section of the documentation.
+- Repository published at https://github.com/luar-space/lunalink. Its
+  history was rewritten before publication to remove the competition
+  organiser documents from every commit, so commit hashes, including those
+  of the `v1.0.0` and `v1.0-submission` tags, differ from any earlier
+  private clone.
 
 ### Removed
 - Competition organiser documents, which were never LunaLink's to redistribute.
