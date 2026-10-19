@@ -17,6 +17,7 @@ on:
       # docs-pages.yml, after publishing was already underway.
       - 'uv.lock'
       - 'pyproject.toml'
+  workflow_dispatch:
 
 
 # Least privilege: every token use in this workflow is a read

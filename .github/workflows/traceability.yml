@@ -15,6 +15,7 @@ on:
       - 'docs/**'
       - 'scripts/verify_traceability.py'
       - '.github/workflows/traceability.yml'
+  workflow_dispatch:
 
 
 # Least privilege: every token use in this workflow is a read

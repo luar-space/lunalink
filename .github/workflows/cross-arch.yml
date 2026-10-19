@@ -10,6 +10,7 @@ on:
       - 'Dockerfile.cross-arch'
       - '.dockerignore'
       - '.github/workflows/cross-arch.yml'
+  workflow_dispatch:
 
 # Least privilege: this workflow makes no GITHUB_TOKEN API calls at all. The
 # layer cache below does not go through GITHUB_TOKEN — buildx reaches the
