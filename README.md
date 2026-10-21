@@ -315,46 +315,6 @@ are stricter here than in most projects.
 - [Governance](GOVERNANCE.md) — who decides what, and how that should change
 - [Security policy](SECURITY.md) — report vulnerabilities privately
 
-## Provenance
-
-LunaLink was extracted from a larger private development tree that contains
-work outside the scope of this release, none of which is published here.
-
-The history in this repository is the real development history of the files
-that have one, filtered down to the paths that exist here, including their
-earlier names across an internal restructure, so `git log` and `git blame`
-reach back through it. Three things follow:
-
-- The commit *LunaLink — LSIS-AFS reference implementation* (2026-08-31) is
-  the extraction point. Commits before it come from the private tree with
-  non-public paths removed; commits after it were made here. The extraction
-  commit is large because it carries the scrub that made the tree publishable.
-- **21 commit messages were rewritten**, because they described work not in
-  this repository. Each says so in a trailer and describes the change it
-  actually contains. The rest are unedited.
-- Files with no private ancestry, such as the assurance documents, were
-  authored here and their history starts at the extraction point.
-
-Historical versions of the build configuration reference directories of the
-private tree by name. Nothing from those directories is present here, at any
-commit.
-
-## Acknowledgements
-
-LunaLink was built for the **ESA-CCSDS Protocol Development Outreach
-Competition** on the LSIS-AFS track, which it won in September 2026. The
-submission report and the evaluation guide written for the judges are
-preserved in the
-[project history](https://luar-space.github.io/lunalink/history/index.html).
-That result is a statement about the work at a point in time and not a
-designation of official status; LunaLink is not endorsed by NASA, ESA, CCSDS
-or any LunaNet service provider.
-
-The specification is NASA's, published as part of the
-[LunaNet Interoperability Specification](https://www.nasa.gov/directorates/somd/space-communications-navigation-program/lunanet-interoperability-specification/).
-Interoperability testing would not have been possible without the independent
-implementations LANS-AFS-SIM and PocketSDR-AFS.
-
 ## Licence
 
 Apache-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
